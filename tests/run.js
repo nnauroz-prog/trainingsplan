@@ -98,13 +98,13 @@ async function finishAllSets(page, kg, reps) {
       ok("Ungültige alte Sätze bleiben gespeichert (nicht gelöscht)", s.history[0].exercises[2].sets.length === 3);
       ok("Eigenes Gerät, Notiz, Körpergewicht, Plan erhalten",
         s.custom[0].name === "Alte Rudermaschine" && s.notes["hs-chest"] === "Sitz 4" && s.weights[0].kg === 82.4 && s.plan.days[0].items.length === 4);
-      ok("Neue Felder mit Standardwerten (dev = {}, v = 3)", JSON.stringify(s.dev) === "{}" && s.v === 3);
+      ok("Neue Felder mit Standardwerten (dev = {}, v = 4)", JSON.stringify(s.dev) === "{}" && s.v === 4);
       await page.click("[data-a=selDay]").catch(() => {}); // löst Speichern aus
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
       await page.evaluate(() => { window.__tp.state.selDay = "d1"; });
       await page.click("[data-a=start]"); await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
       const st = await stored(page);
-      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 3);
+      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 4);
       await ctx.close();
     }
     {
@@ -355,7 +355,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v5)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v5")));
+      ok("Service Worker aktiv (Cache trainingsplan-v6)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v6")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -384,7 +384,162 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("14. Konsole");
+    section("14. Lieblingsgeräte");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=brust]");
+      await page.click("[data-a=editDev][data-id=hs-widechest]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]");
+      let st = await stored(page);
+      ok("Bevorzugt wird gespeichert", st.dev["hs-widechest"].fav === true && !st.dev["hs-widechest"].off);
+      ok("Liste zeigt „Bevorzugt“ deutlich", (await page.textContent(".sheet [data-id=hs-widechest] .badge.fav")) === "Bevorzugt");
+      await page.click("[data-a=devFilt][data-k=fav]");
+      ok("Filter „Bevorzugt“ zeigt nur bevorzugte Geräte", (await page.$$eval(".sheet [data-a=editDev]", a => a.map(x => x.dataset.id))).join() === "hs-widechest");
+      await page.click("[data-a=editDev][data-id=hs-widechest]"); await page.click("[data-a=devSet][data-k=off][data-v=true]"); await page.click("[data-a=devSave]");
+      st = await stored(page);
+      ok("„Bevorzugt“ und „im Studio“ unabhängig gespeichert", st.dev["hs-widechest"].fav === true && st.dev["hs-widechest"].off === true);
+      await page.reload();
+      const e = await tp(page, () => window.__tp.ex("hs-widechest"));
+      ok("Nach Neustart wiederhergestellt", e.fav === true && e.off === true);
+      ok("Bestehender Plan nicht automatisch geändert", (await stored(page)).plan.days[0].items[0].exId === "hs-chest");
+      // Bevorzugt, aber nicht verfügbar: weder Tausch noch Plan
+      await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]");
+      ok("Bevorzugtes, nicht vorhandenes Gerät nicht im Tausch", !(await page.$$eval(".sheet [data-a=swap]", a => a.map(x => x.dataset.id))).includes("hs-widechest"));
+      const plan = await tp(page, () => window.__tp.generatePlan("aufbau", 3, "einsteiger", 90));
+      ok("Bevorzugtes, nicht vorhandenes Gerät nicht im neuen Plan", !plan.days.some(d => d.items.some(i => i.exId === "hs-widechest")));
+      await ctx.close();
+    }
+
+    section("15. Bewegungsmuster und Alternativen");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, dev: { "hs-decline": { fav: true } } });
+      const rank = id => tp(page, id => { const r = window.__tp.rankAlternatives(id, new Set([id]));
+        return { direct: r.direct.map(a => a.e.id), other: r.other.map(a => a.e.id), why: Object.fromEntries(r.direct.concat(r.other).map(a => [a.e.id, a.why])) }; }, id);
+      const pats = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.pattern]));
+      ok("Alle 28 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 28 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
+      let r = await rank("hs-chest");
+      ok("Brustpresse: direkte Alternativen nur horizontales Drücken", r.direct.length > 0 && r.direct.every(id => ["hs-decline", "hs-widechest"].includes(id)), r.direct.join());
+      ok("Bevorzugtes passendes Gerät steht oben", r.direct[0] === "hs-decline");
+      ok("Incline Press = andere Übung mit anderem Schwerpunkt", r.other.includes("hs-incline") && r.why["hs-incline"].includes("anderer Belastungsschwerpunkt"), r.why["hs-incline"]);
+      ok("Pec Fly als ungeeignete direkte Alternative gekennzeichnet", r.other.includes("hs-fly") && r.why["hs-fly"].includes("Keine direkte Alternative"));
+      ok("Erklärung behauptet keine Gleichheit", !Object.values(r.why).some(w => /identisch|gleichwertig|gleiche Belastung/i.test(w)));
+      r = await rank("hs-lateral");
+      ok("Schulterpresse ist kein direkter Ersatz für Seitheben", !r.direct.includes("hs-shoulder") && r.direct.length === 0);
+      ok("Schulterpresse nur als andere Übung gekennzeichnet", r.other.includes("hs-shoulder") && r.why["hs-shoulder"].includes("Keine direkte Alternative"));
+      r = await rank("hs-hack");
+      ok("Hack Squat: Leg Extension ist keine direkte Alternative", !r.direct.includes("hs-legext") && r.other.includes("hs-legext"));
+      ok("Hack Squat: direkte Alternativen sind kniebeugedominant", ["hs-legpress", "hs-isolegpress", "hs-vsquat"].every(id => r.direct.includes(id)));
+      r = await rank("hs-legext");
+      ok("Leg Extension hat keine direkte Alternative im Studio", r.direct.length === 0);
+      // UI: kein direkter Ersatz für Seitheben
+      await page.evaluate(() => { const T = window.__tp; T.state.plan.days[0].items[0].exId = "hs-lateral"; });
+      await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]");
+      ok("Tausch-Fenster nennt fehlende direkte Alternative", await page.isVisible("#swapNoDirect"));
+      ok("Tausch-Fenster bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Eigenes Gerät mit Bewegungsmuster wird direkte Alternative
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=newDev]");
+      await page.fill("#devName", "Brustpresse Halle 2"); await page.selectOption("#devPattern", "push_h"); await page.click("[data-a=devSave]");
+      const st = await stored(page); const c = st.custom.find(x => x.name === "Brustpresse Halle 2");
+      ok("Eigenes Gerät speichert Bewegungsmuster", c && c.pattern === "push_h");
+      const direct = await tp(page, () => window.__tp.rankAlternatives("hs-chest", new Set(["hs-chest"])).direct.map(a => a.e.name));
+      ok("Eigenes Gerät erscheint als direkte Alternative", direct.includes("Brustpresse Halle 2"));
+      await ctx.close();
+    }
+
+    section("16. Gerätetausch und Gewichte");
+    {
+      const data = { plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 50, reps: 10 }, { kg: 50, reps: 10 }], 4, "s"), hist("hs-decline", [{ kg: 30, reps: 10 }, { kg: 30, reps: 9 }], 6, "s")] };
+      const { ctx, page } = await open(data);
+      await page.click("[data-a=start]");
+      ok("Ausgangsgerät mit eigenem Gewicht (50)", (await page.inputValue("#kgIn")) === "50");
+      await page.click(".actions3 [data-a=openSwap]");
+      ok("Bekanntes Gerät zeigt eigenes letztes Gewicht", (await page.textContent(".sheet [data-id=hs-decline]")).includes("Zuletzt 30 kg pro Seite"));
+      await page.click(".sheet [data-a=swap][data-id=hs-decline]");
+      ok("Tausch zu bekanntem Gerät nutzt dessen Werte (30, nicht 50)", (await page.inputValue("#kgIn")) === "30");
+      await page.click(".actions3 [data-a=openSwap]");
+      ok("Nie genutztes Gerät: Hinweis Einstiegsgewicht", (await page.textContent(".sheet [data-id=hs-widechest]")).includes("Einstiegsgewicht"));
+      await page.click(".sheet [data-a=swap][data-id=hs-widechest]");
+      const why = await page.textContent("#app .reason");
+      ok("Nie genutztes Gerät: kein übertragenes Gewicht", (await page.inputValue("#kgIn")) === "" && why.includes("kontrollierbaren Einstiegsgewicht") && !why.includes("50"), why);
+      await page.fill("#kgIn", "20"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const p = await tp(page, () => ({ wide: window.__tp.lastPerf("hs-widechest"), chest: window.__tp.lastPerf("hs-chest") }));
+      ok("Neues Gerät hat eigene Werte, Ausgangsgerät unverändert", p.wide[0].kg === 20 && p.chest[0].kg === 50);
+      await ctx.close();
+    }
+
+    section("17. Trainingsplanung mit Lieblingsgeräten");
+    {
+      const { ctx, page } = await open(null);
+      const gen = (dev, days = 3) => tp(page, ([dev, days]) => { const T = window.__tp; T.state.dev = dev; return T.generatePlan("aufbau", days, "einsteiger", 90); }, [dev, days]);
+      let plan = await gen({ "hs-widechest": { fav: true }, "hs-lat": { fav: true } });
+      const push = plan.days[0].items.map(i => i.exId), pull = plan.days[1].items.map(i => i.exId);
+      ok("Bevorzugtes Gerät ersetzt Vorlage gleicher Bewegung (Wide Chest statt Chest Press)", push.includes("hs-widechest") && !push.includes("hs-chest"), push.join());
+      ok("Bevorzugter Lat Pulldown statt Front Lat Pulldown", pull.includes("hs-lat") && !pull.includes("hs-pulldown"), pull.join());
+      const base = await gen({});
+      const pats = d => d.items.map(i => i.exId).map(id => base && id).length;
+      const patList = async pl => tp(page, pl => pl.days.map(d => d.items.map(i => window.__tp.ex(i.exId).pattern).sort().join()), pl);
+      ok("Mischung der Bewegungsmuster bleibt gleich", JSON.stringify(await patList(plan)) === JSON.stringify(await patList(base)));
+      let dup = true;
+      for (const days of [2, 3, 4]) for (const dev of [{}, { "hs-widechest": { fav: true }, "hs-chest": { off: true } }, { "hs-decline": { fav: true }, "hs-widechest": { fav: true } }, { "hs-vsquat": { fav: true }, "hs-legpress": { off: true } }]) {
+        const pl = await gen(dev, days); if (!pl.days.every(d => new Set(d.items.map(i => i.exId)).size === d.items.length)) dup = false;
+      }
+      ok("Keine doppelten Geräte in 12 Plan-Varianten", dup);
+      plan = await gen({ "hs-lateral": { off: true } });
+      const pushL = plan.days[0].items.map(i => i.exId);
+      ok("Fehlendes Seitheben wird nicht durch Schulterpresse doppelt ersetzt", !pushL.includes("hs-lateral") && pushL.filter(id => id === "hs-shoulder").length === 1);
+      ok("Lücke wird gemeldet", plan.gaps.length === 1 && plan.gaps[0].name === "Lateral Raise");
+      await page.evaluate(() => { window.__tp.state.dev = { "hs-lateral": { off: true } }; });
+      await page.click("[data-a=createPlan]");
+      ok("Hinweis nach dem Erstellen sichtbar", (await page.textContent(".sheet")).includes("Lateral Raise"));
+      await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=plan]");
+      ok("Hinweis bleibt im Plan sichtbar", await page.isVisible("#gapCard"));
+      await page.click("[data-a=gapsDone]");
+      ok("Hinweis lässt sich ausblenden", !(await page.isVisible("#gapCard")) && (await stored(page)).plan.gaps.length === 0);
+      await ctx.close();
+    }
+
+    section("18. Kompatibilität (alte Daten, laufendes Training, Sicherung)");
+    {
+      const old = JSON.parse(JSON.stringify(OLD_V2)); old.v = 3; old.dev = { "hs-chest": { step: 1.25, load: "side" } }; old.hints = { units: true };
+      old.session = { dayId: "d1", dayName: "Push", start: Date.now() - 600000, idx: 0, phase: "set", restEnd: 0, restTotal: 0,
+        list: [{ key: "k1", itemId: "i1", exId: "hs-chest", u: "s", rmin: 8, rmax: 12, rest: 90, mode: "keep", why: "x", sets: [{ kg: 40, reps: 10, done: true }, { kg: 40, reps: 10, done: false }] }] };
+      const { ctx, page } = await open(old);
+      const s = await tp(page, () => window.__tp.state);
+      ok("Alte Geräteanpassung bleibt (Schritt 1,25), bevorzugt = nein", s.dev["hs-chest"].step === 1.25 && !s.dev["hs-chest"].fav);
+      ok("Laufendes Training aus alter Version wird fortgesetzt", await page.isVisible("#kgIn") && s.session.list[0].sets[0].done === true);
+      ok("Historie und Einheiten unverändert", s.history[0].exercises.map(x => x.u).join() === "s,t,b,t");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=bizeps]");
+      await page.click("[data-a=editDev][data-id=hs-curl]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
+      await page.click("[data-a=newDev]").catch(() => {});
+      await page.evaluate(() => { const T = window.__tp; T.state.custom.push({ id: "c-x", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); T.state.plan.gaps = [{ day: "Push", name: "Lateral Raise", pattern: "lateral" }]; });
+      await page.click(".sheet [data-a=devCancel]").catch(() => {});
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
+      await page.evaluate(() => localStorage.clear()); await page.reload();
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
+      const st = await stored(page);
+      ok("Sicherung: bevorzugtes Gerät", st.dev["hs-curl"].fav === true);
+      ok("Sicherung: Bewegungsmuster eigener Geräte", st.custom.find(c => c.id === "c-x").pattern === "tri");
+      ok("Sicherung: Planhinweise", st.plan.gaps.length === 1 && st.plan.gaps[0].pattern === "lateral");
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, dev: { "hs-decline": { fav: true } } }, { light });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]");
+      const a = await noOverflow(page);
+      await page.click("[data-a=editDev][data-id=hs-decline]"); const b = await noOverflow(page); await page.click("[data-a=devCancel]"); await page.click("[data-a=devsDone]");
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]"); const c = await noOverflow(page);
+      ok(`${light ? "Hell" : "Dunkel"}: Geräteliste, Gerät, Tausch bei 360 px ohne seitliches Scrollen`, a && b && c);
+      await ctx.close();
+    }
+
+    section("19. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
