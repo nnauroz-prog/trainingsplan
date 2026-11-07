@@ -125,6 +125,12 @@
   .ring .t{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:4px}
   .ring .t .num{font-size:72px}
   .note-in{background:transparent;border:1px dashed var(--line);padding:9px 12px;font-size:14px}
+  .tips summary{cursor:pointer;font-weight:600;color:var(--accent);font-size:14px;list-style:none}
+  .tips summary::-webkit-details-marker{display:none}
+  .tips summary::before{content:"＋ "}
+  .tips[open] summary::before{content:"− "}
+  .tips ol{margin:8px 0 0;padding-left:20px;display:grid;gap:4px;font-size:14px;max-width:65ch}
+  textarea{font:inherit;font-size:12px;width:100%;min-height:90px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-family:ui-monospace,Menlo,monospace;word-break:break-all}
 
   /* Sheet */
   .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
@@ -202,6 +208,38 @@ const LIB = [
   ["hs-seatcalf","Seated Calf Raise","waden",[],"plate"],
   ["hs-ab","Ab Crunch","bauch",[],"stack"]
 ].map(([id,name,muscle,sec,type]) => ({ id, name, muscle, sec, type }));
+
+// Kurze Ausführungstipps (Einstellung · Bewegung · Fehler vermeiden)
+const TIPS = {
+  "hs-chest":["Sitz so einstellen, dass die Griffe auf Brusthöhe sind","Schulterblätter zusammen und nach unten, dann drücken","Ellbogen nicht ganz durchstrecken, langsam zurück"],
+  "hs-incline":["Griffe auf Höhe der oberen Brust","Brust raus, Schulterblätter fest in die Lehne","Unten kurz dehnen, kontrolliert hochdrücken"],
+  "hs-decline":["Griffe auf Höhe der unteren Brust","Rücken fest an der Lehne, Füße fest am Boden","Nach vorn-unten drücken, Schultern bleiben unten"],
+  "hs-widechest":["Griffe auf Brusthöhe, Hände weit","Ellbogen leicht gebeugt, nach vorn zusammenführen","Langsam zurück bis zur Dehnung in der Brust"],
+  "hs-fly":["Arme auf Schulterhöhe, Ellbogen leicht gebeugt","Bogenförmig zusammenführen, kurz halten","Nicht über die Dehnung hinaus zurückgehen"],
+  "hs-row":["Brust an das Polster, Arme ganz gestreckt","Ellbogen nah am Körper nach hinten ziehen","Schulterblätter am Ende zusammen, nicht mit dem Oberkörper reißen"],
+  "hs-lowrow":["Brust ans Polster, Füße fest","Zum Bauch ziehen, Ellbogen eng","Am Ende kurz halten, langsam nach vorn"],
+  "hs-highrow":["Sitz so, dass die Griffe über Kopf sind","Diagonal nach unten-hinten ziehen","Schultern weg von den Ohren"],
+  "hs-pulldown":["Knie fest unter das Polster","Griffe zur oberen Brust ziehen, Brust raus","Oben ganz strecken, nicht nach hinten lehnen"],
+  "hs-dyrow":["Brust ans Polster, Arme lang","Ellbogen Richtung Hüfte ziehen","Langsam zurück, Rücken bleibt gerade"],
+  "hs-lat":["Knie fixieren, Stange etwas breiter als schulterbreit","Zur oberen Brust ziehen, Ellbogen nach unten","Oben kontrolliert strecken"],
+  "hs-shoulder":["Griffe etwa auf Kinnhöhe","Gerade nach oben drücken, Rücken an der Lehne","Kein Hohlkreuz, Ellbogen nicht durchschlagen"],
+  "hs-lateral":["Polster an den Oberarmen, Sitz so, dass die Schulter auf Drehachse ist","Arme seitlich bis Schulterhöhe heben","Langsam ablassen, nicht schwingen"],
+  "hs-reardelt":["Brust ans Polster, Arme auf Schulterhöhe","Arme in weitem Bogen nach hinten","Schulterblätter nicht hochziehen"],
+  "hs-curl":["Oberarme flach auf dem Polster, Ellbogen auf Drehachse","Hoch bis zur vollen Beugung","Unten fast ganz strecken, ohne Schwung"],
+  "hs-dip":["Sitz so, dass die Griffe neben der Hüfte sind","Nach unten drücken bis die Arme fast gestreckt sind","Oberkörper aufrecht, Schultern unten"],
+  "hs-triext":["Oberarme aufs Polster, Ellbogen auf Drehachse","Arme ganz strecken, kurz halten","Langsam beugen, Oberarme bleiben liegen"],
+  "hs-legpress":["Füße schulterbreit mittig auf der Platte","Knie zeigen in Richtung Zehen","Unten Po bleibt am Polster, oben Knie nicht durchstrecken"],
+  "hs-isolegpress":["Füße hüftbreit, Rücken fest an der Lehne","Kontrolliert tief, Knie folgen den Zehen","Oben Knie leicht gebeugt lassen"],
+  "hs-vsquat":["Schultern unter die Polster, Füße leicht vor dem Körper","Tief beugen, Rücken bleibt an der Lehne","Über die ganze Fußsohle hochdrücken"],
+  "hs-hack":["Rücken flach an der Lehne, Füße schulterbreit","Tief gehen, Knie Richtung Zehen","Fersen bleiben auf der Platte"],
+  "hs-legext":["Knie auf Höhe der Drehachse, Polster über dem Knöchel","Beine ganz strecken, oben kurz halten","Langsam ablassen, nicht fallen lassen"],
+  "hs-kneelcurl":["Knie aufs Polster, Polster über der Ferse","Ferse zum Po ziehen","Hüfte bleibt am Polster, langsam zurück"],
+  "hs-seatcurl":["Knie auf Drehachse, Oberschenkelpolster fest","Fersen nach unten-hinten ziehen","Langsam zurück, nicht abfedern"],
+  "hs-hipthrust":["Oberer Rücken an der Bank, Füße hüftbreit","Hüfte hochdrücken, Po oben fest anspannen","Kein Hohlkreuz, Kinn leicht zur Brust"],
+  "hs-calf":["Fußballen auf die Kante, Schultern unter die Polster","Ganz hoch auf die Zehen, kurz halten","Unten voll dehnen"],
+  "hs-seatcalf":["Polster fest auf die Oberschenkel, Ballen auf die Kante","Fersen ganz hoch drücken","Langsam tief in die Dehnung"],
+  "hs-ab":["Füße einhaken, Griffe neben dem Kopf","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"]
+};
 
 const GOALS = {
   aufbau:{ label:"Muskelaufbau", rmin:8, rmax:12, rest:90 },
@@ -499,6 +537,11 @@ function vPlan() {
       <p class="muted small">Erstellt einen neuen Plan nach Ziel und Trainingstagen. Dein Verlauf bleibt erhalten.</p>
       <button class="btn sm" data-a="newPlan" style="justify-self:start">Neuen Plan erstellen</button>
     </div>
+    <div class="card">
+      <h3>Daten sichern</h3>
+      <p class="muted small">Dein Plan und Verlauf sind nur in diesem Browser gespeichert. Kopiere die Sicherung und bewahre sie auf, z. B. in den Notizen. Auf einem anderen Gerät fügst du sie hier wieder ein.</p>
+      <div class="row wrap" style="gap:8px"><button class="btn sm" data-a="exportData">Sicherung kopieren</button><button class="btn sm" data-a="importOpen">Sicherung einfügen</button></div>
+    </div>
   </div>`;
 }
 function curDay() { return state.plan?.days.find(d => d.id === state.editDay) || null; }
@@ -538,7 +581,8 @@ function pickerHtml() {
       <button class="li" data-a="pick" data-id="${e.id}">
         <div style="width:44px;flex:0 0 44px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
         <div class="grow"><div style="font-weight:600">${esc(e.name)}</div>
-          <div class="muted small">${MUSCLES[e.muscle]}${e.sec.length ? " · " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}</div></div>
+          <div class="muted small">${MUSCLES[e.muscle]}${e.sec.length ? " · " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}</div>
+          ${TIPS[e.id] ? `<div class="muted small ellipsis">${esc(TIPS[e.id][0])}</div>` : ""}</div>
         <span class="badge">${e.id.startsWith("c-") ? "Eigene" : e.type === "stack" ? "Steckgewicht" : "Scheiben"}</span>
       </button>`).join("") || `<p class="muted">Nichts gefunden.</p>`}</div>
     <div class="card" style="background:var(--surface2)">
@@ -681,6 +725,7 @@ function vTrain() {
         <div style="width:64px;flex:0 0 64px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
       </div>
       <input class="note-in" id="noteT" data-i="note" data-ex="${e.id}" placeholder="⚙ Geräte-Einstellung notieren, z. B. Sitz 4" value="${esc(state.notes[e.id] || "")}" autocomplete="off">
+      ${TIPS[e.id] ? `<details class="tips"><summary>So geht's</summary><ol>${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}
       <div class="sets">${x.sets.map((t, i) => `<span class="set-pill ${t.done ? "done" : ""} ${i === si ? "cur" : ""}">${t.done ? "✓" : i + 1}</span>`).join("")}</div>
     </div>
     <div class="card">
@@ -837,6 +882,33 @@ const A = {
   setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
   createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null; save(); go("home"); },
   calMonth: el => { calOffset += +el.dataset.d; vHistory(); },
+  exportData: () => {
+    const { session, ...rest } = state;
+    const code = "TP1:" + btoa(unescape(encodeURIComponent(JSON.stringify(rest))));
+    openSheet(`<h2>Sicherung</h2>
+      <textarea id="expTxt" readonly aria-label="Sicherungscode">${esc(code)}</textarea>
+      <p class="muted small" id="expMsg">${state.history.length} Trainings und ${state.plan?.days.length || 0} Trainingstage.</p>
+      <button class="btn primary block" data-a="copyExp">Kopieren</button><button class="btn block" data-a="closeSheet">Schließen</button>`);
+  },
+  copyExp: () => {
+    const t = byId("expTxt"), msg = byId("expMsg");
+    const done = () => { msg.textContent = "Kopiert. Füge den Code jetzt z. B. in deine Notizen ein."; msg.style.color = "var(--ok)"; };
+    try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); msg.textContent = "Text ist markiert. Tippe auf „Kopieren“ im Menü."; }); }
+    catch (e) { t.select(); msg.textContent = "Text ist markiert. Tippe auf „Kopieren“ im Menü."; }
+  },
+  importOpen: () => openSheet(`<h2>Sicherung einfügen</h2>
+    <textarea id="impTxt" placeholder="Code hier einfügen (beginnt mit TP1:)" aria-label="Sicherungscode"></textarea>
+    <p class="muted small" id="impMsg">Achtung: Ersetzt Plan und Verlauf auf diesem Gerät.</p>
+    <button class="btn primary block" data-a="importDo">Wiederherstellen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
+  importDo: () => {
+    const raw = byId("impTxt").value.trim(), msg = byId("impMsg");
+    try {
+      if (!raw.startsWith("TP1:")) throw 0;
+      const data = JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));
+      if (!Array.isArray(data.history)) throw 0;
+      state = Object.assign(blank(), data, { session: null }); save(); closeSheet(); go("home");
+    } catch (e) { msg.textContent = "Der Code ist ungültig. Kopiere ihn vollständig, er beginnt mit TP1:"; msg.style.color = "var(--bad)"; }
+  },
   showEx: el => openSheet(exChart(el.dataset.id)),
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => go("setup"),
