@@ -359,7 +359,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v10)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v10")));
+      ok("Service Worker aktiv (Cache trainingsplan-v11)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v11")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1024,7 +1024,89 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("23. Konsole");
+    section("23. Apple Health über Kurzbefehle");
+    {
+      // Daten: Feld wird nur bei true übernommen, Übergabe-Markierung bleibt erhalten
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const nz = await tp(page, () => { const T = window.__tp;
+        const a = T.normalize({ history: [{ id: "x", day: "T", date: new Date().toISOString(), durationSec: 600, exercises: [], hk: true }] });
+        const b = T.normalize({ health: "ja", history: [{ id: "y", day: "T", date: new Date().toISOString(), durationSec: 600, exercises: [], hk: 1 }] });
+        const c = T.normalize({ health: true });
+        return { off: a.health, hk: a.history[0].hk, bad: b.health, badHk: b.history[0].hk === undefined, on: c.health }; });
+      ok("Standard aus; nur echtes „an“ wird übernommen; Übergabe-Markierung bleibt", nz.off === false && nz.hk === true && nz.bad === false && nz.badHk && nz.on === true, JSON.stringify(nz));
+      // Übergabe: Startzeit = Ende minus Dauer (Ortszeit), Dauer in Minuten
+      const pl = await tp(page, () => { const T = window.__tp, end = new Date(2026, 2, 10, 18, 2, 30);
+        const h = { date: end.toISOString(), durationSec: 3125 };
+        const url = T.healthUrl(h), pre = "shortcuts://run-shortcut?name=Trainingsplan%20Workout&input=text&text=";
+        return { p: T.healthPayload(h), pre: url.startsWith(pre), back: JSON.parse(decodeURIComponent(url.slice(pre.length))),
+          zero: T.healthPayload({ date: end.toISOString(), durationSec: 0 }) }; });
+      ok("Startzeit aus Ende minus Dauer (18:02 − 52 Min. → 17:10), Dauer 52 Min.", pl.p.start === "2026-03-10 17:10" && pl.p.minuten === 52, JSON.stringify(pl.p));
+      ok("Link nach Apple-Schema: Kurzbefehl „Trainingsplan Workout“, Daten als Text", pl.pre && pl.back.start === pl.p.start && pl.back.minuten === 52 && Object.keys(pl.back).length === 2);
+      ok("Dauer nie 0 Minuten", pl.zero.minuten === 1);
+      // Aus: keine Buttons
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      ok("Ausgeschaltet: kein Health-Button nach dem Training", (await page.textContent("#app")).includes("Stark gemacht") && !(await page.$("[data-a=sendHealth]")));
+      await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary");
+      ok("Ausgeschaltet: kein Health-Button im Verlauf", !(await page.$("[data-a=sendHealth]")));
+      // Einschalten in den Einstellungen
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Einstellungen zeigen „Apple Health · Aus“", (await page.textContent("[data-a=openHealth]")).includes("Aus"));
+      await page.click("[data-a=openHealth]");
+      const sh = await page.textContent(".sheet");
+      ok("Erklärung: was übertragen wird und was nicht", sh.includes("Startzeit und Dauer") && sh.includes("Keine Kalorien") && sh.includes("nicht an einen Server"));
+      ok("Anleitung mit genauem Kurzbefehl-Namen und allen Schritten", sh.includes("Trainingsplan Workout") && sh.includes("Wörterbuch abrufen") && sh.includes("minuten") && sh.includes("Traditionelles Krafttraining") && (await page.$$(".sheet #hkSetup ol li")).length === 6);
+      ok("Einstellungs-Sheet bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click(".sheet [data-a=setHealth][data-v='1']");
+      ok("Einschalten wird gespeichert und angezeigt", (await stored(page)).health === true && await page.$eval(".sheet [data-a=setHealth][data-v='1']", b => b.classList.contains("on")) && (await page.textContent("[data-a=openHealth]")).includes("An"));
+      await page.click(".sheet [data-a=closeSheet]");
+      // Nach dem Training
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const st = await stored(page), last = st.history[st.history.length - 1];
+      const exp = await tp(page, h => window.__tp.healthPayload(h), last);
+      ok("Eingeschaltet: Button nach dem Training mit genauer Angabe", await page.isVisible("#hkBox [data-a=sendHealth]") && (await page.textContent("#hkBox")).includes(`Start ${exp.start.slice(11)} Uhr, ${exp.minuten} Min.`));
+      ok("Zusammenfassung bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("#hkBox [data-a=sendHealth]");
+      const url1 = await tp(page, () => window.__tp.lastUrl);
+      ok("Tippen übergibt genau dieses Training an den Kurzbefehl", url1 === await tp(page, h => window.__tp.healthUrl(h), last));
+      ok("Training als übergeben markiert", (await stored(page)).history.find(h => h.id === last.id).hk === true && (await page.textContent("#hkBox [data-a=sendHealth]")).includes("übergeben"));
+      await tp(page, () => { window.__tp.lastUrl = null; });
+      await page.click("#hkBox [data-a=sendHealth]");
+      ok("Zweites Tippen fragt nach (keine doppelten Einträge aus Versehen)", (await page.textContent(".sheet")).includes("Schon übergeben") && await tp(page, () => window.__tp.lastUrl) === null);
+      await page.click(".sheet [data-a=sendHealth][data-force]");
+      ok("„Trotzdem erneut senden“ übergibt erneut", await tp(page, () => window.__tp.lastUrl) === url1 && !(await page.$(".sheet")));
+      // Verlauf: frühere Trainings nachtragen
+      await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary");
+      const btns = await page.$$eval("#discLog [data-a=sendHealth]", b => b.map(x => ({ id: x.dataset.id, t: x.textContent })));
+      const first = st.history[0];
+      ok("Verlauf: Button je Training, übergebene sind gekennzeichnet", btns.length === 2 && btns.find(b => b.id === last.id).t.includes("übergeben") && btns.find(b => b.id === first.id).t.includes("In Apple Health eintragen"), JSON.stringify(btns));
+      await tp(page, () => { window.__tp.lastUrl = null; });
+      await page.click(`#discLog [data-a=sendHealth][data-id="${first.id}"]`);
+      ok("Verlauf: älteres Training wird mit seiner eigenen Zeit übergeben", await tp(page, () => window.__tp.lastUrl) === await tp(page, h => window.__tp.healthUrl(h), first) && (await stored(page)).history[0].hk === true);
+      // Sicherung enthält die Einstellung
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      const code = await page.inputValue("#expTxt");
+      ok("Sicherung enthält Einstellung und Markierungen", (() => { const d = JSON.parse(Buffer.from(code.slice(4), "base64").toString("utf8")); return d.health === true && d.history.every(h => h.hk === true); })());
+      await page.click(".sheet [data-a=closeSheet]");
+      // Ausschalten
+      await page.click("[data-a=openHealth]"); await page.click(".sheet [data-a=setHealth][data-v='0']");
+      await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=history]");
+      ok("Ausschalten entfernt die Buttons wieder", (await stored(page)).health === false && !(await page.$("[data-a=sendHealth]")));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, health: true }, { light });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]");
+      const a = await noOverflow(page);
+      await page.keyboard.press("Escape").catch(() => {}); await page.goto(URL);
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      ok(`360 px ${light ? "hell" : "dunkel"}: Health-Einstellungen und Zusammenfassung ohne seitliches Scrollen`, a && await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("24. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
