@@ -1,17 +1,24 @@
 # Trainingsplan
 
-Eine einfache Trainings-App als Web-App (PWA). Alles wird lokal im Gerät gespeichert, ohne Account.
+Trainings-App als Web-App (PWA) für Hammer-Strength-Geräte. Läuft unter https://trainingsplan-tawny.vercel.app und wird bei jedem Merge nach `main` automatisch von Vercel veröffentlicht.
 
-## Benutzen
+## Auf dem iPhone installieren
 
-- `index.html` im Browser öffnen, oder den Ordner über einen statischen Server ausliefern (z. B. `python3 -m http.server`).
-- Auf dem Handy: Seite öffnen und „Zum Startbildschirm hinzufügen“ wählen.
+Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet dann im Vollbild und funktioniert auch offline.
 
 ## Funktionen
 
-- **Plan:** Trainingstage anlegen, Übungen mit Sätzen, Wiederholungen, Ziel-Gewicht (kg) und Pause.
-- **Heute:** Übersicht des gewählten Tags und großer Start-Button.
-- **Training:** Satz für Satz mit Gewicht (kg), Satz-Zähler, automatischer Pausen-Timer mit Signal, Fortschrittsanzeige. Das letzte Gewicht wird vorgeschlagen.
-- Bildschirm bleibt während des Trainings an (sofern vom Gerät unterstützt).
+- **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training und Erfahrung ergeben einen fertigen Plan
+- **Heute:** nächstes Training mit Start-Button, Wochenziel und Serie, Muskel-Erholung
+- **Training:** kg und Wiederholungen pro Satz (vorbelegt vom letzten Mal), Pausen-Ring mit Ton, Vorschlag ±2,5 kg, Ausführungstipps, Geräte-Einstellung merken, Gerät tauschen oder Übung vorziehen, Sätze korrigieren
+- **Verlauf:** Volumen pro Woche, Kalender, Bestwerte mit Kurve pro Gerät
+- **Datensicherung** per Code (Plan → „Daten sichern“)
 
-Hammer-Strength-Übungen sind als Vorschläge im Namensfeld hinterlegt; eigene Namen sind jederzeit möglich.
+Alle Daten liegen lokal im Browser des Geräts.
+
+## Entwicklung
+
+- Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)
+- `./build.sh` erzeugt daraus `index.html`
+- `sw.js`: Offline-Speicher (App-Seite zuerst aus dem Netz, damit Updates sofort ankommen)
+- Symbole: `icon.svg`, daraus gerenderte PNGs für iOS und Android
