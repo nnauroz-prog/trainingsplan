@@ -8,10 +8,12 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 
 ## Funktionen
 
-- **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training und Erfahrung ergeben einen fertigen Plan
-- **Heute:** nächstes Training mit Start-Button, Wochenziel und Serie, Muskel-Erholung
-- **Training:** kg und Wiederholungen pro Satz (vorbelegt vom letzten Mal), Pausen-Ring mit Ton, Vorschlag ±2,5 kg, Ausführungstipps, Geräte-Einstellung merken, Gerät tauschen oder Übung vorziehen, Sätze korrigieren
-- **Verlauf:** Volumen pro Woche, Kalender, Bestwerte mit Kurve pro Gerät
+- **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training, Erfahrung und die Geräte deines Studios ergeben einen fertigen Plan
+- **Heute:** „Das trainierst du heute“ mit Begründung (Ablauf, Erholung, letzte Einheit), großer Start-Button, Wochenziel, Muskel-Erholung; pausiertes Training fortsetzen
+- **Training:** nur Übung, Satz, kg, Wiederholungen und „Satz fertig“; Werte vom letzten Mal übernommen; Pause mit Countdown und „Leicht / Passt / Schwer“; Sätze korrigieren, Übung später machen oder beenden, Gerät tauschen, pausieren
+- **Progression:** lokale, nachvollziehbare Regeln mit Begründung, z. B. „Letztes Mal alle 3 Sätze mit 12 Wdh. geschafft. Heute +2,5 kg pro Seite.“
+- **Geräte:** Hammer-Strength-Bibliothek mit Scheiben/Steckgewicht, Gewicht pro Seite oder gesamt, Schritte je Gerät, Einstellungen, Technik-Tipps, Verfügbarkeit im Studio, eigene Geräte
+- **Verlauf:** Körpergewicht, Sätze pro Muskel, Volumen, Kalender mit Trainingshäufigkeit, Bestwerte mit Kurve und 1RM pro Gerät
 - **Datensicherung** per Code (Plan → „Daten sichern“)
 
 Alle Daten liegen lokal im Browser des Geräts.
@@ -20,5 +22,6 @@ Alle Daten liegen lokal im Browser des Geräts.
 
 - Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)
 - `./build.sh` erzeugt daraus `index.html`
+- `node tests/run.js` startet die automatisierten Tests (Playwright + Chromium, python3 für den lokalen Server)
 - `sw.js`: Offline-Speicher (App-Seite zuerst aus dem Netz, damit Updates sofort ankommen)
 - Symbole: `icon.svg`, daraus gerenderte PNGs für iOS und Android
