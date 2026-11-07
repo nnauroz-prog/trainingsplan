@@ -63,6 +63,7 @@
   .badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--surface2);color:var(--muted);white-space:nowrap}
   .badge.up{background:rgba(43,182,115,.16);color:var(--ok)}
   .badge.pr{background:var(--accent-soft);color:var(--text)}
+  .badge.fav{background:var(--accent);color:#fff}
 
   input,select{font:inherit;width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
   label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
@@ -215,6 +216,37 @@ const LIB = [
   ["hs-ab","Ab Crunch","bauch",[],"stack"]
 ].map(([id,name,muscle,sec,type]) => ({ id, name, muscle, sec, type }));
 
+// Bewegungsmuster: Grundlage für fachlich passende Alternativen (nicht „identisch“, nur vergleichbar)
+// rel = verwandte Muster: gleicher Muskel, aber anderer Belastungsschwerpunkt
+const PATTERNS = {
+  push_h:   { label: "Horizontales Drücken", rel: ["push_i"] },
+  push_i:   { label: "Schräges Drücken", rel: ["push_h", "push_v"] },
+  push_v:   { label: "Vertikales Drücken", rel: ["push_i"] },
+  fly:      { label: "Brust-Isolation", rel: [] },
+  pull_h:   { label: "Horizontales Ziehen", rel: ["pull_v"] },
+  pull_v:   { label: "Vertikales Ziehen", rel: ["pull_h"] },
+  lateral:  { label: "Seitheben", rel: [] },
+  rear:     { label: "Hintere Schulter", rel: [] },
+  bi:       { label: "Bizeps-Isolation", rel: [] },
+  tri:      { label: "Trizeps-Isolation", rel: ["dip"] },
+  dip:      { label: "Trizeps-Drücken", rel: ["tri"] },
+  squat:    { label: "Kniebeugedominante Beinübung", rel: [] },
+  hinge:    { label: "Hüftdominante Beinübung", rel: [] },
+  knee_ext: { label: "Knieextension", rel: [] },
+  knee_flex:{ label: "Kniebeugung", rel: [] },
+  calf:     { label: "Wadenheben", rel: [] },
+  core:     { label: "Rumpfbeugung", rel: [] }
+};
+const LIB_PATTERN = {
+  "hs-chest": "push_h", "hs-decline": "push_h", "hs-widechest": "push_h", "hs-incline": "push_i", "hs-shoulder": "push_v",
+  "hs-fly": "fly", "hs-row": "pull_h", "hs-lowrow": "pull_h", "hs-dyrow": "pull_h", "hs-highrow": "pull_v",
+  "hs-pulldown": "pull_v", "hs-lat": "pull_v", "hs-lateral": "lateral", "hs-reardelt": "rear", "hs-curl": "bi",
+  "hs-triext": "tri", "hs-dip": "dip", "hs-legpress": "squat", "hs-isolegpress": "squat", "hs-vsquat": "squat",
+  "hs-hack": "squat", "hs-hipthrust": "hinge", "hs-legext": "knee_ext", "hs-kneelcurl": "knee_flex",
+  "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core"
+};
+LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
+
 // Kurze Ausführungstipps (Einstellung · Bewegung · Fehler vermeiden)
 const TIPS = {
   "hs-chest":["Sitz so einstellen, dass die Griffe auf Brusthöhe sind","Schulterblätter zusammen und nach unten, dann drücken","Ellbogen nicht ganz durchstrecken, langsam zurück"],
@@ -269,7 +301,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 3, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {} }; }
+function blank() { return { v: 4, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {} }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -285,6 +317,8 @@ function devFrom(s, id) {
   else if (d.load !== "side" && d.load !== "total") d.load = /Iso-Lateral/.test(b.name) ? "side" : "total";
   if (!(d.step > 0)) d.step = d.type === "stack" ? 5 : d.load === "side" ? (SMALL.has(d.muscle) ? 1.25 : 2.5) : 5;
   d.sec = (d.sec || []).filter(m => MUSCLES[m] && m !== d.muscle);
+  d.pattern = PATTERNS[d.pattern] ? d.pattern : null;
+  d.fav = d.fav === true;
   return d;
 }
 // Einheit: s = Scheiben pro Seite, t = Scheiben insgesamt, b = Steckgewicht am Block
@@ -295,7 +329,8 @@ function normalize(raw) {
   if (!isObj(raw)) return s;
   s.custom = Array.isArray(raw.custom) ? raw.custom.filter(c => isObj(c) && c.id && c.name).map(c => ({
     id: String(c.id), name: String(c.name).slice(0, 80), muscle: MUSCLES[c.muscle] ? c.muscle : "brust",
-    sec: Array.isArray(c.sec) ? c.sec.filter(m => MUSCLES[m]) : [], type: c.type === "stack" ? "stack" : "plate" })) : [];
+    sec: Array.isArray(c.sec) ? c.sec.filter(m => MUSCLES[m]) : [], type: c.type === "stack" ? "stack" : "plate",
+    pattern: PATTERNS[c.pattern] ? c.pattern : null })) : [];
   if (isObj(raw.dev)) for (const [id, o] of Object.entries(raw.dev)) {
     if (!isObj(o)) continue;
     const d = {};
@@ -306,6 +341,7 @@ function normalize(raw) {
     if (o.load === "side" || o.load === "total") d.load = o.load;
     if (+o.step > 0 && +o.step <= 50) d.step = +o.step;
     if (o.off === true) d.off = true;
+    if (o.fav === true) d.fav = true;                 // unabhängig von „im Studio“
     s.dev[id] = d;
   }
   if (isObj(raw.notes)) for (const [id, v] of Object.entries(raw.notes)) if (typeof v === "string" && v.trim()) s.notes[id] = v.slice(0, 120);
@@ -317,7 +353,8 @@ function normalize(raw) {
       id: String(d.id || uid()), name: String(d.name || "Trainingstag").slice(0, 60),
       items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
         return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
-          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })) };
+          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
+    gaps: Array.isArray(raw.plan.gaps) ? raw.plan.gaps.filter(isObj).map(g => ({ day: String(g.day || ""), name: String(g.name || ""), pattern: PATTERNS[g.pattern] ? g.pattern : null })) : [] };
   const cleanSet = t => { const o = { kg: kgOrNull(t.kg), reps: clampInt(t.reps, 0, 999, 0) }; if (["l", "m", "h"].includes(t.f)) o.f = t.f; return o; };
   // Verlauf: nichts verwerfen, nur Typen absichern; fehlende Einheit einmalig aus dem damaligen Gerät festschreiben
   s.history = Array.isArray(raw.history) ? raw.history.filter(h => isObj(h) && Array.isArray(h.exercises)).map(h => ({
@@ -385,19 +422,28 @@ const loadTxt = e => e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
 // Volumen: bei „pro Seite“ zählen beide Seiten; Einheit kommt aus dem gespeicherten Eintrag
 const setVol = (entry, t) => validSet(t) ? t.kg * t.reps * ((entry.u || unitOf(ex(entry.exId))) === "s" ? 2 : 1) : 0;
-// Nicht verfügbares Gerät durch ein verfügbares für denselben Muskel ersetzen
-function availId(id, used) {
-  const e = ex(id); if (!e.off) return id;
-  const alt = allEx().find(a => !a.off && a.muscle === e.muscle && !used.has(a.id));
+// Direkte Alternativen: gleiches Bewegungsmuster UND gleicher Hauptmuskel, verfügbar, noch nicht benutzt
+const directCands = (t, used) => allEx().filter(e => !e.off && !used.has(e.id) && e.id !== t.id && t.pattern && e.pattern === t.pattern && e.muscle === t.muscle);
+// Gerät für einen Vorlagen-Platz wählen: bevorzugtes Gerät gleicher Bewegung vor Vorlage; fehlt die Vorlage,
+// nur gleiches Bewegungsmuster als Ersatz (sonst null, nie stillschweigend eine andere Bewegung)
+function pickForSlot(id, used) {
+  const t = ex(id), cands = directCands(t, used), fav = cands.find(e => e.fav);
+  if (!t.off && !used.has(id)) return t.fav || !fav ? id : fav.id;
+  const alt = fav || cands[0];
   return alt ? alt.id : null;
 }
 
 function generatePlan(goal, days, level, minutes) {
   const g = GOALS[goal];
-  return { goal, level, minutes, days: TEMPLATES[days].map(([name, tpl]) => {
-    // Vorhandene Vorlagen-Geräte zuerst reservieren, damit ein Ersatz keine Doppelung erzeugt
-    const used = new Set(tpl.filter(id => !ex(id).off));
-    const ids = tpl.map(id => { const a = availId(id, used); if (a) used.add(a); return a; }).filter(Boolean);
+  const gaps = [];
+  const plan = { goal, level, minutes, days: TEMPLATES[days].map(([name, tpl]) => {
+    const used = new Set();
+    const ids = tpl.map(id => {
+      const a = pickForSlot(id, used);
+      if (a) used.add(a);
+      else if (ex(id).off) gaps.push({ day: name, name: ex(id).name, pattern: ex(id).pattern });
+      return a;
+    }).filter(Boolean);
     const items = ids.map((id, i) => ({ id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
       rmin: g.rmin, rmax: g.rmax, rest: i < 2 ? g.rest : Math.max(60, g.rest - 30) }));
     const day = { id: uid(), name, items };
@@ -406,6 +452,8 @@ function generatePlan(goal, days, level, minutes) {
     for (let i = items.length - 1; minutes && estMinutes(day) > minutes && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
     return day;
   }) };
+  plan.gaps = gaps;
+  return plan;
 }
 
 /* ================= Hilfen ================= */
@@ -686,6 +734,8 @@ function vPlan() {
   const p = state.plan;
   $app.innerHTML = `<div class="stack-lg">
     <div><div class="label">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} Tage</div><h1>Dein Plan</h1></div>
+    ${p.gaps && p.gaps.length ? `<div class="card" id="gapCard"><div class="label">Nicht ersetzt</div>${gapList(p.gaps)}
+      <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="stack">${p.days.map(d => `
       <button class="card" style="text-align:left" data-a="editDay" data-id="${d.id}">
         <div class="row">
@@ -714,6 +764,11 @@ function vPlan() {
     </div>
   </div>`;
 }
+function gapList(gaps) {
+  return `<p class="small">Für diese Übungen gibt es in deinem Studio kein Gerät mit gleicher Bewegung. Sie wurden weggelassen statt durch eine unpassende Übung ersetzt:</p>
+    <ul class="small" style="margin:0;padding-left:20px;display:grid;gap:4px">${gaps.map(g => `<li><b>${esc(g.name)}</b> (${g.pattern ? PATTERNS[g.pattern].label : "–"}) · ${esc(g.day)}</li>`).join("")}</ul>
+    <p class="muted small">Bei Bedarf fügst du im Trainingstag eine andere Übung hinzu.</p>`;
+}
 function curDay() { return state.plan?.days.find(d => d.id === state.editDay) || null; }
 function vDay() {
   const d = curDay(); if (!d) return go("plan");
@@ -741,15 +796,15 @@ function vDay() {
 /* Geräteverwaltung */
 let devFilter = "alle", devDraft = null, devRet = "list";
 function devListHtml() {
-  const all = allEx(), list = all.filter(e => devFilter === "alle" || e.muscle === devFilter);
+  const all = allEx(), list = all.filter(e => devFilter === "alle" || (devFilter === "fav" ? e.fav : e.muscle === devFilter));
   return `<div class="row between"><h2 class="grow">Meine Geräte</h2><button class="btn sm" data-a="devsDone">Fertig</button></div>
-    <p class="muted small">${all.filter(e => !e.off).length} von ${all.length} Geräten in deinem Studio. Antippen, um Gewichtsangabe, Schritte oder Verfügbarkeit anzupassen.</p>
-    <div class="chips">${[["alle", "Alle"], ...Object.entries(MUSCLES)].map(([k, l]) =>
+    <p class="muted small">${all.filter(e => !e.off).length} von ${all.length} im Studio · ${all.filter(e => e.fav).length} bevorzugt. Antippen zum Anpassen.</p>
+    <div class="chips">${[["alle", "Alle"], ["fav", "Bevorzugt"], ...Object.entries(MUSCLES)].map(([k, l]) =>
       `<button class="chip ${devFilter === k ? "on" : ""}" data-a="devFilt" data-k="${k}">${l}</button>`).join("")}</div>
     <div class="list">${list.map(e => `<button class="li" data-a="editDev" data-id="${e.id}" data-ret="list">
       <div class="grow"><div style="font-weight:600;${e.off ? "opacity:.5" : ""}">${esc(e.name)}</div>
-        <div class="muted small">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${kgTxt(e.step)} kg${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</div></div>
-      ${e.off ? `<span class="badge">Nicht im Studio</span>` : e.id.startsWith("c-") ? `<span class="badge">Eigenes</span>` : ""}</button>`).join("") || `<p class="muted">Keine Geräte.</p>`}</div>
+        <div class="muted small">${MUSCLES[e.muscle]} · ${e.pattern ? PATTERNS[e.pattern].label : "Bewegung nicht zugeordnet"} · ${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</div></div>
+      <div style="display:grid;gap:4px;justify-items:end">${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}${e.off ? `<span class="badge">Nicht im Studio</span>` : e.id.startsWith("c-") ? `<span class="badge">Eigenes</span>` : ""}</div></button>`).join("") || `<p class="muted">${devFilter === "fav" ? "Noch keine bevorzugten Geräte. Öffne ein Gerät und stelle „Bevorzugt“ auf Ja." : "Keine Geräte."}</p>`}</div>
     <button class="btn block" data-a="newDev" data-ret="list">+ Eigenes Gerät anlegen</button>`;
 }
 function devSheetHtml() {
@@ -762,6 +817,11 @@ function devSheetHtml() {
       `<option value="${k}" ${d.muscle === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
     <div><label>Unterstützende Muskeln</label><div class="chips" style="flex-wrap:wrap">${Object.entries(MUSCLES).filter(([k]) => k !== d.muscle).map(([k, l]) =>
       `<button class="chip ${d.sec.includes(k) ? "on" : ""}" data-a="devSec" data-k="${k}" aria-pressed="${d.sec.includes(k)}">${l}</button>`).join("")}</div></div>
+    <div><label for="devPattern">Bewegungsmuster</label>${isCustom
+      ? `<select id="devPattern" data-i="devPattern"><option value="" ${!d.pattern ? "selected" : ""}>Nicht zugeordnet</option>${Object.entries(PATTERNS).map(([k, v]) =>
+          `<option value="${k}" ${d.pattern === k ? "selected" : ""}>${v.label}</option>`).join("")}</select>
+         <p class="muted small" style="margin-top:6px">Bestimmt, welche Geräte als direkte Alternative gelten. Ohne Zuordnung nur als „andere Übung“.</p>`
+      : `<p class="small">${d.pattern ? PATTERNS[d.pattern].label : "–"}</p>`}</div>
     ${unitLocked(d.id) ? `<p class="reason">Gerätetyp und Gewichtsangabe sind gesperrt, solange im laufenden Training schon Sätze an diesem Gerät erledigt sind.</p>` : ""}
     <div><label>Gerätetyp</label>${seg("type", [["plate", "Scheiben"], ["stack", "Steckgewicht"]])}</div>
     ${d.type === "plate" ? `<div><label>Gewicht eintragen</label>${seg("load", [["side", "Pro Seite"], ["total", "Insgesamt"]])}
@@ -776,6 +836,8 @@ function devSheetHtml() {
     <div><label for="devNote">Deine Einstellung</label><input id="devNote" data-i="devNote" value="${esc(d.note || "")}" placeholder="z. B. Sitz 4, Griff weit" autocomplete="off"></div>
     <div class="toggle-row"><div><div style="font-weight:600">In meinem Studio</div><div class="muted small">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
       <div style="flex:0 0 140px">${seg("off", [["false", "Ja"], ["true", "Nein"]])}</div></div>
+    <div class="toggle-row"><div><div style="font-weight:600">Bevorzugt</div><div class="muted small">${d.off ? "Gilt erst wieder, wenn das Gerät im Studio ist." : "Wird bei Plan und Tausch vorgezogen, wenn die Bewegung passt."}</div></div>
+      <div style="flex:0 0 140px">${seg("fav", [["true", "Ja"], ["false", "Nein"]])}</div></div>
     <p class="error" id="devErr" hidden></p>
     <button class="btn primary block" data-a="devSave">Speichern</button>
     ${!d._new && !isCustom && state.dev[d.id] ? `<button class="btn block" data-a="devReset">Auf Standard zurücksetzen</button>` : ""}
@@ -798,7 +860,7 @@ let pickFilter = "alle", pickQuery = "";
 function pickerHtml() {
   const q = pickQuery.toLowerCase();
   const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && (!q || e.name.toLowerCase().includes(q)));
-  const list = match.filter(e => !e.off), hidden = match.length - list.length;
+  const list = match.filter(e => !e.off).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0)), hidden = match.length - list.length;
   return `<div class="row between"><h2>Übung wählen</h2><button class="btn sm" data-a="closeSheet">Fertig</button></div>
     <input id="pickQ" data-i="pickQ" placeholder="Suchen, z. B. Row" value="${esc(pickQuery)}" autocomplete="off">
     <div class="chips">${[["alle", "Alle"], ...Object.entries(MUSCLES)].map(([k, l]) =>
@@ -806,8 +868,8 @@ function pickerHtml() {
     <div class="list" id="pickList">${list.map(e => `
       <button class="li" data-a="pick" data-id="${e.id}">
         <div style="width:44px;flex:0 0 44px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
-        <div class="grow"><div style="font-weight:600">${esc(e.name)}</div>
-          <div class="muted small">${MUSCLES[e.muscle]}${e.sec.length ? " · " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}</div>
+        <div class="grow"><div class="row wrap" style="gap:6px"><span style="font-weight:600">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
+          <div class="muted small">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
           ${TIPS[e.id] ? `<div class="muted small ellipsis">${esc(TIPS[e.id][0])}</div>` : ""}</div>
         <span class="badge">${e.id.startsWith("c-") ? "Eigenes" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "gesamt"}</span>
       </button>`).join("") || `<p class="muted">Nichts gefunden.</p>`}</div>
@@ -850,7 +912,7 @@ function startTraining(day) {
   };
   state.selDay = null; save(); awake(true); go("train"); startTick();
 }
-function makeEntry(it) {
+function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step;
   const last = lastPerf(it.exId, u);               // nur gültige Sätze, gleiche Einheit
   const reps = last ? last.map(s => s.reps) : [];
@@ -862,7 +924,8 @@ function makeEntry(it) {
   const below = !!last && reps.every(r => r < it.rmin);
   const w = v => `${kgTxt(v)} ${unit}`;
   let mode = "keep", why;
-  if (!last) why = `Noch keine gültigen Werte mit „${unit}“. Wähle ein Gewicht, mit dem du ${it.rmax} saubere Wdh. schaffst.`;
+  if (!last && ctx && ctx.from) why = `Neu an diesem Gerät: Beginne mit einem kontrollierbaren Einstiegsgewicht. Werte von ${ctx.from} werden nicht übertragen, weil Maschinen unterschiedliche Widerstandsverläufe haben.`;
+  else if (!last) why = `Noch keine gültigen Werte mit „${unit}“. Wähle ein Gewicht, mit dem du ${it.rmax} saubere Wdh. schaffst.`;
   // Regel 3 hat Vorrang: letzter Satz schwer -> keine Steigerung
   else if (lastHard && below && top - step > 0) { mode = "down"; why = `Letztes Mal ${w(top)} × ${repsList}, letzter Satz schwer und unter ${it.rmin} Wdh. Heute ${w(top - step)} (−${kgTxt(step)} kg).`; }
   else if (lastHard) { mode = "hold"; why = `Letzter Satz war schwer (${w(top)} × ${reps[reps.length - 1]}). Keine Steigerung: heute wieder ${w(top)}.`; }
@@ -1040,18 +1103,42 @@ function afterListChange(prefer) {
 }
 
 let swapPerm = false, setEdit = null;
+// Alternativen nach Eignung: 1. gleiches Muster + gleicher Muskel, 2. Muskel, 3. bevorzugt, 4. bekannt, 5. übrige
+const knownDev = id => state.history.some(h => h.exercises.some(x => x.exId === id && x.sets.some(validSet)));
+function rankAlternatives(curId, used) {
+  const cur = ex(curId), direct = [], other = [];
+  for (const e of allEx()) {
+    if (e.off || used.has(e.id) || e.id === cur.id || e.muscle !== cur.muscle) continue;
+    const same = !!cur.pattern && e.pattern === cur.pattern;
+    const rel = !same && !!cur.pattern && !!e.pattern && PATTERNS[cur.pattern].rel.includes(e.pattern);
+    const known = knownDev(e.id);
+    const score = (rel ? 50 : 0) + (e.fav ? 30 : 0) + (known ? 10 : 0);
+    let why;
+    if (same) why = `Gleiches Bewegungsmuster (${PATTERNS[e.pattern].label}), ebenfalls ${MUSCLES[e.muscle]}. Widerstandsverlauf kann sich unterscheiden.`;
+    else if (rel) why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit verwandtem Bewegungsmuster (${PATTERNS[e.pattern].label} statt ${PATTERNS[cur.pattern].label}): anderer Belastungsschwerpunkt.`;
+    else why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit anderer Bewegung${e.pattern ? " (" + PATTERNS[e.pattern].label + ")" : ""}. Keine direkte Alternative.`;
+    (same ? direct : other).push({ e, why, known, score });
+  }
+  const by = (a, b) => b.score - a.score || allEx().indexOf(a.e) - allEx().indexOf(b.e);
+  direct.sort(by); other.sort(by);
+  return { direct, other };
+}
 function swapSheet() {
   const s = S(), x = s.list[s.idx], cur = ex(x.exId);
   const used = new Set(s.list.map(l => l.exId));
-  const alts = allEx().filter(e => !e.off && !used.has(e.id) && (e.muscle === cur.muscle));
-  const more = allEx().filter(e => !e.off && !used.has(e.id) && e.muscle !== cur.muscle && e.sec.includes(cur.muscle));
-  const row = e => `<button class="li" data-a="swap" data-id="${e.id}">
-      <div style="width:40px;flex:0 0 40px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
-      <div class="grow"><div style="font-weight:600">${esc(e.name)}</div><div class="muted small">${MUSCLES[e.muscle]}${lastPerf(e.id) ? " · schon gemacht" : ""}</div></div></button>`;
-  return `<div class="row between"><h2 class="grow">Statt ${esc(cur.name)}</h2><button class="btn sm" data-a="closeSheet">Abbrechen</button></div>
+  const { direct, other } = rankAlternatives(cur.id, used);
+  const row = (a, kind) => { const e = a.e, lp = lastPerf(e.id);
+    return `<button class="li" data-a="swap" data-id="${e.id}" data-kind="${kind}">
+      <div class="grow"><div class="row wrap" style="gap:6px"><span style="font-weight:600">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
+        <div class="muted small">${esc(a.why)}</div>
+        <div class="small" style="margin-top:2px">${lp ? `Zuletzt ${kgTxt(Math.max(...lp.map(t => t.kg)))} ${unitTxt(e)}` : "Noch nie genutzt: mit kontrollierbarem Einstiegsgewicht beginnen"}</div></div></button>`; };
+  return `<div class="row between"><h2 class="grow">${esc(cur.name)} besetzt?</h2><button class="btn sm" data-a="closeSheet">Abbrechen</button></div>
     <div class="seg"><button data-a="swapMode" data-v="0" class="${swapPerm ? "" : "on"}">Nur heute</button><button data-a="swapMode" data-v="1" class="${swapPerm ? "on" : ""}">Auch im Plan</button></div>
-    ${alts.length ? `<div class="label">Gleicher Muskel: ${MUSCLES[cur.muscle]}</div><div class="list">${alts.map(row).join("")}</div>` : `<p class="muted">Kein anderes Gerät für ${MUSCLES[cur.muscle]}.</p>`}
-    ${more.length ? `<div class="label">Trainiert ${MUSCLES[cur.muscle]} mit</div><div class="list">${more.map(row).join("")}</div>` : ""}`;
+    <div class="label">Direkte Alternative${cur.pattern ? " · " + PATTERNS[cur.pattern].label : ""}</div>
+    ${direct.length ? `<div class="list" id="swapDirect">${direct.map(a => row(a, "direct")).join("")}</div>`
+      : `<p class="muted small" id="swapNoDirect">Für ${cur.pattern ? "„" + PATTERNS[cur.pattern].label + "“" : "dieses Gerät"} gibt es in deinem Studio keine direkte Alternative.</p>`}
+    ${other.length ? `<div class="label">Andere Übung für ${MUSCLES[cur.muscle]}</div><div class="list" id="swapOther">${other.map(a => row(a, "other")).join("")}</div>` : ""}
+    ${!direct.length && !other.length ? `<p class="muted small">Kein anderes verfügbares Gerät für ${MUSCLES[cur.muscle]}. Überspringe die Übung über „Übungen“.</p>` : ""}`;
 }
 function setSheet() {
   const ms = (k, l, v) => `<div><label>${l}</label><div class="mini-step"><button data-a="setAdj" data-k="${k}" data-d="-1" aria-label="${l} weniger">−</button>
@@ -1257,7 +1344,9 @@ const A = {
   tab: el => go(el.dataset.v),
   closeSheet: (el, ev) => { if (ev.target === el || el.tagName === "BUTTON") closeSheet(); },
   setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
-  createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null; save(); go("home"); },
+  createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null; save(); go("home");
+    if (state.plan.gaps.length) openSheet(`<h2>Plan erstellt</h2>${gapList(state.plan.gaps)}<button class="btn primary block" data-a="closeSheet">Verstanden</button>`); },
+  gapsDone: () => { state.plan.gaps = []; save(); render(); },
   calMonth: el => { calOffset += +el.dataset.d; vHistory(); },
   exportData: () => {
     const { session, ...rest } = state;
@@ -1318,17 +1407,17 @@ const A = {
   devsDone: () => { closeSheet(); render(); },
   devFilt: el => { devFilter = el.dataset.k; openSheet(devListHtml()); },
   editDev: el => { const e = ex(el.dataset.id); devRet = el.dataset.ret || "list";
-    devDraft = { id: e.id, name: e.name, muscle: e.muscle, sec: e.sec.slice(), type: e.type, load: e.load, step: e.step, off: !!e.off, note: state.notes[e.id] || "" };
+    devDraft = { id: e.id, name: e.name, muscle: e.muscle, sec: e.sec.slice(), type: e.type, load: e.load, step: e.step, off: !!e.off, fav: !!e.fav, pattern: e.pattern, note: state.notes[e.id] || "" };
     openSheet(devSheetHtml()); },
   newDev: el => { devRet = el.dataset.ret || "list";
     devDraft = { id: "c-" + uid(), _new: true, name: devRet === "pick" ? pickQuery : "", muscle: devRet === "pick" && pickFilter !== "alle" ? pickFilter : "brust",
-      sec: [], type: "plate", load: "total", step: 5, off: false, note: "" };
+      sec: [], type: "plate", load: "total", step: 5, off: false, fav: false, pattern: null, note: "" };
     openSheet(devSheetHtml()); },
   devSec: el => { const k = el.dataset.k, s = devDraft.sec; devDraft.sec = s.includes(k) ? s.filter(m => m !== k) : s.concat(k);
     $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + devSheetHtml(); },
   devSet: el => { const k = el.dataset.k, v = el.dataset.v;
     if ((k === "type" || k === "load") && unitLocked(devDraft.id)) return;
-    devDraft[k] = k === "step" ? +v : k === "off" ? v === "true" : v;
+    devDraft[k] = k === "step" ? +v : (k === "off" || k === "fav") ? v === "true" : v;
     if (k === "type" && v === "stack") devDraft.load = "total";
     $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + devSheetHtml(); },
   devSave: () => { const d = devDraft, name = (d.name || "").trim();
@@ -1336,10 +1425,10 @@ const A = {
     const sec = d.sec.filter(m => m !== d.muscle);
     if (d.id.startsWith("c-")) {
       const c = state.custom.find(x => x.id === d.id);
-      if (c) Object.assign(c, { name, muscle: d.muscle, sec, type: d.type }); else state.custom.push({ id: d.id, name, muscle: d.muscle, sec, type: d.type });
+      if (c) Object.assign(c, { name, muscle: d.muscle, sec, type: d.type, pattern: d.pattern || null }); else state.custom.push({ id: d.id, name, muscle: d.muscle, sec, type: d.type, pattern: d.pattern || null });
     }
     const oldU = unitOf(ex(d.id));
-    state.dev[d.id] = { name, muscle: d.muscle, sec, type: d.type, load: d.type === "stack" ? "total" : d.load, step: d.step, off: d.off };
+    state.dev[d.id] = Object.assign({ name, muscle: d.muscle, sec, type: d.type, load: d.type === "stack" ? "total" : d.load, step: d.step, off: d.off }, d.fav ? { fav: true } : {});
     // Laufendes Training: noch nicht begonnene Übungen dieses Geräts mit neuer Einstellung neu berechnen
     const ses = state.session;
     if (ses) ses.list = ses.list.map(x => x.exId === d.id && !x.sets.some(t => t.done) && unitOf(ex(d.id)) !== oldU
@@ -1397,7 +1486,7 @@ const A = {
   swapMode: el => { swapPerm = el.dataset.v === "1"; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + swapSheet(); },
   swap: el => {
     const s = S(), x = s.list[s.idx], newId = el.dataset.id;
-    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest });
+    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest }, { from: ex(x.exId).name });
     s.list[s.idx] = entry;
     if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
     save(); closeSheet(); render();
@@ -1427,6 +1516,7 @@ document.addEventListener("input", ev => {
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "devName") devDraft.name = el.value;
   else if (k === "devMuscle") devDraft.muscle = el.value;
+  else if (k === "devPattern") devDraft.pattern = PATTERNS[el.value] ? el.value : null;
   else if (k === "devNote") devDraft.note = el.value;
   else if (k === "note") { const v = el.value.trim(); if (v) state.notes[el.dataset.ex] = v; else delete state.notes[el.dataset.ex]; save(); }
   else if (k === "kg" || k === "reps") {
@@ -1442,7 +1532,7 @@ document.addEventListener("input", ev => {
 document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeSheet(); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, unitOf, unitTxt, lastPerf, validSet, setError, get state() { return state; } };
+if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
