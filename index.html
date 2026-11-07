@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111418">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Training">
+<link rel="manifest" href="manifest.json">
+<title>Trainingsplan</title>
+<style>
+  :root{--bg:#111418;--card:#1b2026;--line:#2a3039;--text:#f2f4f7;--muted:#8b93a1;--accent:#ff7a1a;--ok:#2fbf71;--danger:#e5484d}
+  @media (prefers-color-scheme: light){:root{--bg:#f4f5f7;--card:#fff;--line:#e2e5ea;--text:#14171c;--muted:#6b7280;--accent:#e8640c;--ok:#1e9e5a;--danger:#d62f35}}
+  :root[data-theme="dark"]{--bg:#111418;--card:#1b2026;--line:#2a3039;--text:#f2f4f7;--muted:#8b93a1;--accent:#ff7a1a;--ok:#2fbf71;--danger:#e5484d}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{min-height:100vh;padding:16px;padding-bottom:110px}
+  h1{font-size:22px;margin:4px 0 16px}
+  h2{font-size:17px;margin:0 0 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  .muted{color:var(--muted);font-size:14px}
+  button{font:inherit;border:0;border-radius:12px;padding:12px 16px;cursor:pointer;background:var(--card);color:var(--text);border:1px solid var(--line)}
+  button.primary{background:var(--accent);color:#fff;border-color:transparent;font-weight:600}
+  button.ok{background:var(--ok);color:#fff;border-color:transparent;font-weight:600}
+  button.danger{color:var(--danger)}
+  button.big{width:100%;padding:18px;font-size:19px}
+  button.small{padding:8px 12px;font-size:14px}
+  input,select{font:inherit;width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  .row{display:flex;gap:8px;align-items:center}
+  .row>*{flex:1}
+  .row>.shrink{flex:0 0 auto}
+  .list-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .list-item:first-child{border-top:0}
+  .pill{display:inline-block;font-size:12px;padding:3px 8px;border-radius:999px;background:var(--line);color:var(--muted)}
+  .done{opacity:.45;text-decoration:line-through}
+  nav.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+  nav.bottom button{flex:1;border:0;background:transparent;padding:10px}
+  nav.bottom button.active{color:var(--accent);font-weight:600}
+  .big-num{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .timer{font-size:64px;font-weight:700;font-variant-numeric:tabular-nums;text-align:center;margin:8px 0}
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepper input{text-align:center;font-size:18px;font-weight:600}
+  .stepper button{width:48px;padding:12px 0;font-size:20px}
+  .hidden{display:none!important}
+  .center{text-align:center}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<nav class="bottom">
+  <button id="nav-home" data-view="home">Heute</button>
+  <button id="nav-plan" data-view="plan">Plan</button>
+</nav>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Speicher ----------
+  const KEY = "trainingsplan-v1";
+  const DEFAULT_STATE = { days: [], history: [], activeDayId: null };
+  let state = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? Object.assign({}, DEFAULT_STATE, JSON.parse(raw)) : structuredClone(DEFAULT_STATE);
+    } catch (e) { return structuredClone(DEFAULT_STATE); }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  // Hammer-Strength-Übungen als Vorschläge
+  const EXERCISES = [
+    "Iso-Lateral Chest Press", "Iso-Lateral Incline Press", "Iso-Lateral Row",
+    "Iso-Lateral Lat Pulldown", "Iso-Lateral Shoulder Press", "Iso-Lateral Low Row",
+    "Leg Press", "Hack Squat", "Iso-Lateral Leg Extension", "Seated Leg Curl",
+    "Hip Thrust", "Standing Calf Raise", "Bicep Curl", "Triceps Extension",
+    "Bankdrücken", "Kniebeuge", "Kreuzheben", "Rumänisches Kreuzheben"
+  ];
+
+  // ---------- Hilfen ----------
+  const $app = document.getElementById("app");
+  let view = "home";
+  let session = null; // laufendes Training
+  let timerId = null;
+
+  function fmtKg(v) {
+    if (v === null || v === undefined || v === "") return "–";
+    const n = Number(v);
+    return (Number.isInteger(n) ? n : n.toFixed(1).replace(".", ",")) + " kg";
+  }
+  function fmtTime(sec) {
+    sec = Math.max(0, Math.round(sec));
+    return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+  }
+  function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function activeDay() {
+    return state.days.find(d => d.id === state.activeDayId) || state.days[0] || null;
+  }
+  function lastWeight(exerciseName) {
+    for (let i = state.history.length - 1; i >= 0; i--) {
+      const h = state.history[i];
+      const ex = h.exercises.find(e => e.name.toLowerCase() === exerciseName.toLowerCase());
+      if (ex) {
+        const withW = ex.sets.filter(s => s.kg !== null && s.kg !== "");
+        if (withW.length) return withW[withW.length - 1].kg;
+      }
+    }
+    return null;
+  }
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; g.gain.value = 0.2;
+      o.start(); o.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  }
+  let wakeLock = null;
+  async function keepAwake(on) {
+    try {
+      if (on && "wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen");
+      else if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+    } catch (e) {}
+  }
+
+  // ---------- Navigation ----------
+  function setView(v) {
+    if (session && v !== "train") { /* Training läuft im Hintergrund weiter */ }
+    view = v;
+    document.querySelectorAll("nav.bottom button").forEach(b =>
+      b.classList.toggle("active", b.dataset.view === v || (v === "train" && b.dataset.view === "home")));
+    document.querySelector("nav.bottom").classList.toggle("hidden", v === "train");
+    render();
+  }
+  document.querySelectorAll("nav.bottom button").forEach(b =>
+    b.addEventListener("click", () => setView(b.dataset.view)));
+
+  // ---------- Ansichten ----------
+  function render() {
+    if (view === "home") return renderHome();
+    if (view === "plan") return renderPlan();
+    if (view === "train") return renderTrain();
+    if (view === "editDay") return renderEditDay();
+  }
+
+  // HEUTE
+  function renderHome() {
+    const day = activeDay();
+    if (!state.days.length) {
+      $app.innerHTML = `
+        <h1>Trainingsplan</h1>
+        <div class="card">
+          <h2>Noch kein Plan</h2>
+          <p class="muted">Lege zuerst deine Trainingstage an, z. B. „Brust & Trizeps“ oder „Beine“.</p>
+          <button class="primary big" id="goPlan">Plan erstellen</button>
+        </div>`;
+      document.getElementById("goPlan").onclick = () => setView("plan");
+      return;
+    }
+    const days = state.days.map(d => `
+      <button class="${d.id === day.id ? "primary" : ""} small" data-day="${d.id}">${esc(d.name)}</button>`).join(" ");
+    $app.innerHTML = `
+      <h1>Heute</h1>
+      <div class="card">
+        <div class="row" style="flex-wrap:wrap">${days}</div>
+      </div>
+      <div class="card">
+        <h2>${esc(day.name)}</h2>
+        ${day.exercises.length ? day.exercises.map(e => `
+          <div class="list-item">
+            <div>
+              <div>${esc(e.name)}</div>
+              <div class="muted">${e.sets} × ${e.reps} · ${e.kg ? fmtKg(e.kg) : "Gewicht offen"}</div>
+            </div>
+            <span class="pill">${e.rest}s Pause</span>
+          </div>`).join("") : `<p class="muted">Noch keine Übungen. Im Plan hinzufügen.</p>`}
+      </div>
+      <button class="ok big" id="start" ${day.exercises.length ? "" : "disabled"}>▶ Start</button>`;
+    document.querySelectorAll("[data-day]").forEach(b => b.onclick = () => {
+      state.activeDayId = b.dataset.day; save(); renderHome();
+    });
+    document.getElementById("start").onclick = () => startTraining(day);
+  }
+
+  // PLAN
+  function renderPlan() {
+    $app.innerHTML = `
+      <h1>Plan</h1>
+      ${state.days.map(d => `
+        <div class="card">
+          <div class="row">
+            <h2 style="margin:0">${esc(d.name)}</h2>
+            <button class="small shrink" data-edit="${d.id}">Bearbeiten</button>
+          </div>
+          <div class="muted" style="margin-top:6px">${d.exercises.length} Übungen</div>
+        </div>`).join("")}
+      <button class="primary big" id="addDay">+ Trainingstag hinzufügen</button>`;
+    document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => {
+      state.activeDayId = b.dataset.edit; save(); setView("editDay");
+    });
+    document.getElementById("addDay").onclick = () => {
+      const name = prompt("Name des Trainingstags, z. B. „Push“:");
+      if (!name || !name.trim()) return;
+      const d = { id: uid(), name: name.trim(), exercises: [] };
+      state.days.push(d); state.activeDayId = d.id; save();
+      setView("editDay");
+    };
+  }
+
+  // PLAN BEARBEITEN
+  function renderEditDay() {
+    const day = activeDay();
+    if (!day) return setView("plan");
+    $app.innerHTML = `
+      <div class="row" style="margin-bottom:8px">
+        <button class="small shrink" id="back">← Zurück</button>
+        <button class="small shrink danger" id="delDay">Tag löschen</button>
+      </div>
+      <h1>${esc(day.name)}</h1>
+      <div class="card">
+        ${day.exercises.map((e, i) => `
+          <div class="list-item">
+            <div>
+              <div>${esc(e.name)}</div>
+              <div class="muted">${e.sets} × ${e.reps} · ${e.kg ? fmtKg(e.kg) : "kein Ziel-Gewicht"} · ${e.rest}s</div>
+            </div>
+            <div class="row shrink" style="flex:0 0 auto">
+              <button class="small" data-ex-edit="${i}">✎</button>
+              <button class="small danger" data-ex-del="${i}">✕</button>
+            </div>
+          </div>`).join("") || `<p class="muted">Noch keine Übungen.</p>`}
+      </div>
+      <button class="primary big" id="addEx">+ Übung hinzufügen</button>`;
+    document.getElementById("back").onclick = () => setView("plan");
+    document.getElementById("delDay").onclick = () => {
+      if (!confirm(`„${day.name}“ wirklich löschen?`)) return;
+      state.days = state.days.filter(d => d.id !== day.id);
+      state.activeDayId = state.days[0]?.id || null;
+      save(); setView("plan");
+    };
+    document.querySelectorAll("[data-ex-del]").forEach(b => b.onclick = () => {
+      day.exercises.splice(+b.dataset.exDel, 1); save(); renderEditDay();
+    });
+    document.querySelectorAll("[data-ex-edit]").forEach(b => b.onclick = () => openExerciseForm(day, +b.dataset.exEdit));
+    document.getElementById("addEx").onclick = () => openExerciseForm(day, null);
+  }
+
+  function openExerciseForm(day, index) {
+    const ex = index === null ? { name: "", sets: 3, reps: 10, kg: "", rest: 90 } : day.exercises[index];
+    $app.innerHTML = `
+      <div class="row" style="margin-bottom:8px"><button class="small shrink" id="back">← Abbrechen</button></div>
+      <h1>${index === null ? "Neue Übung" : "Übung bearbeiten"}</h1>
+      <div class="card">
+        <label>Name</label>
+        <input id="name" list="exlist" value="${esc(ex.name)}" placeholder="z. B. Iso-Lateral Chest Press" autocomplete="off">
+        <datalist id="exlist">${EXERCISES.map(n => `<option value="${esc(n)}">`).join("")}</datalist>
+        <div class="row">
+          <div><label>Sätze</label><input id="sets" type="number" inputmode="numeric" min="1" value="${ex.sets}"></div>
+          <div><label>Wdh.</label><input id="reps" type="number" inputmode="numeric" min="1" value="${ex.reps}"></div>
+        </div>
+        <div class="row">
+          <div><label>Ziel-Gewicht (kg)</label><input id="kg" type="number" inputmode="decimal" step="0.5" min="0" value="${ex.kg ?? ""}" placeholder="optional"></div>
+          <div><label>Pause (Sek.)</label><input id="rest" type="number" inputmode="numeric" min="0" step="15" value="${ex.rest}"></div>
+        </div>
+      </div>
+      <button class="primary big" id="save">Speichern</button>`;
+    document.getElementById("back").onclick = () => renderEditDay();
+    document.getElementById("save").onclick = () => {
+      const name = document.getElementById("name").value.trim();
+      if (!name) { alert("Bitte einen Namen eingeben."); return; }
+      const data = {
+        id: ex.id || uid(),
+        name,
+        sets: Math.max(1, +document.getElementById("sets").value || 1),
+        reps: Math.max(1, +document.getElementById("reps").value || 1),
+        kg: document.getElementById("kg").value === "" ? null : +document.getElementById("kg").value.replace(",", "."),
+        rest: Math.max(0, +document.getElementById("rest").value || 0)
+      };
+      if (index === null) day.exercises.push(data); else day.exercises[index] = data;
+      save(); setView("editDay");
+    };
+  }
+
+  // ---------- Training ----------
+  function startTraining(day) {
+    const exercises = day.exercises.map(e => ({
+      id: e.id, name: e.name, reps: e.reps, rest: e.rest, targetKg: e.kg,
+      sets: Array.from({ length: e.sets }, () => ({ kg: e.kg ?? lastWeight(e.name), reps: e.reps, done: false }))
+    }));
+    session = {
+      dayId: day.id, dayName: day.name, startedAt: Date.now(),
+      exercises, cur: 0, phase: "set", // set | rest
+      restEnd: 0, restTotal: 0
+    };
+    keepAwake(true);
+    setView("train");
+    startTick();
+  }
+
+  function currentSetIndex(ex) { return ex.sets.findIndex(s => !s.done); }
+
+  function nextSet() {
+    // nächsten offenen Satz finden, Übung zyklisch durchgehen
+    const n = session.exercises.length;
+    for (let step = 0; step < n; step++) {
+      const i = (session.cur + step) % n;
+      const si = currentSetIndex(session.exercises[i]);
+      if (si !== -1) { session.cur = i; return true; }
+    }
+    return false;
+  }
+
+  function finishSet() {
+    const ex = session.exercises[session.cur];
+    const si = currentSetIndex(ex);
+    if (si === -1) return;
+    ex.sets[si].done = true;
+    // Letzter Satz des Trainings: direkt beenden, keine Pause
+    const allDone = session.exercises.every(e => e.sets.every(s => s.done));
+    if (allDone) return finishTraining();
+    // Pause, danach wechselt die App zur nächsten Übung mit offenen Sätzen
+    session.phase = "rest";
+    session.restTotal = ex.rest || 0;
+    session.restEnd = Date.now() + session.restTotal * 1000;
+    session.pendingAdvance = true;
+    if (!session.restTotal) return skipRest();
+    beep();
+    render();
+  }
+
+  function skipRest() {
+    session.phase = "set";
+    session.restEnd = 0;
+    if (session.pendingAdvance) {
+      session.pendingAdvance = false;
+      // Zur nächsten Übung mit offenen Sätzen wechseln (Kreislauf)
+      const n = session.exercises.length;
+      for (let step = 1; step <= n; step++) {
+        const i = (session.cur + step) % n;
+        if (session.exercises[i].sets.some(s => !s.done)) { session.cur = i; break; }
+      }
+    }
+    render();
+  }
+
+  function finishTraining() {
+    stopTick();
+    keepAwake(false);
+    const record = {
+      id: uid(), day: session.dayName, date: new Date().toISOString(),
+      durationMin: Math.round((Date.now() - session.startedAt) / 60000),
+      exercises: session.exercises.map(e => ({
+        name: e.name,
+        sets: e.sets.map(s => ({ kg: s.kg === "" ? null : s.kg, reps: s.reps }))
+      }))
+    };
+    state.history.push(record);
+    save();
+    session = null;
+    beep();
+    setView("home");
+    alert(`Training beendet – ${record.durationMin} Min. Gut gemacht!`);
+  }
+
+  function cancelTraining() {
+    if (!confirm("Training abbrechen? Der Fortschritt wird nicht gespeichert.")) return;
+    stopTick(); keepAwake(false); session = null; setView("home");
+  }
+
+  function renderTrain() {
+    if (!session) return setView("home");
+    const ex = session.exercises[session.cur];
+    const si = currentSetIndex(ex);
+    const total = session.exercises.reduce((a, e) => a + e.sets.length, 0);
+    const doneCount = session.exercises.reduce((a, e) => a + e.sets.filter(s => s.done).length, 0);
+    const pct = Math.round(doneCount / total * 100);
+    const resting = session.phase === "rest";
+    const setNo = si === -1 ? ex.sets.length : si + 1;
+    const set = ex.sets[si === -1 ? ex.sets.length - 1 : si];
+    const nextEx = session.exercises.find((e, i) => i !== session.cur && e.sets.some(s => !s.done));
+
+    let body;
+    if (resting) {
+      const remaining = Math.max(0, (session.restEnd - Date.now()) / 1000);
+      body = `
+        <div class="card center">
+          <div class="muted">Pause</div>
+          <div class="timer" id="timer">${fmtTime(remaining)}</div>
+          <div class="row">
+            <button class="shrink" id="minus">−15 s</button>
+            <button class="shrink" id="plus">+15 s</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="muted">Als Nächstes</div>
+          <h2>${esc(ex.name)}</h2>
+          <div class="muted">Satz ${setNo} von ${ex.sets.length} · ${ex.reps} Wdh. · ${fmtKg(set.kg)}</div>
+        </div>
+        <button class="ok big" id="skip">Weiter →</button>`;
+    } else if (si === -1) {
+      body = `<div class="card center"><h2>Alle Sätze erledigt</h2></div>
+        <button class="ok big" id="finish">Training beenden</button>`;
+    } else {
+      body = `
+        <div class="card">
+          <div class="muted">${esc(session.dayName)} · Übung ${session.cur + 1} von ${session.exercises.length}</div>
+          <h1 style="margin:6px 0 12px">${esc(ex.name)}</h1>
+          <div class="row" style="align-items:flex-end">
+            <div><div class="muted">Satz</div><div class="big-num">${setNo}<span class="muted" style="font-size:24px"> / ${ex.sets.length}</span></div></div>
+            <div><div class="muted">Ziel</div><div class="big-num" style="font-size:36px">${ex.reps} Wdh.</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <label style="margin-top:0">Gewicht (kg)</label>
+          <div class="stepper">
+            <button id="kgMinus">−</button>
+            <input id="kg" type="number" inputmode="decimal" step="0.5" value="${set.kg ?? ""}" placeholder="kg">
+            <button id="kgPlus">+</button>
+          </div>
+          <div class="muted" style="margin-top:8px">Letztes Mal: ${fmtKg(lastWeight(ex.name))}</div>
+        </div>
+        <button class="ok big" id="doneSet">✓ Satz fertig</button>
+        ${nextEx ? `<p class="muted center" style="margin-top:12px">Danach: ${esc(nextEx.name)}</p>` : ""}`;
+    }
+
+    $app.innerHTML = `
+      <div class="row" style="margin-bottom:10px">
+        <button class="small shrink" id="cancel">Abbrechen</button>
+        <div class="muted center" style="flex:1">${doneCount}/${total} Sätze · ${pct}%</div>
+        <div class="shrink muted" id="elapsed">${fmtTime((Date.now() - session.startedAt) / 1000)}</div>
+      </div>
+      <div style="height:6px;background:var(--line);border-radius:6px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--ok)"></div>
+      </div>
+      ${body}`;
+
+    const $kg = document.getElementById("kg");
+    document.getElementById("cancel").onclick = cancelTraining;
+    if (resting) {
+      document.getElementById("skip").onclick = () => skipRest();
+      document.getElementById("minus").onclick = () => { session.restEnd -= 15000; render(); };
+      document.getElementById("plus").onclick = () => { session.restEnd += 15000; render(); };
+    } else if (si === -1) {
+      document.getElementById("finish").onclick = finishTraining;
+    } else {
+      const setKg = v => { set.kg = v; save(); };
+      $kg.oninput = () => setKg($kg.value === "" ? null : +$kg.value.replace(",", "."));
+      document.getElementById("kgMinus").onclick = () => { const v = Math.max(0, (+$kg.value || 0) - 2.5); $kg.value = v; setKg(v); };
+      document.getElementById("kgPlus").onclick = () => { const v = (+$kg.value || 0) + 2.5; $kg.value = v; setKg(v); };
+      document.getElementById("doneSet").onclick = () => { set.kg = $kg.value === "" ? null : +$kg.value.replace(",", "."); finishSet(); };
+    }
+  }
+
+  function startTick() {
+    stopTick();
+    timerId = setInterval(() => {
+      if (!session) return stopTick();
+      if (session.phase === "rest") {
+        const left = (session.restEnd - Date.now()) / 1000;
+        const t = document.getElementById("timer");
+        if (left <= 0) { skipRest(); return; }
+        if (t) t.textContent = fmtTime(left);
+      }
+      const el = document.getElementById("elapsed");
+      if (el) el.textContent = fmtTime((Date.now() - session.startedAt) / 1000);
+    }, 500);
+  }
+  function stopTick() { if (timerId) clearInterval(timerId); timerId = null; }
+
+  // ---------- Start ----------
+  if (!state.activeDayId && state.days[0]) state.activeDayId = state.days[0].id;
+  setView("home");
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>
