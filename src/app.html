@@ -60,7 +60,7 @@
   .cap{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
   .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
   .title{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;letter-spacing:.005em;margin:var(--s1) 0 0;text-wrap:balance}
-  .hero-name{font-family:var(--display);font-weight:800;font-size:48px;line-height:.95;margin:0;text-wrap:balance}
+  .hero-name{font-family:var(--display);font-weight:800;font-size:clamp(34px, 11vw, 48px);line-height:.95;margin:0;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
   h1{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.02;margin:0;text-wrap:balance}
   h2{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.1;margin:0;text-wrap:balance}
   h3{font-size:17px;font-weight:600;margin:0;line-height:1.3}
@@ -165,8 +165,8 @@
 
   /* ---------- Heute ---------- */
   .hero{display:grid;gap:var(--s5)}
-  .hero-top{display:grid;grid-template-columns:1fr 128px;gap:var(--s4);align-items:center}
-  .hero-meta{display:grid;gap:var(--s2)}
+  .hero-top{display:grid;grid-template-columns:minmax(0,1fr) clamp(96px, 30vw, 128px);gap:var(--s4);align-items:center}
+  .hero-meta{display:grid;gap:var(--s2);min-width:0}
   .metaline{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:15px;color:var(--text-2)}
   .metaline b{color:var(--text);font-weight:600}
   .week{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2);text-align:center}
@@ -211,6 +211,11 @@
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
   .lastline{font-size:14px;color:var(--text-3)}
+  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:32px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
+  .timebtn b{color:var(--text);font-weight:600}
+  .timebtn .chev{font-size:16px;margin-left:2px}
+  .facts{margin:0;padding-left:18px;display:grid;gap:4px;font-size:15px}
+  .facts b{font-family:var(--display);font-size:18px}
 
   /* Pause */
   .rest{display:grid;justify-items:center;gap:var(--s4);padding-top:var(--s2)}
@@ -422,7 +427,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 4, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {} }; }
+function blank() { return { v: 5, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -481,7 +486,7 @@ function normalize(raw) {
   s.history = Array.isArray(raw.history) ? raw.history.filter(h => isObj(h) && Array.isArray(h.exercises)).map(h => ({
     id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: String(h.day || "Training"),
     date: isNaN(new Date(h.date)) ? new Date().toISOString() : new Date(h.date).toISOString(),
-    durationSec: clampInt(h.durationSec, 0, 86400, 0),
+    durationSec: clampInt(h.durationSec, 0, 86400, 0), adj: +h.adj > 0 ? clampInt(h.adj, 1, 300, 30) : undefined,
     exercises: h.exercises.filter(x => isObj(x) && x.exId).map(x => ({
       exId: String(x.exId), name: String(x.name || devFrom(s, String(x.exId)).name),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
@@ -494,13 +499,30 @@ function normalize(raw) {
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
-      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })) }));
+      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
+      trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [] }));
+    const hiddenRaw = Array.isArray(r.timeHidden) ? r.timeHidden : [];
+    const timeHidden = hiddenRaw.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
+      key: String(x.key || uid()), itemId: x.itemId ? String(x.itemId) : null, exId: String(x.exId),
+      rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
+      u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
+      mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
+      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [] }));
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
-      paused: +r.paused || null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list };
+      paused: +r.paused || null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
+      timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null };
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
+  // Zeitanpassung nur für das nächste Training (der Plan selbst bleibt unverändert)
+  if (isObj(raw.timeplan) && raw.timeplan.dayId && isObj(raw.timeplan.keep)) {
+    const tp = raw.timeplan, keep = {}, replace = {};
+    for (const [k, v] of Object.entries(tp.keep)) keep[String(k)] = clampInt(v, 0, 10, 0);
+    if (isObj(tp.replace)) for (const [k, v] of Object.entries(tp.replace)) if (typeof v === "string") replace[String(k)] = v;
+    s.timeplan = { dayId: String(tp.dayId), date: String(tp.date || ""), minutes: clampInt(tp.minutes, 5, 300, 30), keep, replace,
+      ex: clampInt(tp.ex, 0, 50, 0), sets: clampInt(tp.sets, 0, 200, 0), est: clampInt(tp.est, 0, 300, 0) };
+  }
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   return s;
 }
@@ -569,8 +591,9 @@ function generatePlan(goal, days, level, minutes) {
       rmin: g.rmin, rmax: g.rmax, rest: i < 2 ? g.rest : Math.max(60, g.rest - 30) }));
     const day = { id: uid(), name, items };
     // An die gewünschte Trainingszeit anpassen: erst Übungen am Ende kürzen, dann Sätze
-    while (minutes && estMinutes(day) > minutes && items.length > 3) items.pop();
-    for (let i = items.length - 1; minutes && estMinutes(day) > minutes && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
+    const over = () => minutes && estimateSec(day.items) / 60 > minutes;
+    while (over() && items.length > 3) items.pop();
+    for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
     return day;
   }) };
   plan.gaps = gaps;
@@ -607,8 +630,162 @@ function bestKg(exId, u = unitOf(ex(exId))) {
     if (e.exId === exId && e.u === u) for (const s of e.sets) if (validSet(s) && (best === null || s.kg > best)) best = s.kg;
   return best;
 }
-function estMinutes(day) {
-  return Math.round(day.items.reduce((a, it) => a + it.sets * (40 + it.rest), 0) / 60);
+/* ================= Trainingsdauer ================= */
+// Annahmen (bewusst einfach und nachvollziehbar):
+// - Satzdauer: 15 s Vorbereitung + 3,5 s je Wiederholung (Mitte des Wiederholungsbereichs)
+// - Pause zwischen Sätzen derselben Übung: Pausenzeit aus dem Plan (wird nie automatisch gekürzt)
+// - Wechsel zur nächsten Übung (inkl. Erholung und Geräteeinstellung): 2 Minuten
+// - Aufwärmen vor dem ersten Satz der Einheit: 2 Minuten (ein lockerer Satz)
+// - Keine Pause nach dem letzten Satz einer Einheit
+const TIME = { setBase: 15, perRep: 3.5, change: 120, warm: 120 };
+const setSec = it => TIME.setBase + TIME.perRep * ((it.rmin + it.rmax) / 2);
+const blockSec = (it, n) => n > 0 ? n * setSec(it) + (n - 1) * it.rest : 0;
+// items: [{sets, rmin, rmax, rest}] in Reihenfolge
+function estimateSec(items, opts = {}) {
+  const act = items.filter(it => it.sets > 0);
+  if (!act.length) return 0;
+  let sec = opts.warm === false ? 0 : TIME.warm;
+  act.forEach((it, i) => { sec += blockSec(it, it.sets) + (i ? TIME.change : 0); });
+  return sec;
+}
+const roundMin = sec => Math.max(5, Math.round(sec / 300) * 5);
+function estMinutes(day) { return roundMin(estimateSec(day.items)); }
+
+// Restdauer einer laufenden Einheit (aktuelle Übung zuerst, dann offene Übungen in Listenreihenfolge)
+function remainingSec(s, list = s.list, idx = s.idx) {
+  const open = l => l.sets.filter(t => !t.done).length;
+  const anyDone = list.some(l => l.sets.some(t => t.done));
+  const order = list.map((l, i) => i).filter(i => open(list[i]) > 0);
+  if (!order.length) return 0;
+  const first = order.includes(idx) ? idx : order[0];
+  const seq = [first, ...order.filter(i => i !== first)];
+  let sec = anyDone ? 0 : TIME.warm;
+  if (s.phase === "rest" && !s.paused) sec += Math.max(0, (s.restEnd - Date.now()) / 1000);
+  seq.forEach((i, k) => {
+    const l = list[i], n = open(l);
+    sec += blockSec(l, n) + (k ? TIME.change : 0);
+  });
+  return sec;
+}
+
+// Priorisierung für die Zeitanpassung (nicht blind vom Ende streichen)
+const COMPOUND = new Set(["push_h", "push_i", "push_v", "pull_h", "pull_v", "squat", "hinge", "dip"]);
+// cands: [{key, exId, rmin, rmax, rest, done, open, planned, order, isCurrent}]
+// budget: Sekunden; opts: {warm, restLeft, minSets}
+function fitToTime(cands, budget, opts = {}) {
+  const C = cands.map(c => Object.assign({}, c, { keep: c.open, drop: false }));
+  const n = C.length || 1;
+  // Schwerpunkt des Tages: Muskel mit dem größten Satzanteil (nur wenn deutlich, ab 45 %)
+  const share = {}; let tot = 0;
+  C.forEach(c => { const m = ex(c.exId).muscle; share[m] = (share[m] || 0) + c.planned; tot += c.planned; });
+  const top = Object.entries(share).sort((a, b) => b[1] - a[1])[0];
+  const focus = top && tot && top[1] / tot >= 0.45 ? top[0] : null;
+  C.forEach(c => { const e = ex(c.exId);
+    c.prio = (COMPOUND.has(e.pattern) ? 30 : 0) + 20 * (1 - c.order / n) + (e.muscle === focus ? 15 : 0) + (e.fav ? 5 : 0) + (c.isCurrent ? 40 : 0) + (c.done ? 100 : 0);
+    c.locked = c.done > 0 || c.isCurrent; });
+  const sel = () => C.filter(c => !c.drop && c.done + c.keep > 0);
+  const est = () => {
+    const act = C.filter(c => !c.drop && c.keep > 0);
+    if (!act.length) return 0;
+    let sec = opts.warm === false ? 0 : TIME.warm;
+    sec += opts.restLeft || 0;
+    const cur = act.find(c => c.isCurrent), seq = cur ? [cur, ...act.filter(c => c !== cur)] : act;
+    seq.forEach((c, i) => { sec += blockSec(c, c.keep) + (i ? TIME.change : 0); });
+    return sec;
+  };
+  const openSets = () => C.filter(c => !c.drop).reduce((a, c) => a + c.keep, 0);
+  const minSets = Math.min(opts.minSets || 4, C.reduce((a, c) => a + c.open, 0));
+  const fits = () => est() <= budget;
+  // Redundant (verzichtbar), wenn der Hauptmuskel weiter abgedeckt bleibt:
+  // - gleiches Bewegungsmuster ist schon gewählt (doppelte Bewegung), oder
+  // - Grundübung: nur, wenn eine andere Grundübung denselben Muskel trainiert (nie wegen einer Isolationsübung), oder
+  // - Isolationsübung: wenn der Muskel anderweitig trainiert wird – außer beim Schwerpunkt-Muskel des Tages.
+  const redundant = c => { const e = ex(c.exId);
+    const others = sel().filter(o => o !== c && ex(o.exId).muscle === e.muscle);
+    if (!others.length) return false;
+    if (others.some(o => ex(o.exId).pattern === e.pattern)) return true;
+    if (COMPOUND.has(e.pattern)) return others.some(o => COMPOUND.has(ex(o.exId).pattern));
+    return e.muscle !== focus; };
+  const byLow = arr => arr.slice().sort((a, b) => a.prio - b.prio);
+  const steps = [
+    // 1. Mehr als 3 offene Sätze auf 3 reduzieren
+    () => byLow(C.filter(c => !c.drop && c.keep > 3)).forEach(c => { while (!fits() && c.keep > 3 && openSets() > minSets) c.keep--; }),
+    // 2. Redundante Übungen ohne erledigte Sätze weglassen
+    () => { for (const c of byLow(C.filter(c => !c.drop && !c.locked))) { if (fits()) return; if (redundant(c) && openSets() - c.keep >= minSets) c.drop = true; } },
+    // 3. Offene Sätze auf 2 reduzieren
+    () => byLow(C.filter(c => !c.drop && !c.locked && c.keep > 2)).forEach(c => { while (!fits() && c.keep > 2 && openSets() > minSets) c.keep--; }),
+    // 4. Weitere Übungen weglassen (niedrigste Priorität zuerst)
+    () => { for (const c of byLow(C.filter(c => !c.drop && !c.locked))) { if (fits()) return; if (openSets() - c.keep >= minSets) c.drop = true; } },
+    // 5. Begonnene Übungen kürzen (aktuelle Übung behält mindestens einen offenen Satz)
+    () => byLow(C.filter(c => !c.drop && c.locked)).forEach(c => { const min = c.isCurrent && c.open > 0 ? 1 : 0; while (!fits() && c.keep > min && openSets() > minSets) c.keep--; })
+  ];
+  for (const st of steps) { if (fits()) break; st(); }
+  const ok = fits();
+  const muscles = list => [...new Set(list.map(c => ex(c.exId).muscle))];
+  const before = muscles(C.filter(c => c.planned > 0)), after = muscles(sel());
+  return {
+    fits: ok, estSec: est(), budget,
+    minMinutes: ok ? null : Math.ceil(est() / 300) * 5,
+    keep: Object.fromEntries(C.map(c => [c.key, c.drop ? 0 : c.keep])),
+    dropped: C.filter(c => c.drop || (c.keep === 0 && c.done === 0 && c.open > 0)).map(c => ({ key: c.key, exId: c.exId, sets: c.open })),
+    trimmed: C.filter(c => !c.drop && c.keep < c.open && c.keep + c.done > 0).map(c => ({ key: c.key, exId: c.exId, from: c.open, to: c.keep })),
+    kept: muscles(sel()), lost: before.filter(m => !after.includes(m)), focus,
+    exCount: sel().length, setCount: sel().reduce((a, c) => a + c.done + c.keep, 0)
+  };
+}
+
+// Vorschau vor dem Start: Tagesplan für eine Zielzeit anpassen (Plan bleibt unverändert)
+function previewDay(day, minutes) {
+  const used = new Set(), replace = {}, unavailable = [];
+  const items = day.items.map(it => {
+    let exId = it.exId;
+    if (ex(exId).off) {
+      const alt = directCands(ex(exId), new Set([...day.items.map(i => i.exId), ...used])).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
+      if (alt) { replace[it.id] = alt.id; exId = alt.id; used.add(alt.id); } else unavailable.push(it.id);
+    }
+    return Object.assign({}, it, { exId });
+  });
+  const cands = items.filter(it => !unavailable.includes(it.id)).map((it, i) => ({ key: it.id, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, done: 0, open: it.sets, planned: it.sets, order: i, isCurrent: false }));
+  const full = estimateSec(items);
+  const res = fitToTime(cands, minutes ? minutes * 60 : Infinity, { minSets: 6 });
+  res.unavailable = unavailable.map(id => day.items.find(i => i.id === id));
+  res.replace = replace;
+  res.fullMin = roundMin(full); res.fullEx = day.items.length; res.fullSets = day.items.reduce((a, i) => a + i.sets, 0);
+  return res;
+}
+// Kopie einer Sitzung mit allen zeitbedingt entfernten Übungen/Sätzen wieder eingefügt
+function restoredClone(s) {
+  const c = JSON.parse(JSON.stringify(s));
+  c.list.forEach(l => { if (l.trim && l.trim.length) { l.sets = l.sets.concat(l.trim); l.trim = []; } });
+  if (c.timeHidden && c.timeHidden.length) { c.list = c.list.concat(c.timeHidden.map(h => { h.trim = []; return h; })); c.timeHidden = []; }
+  return c;
+}
+// Vorschau während des Trainings: Restzeit in Minuten
+function previewLive(s, minutes) {
+  const c = restoredClone(s), curKey = s.list[s.idx] && s.list[s.idx].key;
+  const restLeft = s.phase === "rest" ? Math.max(0, (s.restEnd - Date.now()) / 1000) : 0;
+  const anyDone = c.list.some(l => l.sets.some(t => t.done));
+  const cands = c.list.map((l, i) => ({ key: l.key, exId: l.exId, rmin: l.rmin, rmax: l.rmax, rest: l.rest,
+    done: l.sets.filter(t => t.done).length, open: l.sets.filter(t => !t.done).length, planned: l.sets.length, order: i, isCurrent: l.key === curKey }));
+  const res = fitToTime(cands, minutes ? minutes * 60 : Infinity, { warm: !anyDone, restLeft, minSets: 4 });
+  res.doneSets = cands.reduce((a, x) => a + x.done, 0);
+  res.restorable = (s.timeHidden || []).length > 0 || s.list.some(l => (l.trim || []).length);
+  return res;
+}
+// Auswahl auf eine Sitzung anwenden: erst alles Zeitbedingte zurückholen, dann kürzen.
+// Erledigte Sätze werden nie verändert; manuell beendete Übungen kehren nicht zurück.
+function applyKeep(s, keep) {
+  const c = restoredClone(s), curKey = s.list[s.idx] && s.list[s.idx].key;
+  const list = [], hidden = [];
+  c.list.forEach(l => {
+    const k = keep[l.key] ?? l.sets.filter(t => !t.done).length;
+    const done = l.sets.filter(t => t.done), open = l.sets.filter(t => !t.done);
+    l.sets = done.concat(open.slice(0, k)); l.trim = open.slice(k);
+    if (!l.sets.length) { l.sets = open; l.trim = []; hidden.push(l); } else list.push(l);
+  });
+  s.list = list; s.timeHidden = hidden;
+  const i = list.findIndex(l => l.key === curKey);
+  s.idx = i >= 0 && list[i].sets.some(t => !t.done) ? i : Math.max(0, list.findIndex(l => l.sets.some(t => !t.done)));
 }
 function nextDay() {
   const days = state.plan?.days || [];
@@ -831,7 +1008,10 @@ function vHome() {
       <div class="hero-top">
         <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Empfohlen"}</div>
           <div class="hero-name">${esc(day.name)}</div>
-          <div class="metaline"><span><b>${day.items.length}</b> Übungen</span><span>≈ <b>${estMinutes(day)}</b> Min.</span></div>
+          ${(() => { const tp = activeTimeplan(day);
+            return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> Übungen</span>
+              <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
+              ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
         <div>${figure(workoutColors(day.items), "Muskeln in diesem Training")}</div>
       </div>
@@ -852,6 +1032,76 @@ function vHome() {
       <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
     </div>
   </div>`;
+}
+/* Zeit anpassen */
+let timeSel = null;
+const nameOf = id => esc(ex(id).name);
+const listNames = arr => arr.join(", ");
+function factsHtml(res, opts) {
+  const lines = [];
+  if (opts.prestart) {
+    lines.push(`<li><b>${res.exCount}</b> ${res.exCount === res.fullEx ? "Übungen" : `statt ${res.fullEx} Übungen`}</li>`);
+    lines.push(`<li><b>${res.setCount}</b> ${res.setCount === res.fullSets ? "Arbeitssätze" : `statt ${res.fullSets} Arbeitssätze`}</li>`);
+  }
+  if (res.kept.length) lines.push(`<li>${res.lost.length ? "Weiterhin dabei" : "Alle Muskelgruppen dabei"}: ${res.kept.map(m => MUSCLES[m]).join(", ")}</li>`);
+  if (res.lost.length) lines.push(`<li style="color:var(--warn)">Heute nicht dabei: ${res.lost.map(m => MUSCLES[m]).join(", ")}</li>`);
+  return `<ul class="facts">${lines.join("")}</ul>`;
+}
+function changesHtml(res, s) {
+  const out = [];
+  const nm = k => s ? nameOf((s.list.concat(s.timeHidden || [])).find(l => l.key === k)?.exId) : nameOf(res.keyEx[k]);
+  if (res.dropped.length) out.push(`<p class="small"><span class="muted">${s ? "Entfällt" : "Heute ausgelassen"}:</span> ${listNames(res.dropped.map(d => `${nm(d.key)} (${d.sets} ${d.sets === 1 ? "Satz" : "Sätze"})`))}</p>`);
+  if (res.trimmed.length) out.push(`<p class="small"><span class="muted">Weniger Sätze:</span> ${listNames(res.trimmed.map(d => `${nm(d.key)} ${d.from} → ${d.to}${s ? " offen" : ""}`))}</p>`);
+  return out.join("");
+}
+function timeSheet() {
+  const day = nextDay(), tp = activeTimeplan(day);
+  const full = previewDay(day, 0);
+  const res = timeSel ? previewDay(day, timeSel) : null;
+  if (res) res.keyEx = Object.fromEntries(day.items.map(i => [i.id, res.replace[i.id] || i.exId]));
+  const opt = m => `<button data-a="timePick" data-m="${m}" class="${timeSel === m ? "on" : ""}">${m} Min.</button>`;
+  const same = res && res.fits && !res.dropped.length && !res.trimmed.length && !res.unavailable.length && !Object.keys(res.replace).length;
+  return `${sheetHead("Zeit für heute")}
+    <p class="small muted" style="margin-top:-8px">${esc(day.name)} · voll ≈ ${full.fullMin} Min. Gilt nur für dieses Training, dein Plan bleibt unverändert.</p>
+    <div class="seg">${[30, 45, 60, 90].map(opt).join("")}</div>
+    <button class="btn ${timeSel === 0 ? "" : "quiet"} sm block" data-a="timePick" data-m="0">Originaltraining (≈ ${full.fullMin} Min.)</button>
+    ${timeSel === 0 ? `<p class="small muted" id="timePrev">${tp ? "Die Anpassung für heute wird verworfen. Du trainierst den vollständigen Tag." : "Du trainierst den vollständigen Tag wie geplant."}</p>` : ""}
+    ${res ? `<div class="stack-sm" id="timePrev">
+      <h3>Dein Training für ${timeSel} Minuten</h3>
+      ${!res.fits ? "" : same ? `<p class="small muted">Dein Training passt bereits in diese Zeit. Es ändert sich nichts.</p>` : factsHtml(res, { prestart: true }) + changesHtml(res)}
+      ${res.fits && Object.keys(res.replace).length ? `<p class="small"><span class="muted">Ersetzt (nicht im Studio):</span> ${listNames(Object.entries(res.replace).map(([id, n]) => `${nameOf(day.items.find(i => i.id === id).exId)} → ${nameOf(n)}`))}</p>` : ""}
+      ${res.fits && res.unavailable.length ? `<p class="small"><span class="muted">Ohne Ersatz ausgelassen (nicht im Studio):</span> ${listNames(res.unavailable.map(i => nameOf(i.exId)))}</p>` : ""}
+      ${res.fits ? `<p class="small faint">Geschätzt ≈ ${roundMin(res.estSec)} Min. inklusive Aufwärmen, Pausen und Gerätewechseln.${same ? "" : " Weniger Übungen setzen einen kleineren Reiz als die volle Einheit."}</p>`
+        : `<div class="note warn" id="timeNoFit"><p class="small">In ${timeSel} Minuten ist keine sinnvolle Einheit möglich, ohne Pausen zu kürzen. Realistisch sind etwa ${res.minMinutes} Minuten.</p>
+           <button class="btn sm" data-a="timePick" data-m="${res.minMinutes}" style="justify-self:start">Mit ${res.minMinutes} Minuten planen</button></div>`}
+    </div>` : ""}
+    <div class="stack-sm">
+      <button class="btn primary block xl" data-a="timeApply" ${timeSel === null || (res && !res.fits) ? "disabled" : ""}>Übernehmen</button>
+      <button class="btn quiet block" data-a="closeSheet">Abbrechen</button>
+    </div>`;
+}
+function liveTimeSheet() {
+  const s = S(), base = previewLive(s, 0);
+  const res = timeSel ? previewLive(s, timeSel) : null;
+  const opt = m => `<button data-a="liveTimePick" data-m="${m}" class="${timeSel === m ? "on" : ""}">${m} Min.</button>`;
+  const same = res && res.fits && !res.dropped.length && !res.trimmed.length && !base.restorable;
+  return `${sheetHead("Zeit anpassen")}
+    <p class="small muted" style="margin-top:-8px">Rest wie geplant: noch ≈ ${roundMin(base.estSec)} Min. ${base.doneSets ? `· ${base.doneSets} erledigte ${base.doneSets === 1 ? "Satz bleibt" : "Sätze bleiben"} gespeichert.` : ""}</p>
+    <div class="cap">Ich habe noch</div>
+    <div class="seg">${[10, 15, 20, 30].map(opt).join("")}</div>
+    ${base.restorable ? `<button class="btn ${timeSel === 0 ? "" : "quiet"} sm block" data-a="liveTimePick" data-m="0">Ursprüngliche Einheit fortsetzen</button>` : ""}
+    ${timeSel === 0 ? `<p class="small muted" id="timePrev">Zeitbedingt ausgelassene Übungen und Sätze kommen zurück (≈ ${roundMin(base.estSec)} Min.). Erledigte Sätze bleiben unverändert, selbst beendete Übungen bleiben beendet.</p>` : ""}
+    ${res ? `<div class="stack-sm" id="timePrev">
+      <h3>Noch ${timeSel} Minuten</h3>
+      ${!res.fits ? "" : same ? `<p class="small muted">Der Rest passt bereits in diese Zeit.</p>` : factsHtml(res, {}) + changesHtml(res, s)}
+      ${res.fits ? `<p class="small faint">Rest geschätzt ≈ ${roundMin(res.estSec)} Min. Pausen bleiben unverändert.</p>`
+        : `<div class="note warn" id="timeNoFit"><p class="small">In ${timeSel} Minuten ist keine sinnvolle Resteinheit möglich, ohne Pausen zu kürzen. Realistisch sind noch etwa ${res.minMinutes} Minuten.</p>
+           <button class="btn sm" data-a="liveTimePick" data-m="${res.minMinutes}" style="justify-self:start">Mit ${res.minMinutes} Minuten planen</button></div>`}
+    </div>` : ""}
+    <div class="stack-sm">
+      <button class="btn primary block xl" data-a="liveTimeApply" ${timeSel === null || (res && !res.fits) ? "disabled" : ""}>Übernehmen</button>
+      <button class="btn quiet block" data-a="closeSheet">Abbrechen</button>
+    </div>`;
 }
 function recSheet() {
   const rec = recovery(), c = {}; for (const m in rec) c[m] = recColor(rec[m]);
@@ -1052,13 +1302,22 @@ function itemSheet() {
 function openItem(i) { draft = Object.assign({}, curDay().items[i], { _i: i }); openSheet(itemSheet()); }
 
 /* ================= Training ================= */
+const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const activeTimeplan = day => { const tp = state.timeplan; return tp && day && tp.dayId === day.id && tp.date === todayStr() ? tp : null; };
 function startTraining(day) {
   tone(660, .08, .05); // Ton durch den Tap freischalten
+  const tp = activeTimeplan(day);
+  const list = day.items.map(it => tp && tp.replace[it.id] ? makeEntry(Object.assign({}, it, { exId: tp.replace[it.id] }), { from: ex(it.exId).name }) : makeEntry(it));
   state.session = {
     dayId: day.id, dayName: day.name, start: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
-    list: day.items.map(makeEntry)
+    list, timeHidden: [], timeAdj: null
   };
-  state.selDay = null; save(); awake(true); go("train"); startTick();
+  if (tp) {
+    const keep = {}; list.forEach(l => { keep[l.key] = tp.keep[l.itemId] ?? 0; });
+    applyKeep(state.session, keep); state.session.timeAdj = { minutes: tp.minutes };
+    if (!state.session.list.length) { state.session.list = list; state.session.timeHidden = []; state.session.timeAdj = null; }
+  }
+  state.timeplan = null; state.selDay = null; save(); awake(true); go("train"); startTick();
 }
 function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step;
@@ -1130,6 +1389,7 @@ function finish(saveIt) {
       const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
         return b === null || m > b ? { name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
       const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date().toISOString(), durationSec: Math.round((Date.now() - s.start) / 1000), exercises: exs };
+      if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       state.history.push(rec);
       summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0) };
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]);
@@ -1236,6 +1496,7 @@ function devInfoSheet() {
 function jumpSheet() {
   const s = S(), cur = s.list[s.idx], curOpen = curSetIdx(cur) !== -1;
   return `${sheetHead("Übungen")}
+    <div class="group"><button class="li" data-a="openTimeLive"><div class="grow"><div class="t">Zeit anpassen</div><div class="s">Noch ≈ ${roundMin(remainingSec(s))} Min.${s.timeAdj ? ` · angepasst auf ${s.timeAdj.minutes} Min.` : ""}</div></div><span class="chev">›</span></button></div>
     <div class="group">${s.list.map((x, i) => { const d = x.sets.filter(t => t.done).length, fin = d === x.sets.length;
     return `<div class="li">
       <button class="grow" data-a="jump" data-i2="${i}" ${fin ? "disabled" : ""} style="text-align:left;min-height:44px">
@@ -1309,10 +1570,10 @@ function vSummary() {
   $app.innerHTML = `<div class="page">
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
-      <div><div class="cap">${esc(r.day)} · beendet</div><div class="title">Stark gemacht.</div></div></div>
+      <div><div class="cap">${esc(r.day)} · beendet${r.adj ? " · zeitlich angepasst" : ""}</div><div class="title">Stark gemacht.</div></div></div>
     <div class="grid3">
       <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> min</span></div></div>
-      <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div></div>
+      <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
       <div class="stat"><div class="cap">Volumen</div><div class="num">${fmtVol(sm.volume)}</div></div>
     </div>
     ${prs.length ? `<section class="section"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
@@ -1549,6 +1810,24 @@ const A = {
   newPlan: () => go("setup"),
   selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
+  openTime: () => { const tp = activeTimeplan(nextDay()); timeSel = tp ? tp.minutes : null; openSheet(timeSheet()); },
+  timePick: el => { timeSel = +el.dataset.m; openSheet(timeSheet()); },
+  timeApply: () => { const day = nextDay();
+    if (timeSel === 0) { state.timeplan = null; }
+    else { const res = previewDay(day, timeSel); if (!res.fits) return;
+      const changed = res.dropped.length || res.trimmed.length || res.unavailable.length || Object.keys(res.replace).length;
+      state.timeplan = changed ? { dayId: day.id, date: todayStr(), minutes: timeSel, keep: res.keep, replace: res.replace,
+        ex: res.exCount, sets: res.setCount, est: roundMin(res.estSec) } : null;
+      if (changed && state.selDay !== day.id) state.selDay = day.id; }
+    save(); closeSheet(); render(); },
+  openTimeLive: () => { timeSel = null; openSheet(liveTimeSheet()); },
+  liveTimePick: el => { timeSel = +el.dataset.m; openSheet(liveTimeSheet()); },
+  liveTimeApply: () => { const s = S();
+    if (timeSel === 0) { applyKeep(s, {}); s.timeAdj = null; }
+    else { const res = previewLive(s, timeSel); if (!res.fits) return; applyKeep(s, res.keep); s.timeAdj = { minutes: timeSel }; }
+    s.phase = s.phase === "rest" ? "rest" : "set";
+    if (!s.list.some(l => l.sets.some(t => !t.done))) { save(); return finish(true); }
+    save(); closeSheet(); render(); },
   showRec: () => openSheet(recSheet()),
   showWhy: el => openSheet(`${sheetHead("Warum dieses Gewicht?")}<p>${esc(el.dataset.why)}</p><p class="small faint">Berechnet aus deinen letzten gültigen Sätzen an diesem Gerät. Du kannst jederzeit abweichen.</p>`),
   start: () => { const d = nextDay(); if (d) startTraining(d); },
@@ -1633,7 +1912,7 @@ const A = {
   jump: el => { const s = S(); s.idx = +el.dataset.i2; s.phase = "set"; save(); closeSheet(); render(); },
   moveEnd: el => { const s = S(), i = +el.dataset.i2, [m] = s.list.splice(i, 1); s.list.push(m);
     if (i === s.idx) afterListChange(i); else { if (i < s.idx) s.idx--; save(); openSheet(jumpSheet()); } },
-  endEx: () => { const s = S(), x = s.list[s.idx]; x.sets = x.sets.filter(t => t.done);
+  endEx: () => { const s = S(), x = s.list[s.idx]; x.sets = x.sets.filter(t => t.done); x.trim = [];
     const i = s.idx; if (!x.sets.length) s.list.splice(i, 1); afterListChange(x.sets.length ? i + 1 : i); },
   openDevInfo: () => openSheet(devInfoSheet()),
   askStop: () => { const s = S(), any = s.list.some(x => x.sets.some(t => t.done));
@@ -1706,7 +1985,8 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan, get state() { return state; } };
+if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)

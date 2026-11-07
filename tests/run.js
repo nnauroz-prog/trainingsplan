@@ -98,13 +98,13 @@ async function finishAllSets(page, kg, reps) {
       ok("Ungültige alte Sätze bleiben gespeichert (nicht gelöscht)", s.history[0].exercises[2].sets.length === 3);
       ok("Eigenes Gerät, Notiz, Körpergewicht, Plan erhalten",
         s.custom[0].name === "Alte Rudermaschine" && s.notes["hs-chest"] === "Sitz 4" && s.weights[0].kg === 82.4 && s.plan.days[0].items.length === 4);
-      ok("Neue Felder mit Standardwerten (dev = {}, v = 4)", JSON.stringify(s.dev) === "{}" && s.v === 4);
+      ok("Neue Felder mit Standardwerten (dev = {}, v = 5)", JSON.stringify(s.dev) === "{}" && s.v === 5);
       await page.click("[data-a=selDay]").catch(() => {}); // löst Speichern aus
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
       await page.evaluate(() => { window.__tp.state.selDay = "d1"; });
       await page.click("[data-a=start]"); await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
       const st = await stored(page);
-      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 4);
+      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 5);
       await ctx.close();
     }
     {
@@ -355,7 +355,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v7)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v7")));
+      ok("Service Worker aktiv (Cache trainingsplan-v8)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v8")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -577,7 +577,177 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("20. Konsole");
+    section("20. Intelligente Trainingsdauer");
+    const PLAN60 = { goal: "aufbau", level: "fortgeschritten", minutes: 60, days: [{ id: "d1", name: "Oberkörper A", items: [
+      ["hs-chest", 4, 90], ["hs-row", 4, 90], ["hs-shoulder", 3, 90], ["hs-pulldown", 3, 90], ["hs-curl", 3, 60], ["hs-dip", 3, 60]].map(([e, n, r], i) => ({ id: "i" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: r })) }] };
+    const doSets = async (page, n, kg = "40", reps = "10") => { for (let i = 0; i < n; i++) { await page.fill("#kgIn", kg); await page.fill("#repsIn", reps); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]"); } };
+    const liveSet = async (page, m) => { await page.click("[data-a=openJump]"); await page.click("[data-a=openTimeLive]"); await page.click(`[data-a=liveTimePick][data-m="${m}"]`); };
+    {
+      // 13. Dauerberechnung
+      const { ctx, page } = await open({ plan: PLAN60 });
+      const r = await tp(page, () => { const T = window.__tp; const it = { sets: 3, rmin: 8, rmax: 12, rest: 90 };
+        return { one: T.estimateSec([it], { warm: false }), two: T.estimateSec([it, it], { warm: false }), warm: T.estimateSec([it]), TIME: T.TIME }; });
+      ok("Dauer: 3 Sätze = 3 × 50 s + 2 Pausen (keine Pause nach dem letzten Satz)", r.one === 330, String(r.one));
+      ok("Dauer: Gerätewechsel statt Satzpause zwischen Übungen", r.two === 330 * 2 + r.TIME.change, String(r.two));
+      ok("Dauer: Aufwärmen vor dem ersten Satz eingerechnet", r.warm === 330 + r.TIME.warm);
+      ok("Anzeige gerundet auf 5 Minuten", await tp(page, () => window.__tp.estMinutes(window.__tp.state.plan.days[0]) % 5 === 0));
+      // 1.–3. Vor dem Start auf 30 Minuten
+      const planBefore = JSON.stringify((await stored(page)).plan);
+      const pv = await tp(page, () => { const T = window.__tp, d = T.state.plan.days[0], r = T.previewDay(d, 30); return { fits: r.fits, est: r.estSec, ex: r.exCount, sets: r.setCount, lost: r.lost, kept: r.kept, full: r.fullMin, dropped: r.dropped.map(x => x.exId) }; });
+      ok("1. 60-Minuten-Tag auf 30 Minuten verkürzt (passt, ≤ 30 Min.)", pv.fits && pv.est <= 1800 && pv.full >= 45, JSON.stringify(pv));
+      ok("1. Weniger Übungen und Sätze als vorher (berechnet)", pv.ex < 6 && pv.sets < 20 && pv.sets >= 6);
+      ok("2. Alle Muskelgruppen bleiben vertreten", pv.lost.length === 0 && ["brust", "ruecken", "schultern"].every(m => pv.kept.includes(m)), JSON.stringify(pv));
+      ok("2. Grundübungen bleiben (Brustpresse, Rudern, Schulterpresse)", !pv.dropped.some(id => ["hs-chest", "hs-row", "hs-shoulder"].includes(id)), pv.dropped.join());
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']");
+      const txt = await page.textContent("#timePrev");
+      ok("1. Vorschau nennt „x statt 6 Übungen“ und „y statt 20 Arbeitssätze“", txt.includes(`${pv.ex} statt 6 Übungen`) && txt.includes(`${pv.sets} statt 20 Arbeitssätze`), txt.slice(0, 160));
+      await page.click("[data-a=timeApply]");
+      ok("1. Startseite zeigt angepasste Einheit", (await page.textContent(".hero")).includes("Für heute auf 30 Min. angepasst"));
+      ok("3. Dauerhafter Plan unverändert", JSON.stringify((await stored(page)).plan) === planBefore);
+      await page.click("[data-a=start]");
+      let s = (await stored(page)).session;
+      ok("1. Training startet mit angepasster Einheit", s.list.length === pv.ex && s.list.reduce((a, l) => a + l.sets.length, 0) === pv.sets && s.timeAdj.minutes === 30);
+      ok("3. Plan auch nach dem Start unverändert, Anpassung verbraucht", JSON.stringify((await stored(page)).plan) === planBefore && (await stored(page)).timeplan === null);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
+      // Originaltraining verwirft die Anpassung
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); await page.click("[data-a=timeApply]");
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='0']"); await page.click("[data-a=timeApply]");
+      ok("„Originaltraining“ verwirft die Anpassung", (await stored(page)).timeplan === null && !(await page.textContent(".hero")).includes("angepasst"));
+      ok("Zeit-Sheets ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Schwerpunkt: Seitheben bleibt an einem Schultertag
+      const { ctx, page } = await open({ plan: PLAN60 });
+      const r = await tp(page, () => { const T = window.__tp;
+        const d = { id: "s", name: "Schulter", items: [["hs-shoulder", 3], ["hs-lateral", 4], ["hs-reardelt", 3], ["hs-incline", 3], ["hs-triext", 3], ["hs-curl", 3]].map(([e, n], i) => ({ id: "s" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 })) };
+        const p = T.previewDay(d, 30); return { focus: p.focus, lat: p.keep.s1, fits: p.fits }; });
+      ok("Schwerpunkt Schulter: Seitheben wird nicht pauschal gestrichen", r.fits && r.focus === "schultern" && r.lat >= 2, JSON.stringify(r));
+      await ctx.close();
+    }
+    {
+      // 4. Fehlende Geräte
+      const { ctx, page } = await open({ plan: PLAN60, dev: { "hs-chest": { off: true }, "hs-curl": { off: true } } });
+      const pv = await tp(page, () => { const r = window.__tp.previewDay(window.__tp.state.plan.days[0], 30); return { rep: r.replace, un: r.unavailable.map(i => i.exId), fits: r.fits }; });
+      ok("4. Fehlendes Gerät durch gleiche Bewegung ersetzt", ["hs-decline", "hs-widechest"].includes(pv.rep.i0), JSON.stringify(pv));
+      ok("4. Gerät ohne passenden Ersatz wird ausgelassen und genannt", pv.un.includes("hs-curl") && pv.fits);
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']");
+      ok("4. Vorschau nennt Ersatz und Auslassung", (await page.textContent("#timePrev")).includes("Ersetzt") && (await page.textContent("#timePrev")).includes("Biceps Curl"));
+      await page.click("[data-a=timeApply]"); await page.click("[data-a=start]");
+      const st = await stored(page);
+      ok("4. Training nutzt Ersatzgerät, Plan bleibt beim Original", st.session.list[0].exId === pv.rep.i0 && st.plan.days[0].items[0].exId === "hs-chest" && !st.session.list.some(l => l.exId === "hs-curl"));
+      await ctx.close();
+    }
+    {
+      // 5.–8., 12. Während des Trainings
+      const { ctx, page } = await open({ plan: PLAN60 });
+      await page.click("[data-a=start]"); await doSets(page, 2, "42,5", "11");
+      let before = (await stored(page)).session;
+      await liveSet(page, 15);
+      ok("5. Vorschau zeigt, was entfällt, und dass erledigte Sätze bleiben", (await page.textContent(".sheet")).includes("Entfällt") && (await page.textContent(".sheet")).includes("2 erledigte Sätze bleiben gespeichert"));
+      await page.click("[data-a=liveTimeApply]");
+      let s = (await stored(page)).session;
+      const doneSets = ss => ss.list.flatMap(l => l.sets.filter(t => t.done).map(t => l.key + ":" + t.kg + "x" + t.reps));
+      ok("5. Auf 15 Minuten Restzeit verkürzt", s.timeAdj.minutes === 15 && await tp(page, () => window.__tp.remainingSec(window.__tp.state.session) <= 900 + 1));
+      ok("6. Erledigte Sätze vollständig erhalten (Werte unverändert)", JSON.stringify(doneSets(s)) === JSON.stringify(doneSets(before)) && doneSets(s).length === 2);
+      ok("7. Aktuelle Übung bleibt erhalten und aktiv", s.list[s.idx].key === before.list[0].key && s.list[s.idx].sets.some(t => !t.done));
+      // 8. Mehrfach anpassen und Original wiederherstellen
+      await liveSet(page, 30); await page.click("[data-a=liveTimeApply]");
+      await liveSet(page, 10).catch(() => {}); await page.click(".sheet [data-a=closeSheet]");
+      await liveSet(page, 0); await page.click("[data-a=liveTimeApply]");
+      s = (await stored(page)).session;
+      ok("8. Mehrfach angepasst, Original wiederhergestellt: 6 Übungen, 20 Sätze", s.list.length === 6 && s.list.reduce((a, l) => a + l.sets.length, 0) === 20 && (s.timeHidden || []).length === 0, `${s.list.length}/${s.list.reduce((a, l) => a + l.sets.length, 0)}`);
+      ok("8. Keine doppelten erledigten Sätze nach Verlängern", doneSets(s).length === 2);
+      // Manuell beendete Übung kehrt nicht zurück
+      await page.click("[data-a=openJump]"); await page.click("[data-a=jump][data-i2='5']"); await page.click("[data-a=openJump]"); await page.click("[data-a=endEx]");
+      await liveSet(page, 15); await page.click("[data-a=liveTimeApply]");
+      await liveSet(page, 0); await page.click("[data-a=liveTimeApply]");
+      s = (await stored(page)).session;
+      ok("8. Manuell beendete Übung kommt nicht ungefragt zurück", !s.list.concat(s.timeHidden || []).some(l => l.exId === "hs-dip"));
+      // 12. Verkürzen und abschließen
+      await liveSet(page, 15); await page.click("[data-a=liveTimeApply]");
+      s = (await stored(page)).session;
+      const kept = s.list.map(l => l.exId), hidden = (s.timeHidden || []).map(l => l.exId);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const h = (await stored(page)).history.at(-1);
+      ok("12. Nur absolvierte Übungen in der Historie", h.exercises.length === 1 && h.exercises[0].exId === "hs-chest" && h.exercises[0].sets.length === 2, JSON.stringify(h.exercises.map(x => x.exId)));
+      ok("12. Ausgelassene Übungen nicht gespeichert", hidden.length > 0 && !h.exercises.some(x => hidden.includes(x.exId)));
+      ok("Zusammenfassung zeigt „zeitlich angepasst“ und echte Werte", (await page.textContent("#app")).includes("zeitlich angepasst") && h.adj === 15);
+      ok("Progression nutzt nur absolvierte Sätze", await tp(page, () => window.__tp.lastPerf("hs-row") === null && window.__tp.lastPerf("hs-chest").length === 2));
+      await ctx.close();
+    }
+    {
+      // 9.–11. Gerätetausch vor der Zeitänderung, Pause und Neustart
+      const { ctx, page } = await open({ plan: PLAN60 });
+      await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]"); await page.click(".sheet [data-a=swap][data-id=hs-decline]");
+      await doSets(page, 1);
+      await liveSet(page, 20); await page.click("[data-a=liveTimeApply]");
+      let s = (await stored(page)).session;
+      ok("9. Getauschtes Gerät bleibt nach der Zeitänderung", s.list[0].exId === "hs-decline" && !s.list.concat(s.timeHidden).some(l => l.exId === "hs-chest") && s.list[0].sets[0].done);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await sleep(1500); await page.reload();
+      ok("10. Nach Pause und Neustart: Anpassung gespeichert", await page.isVisible("[data-a=resumeT]") && (await stored(page)).session.timeAdj.minutes === 20);
+      await page.click("[data-a=resumeT]");
+      s = (await stored(page)).session;
+      const rem = await tp(page, () => { const T = window.__tp, s = T.state.session; const open = s.list.filter(l => l.sets.some(t => !t.done));
+        const est = open.reduce((a, l, i) => { const n = l.sets.filter(t => !t.done).length; return a + n * (T.TIME.setBase + T.TIME.perRep * (l.rmin + l.rmax) / 2) + (n - 1) * l.rest + (i ? T.TIME.change : 0); }, 0);
+        return { rem: T.remainingSec(s), est, elapsed: (Date.now() - s.start) / 1000 }; });
+      ok("11. Restzeit nach dem Fortsetzen korrekt (ohne Pausendauer)", Math.abs(rem.rem - rem.est) < 1 && rem.rem <= 1200, JSON.stringify(rem));
+      ok("11. Trainingsuhr zählt die Pausenzeit nicht mit", rem.elapsed < 60);
+      await ctx.close();
+    }
+    {
+      // 14. Keine realistische 10-Minuten-Einheit
+      const strength = { goal: "kraft", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Kraft", items: [
+        ["hs-chest", 3], ["hs-row", 3], ["hs-legpress", 3], ["hs-shoulder", 3]].map(([e, n], i) => ({ id: "i" + i, exId: e, sets: n, rmin: 4, rmax: 6, rest: 180 })) }] };
+      const { ctx, page } = await open({ plan: strength });
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "60"); await page.fill("#repsIn", "5"); await page.click("[data-a=doneSet]");
+      await liveSet(page, 10);
+      ok("14. Ehrlicher Hinweis bei unrealistischer Zeit", await page.isVisible("#timeNoFit") && (await page.textContent("#timeNoFit")).includes("keine sinnvolle Resteinheit"));
+      ok("14. Übernehmen gesperrt, realistische Alternative angeboten", await page.isDisabled("[data-a=liveTimeApply]") && (await page.$$("#timeNoFit [data-a=liveTimePick]")).length === 1);
+      const restBefore = (await stored(page)).session.list.map(l => l.rest).join();
+      await page.click("#timeNoFit [data-a=liveTimePick]");
+      ok("14. Alternative passt und Pausen bleiben unverändert (180 s)", !(await page.isVisible("#timeNoFit")) && restBefore === "180,180,180,180");
+      await ctx.close();
+    }
+    {
+      // 15./16. Alte Daten und Sicherung
+      const oldSession = { plan: PLAN60, v: 4, session: { dayId: "d1", dayName: "Oberkörper A", start: Date.now() - 300000, idx: 0, phase: "set",
+        list: [{ key: "k1", itemId: "i0", exId: "hs-chest", u: "s", rmin: 8, rmax: 12, rest: 90, sets: [{ kg: 40, reps: 10, done: true }, { kg: 40, reps: 10, done: false }] },
+               { key: "k2", itemId: "i1", exId: "hs-row", u: "s", rmin: 8, rmax: 12, rest: 90, sets: [{ kg: 40, reps: 10, done: false }] }] } };
+      const { ctx, page } = await open(oldSession);
+      let s = (await stored(page)) || (await tp(page, () => window.__tp.state));
+      const st = await tp(page, () => window.__tp.state);
+      ok("15. Training aus Datenversion 4 lädt (ohne Zeitfelder)", st.session.list.length === 2 && Array.isArray(st.session.timeHidden) && st.session.timeAdj === null && st.timeplan === null);
+      await liveSet(page, 10); await page.click("[data-a=liveTimeApply]").catch(() => {});
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      await page.click("[data-a=tab][data-v=home]");
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); await page.click("[data-a=timeApply]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
+      const before = await stored(page);
+      await page.evaluate(() => localStorage.clear()); await page.reload();
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
+      const after = await stored(page);
+      ok("16. Sicherung: Verlauf inkl. Zeitanpassung wiederhergestellt", JSON.stringify(after.history) === JSON.stringify(before.history) && after.history.at(-1).adj > 0);
+      ok("16. Sicherung: Anpassung für heute wiederhergestellt", JSON.stringify(after.timeplan) === JSON.stringify(before.timeplan) && after.timeplan.minutes === 30);
+      await ctx.close();
+    }
+    for (const [w, light] of [[360, false], [360, true], [390, false], [390, true]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 760 }, colorScheme: light ? "light" : "dark", serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN60 })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+      const a = await noOverflow(page);
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); const b = await noOverflow(page);
+      const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
+      await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=start]"); await liveSet(page, 15); const c = await noOverflow(page);
+      ok(`17. ${w} px ${light ? "hell" : "dunkel"}: Heute, Zeit-Vorschau, Zeit im Training ohne seitliches Scrollen`, a && b && c);
+      ok(`17. ${w} px ${light ? "hell" : "dunkel"}: Sheet in passender Farbe`, light ? /255, 255, 255/.test(bg) : !/255, 255, 255/.test(bg), bg);
+      await ctx.close();
+    }
+
+    section("21. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
