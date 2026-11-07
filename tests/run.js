@@ -359,7 +359,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v11)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v11")));
+      ok("Service Worker aktiv (Cache trainingsplan-v12)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v12")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1093,6 +1093,37 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=openHealth]"); await page.click(".sheet [data-a=setHealth][data-v='0']");
       await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=history]");
       ok("Ausschalten entfernt die Buttons wieder", (await stored(page)).health === false && !(await page.$("[data-a=sendHealth]")));
+      await ctx.close();
+    }
+    {
+      // Körpergewicht an Health
+      const { ctx, page } = await open({ plan: PLAN_SMALL, health: true });
+      const w = await tp(page, () => { const T = window.__tp;
+        const n = T.normalize({ weights: [{ d: "2026-01-02", kg: 80, hk: true }, { d: "2026-01-03", kg: 81, hk: "ja" }] }).weights;
+        return { u1: T.weightUrl(82.5), u2: T.weightUrl(80), u3: T.weightUrl(82.3), hk1: n[0].hk, hk2: n[1].hk }; });
+      ok("Gewicht als ganze Gramm übergeben (keine Komma-/Punkt-Verwechslung)", w.u1 === "shortcuts://run-shortcut?name=Trainingsplan%20Gewicht&input=text&text=82500" && w.u2.endsWith("text=80000") && w.u3.endsWith("text=82300"), w.u1);
+      ok("Gewicht: Übergabe-Markierung nur bei echtem true", w.hk1 === true && w.hk2 === undefined);
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]");
+      const sh = await page.textContent(".sheet");
+      ok("Anleitung für den Gewichts-Kurzbefehl", sh.includes("Trainingsplan Gewicht") && sh.includes("Kurzbefehleingabe ÷ 1000") && sh.includes("Health-Messung protokollieren") && (await page.$$(".sheet #hkSetupW ol li")).length === 4);
+      await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#discWeight summary");
+      ok("Ohne heutigen Eintrag kein Gewichts-Button", !(await page.$("[data-a=sendWeight]")));
+      await page.fill("#bwIn", "82,5"); await page.click("[data-a=addWeight]");
+      ok("Nach dem Eintragen bleibt der Bereich offen, Button mit genauem Wert", await page.$eval("#discWeight", d => d.open) && (await page.textContent("#bwHk")).includes("82,5 kg") && await page.isVisible("#bwHk [data-a=sendWeight]"));
+      await page.click("#bwHk [data-a=sendWeight]");
+      ok("Gewicht wird übergeben und markiert", await tp(page, () => window.__tp.lastUrl) === w.u1 && (await stored(page)).weights[0].hk === true && (await page.textContent("#bwHk [data-a=sendWeight]")).includes("übergeben"));
+      await tp(page, () => { window.__tp.lastUrl = null; });
+      await page.click("#bwHk [data-a=sendWeight]");
+      ok("Gewicht: zweites Tippen fragt nach", (await page.textContent(".sheet")).includes("Schon übergeben") && await tp(page, () => window.__tp.lastUrl) === null);
+      await page.click(".sheet [data-a=sendWeight][data-force]");
+      ok("Gewicht: „Trotzdem erneut senden“ übergibt erneut", await tp(page, () => window.__tp.lastUrl) === w.u1);
+      await page.fill("#bwIn", "83"); await page.click("[data-a=addWeight]");
+      ok("Geänderter Wert gilt als noch nicht übergeben", (await stored(page)).weights[0].hk === undefined && (await page.textContent("#bwHk")).includes("In Apple Health eintragen") && (await page.textContent("#bwHk")).includes("83 kg"));
+      ok("Körpergewicht mit Health-Button bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]"); await page.click(".sheet [data-a=setHealth][data-v='0']");
+      await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discWeight summary");
+      ok("Ausgeschaltet: kein Gewichts-Button", !(await page.$("[data-a=sendWeight]")) && await page.isVisible("#bwIn"));
       await ctx.close();
     }
     for (const light of [false, true]) {

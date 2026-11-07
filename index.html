@@ -939,7 +939,7 @@ function normalize(raw) {
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
       sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [] })) })) : [];
-  s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => ({ d: w.d, kg: +w.kg })) : [];
+  s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => Object.assign({ d: w.d, kg: +w.kg }, w.hk === true ? { hk: true } : {})) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
     const r = raw.session;
     const list = r.list.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
@@ -1755,7 +1755,7 @@ function vPlan() {
     <section class="section"><h2>Einstellungen</h2>
       <div class="group">
         <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
+        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
         <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
         <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
         <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button>
@@ -2278,16 +2278,21 @@ function healthPayload(h) {
 }
 const healthUrl = h => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_NAME)}&input=text&text=${encodeURIComponent(JSON.stringify(healthPayload(h)))}`;
 const HK_SENT = "An Health übergeben · erneut senden";
+// Gewicht in ganzen Gramm übergeben: kein Komma/Punkt, das Kurzbefehle je nach Region falsch lesen könnte
+const HK_WEIGHT = "Trainingsplan Gewicht";
+const weightUrl = kg => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_WEIGHT)}&input=text&text=${Math.round(kg * 1000)}`;
+const todayKey = () => new Date().toISOString().slice(0, 10);
 const healthTxt = h => { const p = healthPayload(h); return `Krafttraining, Start ${p.start.slice(11)} Uhr, ${p.minuten} Min.`; };
 function openExternal(url) { if (window.__tp) window.__tp.lastUrl = url; else location.href = url; }
 function healthSheet() {
   const step = (n, html) => `<li>${html}</li>`;
   return `${sheetHead("Apple Health")}
     <p>Diese App ist eine Web-App und darf nicht direkt auf Apple Health zugreifen. Über einen Kurzbefehl auf deinem iPhone kann sie ein Training trotzdem eintragen.</p>
-    <div class="field"><label>Nach dem Training anbieten</label><div class="seg" id="hkSeg">
+    <div class="field"><label>Übergabe an Health anbieten</label><div class="seg" id="hkSeg">
       <button data-a="setHealth" data-v="0" class="${state.health ? "" : "on"}">Aus</button><button data-a="setHealth" data-v="1" class="${state.health ? "on" : ""}">An</button></div></div>
     <section class="gsec"><h2>Was übertragen wird</h2><ul class="glist">
-      <li>Art „Krafttraining“, Startzeit und Dauer des Trainings.</li>
+      <li>Art „Krafttraining“, Startzeit und Dauer des Trainings – nach dem Training oder später aus dem Verlauf.</li>
+      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Verlauf → Körpergewicht).</li>
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
       <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul></section>
@@ -2302,6 +2307,15 @@ function healthSheet() {
       </ol>
       <p class="small faint">Die Bezeichnungen können je nach iOS-Version leicht abweichen – suche dann nach dem Stichwort. Kommt nichts an: In Health über dein Profilbild unter „Apps“ bzw. „Apps und Dienste“ → Kurzbefehle das Schreiben von Workouts erlauben.</p>
       <p class="small faint">Prüfe nach dem ersten Training in Health, ob Startzeit und Dauer stimmen.</p>
+    </div></details>
+    <details class="disc" id="hkSetupW"><summary><div class="grow"><h3>Kurzbefehl für das Körpergewicht</h3><div class="small muted">Optional, etwa 1 Minute</div></div><span class="chev">›</span></summary><div class="body">
+      <ol class="glist">
+        ${step(1, `In „Kurzbefehle“ auf „+“ tippen. Name genau: <b>${HK_WEIGHT}</b>`)}
+        ${step(2, `Nach „Berechnen“ suchen und <b>Berechnen</b> hinzufügen: <b>Kurzbefehleingabe ÷ 1000</b>. Die App übergibt das Gewicht in Gramm (z. B. 82500 für 82,5 kg), damit Komma und Punkt nicht verwechselt werden.`)}
+        ${step(3, `Nach „Health“ suchen und <b>Health-Messung protokollieren</b> hinzufügen (englisch „Log Health Sample“). Typ: <b>Gewicht</b>. Wert: <b>Rechenergebnis</b>. Einheit: <b>kg</b>.`)}
+        ${step(4, `Beim ersten Eintragen das Schreiben von <b>Gewicht</b> erlauben.`)}
+      </ol>
+      <p class="small faint">Prüfe nach dem ersten Eintrag in Health, ob der Wert stimmt.</p>
     </div></details>`;
 }
 
@@ -2391,7 +2405,7 @@ function vHistory() {
           ${spark(sr)}<span class="delta ${dlt > 0 ? "" : "zero"}">${dlt > 0 ? "+" + kgTxt(dlt) : "±0"}</span></button>`; }).join("")}</div>
     </section>` : `<p class="muted">Noch keine Trainings. Nach deinem ersten Training siehst du hier Häufigkeit, Kraftentwicklung und Bestwerte.</p>`}
     <div>
-      ${disc("discWeight", "Körpergewicht", lastW ? `${kgTxt(lastW.kg)} kg` : "Noch nicht eingetragen", weightCard(), false)}
+      ${disc("discWeight", "Körpergewicht", lastW ? `${kgTxt(lastW.kg)} kg` : "Noch nicht eingetragen", weightCard(), bwOpen)}
       ${disc("discVol", "Trainingsvolumen", `max. ${max >= 1000 ? (max / 1000).toFixed(1).replace(".", ",") + " t" : Math.round(max) + " kg"} pro Woche`,
         `<div class="bars">${weeks.map(w => `<div class="b ${w.vol ? "" : "zero"}" style="height:${w.vol ? Math.max(4, w.vol / max * 100) : 4}%" title="${Math.round(w.vol)} kg"></div>`).join("")}</div>
          <div class="bars-x">${weeks.map((w, i) => `<span>${i === 7 ? "Jetzt" : w.s.getDate() + "." + (w.s.getMonth() + 1) + "."}</span>`).join("")}</div>
@@ -2411,7 +2425,7 @@ function vHistory() {
   </div>`;
 }
 
-let calOffset = 0;
+let calOffset = 0, bwOpen = false;
 function weightCard() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
   const today = new Date().toISOString().slice(0, 10);
@@ -2447,6 +2461,8 @@ function weightCard() {
     <div class="row"><input id="bwIn" class="grow" inputmode="decimal" enterkeyhint="done" placeholder="${todayEntry ? "Heute: " + kgTxt(todayEntry.kg) + " kg" : "Gewicht heute in kg"}" aria-label="Körpergewicht in kg" autocomplete="off">
       <button class="btn primary" data-a="addWeight">${todayEntry ? "Ändern" : "Eintragen"}</button></div>
     <p class="error" id="bwErr" hidden>Bitte eine Zahl zwischen 30 und 300 eingeben.</p>
+    ${state.health && todayEntry ? `<div id="bwHk"><button class="btn block" data-a="sendWeight">${todayEntry.hk ? HK_SENT : "In Apple Health eintragen"}</button>
+      <p class="small faint">Übergibt ${kgTxt(todayEntry.kg)} kg an den Kurzbefehl „${HK_WEIGHT}“.</p></div>` : ""}
   </div>`;
 }
 
@@ -2550,7 +2566,7 @@ const A = {
     if (v === null || v < 30 || v > 300) { byId("bwErr").hidden = false; byId("bwIn").focus(); return; }
     const d = new Date().toISOString().slice(0, 10);
     state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
-    save(); vHistory();
+    save(); bwOpen = true; vHistory(); bwOpen = false;
   },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => go("setup"),
@@ -2567,6 +2583,15 @@ const A = {
     h.hk = true; save(); closeSheet();
     document.querySelectorAll(`[data-a=sendHealth][data-id="${h.id}"]`).forEach(b => { b.textContent = HK_SENT; });
     openExternal(healthUrl(h));
+  },
+  sendWeight: el => {
+    const w = (state.weights || []).find(x => x.d === todayKey()); if (!w) return;
+    if (w.hk && !el.dataset.force) return openSheet(`${sheetHead("Schon übergeben", "Abbrechen")}
+      <p>Dieses Gewicht wurde heute bereits an den Kurzbefehl übergeben. Ist es in Health angekommen, entsteht beim erneuten Senden ein zweiter Messwert.</p>
+      <button class="btn block" data-a="sendWeight" data-force="1">Trotzdem erneut senden</button>`);
+    w.hk = true; save(); closeSheet();
+    const b = document.querySelector("#bwHk [data-a=sendWeight]"); if (b) b.textContent = HK_SENT;
+    openExternal(weightUrl(w.kg));
   },
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
   exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
@@ -2755,7 +2780,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { healthPayload, healthUrl, HK_NAME, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
