@@ -16,6 +16,12 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 - **Geräte:** Hammer-Strength-Bibliothek mit Bewegungsmustern, Scheiben/Steckgewicht, Gewicht pro Seite oder insgesamt, Schritte je Gerät, Einstellungen, Technik-Tipps, „im Studio“ und „Bevorzugt“ unabhängig, eigene Geräte
 - **Gerät tauschen:** direkte Alternativen (gleiches Bewegungsmuster) vor anderen Übungen für denselben Muskel, mit Begründung; keine Gewichtsübertragung zwischen Maschinen
 - **Verlauf:** Körpergewicht, Sätze pro Muskel, Volumen, Kalender mit Trainingshäufigkeit, Bestwerte mit Kurve und 1RM pro Gerät
+- **Übungsbibliothek (Plan → Übungen & Wissen):** ausführliche Seite für jedes der 28 Geräte: beteiligte Muskeln mit Fachbegriffen, warum die Übung sinnvoll ist, Einstellen, Ausführung Schritt für Schritt, Atmung, häufige Fehler mit Korrektur, Sicherheit, Tipps. Dazu deine eigenen Werte (erste Einheit, Bestwert, Entwicklung), wo die Übung in deinem Plan steht und Alternativen aus deinem Studio. Auch aus Übungsauswahl, Plan, Training („Gerät & Technik“) und Verlauf erreichbar
+- **Trainingswissen:** 8 kurze Artikel zu Progression, Volumen, Häufigkeit, Gewicht und Wiederholungen, RIR, Pausen, Training in Dehnung und Gesundheit; jeder mit verlinkter Studie. Auf „Heute“ steht täglich ein anderer Beitrag
+
+### Inhalte und Quellen
+
+Die Übungstexte stehen in `src/app.html` (`GUIDE`, `SOURCES`, `ARTICLES`). Regeln: Anatomie und Ausführung nach anerkanntem Fachwissen; Aussagen aus Studien nur mit Quelle (PubMed/DOI), inklusive Einschränkungen wie kleine Stichproben oder Beobachtungsstudien; keine Prozentangaben zur „Muskelaktivierung“, keine Erfolgsversprechen. Einstellhinweise sind als Grundprinzip formuliert, weil sich Hammer-Strength-Modelle je nach Generation unterscheiden – maßgeblich sind die Hinweise am Gerät.
 - **Datensicherung** per Code (Plan → „Daten sichern“)
 
 Alle Daten liegen lokal im Browser des Geräts.
