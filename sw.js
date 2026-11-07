@@ -1,4 +1,4 @@
-const CACHE = "trainingsplan-v1";
+const CACHE = "trainingsplan-v2";
 const FILES = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", e => {
