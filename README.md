@@ -22,5 +22,6 @@ Alle Daten liegen lokal im Browser des Geräts.
 
 - Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)
 - `./build.sh` erzeugt daraus `index.html`
+- `node tests/run.js` startet die automatisierten Tests (Playwright + Chromium, python3 für den lokalen Server)
 - `sw.js`: Offline-Speicher (App-Seite zuerst aus dem Netz, damit Updates sofort ankommen)
 - Symbole: `icon.svg`, daraus gerenderte PNGs für iOS und Android
