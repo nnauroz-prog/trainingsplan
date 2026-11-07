@@ -22,6 +22,7 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 ### Inhalte und Quellen
 
 Die Übungstexte stehen in `src/app.html` (`GUIDE`, `SOURCES`, `ARTICLES`). Regeln: Anatomie und Ausführung nach anerkanntem Fachwissen; Aussagen aus Studien nur mit Quelle (PubMed/DOI), inklusive Einschränkungen wie kleine Stichproben oder Beobachtungsstudien; keine Prozentangaben zur „Muskelaktivierung“, keine Erfolgsversprechen. Einstellhinweise sind als Grundprinzip formuliert, weil sich Hammer-Strength-Modelle je nach Generation unterscheiden – maßgeblich sind die Hinweise am Gerät.
+- **Apple Health (optional, Plan → Einstellungen → Apple Health):** Web-Apps haben keinen Zugriff auf HealthKit. Die App übergibt deshalb Startzeit und Dauer eines Trainings per Link (`shortcuts://run-shortcut?name=Trainingsplan%20Workout&input=text&text={"start":"JJJJ-MM-TT HH:MM","minuten":N}`) an einen Kurzbefehl, der das Workout als „Traditionelles Krafttraining“ in Health einträgt. Anleitung zum Einrichten in der App. Nach dem Training und im Verlauf je Training; bereits übergebene Trainings sind markiert, erneutes Senden fragt nach. Keine Kalorien, keine Server
 - **Datensicherung** per Code (Plan → „Daten sichern“)
 
 Alle Daten liegen lokal im Browser des Geräts.
