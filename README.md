@@ -11,6 +11,7 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 - **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training, Erfahrung und die Geräte deines Studios ergeben einen fertigen Plan
 - **Heute:** „Das trainierst du heute“ mit Begründung (Ablauf, Erholung, letzte Einheit), großer Start-Button, Wochenziel, Muskel-Erholung; pausiertes Training fortsetzen
 - **Training:** nur Übung, Satz, kg, Wiederholungen und „Satz fertig“; Werte vom letzten Mal übernommen; Pause mit Countdown und „Leicht / Passt / Schwer“; Sätze korrigieren, Übung später machen oder beenden, Gerät tauschen, pausieren
+- **Zeit für heute:** Dauer auf „Heute“ antippen (30/45/60/90 Min. oder Original) oder im Training unter „Übungen → Zeit anpassen“; die App priorisiert Grundübungen und Muskelabdeckung, kürzt nie Pausen und ändert den Plan nicht
 - **Progression:** lokale, nachvollziehbare Regeln mit Begründung, z. B. „Letztes Mal alle 3 Sätze mit 12 Wdh. geschafft. Heute +2,5 kg pro Seite.“
 - **Geräte:** Hammer-Strength-Bibliothek mit Bewegungsmustern, Scheiben/Steckgewicht, Gewicht pro Seite oder insgesamt, Schritte je Gerät, Einstellungen, Technik-Tipps, „im Studio“ und „Bevorzugt“ unabhängig, eigene Geräte
 - **Gerät tauschen:** direkte Alternativen (gleiches Bewegungsmuster) vor anderen Übungen für denselben Muskel, mit Begründung; keine Gewichtsübertragung zwischen Maschinen
