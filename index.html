@@ -248,11 +248,17 @@ const allEx = () => LIB.concat(state.custom);
 const ex = id => allEx().find(e => e.id === id) || { id, name: "Unbekannt", muscle: "brust", sec: [], type: "plate" };
 const stepFor = e => e.type === "stack" ? 5 : 2.5;
 
-function generatePlan(goal, days, level) {
+function generatePlan(goal, days, level, minutes) {
   const g = GOALS[goal];
-  return { goal, level, days: TEMPLATES[days].map(([name, ids]) => ({ id: uid(), name,
-    items: ids.map((id, i) => ({ id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
-      rmin: g.rmin, rmax: g.rmax, rest: i < 2 ? g.rest : Math.max(60, g.rest - 30) })) })) };
+  return { goal, level, minutes, days: TEMPLATES[days].map(([name, ids]) => {
+    const items = ids.map((id, i) => ({ id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
+      rmin: g.rmin, rmax: g.rmax, rest: i < 2 ? g.rest : Math.max(60, g.rest - 30) }));
+    const day = { id: uid(), name, items };
+    // An die gewünschte Trainingszeit anpassen: erst Übungen am Ende kürzen, dann Sätze
+    while (minutes && estMinutes(day) > minutes && items.length > 3) items.pop();
+    for (let i = items.length - 1; minutes && estMinutes(day) > minutes && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
+    return day;
+  }) };
 }
 
 /* ================= Hilfen ================= */
@@ -390,7 +396,7 @@ function render() {
 }
 
 /* ================= Einrichtung ================= */
-let setup = { goal: "aufbau", days: 3, level: "einsteiger" };
+let setup = { goal: "aufbau", days: 3, level: "einsteiger", minutes: 60 };
 function vSetup() {
   const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
     `<button data-a="setup" data-k="${key}" data-val="${v}" class="${String(setup[key]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
@@ -401,6 +407,7 @@ function vSetup() {
       <p class="muted small">${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen, ${GOALS[setup.goal].rest} s Pause bei den Hauptübungen.</p></div>
     <div class="stack"><label style="margin:0">Trainingstage pro Woche</label>${seg("days", [[2, "2 Tage"], [3, "3 Tage"], [4, "4 Tage"]])}
       <p class="muted small">${TEMPLATES[setup.days].map(t => t[0]).join(" · ")}</p></div>
+    <div class="stack"><label style="margin:0">Zeit pro Training</label>${seg("minutes", [[30, "30 min"], [45, "45 min"], [60, "60 min"], [90, "90 min"]])}</div>
     <div class="stack"><label style="margin:0">Erfahrung</label>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="card">${figure(workoutColors(TEMPLATES[setup.days].flatMap(t => t[1].map(id => ({ exId: id })))), "Trainierte Muskeln")}
       <p class="muted small" style="text-align:center">Alle Übungen an Hammer-Strength-Geräten. Du kannst danach alles anpassen.</p></div>
@@ -421,6 +428,8 @@ function vHome() {
     return `<div class="d">${n}<div class="dot ${doneDays.has(d.getTime()) ? "done" : ""} ${i === dow ? "today" : ""}">${d.getDate()}</div></div>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
+  const goal = Math.max(1, state.plan.days.length);
+  const streak = weekStreak(monday, goal);
   const rec = recovery(); const recC = {}; for (const m in rec) recC[m] = recColor(rec[m]);
   const tired = Object.entries(rec).filter(([, p]) => p < 85).sort((a, b) => a[1] - b[1]);
 
@@ -441,8 +450,14 @@ function vHome() {
       ${day.items.length ? "" : `<button class="link small" data-a="editDay" data-id="${day.id}">Übungen hinzufügen</button>`}
     </div>` : ""}
     <div class="card">
-      <div class="row between"><div class="label">Diese Woche</div><span class="small muted">${thisWeek} ${thisWeek === 1 ? "Training" : "Trainings"}</span></div>
+      <div class="row between"><div class="label">Diese Woche</div>
+        <span class="small" style="font-weight:600">${thisWeek} von ${goal} Trainings${thisWeek >= goal ? ' <span style="color:var(--ok)">✓</span>' : ""}</span></div>
       <div class="week">${week}</div>
+      <div class="row" style="gap:12px;border-top:1px solid var(--line);padding-top:12px">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="${streak ? "var(--accent)" : "var(--muscle)"}" aria-hidden="true"><path d="M12 2c1 3.5 5 6 5 11a5 5 0 0 1-10 0c0-2.2 1-3.8 2.2-5 .2 1.6.9 2.7 2 3.2C11 8.7 11 5.5 12 2z"/></svg>
+        <div class="grow"><div class="num" style="font-size:24px">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge</div>
+          <div class="muted small">${streak ? "Wochenziel erreicht. Bleib dran!" : `Schaffe ${goal} Trainings pro Woche, um deine Serie zu starten.`}</div></div>
+      </div>
     </div>
     <div class="card">
       <div class="row between"><div class="label">Erholung</div>
@@ -451,6 +466,15 @@ function vHome() {
       <div class="legend"><span><i style="background:var(--ok)"></i>Erholt</span><span><i style="background:var(--warn)"></i>Teilweise</span><span><i style="background:var(--bad)"></i>Belastet</span></div>
     </div>
   </div>`;
+}
+
+function weekStreak(monday, goal) {
+  const counts = {};
+  state.history.forEach(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); counts[d.getTime()] = (counts[d.getTime()] || 0) + 1; });
+  let n = 0; const w = new Date(monday);
+  if ((counts[w.getTime()] || 0) >= goal) n++; // laufende Woche zählt nur, wenn schon erreicht
+  for (;;) { w.setDate(w.getDate() - 7); if ((counts[w.getTime()] || 0) >= goal) n++; else break; }
+  return n;
 }
 
 /* ================= Plan ================= */
@@ -557,12 +581,16 @@ function startTraining(day) {
     dayId: day.id, dayName: day.name, start: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
     list: day.items.map(it => {
       const e = ex(it.exId), last = lastPerf(it.exId), step = stepFor(e);
-      const up = !!(last && last.every(s => s.reps >= it.rmax) && last.some(s => s.kg !== null));
+      const hasKg = !!(last && last.some(s => s.kg !== null));
       const top = last ? Math.max(...last.map(s => s.kg ?? 0)) : null;
-      return { exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up,
+      // Anpassung: alle Wdh. geschafft -> mehr Gewicht; Mindest-Wdh. in keinem Satz geschafft -> weniger
+      const up = hasKg && last.every(s => s.reps >= it.rmax);
+      const down = hasKg && !up && top - step > 0 && last.every(s => s.reps < it.rmin);
+      return { exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up, down,
         sets: Array.from({ length: it.sets }, (_, i) => {
           const ls = last ? (last[i] || last[last.length - 1]) : null;
           return up ? { kg: top + step, reps: it.rmin, done: false }
+               : down ? { kg: top - step, reps: it.rmin, done: false }
                     : { kg: ls ? ls.kg : null, reps: ls ? Math.min(it.rmax, Math.max(it.rmin, ls.reps)) : it.rmax, done: false };
         }) };
     })
@@ -648,7 +676,7 @@ function vTrain() {
         <div class="grow stack" style="gap:6px">
           <div class="label">Übung ${s.idx + 1} von ${s.list.length} · ${MUSCLES[e.muscle]}</div>
           <h1 style="font-size:30px">${esc(e.name)}</h1>
-          <div class="row wrap" style="gap:6px"><span class="badge">Ziel ${repsTxt(x)} Wdh.</span>${x.up ? `<span class="badge up">↑ +${kgTxt(x.step)} kg</span>` : ""}</div>
+          <div class="row wrap" style="gap:6px"><span class="badge">Ziel ${repsTxt(x)} Wdh.</span>${x.up ? `<span class="badge up">↑ +${kgTxt(x.step)} kg · letztes Mal alles geschafft</span>` : ""}${x.down ? `<span class="badge" style="color:var(--warn)">↓ −${kgTxt(x.step)} kg · letztes Mal zu schwer</span>` : ""}</div>
         </div>
         <div style="width:64px;flex:0 0 64px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
       </div>
@@ -709,8 +737,18 @@ function vHistory() {
     return { s, vol }; });
   const max = Math.max(...weeks.map(w => w.vol), 1);
   const best = {};
-  H.forEach(h => h.exercises.forEach(x => x.sets.forEach(t => { if (t.kg !== null && (!best[x.exId] || t.kg > best[x.exId].kg)) best[x.exId] = { kg: t.kg, reps: t.reps, name: x.name }; })));
+  H.forEach(h => h.exercises.forEach(x => x.sets.forEach(t => { if (t.kg !== null && (!best[x.exId] || t.kg > best[x.exId].kg)) best[x.exId] = { id: x.exId, kg: t.kg, reps: t.reps, name: x.name }; })));
   const bestList = Object.values(best).sort((a, b) => b.kg - a.kg).slice(0, 8);
+  // Kalender
+  const cm = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
+  const trained = {};
+  H.forEach(h => { const d = new Date(h.date); if (d.getFullYear() === cm.getFullYear() && d.getMonth() === cm.getMonth()) trained[d.getDate()] = h.day; });
+  const lead = (cm.getDay() + 6) % 7, daysIn = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate();
+  const isThisMonth = cm.getFullYear() === now.getFullYear() && cm.getMonth() === now.getMonth();
+  const cal = `<div class="week" style="row-gap:8px">${["Mo","Di","Mi","Do","Fr","Sa","So"].map(n => `<div class="d">${n}</div>`).join("")}
+    ${Array.from({ length: lead }, () => "<div></div>").join("")}
+    ${Array.from({ length: daysIn }, (_, i) => `<div class="d"><div class="dot ${trained[i + 1] ? "done" : ""} ${isThisMonth && i + 1 === now.getDate() ? "today" : ""}" ${trained[i + 1] ? `title="${esc(trained[i + 1])}"` : ""}>${i + 1}</div></div>`).join("")}</div>`;
+  const monthCount = Object.keys(trained).length;
 
   $app.innerHTML = `<div class="stack-lg">
     <div><div class="label">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1>Verlauf</h1></div>
@@ -719,8 +757,17 @@ function vHistory() {
       <div class="bars">${weeks.map(w => `<div class="b ${w.vol ? "" : "zero"}" style="height:${w.vol ? Math.max(3, w.vol / max * 100) : 3}%" title="${Math.round(w.vol)} kg"></div>`).join("")}</div>
       <div class="bars-x">${weeks.map((w, i) => `<span>${i === 7 ? "Jetzt" : w.s.getDate() + "." + (w.s.getMonth() + 1) + "."}</span>`).join("")}</div>
     </div>
-    ${bestList.length ? `<div class="card"><div class="label">Bestwerte</div><div class="list">${bestList.map(b =>
-      `<div class="li"><div class="grow ellipsis">${esc(b.name)}</div><span class="num" style="font-size:20px">${kgTxt(b.kg)}<span class="small muted"> kg × ${b.reps}</span></span></div>`).join("")}</div></div>` : ""}
+    <div class="card">
+      <div class="row between">
+        <button class="icon-btn" data-a="calMonth" data-d="-1" aria-label="Voriger Monat">‹</button>
+        <div class="grow" style="text-align:center"><div style="font-weight:600">${cm.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</div>
+          <div class="muted small">${monthCount} ${monthCount === 1 ? "Trainingstag" : "Trainingstage"}</div></div>
+        <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button>
+      </div>
+      ${cal}
+    </div>
+    ${bestList.length ? `<div class="card"><div class="row between"><div class="label">Bestwerte</div><span class="small muted">Antippen für Verlauf</span></div><div class="list">${bestList.map(b =>
+      `<button class="li" data-a="showEx" data-id="${b.id}"><div class="grow ellipsis">${esc(b.name)}</div><span class="num" style="font-size:20px">${kgTxt(b.kg)}<span class="small muted"> kg × ${b.reps}</span></span><span class="muted">›</span></button>`).join("")}</div></div>` : ""}
     <div class="stack">${H.length ? [...H].reverse().slice(0, 30).map(h => `
       <div class="card" style="gap:8px">
         <div class="row between"><h3>${esc(h.day)}</h3><span class="small muted">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></div>
@@ -728,6 +775,43 @@ function vHistory() {
       </div>`).join("") : `<div class="card"><p class="muted">Noch keine Trainings. Nach deinem ersten Training siehst du hier Fortschritt und Bestwerte.</p></div>`}
     </div>
   </div>`;
+}
+
+let calOffset = 0;
+function exChart(exId) {
+  const pts = state.history.map(h => { const x = h.exercises.find(e => e.exId === exId); if (!x) return null;
+    const kgs = x.sets.map(t => t.kg).filter(k => k !== null); return kgs.length ? { d: new Date(h.date), kg: Math.max(...kgs), sets: x.sets } : null; })
+    .filter(Boolean).slice(-12);
+  const name = ex(exId).name;
+  if (!pts.length) return `<h2>${esc(name)}</h2><p class="muted">Noch keine Daten.</p>`;
+  const W = 320, H = 150, pl = 36, pr = 12, pt = 14, pb = 26;
+  let lo = Math.min(...pts.map(p => p.kg)), hi = Math.max(...pts.map(p => p.kg));
+  if (hi === lo) { lo = Math.max(0, lo - 5); hi = hi + 5; }
+  const X = i => pts.length === 1 ? (pl + W - pr) / 2 : pl + i * (W - pl - pr) / (pts.length - 1);
+  const Y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.kg).toFixed(1)}`).join("");
+  const area = line + `L${X(pts.length - 1).toFixed(1)},${H - pb}L${X(0).toFixed(1)},${H - pb}Z`;
+  const first = pts[0].kg, lastP = pts[pts.length - 1];
+  const diff = lastP.kg - first;
+  const dl = d => d.getDate() + "." + (d.getMonth() + 1) + ".";
+  return `<div class="row between"><h2 class="grow">${esc(name)}</h2><button class="btn sm" data-a="closeSheet">Schließen</button></div>
+    <div class="grid3" style="grid-template-columns:1fr 1fr">
+      <div class="stat"><div class="label">Aktuell</div><div class="num">${kgTxt(lastP.kg)}<span class="small muted"> kg</span></div></div>
+      <div class="stat"><div class="label">Seit Beginn</div><div class="num" style="color:${diff > 0 ? "var(--ok)" : "var(--text)"}">${diff > 0 ? "+" : ""}${kgTxt(diff)}<span class="small muted"> kg</span></div></div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Gewichtsverlauf ${esc(name)}">
+      <line x1="${pl}" x2="${W - pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+      <line x1="${pl}" x2="${W - pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+      <text x="${pl - 6}" y="${Y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${kgTxt(hi)}</text>
+      <text x="${pl - 6}" y="${Y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${kgTxt(lo)}</text>
+      <path d="${area}" fill="var(--accent-soft)" opacity=".5"/>
+      <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${pts.map((p, i) => `<circle cx="${X(i)}" cy="${Y(p.kg)}" r="${i === pts.length - 1 ? 5 : 3}" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`).join("")}
+      <text x="${X(0)}" y="${H - 6}" text-anchor="${pts.length === 1 ? "middle" : "start"}" font-size="11" fill="var(--muted)">${dl(pts[0].d)}</text>
+      ${pts.length > 1 ? `<text x="${X(pts.length - 1)}" y="${H - 6}" text-anchor="end" font-size="11" fill="var(--muted)">${dl(lastP.d)}</text>` : ""}
+    </svg>
+    <div class="list">${[...pts].reverse().slice(0, 5).map(p => `<div class="li"><div class="grow small muted">${p.d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })}</div>
+      <div class="small">${p.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join(" · ")}</div></div>`).join("")}</div>`;
 }
 
 /* ================= Ticker ================= */
@@ -750,8 +834,10 @@ function stopTick() { if (timer) clearInterval(timer); timer = null; }
 const A = {
   tab: el => go(el.dataset.v),
   closeSheet: (el, ev) => { if (ev.target === el || el.tagName === "BUTTON") closeSheet(); },
-  setup: el => { const k = el.dataset.k; setup[k] = k === "days" ? +el.dataset.val : el.dataset.val; vSetup(); },
-  createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level); state.selDay = null; save(); go("home"); },
+  setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
+  createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null; save(); go("home"); },
+  calMonth: el => { calOffset += +el.dataset.d; vHistory(); },
+  showEx: el => openSheet(exChart(el.dataset.id)),
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => go("setup"),
   selDay: el => { state.selDay = el.dataset.id; save(); vHome(); },
