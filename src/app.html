@@ -222,14 +222,14 @@ const PATTERNS = {
   push_h:   { label: "Horizontales Drücken", rel: ["push_i"] },
   push_i:   { label: "Schräges Drücken", rel: ["push_h", "push_v"] },
   push_v:   { label: "Vertikales Drücken", rel: ["push_i"] },
-  fly:      { label: "Brust-Isolation (Fly)", rel: [] },
+  fly:      { label: "Brust-Isolation", rel: [] },
   pull_h:   { label: "Horizontales Ziehen", rel: ["pull_v"] },
   pull_v:   { label: "Vertikales Ziehen", rel: ["pull_h"] },
   lateral:  { label: "Seitheben", rel: [] },
   rear:     { label: "Hintere Schulter", rel: [] },
   bi:       { label: "Bizeps-Isolation", rel: [] },
   tri:      { label: "Trizeps-Isolation", rel: ["dip"] },
-  dip:      { label: "Trizeps-Drücken (Dip)", rel: ["tri"] },
+  dip:      { label: "Trizeps-Drücken", rel: ["tri"] },
   squat:    { label: "Kniebeugedominante Beinübung", rel: [] },
   hinge:    { label: "Hüftdominante Beinübung", rel: [] },
   knee_ext: { label: "Knieextension", rel: [] },
@@ -1115,7 +1115,7 @@ function rankAlternatives(curId, used) {
     const score = (rel ? 50 : 0) + (e.fav ? 30 : 0) + (known ? 10 : 0);
     let why;
     if (same) why = `Gleiches Bewegungsmuster (${PATTERNS[e.pattern].label}), ebenfalls ${MUSCLES[e.muscle]}. Widerstandsverlauf kann sich unterscheiden.`;
-    else if (rel) why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber ${PATTERNS[e.pattern].label.toLowerCase()} statt ${PATTERNS[cur.pattern].label.toLowerCase()}: anderer Belastungsschwerpunkt.`;
+    else if (rel) why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit verwandtem Bewegungsmuster (${PATTERNS[e.pattern].label} statt ${PATTERNS[cur.pattern].label}): anderer Belastungsschwerpunkt.`;
     else why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit anderer Bewegung${e.pattern ? " (" + PATTERNS[e.pattern].label + ")" : ""}. Keine direkte Alternative.`;
     (same ? direct : other).push({ e, why, known, score });
   }
@@ -1136,7 +1136,7 @@ function swapSheet() {
     <div class="seg"><button data-a="swapMode" data-v="0" class="${swapPerm ? "" : "on"}">Nur heute</button><button data-a="swapMode" data-v="1" class="${swapPerm ? "on" : ""}">Auch im Plan</button></div>
     <div class="label">Direkte Alternative${cur.pattern ? " · " + PATTERNS[cur.pattern].label : ""}</div>
     ${direct.length ? `<div class="list" id="swapDirect">${direct.map(a => row(a, "direct")).join("")}</div>`
-      : `<p class="muted small" id="swapNoDirect">Für ${cur.pattern ? PATTERNS[cur.pattern].label.toLowerCase() : "dieses Gerät"} gibt es in deinem Studio keine direkte Alternative.</p>`}
+      : `<p class="muted small" id="swapNoDirect">Für ${cur.pattern ? "„" + PATTERNS[cur.pattern].label + "“" : "dieses Gerät"} gibt es in deinem Studio keine direkte Alternative.</p>`}
     ${other.length ? `<div class="label">Andere Übung für ${MUSCLES[cur.muscle]}</div><div class="list" id="swapOther">${other.map(a => row(a, "other")).join("")}</div>` : ""}
     ${!direct.length && !other.length ? `<p class="muted small">Kein anderes verfügbares Gerät für ${MUSCLES[cur.muscle]}. Überspringe die Übung über „Übungen“.</p>` : ""}`;
 }

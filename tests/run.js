@@ -480,7 +480,6 @@ async function finishAllSets(page, kg, reps) {
       ok("Bevorzugtes Gerät ersetzt Vorlage gleicher Bewegung (Wide Chest statt Chest Press)", push.includes("hs-widechest") && !push.includes("hs-chest"), push.join());
       ok("Bevorzugter Lat Pulldown statt Front Lat Pulldown", pull.includes("hs-lat") && !pull.includes("hs-pulldown"), pull.join());
       const base = await gen({});
-      const pats = d => d.items.map(i => i.exId).map(id => base && id).length;
       const patList = async pl => tp(page, pl => pl.days.map(d => d.items.map(i => window.__tp.ex(i.exId).pattern).sort().join()), pl);
       ok("Mischung der Bewegungsmuster bleibt gleich", JSON.stringify(await patList(plan)) === JSON.stringify(await patList(base)));
       let dup = true;
@@ -515,9 +514,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=bizeps]");
       await page.click("[data-a=editDev][data-id=hs-curl]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
-      await page.click("[data-a=newDev]").catch(() => {});
       await page.evaluate(() => { const T = window.__tp; T.state.custom.push({ id: "c-x", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); T.state.plan.gaps = [{ day: "Push", name: "Lateral Raise", pattern: "lateral" }]; });
-      await page.click(".sheet [data-a=devCancel]").catch(() => {});
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       await page.evaluate(() => localStorage.clear()); await page.reload();
