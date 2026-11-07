@@ -500,6 +500,8 @@ const M = {
   obl: "Schräge Bauchmuskeln (Mm. obliqui externus und internus abdominis)"
 };
 const ISO = "Iso-Lateral: Beide Arme bewegen sich unabhängig voneinander. Du kannst beidseitig, einarmig oder abwechselnd trainieren. Weil keine Seite die andere mitzieht, werden Kraftunterschiede zwischen links und rechts sichtbar.";
+const ONEARM = "Einarmig trainieren: Den freien Arm in der Ausgangsposition lassen und den Rumpf ruhig halten.";
+const ROW1 = "Einarmig trainieren: Den Oberkörper nicht mitdrehen, die Brust bleibt gerade am Polster.";
 const BREATH_PUSH = "Beim Drücken ausatmen, beim kontrollierten Zurückführen einatmen. Die Luft nicht über mehrere Wiederholungen anhalten – besonders bei Bluthochdruck ist langes Pressatmen zu vermeiden.";
 const BREATH_PULL = "Beim Ziehen ausatmen, beim kontrollierten Nachgeben einatmen. Die Luft nicht über mehrere Wiederholungen anhalten.";
 const BREATH_LEG = "Beim Strecken bzw. Heben ausatmen, beim Nachgeben einatmen. Bei schweren Sätzen kann kurzes Luftanhalten den Rumpf stabilisieren; bei Bluthochdruck langes Pressatmen vermeiden.";
@@ -512,8 +514,8 @@ const GUIDE = {
     steps: ["Schulterblätter leicht nach hinten-unten ziehen und die Brust aufgerichtet lassen.", "Die Griffe gleichmäßig nach vorn drücken, bis die Arme fast gestreckt sind.", "Die Ellbogen nicht ruckartig durchstrecken.", "Kontrolliert zurückführen, bis du eine deutliche Dehnung in der Brust spürst – ohne dass die Schultern nach vorn rollen.", "Ohne Schwung in die nächste Wiederholung übergehen."],
     breath: BREATH_PUSH,
     mistakes: [["Schultern wandern nach oben oder vorn", "Schulterblätter bewusst unten und hinten halten, die Brust bleibt aufgerichtet."], ["Hohlkreuz, Gesäß hebt ab", "Becken und Rücken bleiben an der Lehne, Füße fest aufsetzen."], ["Nur halbe Bewegung", "Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."]],
-    safety: ["Bei Schulterbeschwerden den Weg nach hinten begrenzen, bis die Bewegung schmerzfrei ist.", "Scheiben gleichmäßig verteilen und vor dem Einsteigen prüfen, dass sie sicher sitzen."],
-    tips: [ISO, "Einarmig trainieren: Den freien Arm in der Ausgangsposition lassen und den Rumpf ruhig halten.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+    safety: ["Bei Schulterbeschwerden den Weg nach hinten begrenzen, bis die Bewegung schmerzfrei ist."],
+    tips: [ISO, ONEARM, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
   "hs-incline": {
     main: [M.pecC, M.dAnt], sup: [M.tri],
@@ -521,9 +523,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass die Griffe etwa auf Höhe der oberen Brust liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
     steps: ["Schulterblätter leicht zurück und unten, Brust aufgerichtet.", "Die Griffe schräg nach oben-vorn drücken, bis die Arme fast gestreckt sind.", "Kurz kontrollieren, ohne die Ellbogen durchzuschlagen.", "Langsam zurückführen bis zu einer deutlichen Dehnung in der oberen Brust.", "Die Schultern bleiben dabei unten."],
     breath: BREATH_PUSH,
-    mistakes: [["Schultern ziehen zu den Ohren", "Schulterblätter nach unten ziehen, Nacken lang lassen."], ["Rücken löst sich von der Lehne", "Bauch leicht anspannen, Rücken an der Lehne halten."], ["Zu tief eingestellt, Druck geht in die Schultern", "Sitzhöhe prüfen: Griffe auf Höhe der oberen Brust."]],
-    safety: ["Bei Schulterschmerzen den Bewegungsweg verkürzen."],
-    tips: [ISO, "Ergänzt das flache Drücken gut, wenn du den oberen Brustanteil gezielter trainieren willst."],
+    mistakes: [["Schultern ziehen zu den Ohren", "Schulterblätter nach unten ziehen, Nacken lang lassen."], ["Rücken löst sich von der Lehne", "Bauch leicht anspannen, Rücken an der Lehne halten."], ["Zu tief eingestellt, Druck geht in die Schultern", "Sitzhöhe prüfen: Griffe auf Höhe der oberen Brust."], ["Ellbogen schlagen oben durch", "Kurz vor der vollen Streckung abbremsen und die Spannung halten."]],
+    safety: ["Bei Schulterschmerzen den Bewegungsweg verkürzen.", "Schräges Drücken fordert die vordere Schulter stärker als flaches Drücken. Bei empfindlicher Schulter mit leichtem Gewicht beginnen."],
+    tips: [ISO, "Ergänzt das flache Drücken gut, wenn du den oberen Brustanteil gezielter trainieren willst.", ONEARM],
     src: ["bench2020"]
   },
   "hs-decline": {
@@ -532,9 +534,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass die Griffe etwa auf Höhe der unteren Brust liegen.", "Rücken fest an der Lehne, Füße fest auf dem Boden."],
     steps: ["Schulterblätter leicht zurück und unten.", "Die Griffe nach vorn-unten drücken, bis die Arme fast gestreckt sind.", "Kontrolliert zurückführen, bis du eine Dehnung in der Brust spürst.", "Schultern bleiben unten, der Rücken an der Lehne."],
     breath: BREATH_PUSH,
-    mistakes: [["Ellbogen schlagen am Ende durch", "Kurz vor der vollen Streckung abbremsen."], ["Schultern rollen nach vorn", "Brust aufgerichtet lassen, Schulterblätter zurück."]],
+    mistakes: [["Ellbogen schlagen am Ende durch", "Kurz vor der vollen Streckung abbremsen."], ["Schultern rollen nach vorn", "Brust aufgerichtet lassen, Schulterblätter zurück."], ["Gesäß rutscht nach vorn", "Becken hinten an der Lehne lassen, Füße fest aufsetzen."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."]],
     safety: ["Gewicht zu Beginn so wählen, dass du die neue Druckrichtung sauber kontrollierst."],
-    tips: [ISO, "Eine von drei Druckrichtungen (flach, schräg, abfallend). Für einen Plan genügt meist eine oder zwei davon."]
+    tips: [ISO, "Eine von drei Druckrichtungen (flach, schräg, abfallend). Für einen Plan genügt meist eine oder zwei davon.", ONEARM]
   },
   "hs-widechest": {
     main: [M.pec], sup: [M.dAnt, M.tri],
@@ -542,9 +544,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass die Griffe etwa auf Brusthöhe liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
     steps: ["Schulterblätter leicht zurück und unten.", "Die Griffe nach vorn zusammenführen, bis die Arme fast gestreckt sind.", "Langsam zurück, nur so weit, wie die Dehnung in der Brust angenehm kontrollierbar bleibt.", "Die Schultern bleiben unten und hinten."],
     breath: BREATH_PUSH,
-    mistakes: [["Zu weit nach hinten in eine unangenehme Schulterdehnung", "Nur so weit zurück, wie es schmerzfrei bleibt."], ["Handgelenke knicken ab", "Handgelenke in Verlängerung der Unterarme halten."]],
+    mistakes: [["Zu weit nach hinten in eine unangenehme Schulterdehnung", "Nur so weit zurück, wie es schmerzfrei bleibt."], ["Handgelenke knicken ab", "Handgelenke in Verlängerung der Unterarme halten."], ["Schultern rollen nach vorn", "Schulterblätter leicht zurück und unten halten, die Brust bleibt aufgerichtet."], ["Gewicht fällt in die Dehnung", "Den Rückweg 2–3 Sekunden kontrollieren und am Umkehrpunkt nicht federn."]],
     safety: ["Breite Armführung belastet die Schulter in der Dehnung stärker. Bei Beschwerden lieber die klassische Brustpresse wählen."],
-    tips: [ISO]
+    tips: [ISO, "Wide Chest und klassische Brustpresse gehören zum selben Bewegungsmuster (horizontales Drücken). Für Abwechslung kannst du sie über die Wochen tauschen.", ONEARM]
   },
   "hs-fly": {
     main: [M.pec], sup: [M.dAnt],
@@ -552,8 +554,8 @@ const GUIDE = {
     setup: ["Sitzhöhe so wählen, dass die Arme etwa auf Schulterhöhe oder knapp darunter liegen.", "Startposition so einstellen, dass du eine angenehme Dehnung in der Brust spürst, ohne Zug im Schultergelenk.", "Rücken an der Lehne."],
     steps: ["Ellbogen leicht gebeugt und in dieser Stellung halten.", "Die Arme in einem Bogen vor der Brust zusammenführen.", "Kurz halten und die Brust anspannen.", "Langsam zurück bis zur Startposition.", "Die Schultern bleiben unten."],
     breath: BREATH_PUSH,
-    mistakes: [["Ellbogenwinkel ändert sich, Bewegung wird zum Drücken", "Den Ellbogenwinkel während der ganzen Bewegung gleich halten."], ["Zu weite Startposition", "Startposition so wählen, dass die Schulter nicht überdehnt wird."]],
-    safety: ["Bei Schulterbeschwerden die Startposition enger wählen."],
+    mistakes: [["Ellbogenwinkel ändert sich, Bewegung wird zum Drücken", "Den Ellbogenwinkel während der ganzen Bewegung gleich halten."], ["Zu weite Startposition", "Startposition so wählen, dass die Schulter nicht überdehnt wird."], ["Schultern rollen nach vorn", "Brust aufgerichtet lassen, Schulterblätter leicht zurück."], ["Arme schnellen zurück", "Langsam in die Dehnung zurückführen, ohne dass der Gewichtsblock aufschlägt."]],
+    safety: ["Bei Schulterbeschwerden die Startposition enger wählen.", "Die Startposition zuerst mit sehr leichtem Gewicht testen: Wie weit ist die Dehnung angenehm?"],
     tips: ["Gut als zweite Brustübung nach einer Druckübung.", "Kleine Gewichtsschritte wählen, weil die Kraft hier geringer ist als beim Drücken."]
   },
   "hs-row": {
@@ -562,9 +564,9 @@ const GUIDE = {
     setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst und die Schulterblätter in der Dehnung nach vorn gleiten können.", "Sitzhöhe so, dass die Griffe etwa auf Höhe der unteren Brust liegen.", "Füße fest abstellen."],
     steps: ["Brust am Polster, Blick nach vorn.", "Mit den Ellbogen nach hinten ziehen, als wolltest du sie an den Körper führen.", "Am Ende die Schulterblätter zusammenführen und kurz halten.", "Kontrolliert nach vorn nachgeben, bis die Arme gestreckt sind und der Rücken sich dehnt.", "Den Oberkörper nicht vom Polster lösen."],
     breath: BREATH_PULL,
-    mistakes: [["Schwung aus dem Oberkörper", "Brust bleibt am Polster, die Bewegung kommt aus Rücken und Armen."], ["Schultern ziehen nach oben", "Schultern unten lassen, Nacken lang."], ["Nur mit den Armen ziehen", "Gedanklich mit den Ellbogen ziehen, die Hände halten nur fest."]],
+    mistakes: [["Schwung aus dem Oberkörper", "Brust bleibt am Polster, die Bewegung kommt aus Rücken und Armen."], ["Schultern ziehen nach oben", "Schultern unten lassen, Nacken lang."], ["Nur mit den Armen ziehen", "Gedanklich mit den Ellbogen ziehen, die Hände halten nur fest."], ["Arme vorn nicht gestreckt", "Vorn die Arme strecken und die Schulterblätter nach vorn gleiten lassen – das ist der gedehnte Teil der Bewegung."]],
     safety: ["Bei Schmerzen im unteren Rücken prüfen, ob die Brust wirklich am Polster bleibt."],
-    tips: [ISO, "Ein enger Griff mit Ellbogen nah am Körper betont den breiten Rückenmuskel, weit abgespreizte Ellbogen stärker den oberen Rücken."]
+    tips: [ISO, "Ein enger Griff mit Ellbogen nah am Körper betont den breiten Rückenmuskel, weit abgespreizte Ellbogen stärker den oberen Rücken.", ROW1]
   },
   "hs-lowrow": {
     main: [M.lat, M.trapM, M.rhomb], sup: [M.dPost, M.bic, M.brach],
@@ -572,9 +574,9 @@ const GUIDE = {
     setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst.", "Sitzhöhe so, dass die Zugrichtung etwa zum Bauch bzw. zur Hüfte zeigt.", "Füße fest abstellen."],
     steps: ["Brust am Polster, Rücken gerade.", "Die Griffe Richtung Hüfte ziehen, Ellbogen dicht am Körper.", "Am Ende kurz halten und den Rücken anspannen.", "Langsam nach vorn nachgeben, bis die Arme gestreckt sind."],
     breath: BREATH_PULL,
-    mistakes: [["Oberkörper kippt nach hinten", "Brust bleibt am Polster."], ["Ellbogen spreizen weit ab", "Ellbogen nah am Körper führen."]],
+    mistakes: [["Oberkörper kippt nach hinten", "Brust bleibt am Polster."], ["Ellbogen spreizen weit ab", "Ellbogen nah am Körper führen."], ["Schultern ziehen nach oben", "Schultern unten lassen, Nacken lang."], ["Arme vorn nicht gestreckt", "Vorn ganz nachgeben, bis die Arme gestreckt sind und der Rücken gedehnt ist."]],
     safety: ["Rücken nicht rund machen, um mehr Weg zu gewinnen."],
-    tips: [ISO]
+    tips: [ISO, "Gedanklich die Ellbogen Richtung Hosentasche führen – das hält sie nah am Körper.", ROW1]
   },
   "hs-highrow": {
     main: [M.lat, M.teres, M.trapL], sup: [M.rhomb, M.dPost, M.bic, M.brach],
@@ -582,9 +584,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass du die Griffe mit gestreckten Armen über dem Kopf erreichst.", "Oberschenkelpolster (falls vorhanden) fest gegen die Beine stellen.", "Rücken aufrecht."],
     steps: ["Arme gestreckt, Schultern zuerst leicht nach unten ziehen.", "Die Griffe diagonal nach unten-hinten ziehen, bis die Hände etwa auf Schulter- bis Brusthöhe sind.", "Kurz halten.", "Kontrolliert nach oben nachgeben, bis die Arme wieder gestreckt sind."],
     breath: BREATH_PULL,
-    mistakes: [["Schultern ziehen zu den Ohren", "Bewegung mit dem Absenken der Schultern beginnen."], ["Oberkörper schaukelt", "Aufrecht sitzen und den Rumpf ruhig halten."]],
+    mistakes: [["Schultern ziehen zu den Ohren", "Bewegung mit dem Absenken der Schultern beginnen."], ["Oberkörper schaukelt", "Aufrecht sitzen und den Rumpf ruhig halten."], ["Zug nur aus den Armen", "Mit den Ellbogen ziehen, die Hände halten nur fest."], ["Halbe Bewegung oben", "Oben nachgeben, bis die Arme gestreckt sind und der Rücken gedehnt ist."]],
     safety: ["In der oberen Position nicht ruckartig in die Dehnung fallen lassen."],
-    tips: [ISO]
+    tips: [ISO, "Die Ellbogen bewegen sich Richtung Hüfte, nicht seitlich nach hinten auseinander.", ROW1]
   },
   "hs-pulldown": {
     main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach],
@@ -593,8 +595,8 @@ const GUIDE = {
     steps: ["Arme gestreckt, Brust leicht aufgerichtet.", "Die Griffe zur oberen Brust ziehen, die Ellbogen zeigen nach unten.", "Unten kurz halten.", "Langsam nach oben nachgeben, bis die Arme gestreckt sind und der Rücken gedehnt ist."],
     breath: BREATH_PULL,
     mistakes: [["Starkes Zurücklehnen", "Nur leichte Rücklage, die Bewegung kommt aus dem Rücken."], ["Halbe Bewegung oben", "Oben die Arme fast ganz strecken."], ["Schwung", "Gewicht wählen, das du ohne Schwung bewegst."]],
-    safety: ["Den Kopf nicht nach vorn schieben."],
-    tips: [ISO]
+    safety: ["Den Kopf nicht nach vorn schieben.", "Oberschenkelpolster fest einstellen, damit dich schwere Gewichte nicht aus dem Sitz heben."],
+    tips: [ISO, "Gedanklich die Ellbogen zur Hüfte ziehen – die Hände halten nur fest.", "Einarmig trainieren: Den Rumpf ruhig halten und nicht zur Seite neigen."]
   },
   "hs-dyrow": {
     main: [M.lat, M.trapM, M.rhomb], sup: [M.bic, M.brach, M.dPost],
@@ -602,9 +604,9 @@ const GUIDE = {
     setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst.", "Sitzhöhe so, dass die Zugrichtung etwa zum Bauch zeigt.", "Füße fest abstellen."],
     steps: ["Brust am Polster, Untergriff.", "Die Ellbogen nah am Körper nach hinten Richtung Hüfte ziehen.", "Am Ende kurz halten.", "Langsam nach vorn nachgeben, bis die Arme gestreckt sind."],
     breath: BREATH_PULL,
-    mistakes: [["Zug nur aus den Armen", "Mit den Ellbogen ziehen, Rücken bewusst anspannen."], ["Oberkörper hebt vom Polster ab", "Brust bleibt am Polster."]],
+    mistakes: [["Zug nur aus den Armen", "Mit den Ellbogen ziehen, Rücken bewusst anspannen."], ["Oberkörper hebt vom Polster ab", "Brust bleibt am Polster."], ["Schultern ziehen nach oben", "Schultern unten lassen, Nacken lang."], ["Handgelenke knicken ab", "Handgelenke gerade in Verlängerung der Unterarme halten."]],
     safety: ["Bei Beschwerden am Ellbogen oder Handgelenk lieber eine Variante mit neutralem Griff wählen."],
-    tips: [ISO]
+    tips: [ISO, "Weil der Bizeps im Untergriff stärker mitarbeitet, ermüdet er bei manchen vor dem Rücken. Dann ist eine Rudervariante mit neutralem Griff eine gute Wahl.", ROW1]
   },
   "hs-lat": {
     main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach],
@@ -612,9 +614,9 @@ const GUIDE = {
     setup: ["Knieposter so einstellen, dass die Oberschenkel fest fixiert sind.", "Stange bzw. Griffe etwas breiter als schulterbreit greifen."],
     steps: ["Arme gestreckt, Brust leicht aufgerichtet.", "Zur oberen Brust ziehen, die Ellbogen zeigen nach unten.", "Unten kurz halten.", "Langsam nach oben nachgeben, bis die Arme gestreckt sind."],
     breath: BREATH_PULL,
-    mistakes: [["Ziehen hinter den Kopf", "Vor dem Kopf zur oberen Brust ziehen."], ["Zurücklehnen und Schwung", "Nur leichte Rücklage, ruhiger Rumpf."]],
-    safety: ["Gewicht am Ende des Satzes kontrolliert ablegen, nicht fallen lassen."],
-    tips: ["Ein engerer, neutraler Griff ist eine gute Variante, wenn breite Griffe die Schultern stören."]
+    mistakes: [["Ziehen hinter den Kopf", "Vor dem Kopf zur oberen Brust ziehen."], ["Zurücklehnen und Schwung", "Nur leichte Rücklage, ruhiger Rumpf."], ["Halbe Bewegung oben", "Oben die Arme fast ganz strecken, damit der Rücken gedehnt wird."], ["Schultern ziehen zu den Ohren", "Die Bewegung mit dem Absenken der Schultern beginnen."]],
+    safety: ["Gewicht am Ende des Satzes kontrolliert ablegen, nicht fallen lassen.", "Knieposter fest einstellen, damit dich schwere Gewichte nicht aus dem Sitz heben."],
+    tips: ["Ein engerer, neutraler Griff ist eine gute Variante, wenn breite Griffe die Schultern stören.", "Gedanklich die Ellbogen zur Hüfte ziehen – die Hände halten nur fest."]
   },
   "hs-shoulder": {
     main: [M.dAnt], sup: [M.dLat, M.tri, M.trapU, M.serr],
@@ -622,9 +624,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass die Griffe in der Ausgangsposition etwa auf Schulter- bis Kinnhöhe liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
     steps: ["Bauch leicht anspannen, Rücken an der Lehne.", "Die Griffe nach oben drücken, bis die Arme fast gestreckt sind.", "Kurz kontrollieren, ohne die Ellbogen durchzuschlagen.", "Langsam zurück bis zur Ausgangsposition."],
     breath: BREATH_PUSH,
-    mistakes: [["Hohlkreuz beim Drücken", "Bauch anspannen, Rücken bleibt an der Lehne."], ["Schultern ziehen zu den Ohren", "Schultern unten lassen, so weit es die Bewegung erlaubt."], ["Halbe Wiederholungen", "Bis zur Ausgangshöhe zurück, solange schmerzfrei."]],
+    mistakes: [["Hohlkreuz beim Drücken", "Bauch anspannen, Rücken bleibt an der Lehne."], ["Schultern ziehen zu den Ohren", "Schultern unten lassen, so weit es die Bewegung erlaubt."], ["Halbe Wiederholungen", "Bis zur Ausgangshöhe zurück, solange schmerzfrei."], ["Ellbogen schlagen oben durch", "Kurz vor der vollen Streckung abbremsen."]],
     safety: ["Bei Schulterschmerzen über Kopf den Bewegungsumfang oben begrenzen oder eine Alternative wählen."],
-    tips: [ISO]
+    tips: [ISO, ONEARM, "Die Schulter ist meist deutlich schwächer als die Brust. Rechne mit weniger Gewicht als beim Brustdrücken."]
   },
   "hs-lateral": {
     main: [M.dLat], sup: [M.supra, M.trapU],
@@ -632,7 +634,7 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass das Schultergelenk etwa auf Höhe der Drehachse der Maschine liegt.", "Die Polster liegen an der Außenseite der Oberarme."],
     steps: ["Aufrecht sitzen, Schultern unten.", "Die Arme seitlich anheben, bis die Oberarme etwa waagerecht sind.", "Kurz halten.", "Langsam absenken, ohne das Gewicht abzulegen."],
     breath: "Beim Heben ausatmen, beim Absenken einatmen.",
-    mistakes: [["Schultern ziehen mit nach oben", "Schultern bewusst unten lassen – sonst übernimmt der obere Trapezmuskel."], ["Schwung", "Kleineres Gewicht wählen und langsam absenken."], ["Zu hoch heben", "Etwa bis Schulterhöhe, darüber arbeitet zunehmend der Trapezmuskel."]],
+    mistakes: [["Schultern ziehen mit nach oben", "Schultern bewusst unten lassen – sonst übernimmt der obere Trapezmuskel."], ["Schwung", "Kleineres Gewicht wählen und langsam absenken."], ["Zu hoch heben", "Etwa bis Schulterhöhe, darüber arbeitet zunehmend der Trapezmuskel."], ["Mit den Händen statt mit den Ellbogen heben", "Die Polster liegen an den Oberarmen: Mit den Ellbogen nach außen-oben führen."]],
     safety: ["Bei Schulterbeschwerden nur bis knapp unter Schulterhöhe heben."],
     tips: ["Kleine Gewichtsschritte wählen – der seitliche Deltamuskel ist ein kleiner Muskel.", "Höhere Wiederholungszahlen funktionieren hier gut, solange die Sätze anstrengend sind."]
   },
@@ -642,9 +644,9 @@ const GUIDE = {
     setup: ["Sitzhöhe so, dass die Arme etwa auf Schulterhöhe liegen.", "Brust an das Polster, Griffe mit leicht gebeugten Ellbogen."],
     steps: ["Arme leicht gebeugt nach vorn.", "Die Arme in einem weiten Bogen nach hinten führen, bis sie etwa auf Höhe des Oberkörpers sind.", "Kurz halten.", "Langsam nach vorn zurück."],
     breath: "Beim Zurückführen ausatmen, beim Nachgeben einatmen.",
-    mistakes: [["Schulterblätter ziehen stark zusammen, Bewegung wird zum Rudern", "Bewegung aus den Armen im Bogen, Ellbogenwinkel gleich halten."], ["Schultern ziehen nach oben", "Schultern unten lassen."]],
+    mistakes: [["Schulterblätter ziehen stark zusammen, Bewegung wird zum Rudern", "Bewegung aus den Armen im Bogen, Ellbogenwinkel gleich halten."], ["Schultern ziehen nach oben", "Schultern unten lassen."], ["Schwung aus dem Oberkörper", "Brust bleibt am Polster, langsam und gleichmäßig bewegen."]],
     safety: ["Mit leichtem Gewicht beginnen; die hintere Schulter ist meist deutlich schwächer als die Brust."],
-    tips: ["Kleine Gewichtsschritte und eher höhere Wiederholungszahlen."]
+    tips: ["Kleine Gewichtsschritte und eher höhere Wiederholungszahlen.", "Bei kombinierten Geräten (Butterfly und Reverse Butterfly) Griffe und Startposition für die hintere Schulter umstellen."]
   },
   "hs-curl": {
     main: [M.bic, M.brach], sup: [M.brachrad],
@@ -654,7 +656,7 @@ const GUIDE = {
     breath: "Beim Beugen ausatmen, beim Absenken einatmen.",
     mistakes: [["Oberarme heben vom Polster ab", "Oberarme bleiben aufliegend."], ["Unten nicht ganz strecken", "Den gedehnten Teil der Bewegung bewusst mitnehmen."], ["Absenken zu schnell", "2–3 Sekunden nachgeben."]],
     safety: ["Am Ende der Streckung nicht in das Gelenk fallen lassen."],
-    tips: ["Kleine Gewichtsschritte wählen."]
+    tips: ["Kleine Gewichtsschritte wählen.", "Ein ruhiges Tempo mit 2–3 Sekunden Absenken hilft, Schwung zu vermeiden."]
   },
   "hs-dip": {
     main: [M.tri], sup: [M.pecS, M.dAnt],
@@ -664,7 +666,7 @@ const GUIDE = {
     breath: BREATH_PUSH,
     mistakes: [["Schultern rollen nach vorn", "Brust aufgerichtet lassen."], ["Ellbogen schlagen durch", "Kurz vor der vollen Streckung abbremsen."], ["Zu tief zurück", "Nur so weit, wie die Schulter es schmerzfrei zulässt."]],
     safety: ["Bei Schulterbeschwerden den Weg nach oben begrenzen."],
-    tips: ["Passt gut als Trizepsübung an Drück-Tagen."]
+    tips: ["Passt gut als Trizepsübung an Drück-Tagen.", "Die Ellbogen nah am Körper führen, statt sie weit nach außen zu drücken."]
   },
   "hs-triext": {
     main: [M.tri], sup: [],
@@ -672,9 +674,9 @@ const GUIDE = {
     setup: ["Sitz so einstellen, dass die Oberarme auf dem Polster liegen.", "Die Ellbogen liegen auf Höhe der Drehachse der Maschine."],
     steps: ["Arme gebeugt, Oberarme auf dem Polster.", "Die Arme strecken, bis sie fast gerade sind.", "Kurz halten.", "Langsam zurück in die Beugung."],
     breath: "Beim Strecken ausatmen, beim Beugen einatmen.",
-    mistakes: [["Oberarme heben ab", "Oberarme bleiben aufliegend."], ["Schwung", "Gewicht wählen, das du gleichmäßig bewegst."]],
+    mistakes: [["Oberarme heben ab", "Oberarme bleiben aufliegend."], ["Schwung", "Gewicht wählen, das du gleichmäßig bewegst."], ["Halbe Bewegung", "Zwischen fast gestreckt und deutlich gebeugt arbeiten, solange der Ellbogen schmerzfrei bleibt."], ["Ellbogen schlagen durch", "Kurz vor der vollen Streckung abbremsen."]],
     safety: ["Bei Ellbogenbeschwerden mit leichtem Gewicht und langsamem Tempo beginnen."],
-    tips: ["Kleine Gewichtsschritte wählen."]
+    tips: ["Kleine Gewichtsschritte wählen.", "Ein ruhiges Tempo mit 2–3 Sekunden zurück hilft, Schwung zu vermeiden."]
   },
   "hs-legpress": {
     main: [M.quad, M.glut], sup: [M.add, M.ham],
@@ -683,7 +685,7 @@ const GUIDE = {
     steps: ["Sicherung lösen, Beine sind leicht gebeugt.", "Kontrolliert absenken, die Knie zeigen in Richtung der Zehen.", "So tief gehen, wie das Becken an der Lehne bleibt.", "Über die ganze Fußsohle nach oben drücken.", "Oben die Knie nicht ganz durchstrecken."],
     breath: BREATH_LEG,
     mistakes: [["Becken rollt unten von der Lehne ab", "Weniger tief gehen oder die Lehne anders einstellen."], ["Knie fallen nach innen", "Knie in Richtung der Zehen führen."], ["Knie werden oben durchgedrückt", "Kurz vor der vollen Streckung stoppen."], ["Fersen heben ab", "Über die ganze Fußsohle drücken."]],
-    safety: ["Vor dem Aussteigen die Sicherung wieder einlegen.", "Scheiben gleichmäßig verteilen."],
+    safety: ["Vor dem Aussteigen die Sicherung wieder einlegen."],
     tips: ["Die Fußposition verändert die Verteilung der Arbeit: Weiter unten auf der Platte beugt sich das Knie stärker und die Oberschenkelvorderseite arbeitet mehr; weiter oben wird die Hüfte stärker gebeugt und das Gesäß arbeitet mehr.", "Große Muskeln vertragen größere Gewichtsschritte."]
   },
   "hs-isolegpress": {
@@ -692,7 +694,7 @@ const GUIDE = {
     setup: ["Rückenlehne so einstellen, dass das Becken in der unteren Position an der Lehne bleibt.", "Füße hüftbreit auf die Fußplatten stellen."],
     steps: ["Beine leicht gebeugt, Rücken an der Lehne.", "Kontrolliert absenken, Knie zeigen in Richtung der Zehen.", "So tief, wie das Becken an der Lehne bleibt.", "Über die ganze Fußsohle nach oben drücken, ohne die Knie durchzustrecken."],
     breath: BREATH_LEG,
-    mistakes: [["Becken rollt ab", "Weniger tief gehen."], ["Knie fallen nach innen", "Knie über den Zehen führen."]],
+    mistakes: [["Becken rollt ab", "Weniger tief gehen."], ["Knie fallen nach innen", "Knie über den Zehen führen."], ["Knie werden oben durchgedrückt", "Kurz vor der vollen Streckung stoppen."], ["Fersen heben ab", "Über die ganze Fußsohle drücken."]],
     safety: ["Einbeinig mit deutlich weniger Gewicht beginnen."],
     tips: ["Einbeinig trainieren: Das schwächere Bein zuerst und mit dem anderen Bein dieselbe Wiederholungszahl machen.", ISO]
   },
@@ -702,9 +704,9 @@ const GUIDE = {
     setup: ["Schultern unter die Polster, Rücken am Rückenpolster.", "Füße etwa schulterbreit und leicht vor dem Körper aufsetzen."],
     steps: ["Sicherung lösen, aufrecht stehen.", "Kontrolliert in die Hocke gehen, Knie in Richtung der Zehen.", "So tief, wie du sauber kontrollieren kannst und der Rücken am Polster bleibt.", "Über die ganze Fußsohle nach oben drücken."],
     breath: BREATH_LEG,
-    mistakes: [["Fersen heben ab", "Gewicht über die ganze Fußsohle verteilen, ggf. Füße etwas weiter vorn aufsetzen."], ["Rücken löst sich vom Polster", "Rumpf anspannen, Tiefe anpassen."]],
+    mistakes: [["Fersen heben ab", "Gewicht über die ganze Fußsohle verteilen, ggf. Füße etwas weiter vorn aufsetzen."], ["Rücken löst sich vom Polster", "Rumpf anspannen, Tiefe anpassen."], ["Knie fallen nach innen", "Knie in Richtung der Zehen führen."], ["Knie werden oben durchgedrückt", "Oben kurz vor der vollen Streckung stoppen."]],
     safety: ["Vor dem Aussteigen die Sicherung einlegen."],
-    tips: ["Große Muskeln vertragen größere Gewichtsschritte."]
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Weiter vorn aufgesetzte Füße verringern die Kniebeugung, weiter hinten aufgesetzte Füße fordern die Oberschenkelvorderseite stärker."]
   },
   "hs-hack": {
     main: [M.quad, M.glut], sup: [M.add],
@@ -712,9 +714,9 @@ const GUIDE = {
     setup: ["Rücken flach am Polster, Schultern unter den Polstern.", "Füße etwa schulterbreit auf die Plattform."],
     steps: ["Sicherung lösen.", "Kontrolliert tief beugen, Knie in Richtung der Zehen.", "Die Fersen bleiben auf der Plattform.", "Über die ganze Fußsohle nach oben drücken, ohne die Knie durchzustrecken."],
     breath: BREATH_LEG,
-    mistakes: [["Fersen heben ab", "Füße etwas weiter vorn aufsetzen."], ["Knie fallen nach innen", "Knie über den Zehen führen."], ["Becken löst sich unten vom Polster", "Weniger tief gehen."]],
+    mistakes: [["Fersen heben ab", "Füße etwas weiter vorn aufsetzen."], ["Knie fallen nach innen", "Knie über den Zehen führen."], ["Becken löst sich unten vom Polster", "Weniger tief gehen."], ["Knie werden oben durchgedrückt", "Kurz vor der vollen Streckung stoppen."]],
     safety: ["Vor dem Aussteigen die Sicherung einlegen."],
-    tips: ["Weiter vorn aufgesetzte Füße verringern die Kniebeugung und verlagern die Arbeit tendenziell mehr ins Gesäß; weiter hinten aufgesetzte Füße fordern die Oberschenkelvorderseite stärker."]
+    tips: ["Weiter vorn aufgesetzte Füße verringern die Kniebeugung und verlagern die Arbeit tendenziell mehr ins Gesäß; weiter hinten aufgesetzte Füße fordern die Oberschenkelvorderseite stärker.", "Große Muskeln vertragen größere Gewichtsschritte."]
   },
   "hs-legext": {
     main: [M.quad], sup: [],
@@ -732,9 +734,9 @@ const GUIDE = {
     setup: ["Ein Knie auf das Kniepolster, den Oberkörper auf das Brustpolster.", "Die Rolle liegt knapp oberhalb der Ferse an der Achillessehne bzw. am unteren Unterschenkel.", "Das Kniegelenk liegt etwa auf Höhe der Drehachse."],
     steps: ["Bein fast gestreckt, Hüfte auf dem Polster.", "Die Ferse in Richtung Gesäß ziehen.", "Oben kurz halten.", "Langsam strecken, ohne das Gewicht abzulegen."],
     breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
-    mistakes: [["Hüfte hebt vom Polster", "Gewicht reduzieren, Hüfte unten halten."], ["Schwung", "Gleichmäßig beugen und langsam strecken."]],
+    mistakes: [["Hüfte hebt vom Polster", "Gewicht reduzieren, Hüfte unten halten."], ["Schwung", "Gleichmäßig beugen und langsam strecken."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."], ["Rolle sitzt falsch", "Die Rolle liegt am unteren Unterschenkel knapp oberhalb der Ferse, nicht auf der Wade."]],
     safety: ["Mit leichtem Gewicht beginnen und die Bewegung erst sauber lernen."],
-    tips: ["Mit dem schwächeren Bein beginnen und dieselbe Wiederholungszahl mit dem anderen Bein machen."]
+    tips: ["Mit dem schwächeren Bein beginnen und dieselbe Wiederholungszahl mit dem anderen Bein machen.", "Den gedehnten Teil der Bewegung (Bein fast gestreckt) bewusst mitnehmen."]
   },
   "hs-seatcurl": {
     main: [M.ham], sup: [M.gastro],
@@ -742,9 +744,9 @@ const GUIDE = {
     setup: ["Rückenlehne so einstellen, dass das Kniegelenk auf Höhe der Drehachse liegt.", "Die Rolle liegt hinten knapp oberhalb der Ferse.", "Das Oberschenkelpolster fest auf die Oberschenkel stellen."],
     steps: ["Beine fast gestreckt, Oberschenkel fixiert.", "Die Fersen nach unten-hinten ziehen.", "Unten kurz halten.", "Langsam strecken, ohne das Gewicht abzulegen."],
     breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
-    mistakes: [["Oberschenkelpolster zu locker", "Fest einstellen, damit die Oberschenkel nicht abheben."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."]],
-    safety: ["Mit leichtem Gewicht beginnen."],
-    tips: ["Den gedehnten Teil der Bewegung (Beine fast gestreckt) bewusst mitnehmen."],
+    mistakes: [["Oberschenkelpolster zu locker", "Fest einstellen, damit die Oberschenkel nicht abheben."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."], ["Kniegelenk nicht auf der Drehachse", "Rückenlehne einstellen, bis Knie und Drehachse übereinstimmen."], ["Gesäß rutscht im Sitz nach vorn", "Rücken an der Lehne lassen, Griffe festhalten."]],
+    safety: ["Mit leichtem Gewicht beginnen.", "Bei Knieschmerzen den Bewegungsumfang auf den schmerzfreien Bereich begrenzen."],
+    tips: ["Den gedehnten Teil der Bewegung (Beine fast gestreckt) bewusst mitnehmen.", "Kleine Gewichtsschritte wählen: Die hintere Oberschenkelmuskulatur ist beim Beugen meist deutlich schwächer als die Vorderseite beim Strecken."],
     src: ["curl2021"]
   },
   "hs-hipthrust": {
@@ -753,9 +755,9 @@ const GUIDE = {
     setup: ["Oberen Rücken bzw. Polster so einstellen, dass die Hüfte unten frei absinken kann.", "Füße hüftbreit, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
     steps: ["Kinn leicht zur Brust, Bauch anspannen.", "Die Hüfte nach oben drücken, bis sie gestreckt ist.", "Oben kurz halten und das Gesäß anspannen.", "Kontrolliert absenken."],
     breath: BREATH_LEG,
-    mistakes: [["Hohlkreuz statt Hüftstreckung oben", "Becken leicht einrollen, Rippen unten lassen."], ["Füße zu nah oder zu weit", "So aufsetzen, dass die Unterschenkel oben senkrecht stehen."]],
+    mistakes: [["Hohlkreuz statt Hüftstreckung oben", "Becken leicht einrollen, Rippen unten lassen."], ["Füße zu nah oder zu weit", "So aufsetzen, dass die Unterschenkel oben senkrecht stehen."], ["Kopf in den Nacken", "Kinn leicht zur Brust, Blick nach vorn."], ["Oben nicht ganz gestreckt", "Bis zur vollen Hüftstreckung drücken und kurz halten."]],
     safety: ["Gewicht so wählen, dass du oben ohne Hohlkreuz halten kannst."],
-    tips: ["Eine kurze Pause in der oberen Position hilft, die Hüfte wirklich zu strecken."]
+    tips: ["Eine kurze Pause in der oberen Position hilft, die Hüfte wirklich zu strecken.", "Über die ganze Fußsohle bzw. die Fersen drücken, nicht über die Zehen."]
   },
   "hs-calf": {
     main: [M.gastro, M.sol], sup: [],
@@ -763,9 +765,9 @@ const GUIDE = {
     setup: ["Schultern unter die Polster, Höhe so einstellen, dass du aufrecht mit leicht gebeugten Knien startest.", "Fußballen auf die Kante, die Fersen hängen frei."],
     steps: ["Knie gestreckt, aber nicht durchgedrückt.", "Fersen tief absenken, bis die Waden deutlich gedehnt sind.", "Unten kurz halten.", "So hoch wie möglich auf die Fußballen drücken.", "Oben kurz halten und langsam wieder absenken."],
     breath: "Beim Heben ausatmen, beim Absenken einatmen.",
-    mistakes: [["Kurze, federnde Wiederholungen", "Unten kurz halten, voller Bewegungsumfang."], ["Knie beugen sich mit", "Knie ruhig halten, die Bewegung kommt aus dem Sprunggelenk."]],
-    safety: ["Bei Achillessehnenbeschwerden die Dehnung unten vorsichtig dosieren."],
-    tips: ["Die Dehnung unten und die volle Streckung oben sind wichtiger als viel Gewicht."],
+    mistakes: [["Kurze, federnde Wiederholungen", "Unten kurz halten, voller Bewegungsumfang."], ["Knie beugen sich mit", "Knie ruhig halten, die Bewegung kommt aus dem Sprunggelenk."], ["Zu schweres Gewicht, kleiner Bewegungsumfang", "Gewicht reduzieren, bis du die volle Bewegung sauber schaffst."]],
+    safety: ["Bei Achillessehnenbeschwerden die Dehnung unten vorsichtig dosieren.", "Sicher auf der Kante stehen: Die Fußballen liegen fest auf, die Hände halten die Griffe."],
+    tips: ["Die Dehnung unten und die volle Streckung oben sind wichtiger als viel Gewicht.", "Ein ruhiges Tempo hilft: hoch, oben kurz halten, 2–3 Sekunden absenken, unten kurz halten."],
     src: ["calf2023"]
   },
   "hs-seatcalf": {
@@ -774,9 +776,9 @@ const GUIDE = {
     setup: ["Polster fest auf die Oberschenkel knapp oberhalb der Knie.", "Fußballen auf die Kante, die Fersen hängen frei."],
     steps: ["Sicherung lösen.", "Fersen tief absenken bis zur deutlichen Dehnung.", "Unten kurz halten.", "So hoch wie möglich auf die Fußballen drücken, oben kurz halten.", "Langsam absenken."],
     breath: "Beim Heben ausatmen, beim Absenken einatmen.",
-    mistakes: [["Federn ohne Pause", "Unten und oben kurz halten."], ["Nur halbe Bewegung", "Volle Dehnung und volle Streckung."]],
-    safety: ["Vor dem Aufstehen die Sicherung einlegen."],
-    tips: ["Gut als Ergänzung zum Wadenheben im Stehen, nicht als Ersatz."],
+    mistakes: [["Federn ohne Pause", "Unten und oben kurz halten."], ["Nur halbe Bewegung", "Volle Dehnung und volle Streckung."], ["Zu schweres Gewicht, kleiner Bewegungsumfang", "Gewicht reduzieren, bis du die volle Bewegung sauber schaffst."]],
+    safety: ["Vor dem Aufstehen die Sicherung einlegen.", "Bei Achillessehnenbeschwerden die Dehnung unten vorsichtig dosieren."],
+    tips: ["Gut als Ergänzung zum Wadenheben im Stehen, nicht als Ersatz.", "Ein ruhiges Tempo hilft: hoch, oben kurz halten, 2–3 Sekunden absenken, unten kurz halten."],
     src: ["calf2023"]
   },
   "hs-ab": {
@@ -787,10 +789,14 @@ const GUIDE = {
     breath: "Beim Einrollen ausatmen, beim Aufrollen einatmen.",
     mistakes: [["Ziehen mit den Armen", "Die Arme halten nur fest, die Bewegung kommt aus dem Bauch."], ["Nur aus der Hüfte beugen", "Die Wirbelsäule bewusst einrollen."], ["Schwung", "Langsam und gleichmäßig bewegen."]],
     safety: ["Bei Rückenbeschwerden mit leichtem Widerstand und kleinem Bewegungsumfang beginnen."],
-    tips: ["Wie andere Muskeln profitiert auch der Bauch von steigender Belastung über die Zeit."]
+    tips: ["Wie andere Muskeln profitiert auch der Bauch von steigender Belastung über die Zeit.", "Ein kurzer, bewusster Halt unten hilft, die Bauchmuskeln wirklich anzuspannen, statt mit Schwung zu arbeiten."]
   }
 };
 const MODEL_NOTE = "Bauweise und Einstellmöglichkeiten unterscheiden sich je nach Modellgeneration. Maßgeblich sind die Hinweise am Gerät in deinem Studio.";
+// Gelten für jedes Gerät der jeweiligen Gewichtsart
+const SAFE_PLATE = "Scheiben vor dem ersten Satz prüfen: richtig aufgesteckt und – wenn du beidseitig trainierst – auf beiden Seiten gleich.";
+const SAFE_PIN = "Den Steckstift vollständig einstecken und prüfen, dass er sicher sitzt, bevor du startest.";
+const SAFE_PAIN = "Schmerz ist ein Stoppsignal: Brennen im Muskel gehört zu anstrengenden Sätzen, stechender Schmerz oder Schmerz im Gelenk nicht.";
 
 
 // Kurze Ausführungstipps (Einstellung · Bewegung · Fehler vermeiden)
@@ -1422,7 +1428,7 @@ function guideHtml(id) {
     ${sec("Ausführung", ol(g.steps))}
     ${sec("Atmung", `<p>${esc(g.breath)}</p>`)}
     ${sec("Häufige Fehler", `<ul class="glist mist">${g.mistakes.map(([f, k]) => `<li><b>${esc(f)}</b><span>${esc(k)}</span></li>`).join("")}</ul>`)}
-    ${sec("Sicherheit", ul(g.safety))}
+    ${sec("Sicherheit", ul([...g.safety, e.type === "plate" ? SAFE_PLATE : SAFE_PIN, SAFE_PAIN]))}
     ${sec("Tipps", ul(g.tips))}
     <section class="gsec gnote"><p class="small faint">${esc(MODEL_NOTE)} Anatomie und Ausführung entsprechen anerkanntem Fachwissen; Aussagen aus Studien sind mit Quelle angegeben.</p>
       ${srcs.length ? `<div class="cap">Quellen</div>${srcList(g.src)}` : ""}</section>`;
@@ -1453,8 +1459,23 @@ function vEx() {
       <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
+    <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
     ${guideHtml(id)}
+    <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
+}
+// Aus Plan und Geräteliste berechnet – keine zusätzlichen Behauptungen
+function exPlanHtml(id) {
+  const uses = (state.plan ? state.plan.days : []).flatMap(d => d.items.filter(i => i.exId === id).map(i => ({ d, i })));
+  if (!uses.length) return `<p class="muted">In keinem Trainingstag. Du kannst sie unter „Plan“ zu einem Tag hinzufügen.</p>`;
+  return `<ul class="glist">${uses.map(({ d, i }) => `<li><b>${esc(d.name)}</b>: ${i.sets} × ${i.rmin}–${i.rmax} Wdh., ${i.rest ? i.rest + " s Pause" : "ohne Pause"}</li>`).join("")}</ul>`;
+}
+function exAltHtml(id) {
+  const { direct, other } = rankAlternatives(id, new Set());
+  const list = [...direct.slice(0, 4), ...other.slice(0, 3)];
+  if (!list.length) return `<p class="muted">Keine weitere Übung für ${MUSCLES[ex(id).muscle]} in deinem Studio.</p>`;
+  return `<div class="group">${list.map(a => `<button class="li" data-a="openEx" data-id="${a.e.id}" data-ret="${exBack}" style="align-items:flex-start">
+      <div class="grow"><div class="t">${esc(a.e.name)}</div><div class="s">${esc(a.why)}</div></div><span class="chev">›</span></button>`).join("")}</div>`;
 }
 function vWissen() {
   $app.innerHTML = `<div class="page">

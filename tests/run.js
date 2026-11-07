@@ -923,7 +923,7 @@ async function finishAllSets(page, kg, reps) {
       const chk = await tp(page, () => { const T = window.__tp, ids = T.allEx().filter(e => !e.id.startsWith("c-")).map(e => e.id);
         const bad = []; const nonEmpty = s => typeof s === "string" && s.trim().length > 20;
         ids.forEach(id => { const g = T.GUIDE[id]; if (!g) { bad.push(id + ": fehlt"); return; }
-          if (!g.main.length || !nonEmpty(g.why) || g.setup.length < 2 || g.steps.length < 3 || !nonEmpty(g.breath) || g.mistakes.length < 2 || !g.safety.length || !g.tips.length) bad.push(id + ": unvollständig");
+          if (!g.main.length || !nonEmpty(g.why) || g.setup.length < 2 || g.steps.length < 3 || !nonEmpty(g.breath) || g.mistakes.length < 3 || !g.safety.length || g.tips.length < 2) bad.push(id + ": unvollständig");
           if (g.mistakes.some(m => !m[0] || !m[1])) bad.push(id + ": Fehler ohne Korrektur");
           (g.src || []).forEach(k => { if (!T.SOURCES[k]) bad.push(id + ": Quelle " + k); }); });
         T.ARTICLES.forEach(a => { if (!a.src.length) bad.push(a.id + ": ohne Quelle"); a.src.forEach(k => { if (!T.SOURCES[k]) bad.push(a.id + ": Quelle " + k); }); });
@@ -931,7 +931,7 @@ async function finishAllSets(page, kg, reps) {
         const txt = JSON.stringify([T.GUIDE, T.ARTICLES]);
         if (/TODO|lorem|xxx/i.test(txt)) bad.push("Platzhalter");
         return { n: ids.length, bad, arts: T.ARTICLES.length }; });
-      ok("Alle 28 Geräte vollständig beschrieben (Muskeln, Nutzen, Einstellung, Ausführung, Atmung, Fehler mit Korrektur, Sicherheit, Tipps)", chk.n === 28 && !chk.bad.length, chk.bad.join("; "));
+      ok("Alle 28 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 28 && !chk.bad.length, chk.bad.join("; "));
       ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
       ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
       // Bibliothek
@@ -947,13 +947,25 @@ async function finishAllSets(page, kg, reps) {
       ok("Übungsseite zeigt alle Abschnitte", ["Warum diese Übung", "Einstellen", "Ausführung", "Atmung", "Häufige Fehler", "Sicherheit", "Tipps", "Hauptsächlich"].every(s => seat.includes(s)));
       ok("Studienaussage mit Quelle verlinkt (Beinbeuger sitzend)", (await page.$$eval("#app .srcs a", a => a.map(x => x.href))).some(h => h.includes("33009197")));
       ok("Ohne eigene Einträge: ehrlicher Hinweis statt erfundener Werte", (await page.textContent("#exStats")).includes("Noch keine Einträge"));
+      ok("Steckgewicht: Hinweis zum Steckstift, dazu Schmerz als Stoppsignal", seat.includes("Steckstift") && seat.includes("Stoppsignal") && !seat.includes("Scheiben vor dem ersten Satz"));
+      ok("Nicht im Plan: ehrlicher Hinweis", (await page.textContent("#exPlan")).includes("In keinem Trainingstag"));
       await page.click("[data-a=exBack]");
       ok("Zurück führt zur Bibliothek", await page.isVisible("#libQ"));
       await page.click("[data-a=openEx][data-id=hs-chest]");
       const st = await page.textContent("#exStats");
       ok("Deine Werte aus echten Daten: 3 Einheiten, Bestwert 42,5, +10 kg seit Beginn", st.includes("3") && st.includes("42,5") && st.includes("+10") && st.includes("32,5"), st.slice(0, 200));
       ok("Übungsseite bei 360 px ohne seitliches Scrollen", await noOverflow(page));
-      await page.click("[data-a=exBack]"); await page.click("[data-a=openEx][data-id=c-k]");
+      const chestTxt = await page.textContent("#app");
+      ok("Scheibengerät: Hinweis zu den Scheiben, kein Steckstift", chestTxt.includes("Scheiben vor dem ersten Satz") && !chestTxt.includes("Steckstift"));
+      ok("„In deinem Plan“ zeigt Tag, Sätze und Wiederholungen aus dem Plan", (await page.textContent("#exPlan")).includes("Test: 2 × 8–12 Wdh."));
+      const alts = await page.$$eval("#exAlt [data-a=openEx]", b => b.map(x => x.dataset.id));
+      const exp = await tp(page, () => { const r = window.__tp.rankAlternatives("hs-chest", new Set()); return [...r.direct.slice(0, 4), ...r.other.slice(0, 3)].map(a => a.e.id); });
+      ok("Alternativen: gleiche Auswahl wie beim Gerätetausch, direkte zuerst", alts.length > 0 && JSON.stringify(alts) === JSON.stringify(exp), alts.join());
+      await page.click(`#exAlt [data-a=openEx][data-id=${alts[0]}]`);
+      ok("Alternative öffnet ihre Übungsseite", (await page.textContent(".head .title")) === await tp(page, id => window.__tp.ex(id).name, alts[0]));
+      await page.click("[data-a=exBack]");
+      ok("Zurück führt weiter zur Bibliothek", await page.isVisible("#libQ"));
+      await page.click("[data-a=openEx][data-id=c-k]");
       ok("Eigenes Gerät: Hinweis statt erfundener Anleitung", (await page.textContent("#app")).includes("keine ausführliche Anleitung"));
       // Wissen
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=wissen]");
