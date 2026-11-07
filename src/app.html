@@ -269,7 +269,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 3, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null }; }
+function blank() { return { v: 3, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {} }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -343,6 +343,7 @@ function normalize(raw) {
       paused: +r.paused || null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list };
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
+  if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   return s;
 }
 function load() {
@@ -621,6 +622,11 @@ function vHome() {
 
   $app.innerHTML = `<div class="stack-lg">
     <div><div class="label">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><h1>Heute</h1></div>
+    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="card">
+        <div class="label">Neu: Gewicht pro Seite</div>
+        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Deine bisherigen Einträge an diesen Geräten wurden so eingeordnet. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
+        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
+      </div>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<div class="card">
         <div class="label">Training pausiert</div>
@@ -761,7 +767,11 @@ function devSheetHtml() {
     ${d.type === "plate" ? `<div><label>Gewicht eintragen</label>${seg("load", [["side", "Pro Seite"], ["total", "Insgesamt"]])}
       <p class="muted small" style="margin-top:6px">${d.load === "side" ? "Beispiel: Brustpresse 40 kg pro Seite. Typisch für Iso-Lateral-Geräte mit zwei getrennten Armen." : "Beispiel: Beinpresse 160 kg insgesamt. Alle aufgelegten Scheiben zusammen."}</p></div>`
       : `<p class="muted small">Beispiel: 65 kg am Gewichtsblock.</p>`}
-    ${!d._new && hasHistoryOtherUnit(d) ? `<p class="reason">Frühere Einträge mit anderer Gewichtsangabe bleiben erhalten, werden aber nicht mit den neuen Werten verglichen.</p>` : ""}
+    ${!d._new && hasHistoryOtherUnit(d) ? (() => { const tu = draftUnit(d), n = otherUnitCount(d);
+      return `<div class="reason" style="display:grid;gap:8px">
+        <span>${n} ${n === 1 ? "früherer Eintrag hat" : "frühere Einträge haben"} eine andere Gewichtsangabe und ${n === 1 ? "wird" : "werden"} nicht mit neuen Werten verglichen.</span>
+        <span class="muted small">Hast du damals schon so eingetragen wie jetzt eingestellt? Dann stelle sie auf „${UNIT[tu]}“ um. Die Zahlen bleiben gleich.</span>
+        <button class="btn sm" data-a="devRelabelAsk" style="justify-self:start">Frühere Einträge als „${UNIT[tu]}“ werten</button></div>`; })() : ""}
     <div><label>Gewichtsschritt in kg${d.type === "plate" && d.load === "side" ? " pro Seite" : ""}</label>${seg("step", [[1.25, "1,25"], [2.5, "2,5"], [5, "5"], [10, "10"]])}</div>
     <div><label for="devNote">Deine Einstellung</label><input id="devNote" data-i="devNote" value="${esc(d.note || "")}" placeholder="z. B. Sitz 4, Griff weit" autocomplete="off"></div>
     <div class="toggle-row"><div><div style="font-weight:600">In meinem Studio</div><div class="muted small">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
@@ -773,8 +783,9 @@ function devSheetHtml() {
     <button class="btn block" data-a="devCancel">Abbrechen</button>`;
 }
 function unitLocked(id) { const s = state.session; return !!(s && s.list.some(x => x.exId === id && x.sets.some(t => t.done))); }
-function hasHistoryOtherUnit(d) { const u = d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
-  return state.history.some(h => h.exercises.some(x => x.exId === d.id && x.u !== u)); }
+const draftUnit = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
+function otherUnitCount(d) { const u = draftUnit(d); let n = 0; state.history.forEach(h => h.exercises.forEach(x => { if (x.exId === d.id && x.u !== u) n++; })); return n; }
+function hasHistoryOtherUnit(d) { return otherUnitCount(d) > 0; }
 function devBack(savedId) {
   if (devRet === "list") return openSheet(devListHtml());
   if (devRet === "pick") { if (savedId) { addToDay(savedId); closeSheet(); } else openSheet(pickerHtml()); return; }
@@ -1336,6 +1347,19 @@ const A = {
     if ((d.note || "").trim()) state.notes[d.id] = d.note.trim(); else delete state.notes[d.id];
     save(); devBack(d._new ? d.id : null); },
   devCancel: () => devBack(null),
+  devRelabelAsk: () => { const d = devDraft, tu = draftUnit(d), n = otherUnitCount(d);
+    openSheet(`<h2>Frühere Einträge umstellen?</h2>
+      <p>${n} ${n === 1 ? "Eintrag" : "Einträge"} von „${esc(d.name)}“ ${n === 1 ? "wird" : "werden"} als „${UNIT[tu]}“ gewertet. Die eingetragenen Zahlen ändern sich nicht.</p>
+      <p class="muted small">Danach zählen sie für Vorschläge, Bestwerte und Volumen mit. Das Gerät wird dabei mit dieser Gewichtsangabe gespeichert.</p>
+      <button class="btn primary block" data-a="devRelabel">Umstellen</button><button class="btn block" data-a="devRelabelBack">Zurück</button>`); },
+  devRelabelBack: () => openSheet(devSheetHtml()),
+  devRelabel: () => { const d = devDraft, tu = draftUnit(d);
+    state.history.forEach(h => h.exercises.forEach(x => { if (x.exId === d.id) x.u = tu; }));
+    const base = state.dev[d.id] || {};
+    state.dev[d.id] = Object.assign({}, base, { type: d.type, load: d.type === "stack" ? "total" : d.load });
+    save(); openSheet(devSheetHtml()); },
+  hintUnitsDone: () => { state.hints.units = true; save(); render(); },
+  hintUnitsOpen: () => { state.hints.units = true; save(); devFilter = "alle"; openSheet(devListHtml()); },
   devReset: () => { delete state.dev[devDraft.id]; save(); devBack(null); },
   devDelete: () => { const id = devDraft.id;
     if (state.plan?.days.some(d => d.items.some(i => i.exId === id))) { const er = byId("devErr"); er.textContent = "Das Gerät ist noch in deinem Plan. Entferne es dort zuerst."; er.hidden = false; return; }
