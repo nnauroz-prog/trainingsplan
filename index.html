@@ -5,11 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#101215">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Training">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
-<style>:root{padding-top:env(safe-area-inset-top,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
 <body>
 <title>Trainingsplan</title>
@@ -22,7 +25,7 @@
     --bg:#101215; --surface:#191c21; --surface2:#22262d; --line:#2b3038;
     --text:#f2f3f5; --muted:#8c93a0; --accent:#ff6b1a; --accent-soft:rgba(255,107,26,.38);
     --ok:#2bb673; --warn:#f2b233; --bad:#ef5350;
-    --fig:#2a2f37; --muscle:#3a404a;
+    --fig:#2a2f37; --muscle:#3a404a; --band:rgba(255,255,255,.13);
     --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
     --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     color-scheme:dark;
@@ -30,11 +33,11 @@
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
     --bg:#f2f3f5; --surface:#ffffff; --surface2:#eceef1; --line:#e0e3e8;
     --text:#14171c; --muted:#646c78; --accent:#e85a0c; --accent-soft:rgba(232,90,12,.32);
-    --ok:#1c9a5c; --warn:#d99a12; --bad:#d93a37; --fig:#d9dde3; --muscle:#c3c8d0; color-scheme:light}}
+    --ok:#1c9a5c; --warn:#d99a12; --bad:#d93a37; --fig:#d9dde3; --muscle:#c3c8d0; --band:rgba(20,23,28,.12); color-scheme:light}}
   :root[data-theme="light"]{
     --bg:#f2f3f5; --surface:#ffffff; --surface2:#eceef1; --line:#e0e3e8;
     --text:#14171c; --muted:#646c78; --accent:#e85a0c; --accent-soft:rgba(232,90,12,.32);
-    --ok:#1c9a5c; --warn:#d99a12; --bad:#d93a37; --fig:#d9dde3; --muscle:#c3c8d0; color-scheme:light}
+    --ok:#1c9a5c; --warn:#d99a12; --bad:#d93a37; --fig:#d9dde3; --muscle:#c3c8d0; --band:rgba(20,23,28,.12); color-scheme:light}
 
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.4;
@@ -155,6 +158,12 @@
   .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 
   .stat{display:grid;gap:4px}
+  .mlist{display:grid;gap:8px}
+  .mrow{display:grid;grid-template-columns:96px 1fr 34px;gap:10px;align-items:center}
+  .mtrack{position:relative;height:10px;border-radius:6px;background:var(--surface2);overflow:hidden}
+  .mband{position:absolute;top:0;bottom:0;background:var(--band)}
+  .seg.feel button.on{background:var(--accent);color:#fff;box-shadow:none}
+  .mfill{position:absolute;left:0;top:0;bottom:0;border-radius:6px;opacity:.95}
   .stat .num{font-size:30px}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   @media (prefers-reduced-motion: reduce){.sheet{animation:none}.bar>div,.fig .m{transition:none}}
@@ -335,10 +344,37 @@ function nextDay() {
   const days = state.plan?.days || [];
   if (!days.length) return null;
   if (state.selDay) { const d = days.find(x => x.id === state.selDay); if (d) return d; }
+  nextReason = "";
   const last = state.history[state.history.length - 1];
   if (!last) return days[0];
   const i = days.findIndex(d => d.id === last.dayId);
-  return days[(i + 1) % days.length] || days[0];
+  const rot = days[(i + 1) % days.length] || days[0];
+  // Ist der geplante Tag noch nicht erholt, einen erholten Tag vorschlagen
+  const rec = recovery();
+  // Erholung eines Tages = Durchschnitt der Hauptmuskeln, gewichtet nach Sätzen
+  const score = d => { const n = d.items.reduce((a, it) => a + it.sets, 0); return n ? d.items.reduce((a, it) => a + rec[ex(it.exId).muscle] * it.sets, 0) / n : 100; };
+  const sr = score(rot);
+  if (sr < 50) {
+    const alt = days.filter(d => d !== rot && d.items.length).map(d => [d, score(d)]).sort((a, b) => b[1] - a[1])[0];
+    if (alt && alt[1] >= 55 && alt[1] - sr >= 25) {
+      const tiredM = [...new Set(rot.items.map(it => ex(it.exId).muscle))].filter(m => rec[m] < 60).map(m => MUSCLES[m]);
+      nextReason = `${tiredM.slice(0, 2).join(" und ")} ${tiredM.length > 1 ? "sind" : "ist"} noch nicht erholt. Heute lieber ${alt[0].name}, ${rot.name} danach.`;
+      return alt[0];
+    }
+  }
+  return rot;
+}
+let nextReason = "";
+function e1rm(t) { return t.kg ? t.kg * (1 + Math.min(t.reps, 12) / 30) : 0; }
+function sessionsE1(exId) {
+  return state.history.map(h => h.exercises.find(x => x.exId === exId)).filter(Boolean)
+    .map(x => Math.max(...x.sets.map(e1rm))).filter(v => v > 0);
+}
+function plateau(exId) {
+  const v = sessionsE1(exId);
+  if (v.length < 4) return false;
+  const before = Math.max(...v.slice(0, -3)), recent = Math.max(...v.slice(-3));
+  return recent <= before + 0.01;
 }
 
 /* Ton & Wachhalten */
@@ -478,7 +514,8 @@ function vHome() {
       <div class="row" style="align-items:flex-start">
         <div class="grow stack" style="gap:6px"><h2>${esc(day.name)}</h2>
           <p class="muted small">${day.items.length} Übungen · ${day.items.reduce((a, i) => a + i.sets, 0)} Sätze</p>
-          <p class="small">${[...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))].join(", ") || "Noch keine Übungen"}</p></div>
+          <p class="small">${[...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))].join(", ") || "Noch keine Übungen"}</p>
+          ${nextReason ? `<p class="small" style="color:var(--warn);font-weight:600">${esc(nextReason)}</p>` : ""}</div>
         <div style="width:118px;flex:0 0 118px">${figure(workoutColors(day.items), "Muskeln in diesem Training")}</div>
       </div>
       ${state.plan.days.length > 1 ? `<div class="chips">${state.plan.days.map(d =>
@@ -632,9 +669,13 @@ function makeEntry(it) {
       const hasKg = !!(last && last.some(s => s.kg !== null));
       const top = last ? Math.max(...last.map(s => s.kg ?? 0)) : null;
       // Anpassung: alle Wdh. geschafft -> mehr Gewicht; Mindest-Wdh. in keinem Satz geschafft -> weniger
-      const up = hasKg && last.every(s => s.reps >= it.rmax);
+      const allReps = hasKg && last.every(s => s.reps >= it.rmax);
+      const easy = hasKg && last.every(s => s.f === "l" && s.reps >= it.rmin);
+      const up = allReps || easy;
       const down = hasKg && !up && top - step > 0 && last.every(s => s.reps < it.rmin);
-      return { itemId: it.id, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up, down,
+      const hold = hasKg && !up && !down && last[last.length - 1].f === "h";
+      const why = up ? (allReps ? "letztes Mal alles geschafft" : "letztes Mal leicht") : down ? "letztes Mal zu schwer" : hold ? "Gewicht halten, letzter Satz war schwer" : "";
+      return { itemId: it.id, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up, down, hold, why,
         sets: Array.from({ length: it.sets }, (_, i) => {
           const ls = last ? (last[i] || last[last.length - 1]) : null;
           return up ? { kg: top + step, reps: it.rmin, done: false }
@@ -652,7 +693,7 @@ function nextOpen(from) {
 function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
-  x.sets[i].done = true; buzz(30);
+  x.sets[i].done = true; buzz(30); s.lastDone = { li: s.idx, si: i };
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
   s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0;
   if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
@@ -665,7 +706,7 @@ function finish(saveIt) {
   stopTick(); awake(false);
   const s = S();
   if (saveIt) {
-    const exs = s.list.map(x => ({ exId: x.exId, name: ex(x.exId).name, sets: x.sets.filter(t => t.done).map(t => ({ kg: t.kg, reps: t.reps })) })).filter(x => x.sets.length);
+    const exs = s.list.map(x => ({ exId: x.exId, name: ex(x.exId).name, sets: x.sets.filter(t => t.done).map(t => t.f ? { kg: t.kg, reps: t.reps, f: t.f } : { kg: t.kg, reps: t.reps }) })).filter(x => x.sets.length);
     if (exs.length) {
       const prs = exs.filter(x => { const b = bestKg(x.exId); const m = Math.max(...x.sets.map(t => t.kg ?? 0)); return m > 0 && (b === null || m > b); })
         .map(x => ({ name: x.name, kg: Math.max(...x.sets.map(t => t.kg ?? 0)), first: bestKg(x.exId) === null }));
@@ -706,6 +747,10 @@ function vTrain() {
         <div class="row" style="justify-content:center;gap:8px">
           <button class="btn sm" data-a="restAdd" data-d="-15">−15 s</button><button class="btn sm" data-a="restAdd" data-d="15">+15 s</button></div>
       </div>
+      ${(() => { const ld = s.lastDone; if (!ld) return ""; const lx = s.list[ld.li], lt = lx?.sets[ld.si]; if (!lt) return "";
+        return `<div class="card" style="gap:10px"><div class="label">Wie war Satz ${ld.si + 1} · ${esc(ex(lx.exId).name)}?</div>
+          <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
+          <p class="muted small">Hilft der App, dein Gewicht beim nächsten Mal richtig zu wählen.</p></div>`; })()}
       <div class="card" style="gap:6px"><div class="label">Als Nächstes</div>
         <div class="row"><div class="grow"><h2>${esc(ex(nx.exId).name)}</h2>
           <p class="muted small">Satz ${ni + 1} von ${nx.sets.length} · ${ns.kg !== null ? kgTxt(ns.kg) + " kg" : "Gewicht wählen"} × ${ns.reps}</p>
@@ -721,7 +766,8 @@ function vTrain() {
         <div class="grow stack" style="gap:6px">
           <div class="label">Übung ${s.idx + 1} von ${s.list.length} · ${MUSCLES[e.muscle]}</div>
           <h1 style="font-size:30px">${esc(e.name)}</h1>
-          <div class="row wrap" style="gap:6px"><span class="badge">Ziel ${repsTxt(x)} Wdh.</span>${x.up ? `<span class="badge up">↑ +${kgTxt(x.step)} kg · letztes Mal alles geschafft</span>` : ""}${x.down ? `<span class="badge" style="color:var(--warn)">↓ −${kgTxt(x.step)} kg · letztes Mal zu schwer</span>` : ""}</div>
+          <div class="row wrap" style="gap:6px"><span class="badge">Ziel ${repsTxt(x)} Wdh.</span>${x.up ? `<span class="badge up">↑ +${kgTxt(x.step)} kg · ${x.why || "letztes Mal alles geschafft"}</span>` : ""}${x.down ? `<span class="badge" style="color:var(--warn)">↓ −${kgTxt(x.step)} kg · letztes Mal zu schwer</span>` : ""}${x.hold ? `<span class="badge">= ${x.why}</span>` : ""}</div>
+          ${plateau(x.exId) && !x.sets.some(t => t.done) && !x.up ? `<p class="small" style="background:var(--surface2);padding:10px 12px;border-radius:12px">Seit 3 Trainings kein Fortschritt an diesem Gerät. Ein <button class="link" data-a="openSwap">anderes Gerät</button> für ${MUSCLES[e.muscle]} setzt einen neuen Reiz.</p>` : ""}
         </div>
         <div style="width:64px;flex:0 0 64px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
       </div>
@@ -811,6 +857,17 @@ function vHistory() {
       .reduce((a, h) => a + h.exercises.reduce((b, x) => b + x.sets.reduce((c, t) => c + (t.kg || 0) * t.reps, 0), 0), 0);
     return { s, vol }; });
   const max = Math.max(...weeks.map(w => w.vol), 1);
+  const goalKey = state.plan?.goal || "aufbau";
+  const [tmin, tmax] = goalKey === "aufbau" ? [10, 20] : [6, 12];
+  const ms = {}; for (const m in MUSCLES) ms[m] = 0;
+  H.filter(h => new Date(h.date) >= mon).forEach(h => h.exercises.forEach(x => { const e = ex(x.exId); ms[e.muscle] += x.sets.length; e.sec.forEach(m => ms[m] += x.sets.length / 2); }));
+  const scale = tmax * 1.3;
+  const muscleRows = Object.entries(MUSCLES).map(([m, l]) => { const v = ms[m];
+    const col = v >= tmin && v <= tmax ? "var(--ok)" : v > tmax ? "var(--warn)" : "var(--accent)";
+    return `<div class="mrow"><span class="small">${l}</span>
+      <div class="mtrack"><div class="mband" style="left:${tmin / scale * 100}%;width:${(tmax - tmin) / scale * 100}%"></div>
+        <div class="mfill" style="width:${Math.min(100, v / scale * 100)}%;background:${col}"></div></div>
+      <span class="small num" style="font-size:15px;text-align:right">${String(Math.round(v * 2) / 2).replace(".", ",")}</span></div>`; }).join("");
   const best = {};
   H.forEach(h => h.exercises.forEach(x => x.sets.forEach(t => { if (t.kg !== null && (!best[x.exId] || t.kg > best[x.exId].kg)) best[x.exId] = { id: x.exId, kg: t.kg, reps: t.reps, name: x.name }; })));
   const bestList = Object.values(best).sort((a, b) => b.kg - a.kg).slice(0, 8);
@@ -827,6 +884,11 @@ function vHistory() {
 
   $app.innerHTML = `<div class="stack-lg">
     <div><div class="label">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1>Verlauf</h1></div>
+    <div class="card">
+      <div class="row between"><div class="label">Sätze pro Muskel · diese Woche</div><span class="small muted">Ziel ${tmin}–${tmax}</span></div>
+      <div class="mlist">${muscleRows}</div>
+      <p class="muted small">Der helle Bereich zeigt die empfohlenen Sätze pro Woche für ${(GOALS[goalKey] || GOALS.aufbau).label}. Mittrainierte Muskeln zählen halb.</p>
+    </div>
     <div class="card">
       <div class="row between"><div class="label">Volumen pro Woche</div><span class="small muted">max. ${max >= 1000 ? (max / 1000).toFixed(1).replace(".", ",") + " t" : Math.round(max) + " kg"}</span></div>
       <div class="bars">${weeks.map(w => `<div class="b ${w.vol ? "" : "zero"}" style="height:${w.vol ? Math.max(3, w.vol / max * 100) : 3}%" title="${Math.round(w.vol)} kg"></div>`).join("")}</div>
@@ -870,10 +932,12 @@ function exChart(exId) {
   const diff = lastP.kg - first;
   const dl = d => d.getDate() + "." + (d.getMonth() + 1) + ".";
   return `<div class="row between"><h2 class="grow">${esc(name)}</h2><button class="btn sm" data-a="closeSheet">Schließen</button></div>
-    <div class="grid3" style="grid-template-columns:1fr 1fr">
+    <div class="grid3">
       <div class="stat"><div class="label">Aktuell</div><div class="num">${kgTxt(lastP.kg)}<span class="small muted"> kg</span></div></div>
       <div class="stat"><div class="label">Seit Beginn</div><div class="num" style="color:${diff > 0 ? "var(--ok)" : "var(--text)"}">${diff > 0 ? "+" : ""}${kgTxt(diff)}<span class="small muted"> kg</span></div></div>
+      <div class="stat"><div class="label">Max. (1RM)</div><div class="num">≈${kgTxt(Math.round(Math.max(...lastP.sets.map(e1rm)) * 2) / 2)}<span class="small muted"> kg</span></div></div>
     </div>
+    ${plateau(exId) ? `<p class="small" style="color:var(--warn)">Seit 3 Trainings kein Fortschritt. Probier ein anderes Gerät für denselben Muskel.</p>` : ""}
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Gewichtsverlauf ${esc(name)}">
       <line x1="${pl}" x2="${W - pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--line)" stroke-dasharray="3 4"/>
       <line x1="${pl}" x2="${W - pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--line)" stroke-dasharray="3 4"/>
@@ -992,6 +1056,7 @@ const A = {
     else setEdit.reps = Math.max(0, setEdit.reps + +el.dataset.d);
     $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + setSheet(); },
   setSave: () => { const t = S().list[S().idx].sets[setEdit.i]; t.kg = setEdit.kg; t.reps = setEdit.reps; save(); closeSheet(); render(); },
+  feel: el => { const s = S(), ld = s.lastDone; if (!ld) return; const t = s.list[ld.li].sets[ld.si]; t.f = t.f === el.dataset.f ? undefined : el.dataset.f; save(); render(); },
   stopSave: () => finish(true),
   stopDiscard: () => finish(false)
 };
@@ -1019,7 +1084,8 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden && st
 
 go(view);
 if (state.session) startTick();
-if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && location.hostname.endsWith("github.io"))
+// Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && window.top === window.self && !/claude/.test(location.hostname))
   navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 </script>
