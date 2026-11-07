@@ -500,14 +500,15 @@ function normalize(raw) {
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
-      trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [] }));
+      trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
+      ord: Number.isInteger(x.ord) ? x.ord : undefined }));
     const hiddenRaw = Array.isArray(r.timeHidden) ? r.timeHidden : [];
     const timeHidden = hiddenRaw.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
       key: String(x.key || uid()), itemId: x.itemId ? String(x.itemId) : null, exId: String(x.exId),
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
-      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [] }));
+      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined }));
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
@@ -757,7 +758,13 @@ function previewDay(day, minutes) {
 function restoredClone(s) {
   const c = JSON.parse(JSON.stringify(s));
   c.list.forEach(l => { if (l.trim && l.trim.length) { l.sets = l.sets.concat(l.trim); l.trim = []; } });
-  if (c.timeHidden && c.timeHidden.length) { c.list = c.list.concat(c.timeHidden.map(h => { h.trim = []; return h; })); c.timeHidden = []; }
+  // Zeitbedingt ausgelassene Übungen an ihrer ursprünglichen Position einfügen (manuelle Reihenfolge bleibt)
+  (c.timeHidden || []).slice().sort((a, b) => (a.ord ?? 999) - (b.ord ?? 999)).forEach(h => {
+    h.trim = [];
+    const at = h.ord == null ? -1 : c.list.findIndex(l => l.ord != null && l.ord > h.ord && !l.sets.some(t => t.done));
+    if (at < 0) c.list.push(h); else c.list.splice(at, 0, h);
+  });
+  c.timeHidden = [];
   return c;
 }
 // Vorschau während des Trainings: Restzeit in Minuten
@@ -1312,6 +1319,7 @@ function startTraining(day) {
     dayId: day.id, dayName: day.name, start: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
     list, timeHidden: [], timeAdj: null
   };
+  list.forEach((l, i) => { l.ord = i; });
   if (tp) {
     const keep = {}; list.forEach(l => { keep[l.key] = tp.keep[l.itemId] ?? 0; });
     applyKeep(state.session, keep); state.session.timeAdj = { minutes: tp.minutes };
@@ -1931,7 +1939,7 @@ const A = {
   swap: el => {
     const s = S(), x = s.list[s.idx], newId = el.dataset.id;
     const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest }, { from: ex(x.exId).name });
-    s.list[s.idx] = entry;
+    entry.ord = x.ord; s.list[s.idx] = entry;
     if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
     save(); closeSheet(); render();
   },

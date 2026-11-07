@@ -49,6 +49,8 @@ const hist = (exId, sets, daysAgo = 3, u) => ({ id: "h" + Math.random(), dayId: 
 
 // ---------- Hilfen ----------
 let browser;
+// Vergleich unabhängig von der Reihenfolge der Felder
+const canon = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);
 async function open(data, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme: opts.light ? "light" : "dark",
     serviceWorkers: opts.sw ? "allow" : "block" });
@@ -592,7 +594,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Dauer: Aufwärmen vor dem ersten Satz eingerechnet", r.warm === 330 + r.TIME.warm);
       ok("Anzeige gerundet auf 5 Minuten", await tp(page, () => window.__tp.estMinutes(window.__tp.state.plan.days[0]) % 5 === 0));
       // 1.–3. Vor dem Start auf 30 Minuten
-      const planBefore = JSON.stringify((await stored(page)).plan);
+      const planBefore = canon(await tp(page, () => window.__tp.state.plan)); // geladener (normalisierter) Plan
       const pv = await tp(page, () => { const T = window.__tp, d = T.state.plan.days[0], r = T.previewDay(d, 30); return { fits: r.fits, est: r.estSec, ex: r.exCount, sets: r.setCount, lost: r.lost, kept: r.kept, full: r.fullMin, dropped: r.dropped.map(x => x.exId) }; });
       ok("1. 60-Minuten-Tag auf 30 Minuten verkürzt (passt, ≤ 30 Min.)", pv.fits && pv.est <= 1800 && pv.full >= 45, JSON.stringify(pv));
       ok("1. Weniger Übungen und Sätze als vorher (berechnet)", pv.ex < 6 && pv.sets < 20 && pv.sets >= 6);
@@ -603,11 +605,11 @@ async function finishAllSets(page, kg, reps) {
       ok("1. Vorschau nennt „x statt 6 Übungen“ und „y statt 20 Arbeitssätze“", txt.includes(`${pv.ex} statt 6 Übungen`) && txt.includes(`${pv.sets} statt 20 Arbeitssätze`), txt.slice(0, 160));
       await page.click("[data-a=timeApply]");
       ok("1. Startseite zeigt angepasste Einheit", (await page.textContent(".hero")).includes("Für heute auf 30 Min. angepasst"));
-      ok("3. Dauerhafter Plan unverändert", JSON.stringify((await stored(page)).plan) === planBefore);
+      ok("3. Dauerhafter Plan unverändert", canon((await stored(page)).plan) === planBefore);
       await page.click("[data-a=start]");
       let s = (await stored(page)).session;
       ok("1. Training startet mit angepasster Einheit", s.list.length === pv.ex && s.list.reduce((a, l) => a + l.sets.length, 0) === pv.sets && s.timeAdj.minutes === 30);
-      ok("3. Plan auch nach dem Start unverändert, Anpassung verbraucht", JSON.stringify((await stored(page)).plan) === planBefore && (await stored(page)).timeplan === null);
+      ok("3. Plan auch nach dem Start unverändert, Anpassung verbraucht", canon((await stored(page)).plan) === planBefore && (await stored(page)).timeplan === null);
       await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
       // Originaltraining verwirft die Anpassung
       await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); await page.click("[data-a=timeApply]");
@@ -658,8 +660,10 @@ async function finishAllSets(page, kg, reps) {
       s = (await stored(page)).session;
       ok("8. Mehrfach angepasst, Original wiederhergestellt: 6 Übungen, 20 Sätze", s.list.length === 6 && s.list.reduce((a, l) => a + l.sets.length, 0) === 20 && (s.timeHidden || []).length === 0, `${s.list.length}/${s.list.reduce((a, l) => a + l.sets.length, 0)}`);
       ok("8. Keine doppelten erledigten Sätze nach Verlängern", doneSets(s).length === 2);
+      ok("8. Zurückgeholte Übungen wieder an ursprünglicher Position", s.list.map(l => l.exId).join() === PLAN60.days[0].items.map(i => i.exId).join(), s.list.map(l => l.exId).join());
       // Manuell beendete Übung kehrt nicht zurück
-      await page.click("[data-a=openJump]"); await page.click("[data-a=jump][data-i2='5']"); await page.click("[data-a=openJump]"); await page.click("[data-a=endEx]");
+      const dipIdx = s.list.findIndex(l => l.exId === "hs-dip");
+      await page.click("[data-a=openJump]"); await page.click(`[data-a=jump][data-i2='${dipIdx}']`); await page.click("[data-a=openJump]"); await page.click("[data-a=endEx]");
       await liveSet(page, 15); await page.click("[data-a=liveTimeApply]");
       await liveSet(page, 0); await page.click("[data-a=liveTimeApply]");
       s = (await stored(page)).session;
@@ -730,7 +734,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const after = await stored(page);
-      ok("16. Sicherung: Verlauf inkl. Zeitanpassung wiederhergestellt", JSON.stringify(after.history) === JSON.stringify(before.history) && after.history.at(-1).adj > 0);
+      ok("16. Sicherung: Verlauf inkl. Zeitanpassung wiederhergestellt", canon(after.history) === canon(before.history) && after.history.at(-1).adj > 0, canon(after.history).slice(0, 200) + " | " + canon(before.history).slice(0, 200));
       ok("16. Sicherung: Anpassung für heute wiederhergestellt", JSON.stringify(after.timeplan) === JSON.stringify(before.timeplan) && after.timeplan.minutes === 30);
       await ctx.close();
     }
