@@ -359,7 +359,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v9)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v9")));
+      ok("Service Worker aktiv (Cache trainingsplan-v10)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v10")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -913,7 +913,106 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("22. Konsole");
+    section("22. Übungswissen und Trainingswissen");
+    {
+      const now = Date.now(), H = (d, kg, reps) => ({ id: "w" + d, dayId: "d1", day: "Test", date: new Date(now - d * 864e5).toISOString(), durationSec: 1,
+        exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 3, rmin: 8, rmax: 12, sets: reps.map(r => ({ kg, reps: r })) }] });
+      const data = { plan: PLAN_SMALL, history: [H(40, 32.5, [12, 11, 10]), H(20, 37.5, [12, 11, 11]), H(3, 42.5, [10, 9, 9])],
+        custom: [{ id: "c-k", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }] };
+      const { ctx, page } = await open(data);
+      const chk = await tp(page, () => { const T = window.__tp, ids = T.allEx().filter(e => !e.id.startsWith("c-")).map(e => e.id);
+        const bad = []; const nonEmpty = s => typeof s === "string" && s.trim().length > 20;
+        ids.forEach(id => { const g = T.GUIDE[id]; if (!g) { bad.push(id + ": fehlt"); return; }
+          if (!g.main.length || !nonEmpty(g.why) || g.setup.length < 2 || g.steps.length < 3 || !nonEmpty(g.breath) || g.mistakes.length < 2 || !g.safety.length || !g.tips.length) bad.push(id + ": unvollständig");
+          if (g.mistakes.some(m => !m[0] || !m[1])) bad.push(id + ": Fehler ohne Korrektur");
+          (g.src || []).forEach(k => { if (!T.SOURCES[k]) bad.push(id + ": Quelle " + k); }); });
+        T.ARTICLES.forEach(a => { if (!a.src.length) bad.push(a.id + ": ohne Quelle"); a.src.forEach(k => { if (!T.SOURCES[k]) bad.push(a.id + ": Quelle " + k); }); });
+        Object.entries(T.SOURCES).forEach(([k, s]) => { if (!s.t || !s.j || !/^https:\/\//.test(s.url)) bad.push("Quelle " + k + " unvollständig"); });
+        const txt = JSON.stringify([T.GUIDE, T.ARTICLES]);
+        if (/TODO|lorem|xxx/i.test(txt)) bad.push("Platzhalter");
+        return { n: ids.length, bad, arts: T.ARTICLES.length }; });
+      ok("Alle 28 Geräte vollständig beschrieben (Muskeln, Nutzen, Einstellung, Ausführung, Atmung, Fehler mit Korrektur, Sicherheit, Tipps)", chk.n === 28 && !chk.bad.length, chk.bad.join("; "));
+      ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
+      ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
+      // Bibliothek
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=lib]");
+      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 29);
+      await page.fill("#libQ", "Brust");
+      const brust = await tp(page, () => window.__tp.allEx().filter(e => e.name.toLowerCase().includes("brust") || e.muscle === "brust").length);
+      ok("Suche filtert (Name oder Muskel)", (await page.$$("#libList [data-a=openEx]")).length === brust && brust >= 5);
+      await page.fill("#libQ", "");
+      ok("Bibliothek bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=openEx][data-id=hs-seatcurl]");
+      const seat = await page.textContent("#app");
+      ok("Übungsseite zeigt alle Abschnitte", ["Warum diese Übung", "Einstellen", "Ausführung", "Atmung", "Häufige Fehler", "Sicherheit", "Tipps", "Hauptsächlich"].every(s => seat.includes(s)));
+      ok("Studienaussage mit Quelle verlinkt (Beinbeuger sitzend)", (await page.$$eval("#app .srcs a", a => a.map(x => x.href))).some(h => h.includes("33009197")));
+      ok("Ohne eigene Einträge: ehrlicher Hinweis statt erfundener Werte", (await page.textContent("#exStats")).includes("Noch keine Einträge"));
+      await page.click("[data-a=exBack]");
+      ok("Zurück führt zur Bibliothek", await page.isVisible("#libQ"));
+      await page.click("[data-a=openEx][data-id=hs-chest]");
+      const st = await page.textContent("#exStats");
+      ok("Deine Werte aus echten Daten: 3 Einheiten, Bestwert 42,5, +10 kg seit Beginn", st.includes("3") && st.includes("42,5") && st.includes("+10") && st.includes("32,5"), st.slice(0, 200));
+      ok("Übungsseite bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=exBack]"); await page.click("[data-a=openEx][data-id=c-k]");
+      ok("Eigenes Gerät: Hinweis statt erfundener Anleitung", (await page.textContent("#app")).includes("keine ausführliche Anleitung"));
+      // Wissen
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=wissen]");
+      ok("Trainingswissen listet alle Artikel", (await page.$$("[data-a=openArt]")).length === chk.arts);
+      await page.click("[data-a=openArt][data-id=pause]");
+      ok("Artikel zeigt Text und verlinkte Quelle", (await page.textContent("#app")).includes("3 Minuten") && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("26605807")));
+      ok("Artikel bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=artBack]");
+      ok("Zurück führt zur Artikelliste", (await page.$$("[data-a=openArt]")).length === chk.arts);
+      // Heute: Wissensbeitrag
+      await page.click("[data-a=tab][data-v=home]"); await page.click("#homeArt");
+      ok("Wissensbeitrag auf „Heute“ öffnet einen Artikel", await page.isVisible(".srcs"));
+      await page.click("[data-a=artBack]");
+      ok("Zurück führt zu „Heute“", await page.isVisible("[data-a=start]"));
+      // Übungsauswahl
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]");
+      await page.click(".sheet [data-a=openGuideSheet][data-id=hs-row]");
+      ok("Info in der Übungsauswahl öffnet die Anleitung", (await page.textContent(".sheet")).includes("Ausführung") && (await page.textContent(".sheet")).includes("Iso-Lateral Row"));
+      await page.click(".sheet [data-a=guideBack]");
+      ok("Zurück führt zur Übungsauswahl", await page.isVisible("#pickQ"));
+      await page.click(".sheet [data-a=pick][data-id=hs-lowrow]");
+      ok("Hinzufügen funktioniert weiter (mit Bestätigung)", (await page.textContent(".sheet [data-a=pick][data-id=hs-lowrow]")).includes("Hinzugefügt") && (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-lowrow"));
+      await page.keyboard.press("Escape");
+      // Übung im Plan
+      await page.click("[data-a=editItem] >> nth=0"); await page.click(".sheet [data-a=openGuideSheet]");
+      ok("Übung im Plan: Anleitung erreichbar", (await page.textContent(".sheet")).includes("Häufige Fehler"));
+      await page.click(".sheet [data-a=guideBack]");
+      ok("Zurück führt zur Übung", await page.isVisible("[data-a=saveItem]"));
+      await page.keyboard.press("Escape");
+      // Training
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      await page.click(".actions3 [data-a=openDevInfo]"); await page.click(".sheet [data-a=openGuideSheet]");
+      ok("Training: ausführliche Anleitung im Bottom-Sheet", (await page.textContent(".sheet")).includes("Warum diese Übung"));
+      await page.click(".sheet [data-a=guideBack]");
+      ok("Zurück führt zu „Gerät & Technik“", await page.isVisible("#noteT"));
+      await page.keyboard.press("Escape");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
+      // Verlauf
+      await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=showEx] >> nth=0");
+      await page.click(".sheet [data-a=openEx]");
+      ok("Verlauf: Gerätekurve führt zur Übungsseite", await page.isVisible("#exStats"));
+      await page.click("[data-a=exBack]");
+      ok("Zurück führt zum Verlauf", (await page.textContent("#app")).includes("Häufigkeit"));
+      await ctx.close();
+    }
+    for (const [w, light] of [[360, false], [360, true], [390, false], [390, true]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: 760 }, colorScheme: light ? "light" : "dark", serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+      const res = [];
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=lib]"); res.push(await noOverflow(page));
+      for (const id of ["hs-chest", "hs-legpress", "hs-lateral", "hs-seatcalf"]) { await page.click(`[data-a=openEx][data-id=${id}]`); res.push(await noOverflow(page)); await page.click("[data-a=exBack]"); }
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=wissen]");
+      for (const a of ["volumen", "gesundheit"]) { await page.click(`[data-a=openArt][data-id=${a}]`); res.push(await noOverflow(page)); await page.click("[data-a=artBack]"); }
+      ok(`${w} px ${light ? "hell" : "dunkel"}: Bibliothek, Übungsseiten und Artikel ohne seitliches Scrollen`, res.every(Boolean), res.join());
+      await ctx.close();
+    }
+
+    section("23. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

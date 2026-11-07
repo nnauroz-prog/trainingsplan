@@ -211,6 +211,23 @@
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
   .lastline{font-size:14px;color:var(--text-3)}
+  /* Übungsseite und Wissen */
+  .guide{gap:var(--s6)}
+  .gsec{display:grid;gap:var(--s3)}
+  .gsec p{max-width:65ch}
+  .glist{margin:0;padding-left:22px;display:grid;gap:var(--s2);max-width:65ch}
+  .glist li::marker{color:var(--text-3)}
+  .glist.mist{list-style:none;padding-left:0;gap:var(--s3)}
+  .glist.mist li{display:grid;gap:2px;padding-left:var(--s3);border-left:2px solid var(--accent)}
+  .glist.mist span{color:var(--text-2);font-size:15px}
+  .glist.srcs{font-size:14px;gap:var(--s2)}
+  .glist.srcs a{color:var(--text)}
+  .ghead{display:grid;grid-template-columns:minmax(0,1fr) clamp(96px, 30vw, 140px);gap:var(--s4);align-items:start}
+  .gmus{display:grid;gap:var(--s4)}
+  .gmus .glist{font-size:15px}
+  .gnote{border-top:1px solid var(--hair);padding-top:var(--s4)}
+  .lead{font-size:18px;line-height:1.45;color:var(--text);max-width:65ch}
+  .infobtn{font-family:var(--display);font-weight:700;font-size:18px;color:var(--text-2);box-shadow:inset 0 0 0 1.5px var(--hair)}
   .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:32px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
   .timebtn b{color:var(--text);font-weight:600}
   .timebtn .chev{font-size:16px;margin-left:2px}
@@ -372,6 +389,409 @@ const LIB_PATTERN = {
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core"
 };
 LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
+
+/* ================= Übungswissen (geprüfte Inhalte) ================= */
+// Quellen (geprüft, Stand der Recherche). Nur Aussagen verwenden, die die jeweilige Quelle tatsächlich stützt.
+const SOURCES = {
+  acsm2009: { t: "American College of Sports Medicine: Progression models in resistance training for healthy adults (Position Stand)", j: "Med Sci Sports Exerc 2009;41(3):687–708", url: "https://pubmed.ncbi.nlm.nih.gov/19204579/" },
+  vol2017: { t: "Schoenfeld, Ogborn, Krieger: Dose-response relationship between weekly resistance training volume and increases in muscle mass", j: "J Sports Sci 2017", url: "https://doi.org/10.1080/02640414.2016.1210197" },
+  freq2016: { t: "Schoenfeld, Ogborn, Krieger: Effects of resistance training frequency on measures of muscle hypertrophy", j: "Sports Med 2016;46(11):1689–1697", url: "https://pubmed.ncbi.nlm.nih.gov/27102172/" },
+  freq2019: { t: "Schoenfeld, Grgic, Krieger: How many times per week should a muscle be trained to maximize muscle hypertrophy?", j: "J Sports Sci 2019;37(11):1286–1295", url: "https://pubmed.ncbi.nlm.nih.gov/?term=How+many+times+per+week+should+a+muscle+be+trained+to+maximize+muscle+hypertrophy" },
+  load2017: { t: "Schoenfeld, Grgic, Ogborn, Krieger: Strength and hypertrophy adaptations between low- vs. high-load resistance training", j: "J Strength Cond Res 2017;31(12):3508–3523", url: "https://pubmed.ncbi.nlm.nih.gov/28834797/" },
+  rir2024: { t: "Robinson et al.: Exploring the dose–response relationship between estimated resistance training proximity to failure, strength gain, and muscle hypertrophy", j: "Sports Med 2024;54:2209–2231", url: "https://doi.org/10.1007/s40279-024-02069-2" },
+  rest2016: { t: "Schoenfeld et al.: Longer interset rest periods enhance muscle strength and hypertrophy in resistance-trained men", j: "J Strength Cond Res 2016", url: "https://pubmed.ncbi.nlm.nih.gov/26605807/" },
+  health2022: { t: "Momma et al.: Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases", j: "Br J Sports Med 2022;56(13):755–763", url: "https://bjsm.bmj.com/content/56/13/755" },
+  curl2021: { t: "Maeo et al.: Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths", j: "Med Sci Sports Exerc 2021;53(4):825–837", url: "https://pubmed.ncbi.nlm.nih.gov/33009197/" },
+  calf2023: { t: "Kinoshita et al.: Triceps surae muscle hypertrophy is greater after standing versus seated calf-raise training", j: "Front Physiol 2023;14:1272106", url: "https://doi.org/10.3389/fphys.2023.1272106" },
+  bench2020: { t: "Rodríguez-Ridao et al.: Effect of five bench inclinations on the electromyographic activity of the pectoralis major, anterior deltoid, and triceps brachii during the bench press exercise", j: "Int J Environ Res Public Health 2020;17(19):7339", url: "https://doi.org/10.3390/ijerph17197339" }
+};
+
+// Trainingsprinzipien: kurz, belegt, ohne Übertreibung. Unsicherheiten werden benannt.
+const ARTICLES = [
+  { id: "progression", title: "Fortschritt entsteht durch steigende Anforderungen",
+    lead: "Muskeln passen sich an das an, was du regelmäßig von ihnen verlangst. Damit es weitergeht, muss die Anforderung über die Zeit steigen.",
+    body: [
+      "Das Prinzip heißt progressive Überlastung. Die Fachgesellschaft ACSM nennt es zusammen mit Spezifität und Variation als Grundlage jedes erfolgreichen Krafttrainings.",
+      "Steigern lässt sich auf mehreren Wegen: mehr Wiederholungen mit gleichem Gewicht, mehr Gewicht bei gleichen Wiederholungen oder mehr Sätze. Genau so arbeitet diese App: Erst die Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt.",
+      "Fortschritt verläuft nicht linear. Einzelne schwächere Tage sind normal und kein Rückschritt. Entscheidend ist die Entwicklung über Wochen."
+    ], src: ["acsm2009"] },
+  { id: "volumen", title: "Wie viele Sätze pro Woche?",
+    lead: "Mehr Sätze pro Muskel und Woche gehen in Studien im Mittel mit mehr Muskelzuwachs einher – bis zu einem gewissen Punkt.",
+    body: [
+      "Eine Meta-Analyse von 15 Studien fand einen Zusammenhang zwischen der Zahl wöchentlicher Sätze und dem Muskelzuwachs. Die Gruppe mit 10 oder mehr Sätzen pro Muskel und Woche lag im Mittel vorn; der Vergleich der drei Gruppen (unter 5, 5–9, 10+) war statistisch aber nur ein Trend.",
+      "Für sehr hohe Satzzahlen reichen die Daten nicht für klare Aussagen. Neuere Studien mit Trainierten zeigen gemischte Ergebnisse.",
+      "Praktisch heißt das: 10 bis 20 harte Sätze pro Muskel und Woche sind ein gut begründeter Richtwert für Muskelaufbau. Unter „Verlauf → Muskelbelastung“ siehst du, wo du stehst."
+    ], src: ["vol2017"] },
+  { id: "frequenz", title: "Wie oft pro Woche einen Muskel trainieren?",
+    lead: "Wichtiger als die Häufigkeit ist die Menge pro Woche. Mehrere Einheiten machen es leichter, diese Menge gut zu verteilen.",
+    body: [
+      "Eine Meta-Analyse von 2016 fand größere Zuwächse, wenn ein Muskel mindestens zweimal pro Woche trainiert wurde. In vielen dieser Studien trainierten die häufigeren Gruppen aber auch insgesamt mehr Sätze.",
+      "Eine Folgeanalyse von 2019, die nur Studien mit gleicher Wochenmenge verglich, fand keinen klaren Unterschied zwischen einmal und mehrmals pro Woche.",
+      "Fazit: Verteile deine Sätze so, dass jede Einheit gut machbar bleibt. Zwei Einheiten pro Muskel und Woche sind dafür oft praktisch, aber kein Muss."
+    ], src: ["freq2016", "freq2019"] },
+  { id: "last", title: "Schwer oder leicht – welche Wiederholungen?",
+    lead: "Für Muskelaufbau funktioniert ein breiter Bereich von Gewichten. Für maximale Kraft sind schwerere Gewichte im Vorteil.",
+    body: [
+      "Eine Meta-Analyse von 21 Studien verglich leichte (bis 60 % des Maximums) mit schweren Gewichten, jeweils mit Sätzen bis zum Muskelversagen. Der Muskelzuwachs war ähnlich, die Maximalkraft stieg mit schweren Gewichten stärker.",
+      "Wichtig dabei: Leichte Gewichte wirken nur, wenn die Sätze wirklich anstrengend sind. 20 lockere Wiederholungen ersetzen keinen harten Satz.",
+      "Darum stellt die App je nach Ziel unterschiedliche Wiederholungsbereiche ein: 8–12 für Muskelaufbau, 4–6 für Kraft, 12–15 für allgemeine Fitness."
+    ], src: ["load2017"] },
+  { id: "rir", title: "Wie nah ans Limit? Wiederholungen in Reserve",
+    lead: "Für Muskelaufbau lohnt es sich, Sätze nah an das Limit zu führen. Für Kraft scheint das weniger wichtig zu sein.",
+    body: [
+      "RIR (Repetitions in Reserve) beschreibt, wie viele saubere Wiederholungen du noch geschafft hättest. RIR 0 heißt: keine weitere saubere Wiederholung möglich.",
+      "Eine Auswertung zahlreicher Studien von 2024 fand: Der Muskelzuwachs nahm zu, je näher die Sätze am Muskelversagen lagen. Die Kraftzuwächse waren über einen weiten Bereich ähnlich. Die Autoren betonen, dass die Analyse explorativ ist und RIR-Schätzungen ungenau sein können.",
+      "In der App kannst du RIR freiwillig pro Satz angeben. Viel Reserve (RIR 3 oder mehr) in allen Sätzen spricht für eine Steigerung, ein letzter Satz mit RIR 0 dagegen."
+    ], src: ["rir2024"] },
+  { id: "pause", title: "Warum sich längere Pausen lohnen können",
+    lead: "Wer zwischen den Sätzen genug pausiert, schafft im nächsten Satz meist mehr Wiederholungen oder Gewicht.",
+    body: [
+      "In einer Studie mit trainierten Männern führten 3 Minuten Pause zwischen den Sätzen nach 8 Wochen zu mehr Kraft und Muskeldicke als 1 Minute.",
+      "Eine spätere Untersuchung deutet darauf hin, dass vor allem die insgesamt bewegte Last den Unterschied erklärt: Mit längeren Pausen schafft man mehr.",
+      "Darum kürzt die App deine Pausen nie automatisch – auch nicht, wenn du die Trainingszeit verkürzt. Bei schweren Grundübungen sind 2–3 Minuten sinnvoll."
+    ], src: ["rest2016"] },
+  { id: "dehnung", title: "Training in der gedehnten Position",
+    lead: "Erste Studien deuten darauf hin, dass Übungen, die den Muskel unter Last dehnen, besonders wirksam sein können.",
+    body: [
+      "Beim Beinbeuger wuchs die hintere Oberschenkelmuskulatur im Sitzen (Hüfte gebeugt, Muskeln stärker gedehnt) in 12 Wochen stärker als im Liegen: im Mittel +14 % statt +9 %.",
+      "Bei den Waden wuchs der Zwillingswadenmuskel mit Wadenheben im Stehen deutlich stärker als im Sitzen, beim Schollenmuskel gab es keinen klaren Unterschied.",
+      "Beide Studien waren klein und mit Untrainierten. Die Ergebnisse sind ein guter Hinweis, aber noch kein endgültiger Beweis. Praktisch: Nutze den vollen Bewegungsumfang und kontrolliere besonders den gedehnten Teil der Bewegung."
+    ], src: ["curl2021", "calf2023"] },
+  { id: "gesundheit", title: "Krafttraining und Gesundheit",
+    lead: "Regelmäßiges Krafttraining ist nicht nur für Muskeln gut. Es hängt auch mit einem geringeren Risiko für große Volkskrankheiten zusammen.",
+    body: [
+      "Eine Meta-Analyse von Kohortenstudien fand: Menschen mit muskelstärkendem Training hatten ein um etwa 10–20 % geringeres Risiko für vorzeitigen Tod, Herz-Kreislauf-Erkrankungen und Krebs. Der größte Zusammenhang zeigte sich bei etwa 30–60 Minuten pro Woche.",
+      "Kombiniert mit Ausdauertraining war der Zusammenhang noch deutlicher.",
+      "Wichtig: Solche Beobachtungsstudien zeigen Zusammenhänge, keine bewiesene Ursache. Sie sind aber ein guter Grund, dranzubleiben."
+    ], src: ["health2022"] }
+];
+
+// Ausführliche Übungsanleitungen. Grundsätze:
+// - Anatomie und Funktion nach anerkanntem Lehrbuchwissen; studienbasierte Aussagen mit Quelle (src).
+// - Keine Prozentangaben zur „Aktivierung“ und keine Versprechen. Unsicherheit wird benannt.
+// - Einstellhinweise als Grundprinzip; die Bauweise unterscheidet sich je nach Modellgeneration.
+const M = {
+  pecS: "Großer Brustmuskel (M. pectoralis major), v. a. Brustbein-Rippen-Anteil",
+  pecC: "Großer Brustmuskel (M. pectoralis major), mit stärkerer Beteiligung des Schlüsselbeinanteils",
+  pec: "Großer Brustmuskel (M. pectoralis major)",
+  dAnt: "Vorderer Deltamuskel (M. deltoideus, Pars clavicularis)",
+  dLat: "Seitlicher Deltamuskel (M. deltoideus, Pars acromialis)",
+  dPost: "Hinterer Deltamuskel (M. deltoideus, Pars spinalis)",
+  tri: "Trizeps (M. triceps brachii)",
+  lat: "Breiter Rückenmuskel (M. latissimus dorsi)",
+  teres: "Großer Rundmuskel (M. teres major)",
+  trapM: "Trapezmuskel (M. trapezius), mittlerer Anteil",
+  trapL: "Trapezmuskel (M. trapezius), unterer Anteil",
+  trapU: "Trapezmuskel (M. trapezius), oberer Anteil",
+  rhomb: "Rautenmuskeln (Mm. rhomboidei)",
+  bic: "Bizeps (M. biceps brachii)",
+  brach: "Oberarmmuskel (M. brachialis)",
+  brachrad: "Oberarmspeichenmuskel (M. brachioradialis)",
+  rotAuss: "Untergrätenmuskel und kleiner Rundmuskel (M. infraspinatus, M. teres minor)",
+  supra: "Obergrätenmuskel (M. supraspinatus)",
+  serr: "Vorderer Sägemuskel (M. serratus anterior)",
+  quad: "Vierköpfiger Oberschenkelmuskel (M. quadriceps femoris)",
+  glut: "Großer Gesäßmuskel (M. gluteus maximus)",
+  add: "Großer Adduktor (M. adductor magnus)",
+  ham: "Hintere Oberschenkelmuskulatur (M. biceps femoris, M. semitendinosus, M. semimembranosus)",
+  gastro: "Zwillingswadenmuskel (M. gastrocnemius)",
+  sol: "Schollenmuskel (M. soleus)",
+  rect: "Gerader Bauchmuskel (M. rectus abdominis)",
+  obl: "Schräge Bauchmuskeln (Mm. obliqui externus und internus abdominis)"
+};
+const ISO = "Iso-Lateral: Beide Arme bewegen sich unabhängig voneinander. Du kannst beidseitig, einarmig oder abwechselnd trainieren. Weil keine Seite die andere mitzieht, werden Kraftunterschiede zwischen links und rechts sichtbar.";
+const BREATH_PUSH = "Beim Drücken ausatmen, beim kontrollierten Zurückführen einatmen. Die Luft nicht über mehrere Wiederholungen anhalten – besonders bei Bluthochdruck ist langes Pressatmen zu vermeiden.";
+const BREATH_PULL = "Beim Ziehen ausatmen, beim kontrollierten Nachgeben einatmen. Die Luft nicht über mehrere Wiederholungen anhalten.";
+const BREATH_LEG = "Beim Strecken bzw. Heben ausatmen, beim Nachgeben einatmen. Bei schweren Sätzen kann kurzes Luftanhalten den Rumpf stabilisieren; bei Bluthochdruck langes Pressatmen vermeiden.";
+
+const GUIDE = {
+  "hs-chest": {
+    main: [M.pecS], sup: [M.dAnt, M.tri],
+    why: "Eine Grundübung für die Brust. Die geführte Bewegung erlaubt schwere, anstrengende Sätze ohne Hantelbalance und ohne Partner zum Sichern. Sie trainiert die Druckbewegung nach vorn, die auch im Alltag beim Wegschieben vorkommt.",
+    setup: ["Sitz so einstellen, dass die Griffe etwa auf Höhe der mittleren Brust liegen.", "Rücken und Hinterkopf an der Lehne, Füße fest auf dem Boden.", "Griffposition wählen, bei der die Handgelenke gerade bleiben."],
+    steps: ["Schulterblätter leicht nach hinten-unten ziehen und die Brust aufgerichtet lassen.", "Die Griffe gleichmäßig nach vorn drücken, bis die Arme fast gestreckt sind.", "Die Ellbogen nicht ruckartig durchstrecken.", "Kontrolliert zurückführen, bis du eine deutliche Dehnung in der Brust spürst – ohne dass die Schultern nach vorn rollen.", "Ohne Schwung in die nächste Wiederholung übergehen."],
+    breath: BREATH_PUSH,
+    mistakes: [["Schultern wandern nach oben oder vorn", "Schulterblätter bewusst unten und hinten halten, die Brust bleibt aufgerichtet."], ["Hohlkreuz, Gesäß hebt ab", "Becken und Rücken bleiben an der Lehne, Füße fest aufsetzen."], ["Nur halbe Bewegung", "Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."]],
+    safety: ["Bei Schulterbeschwerden den Weg nach hinten begrenzen, bis die Bewegung schmerzfrei ist.", "Scheiben gleichmäßig verteilen und vor dem Einsteigen prüfen, dass sie sicher sitzen."],
+    tips: [ISO, "Einarmig trainieren: Den freien Arm in der Ausgangsposition lassen und den Rumpf ruhig halten.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-incline": {
+    main: [M.pecC, M.dAnt], sup: [M.tri],
+    why: "Drücken auf der Schräge verlagert die Arbeit stärker in den oberen Teil der Brust und in die vordere Schulter. In einer EMG-Studie mit fünf Bankwinkeln war der obere Brustanteil bei 30° am aktivsten; ab etwa 45° stieg die Aktivität des vorderen Deltamuskels deutlich an. Der Winkel ist bei dieser Maschine durch die Bauweise vorgegeben.",
+    setup: ["Sitz so einstellen, dass die Griffe etwa auf Höhe der oberen Brust liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
+    steps: ["Schulterblätter leicht zurück und unten, Brust aufgerichtet.", "Die Griffe schräg nach oben-vorn drücken, bis die Arme fast gestreckt sind.", "Kurz kontrollieren, ohne die Ellbogen durchzuschlagen.", "Langsam zurückführen bis zu einer deutlichen Dehnung in der oberen Brust.", "Die Schultern bleiben dabei unten."],
+    breath: BREATH_PUSH,
+    mistakes: [["Schultern ziehen zu den Ohren", "Schulterblätter nach unten ziehen, Nacken lang lassen."], ["Rücken löst sich von der Lehne", "Bauch leicht anspannen, Rücken an der Lehne halten."], ["Zu tief eingestellt, Druck geht in die Schultern", "Sitzhöhe prüfen: Griffe auf Höhe der oberen Brust."]],
+    safety: ["Bei Schulterschmerzen den Bewegungsweg verkürzen."],
+    tips: [ISO, "Ergänzt das flache Drücken gut, wenn du den oberen Brustanteil gezielter trainieren willst."],
+    src: ["bench2020"]
+  },
+  "hs-decline": {
+    main: [M.pecS], sup: [M.tri, M.dAnt],
+    why: "Die Druckrichtung zielt leicht nach vorn-unten. Damit ergänzt die Maschine das flache und das schräge Drücken und belastet besonders den unteren Teil der Brust.",
+    setup: ["Sitz so einstellen, dass die Griffe etwa auf Höhe der unteren Brust liegen.", "Rücken fest an der Lehne, Füße fest auf dem Boden."],
+    steps: ["Schulterblätter leicht zurück und unten.", "Die Griffe nach vorn-unten drücken, bis die Arme fast gestreckt sind.", "Kontrolliert zurückführen, bis du eine Dehnung in der Brust spürst.", "Schultern bleiben unten, der Rücken an der Lehne."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogen schlagen am Ende durch", "Kurz vor der vollen Streckung abbremsen."], ["Schultern rollen nach vorn", "Brust aufgerichtet lassen, Schulterblätter zurück."]],
+    safety: ["Gewicht zu Beginn so wählen, dass du die neue Druckrichtung sauber kontrollierst."],
+    tips: [ISO, "Eine von drei Druckrichtungen (flach, schräg, abfallend). Für einen Plan genügt meist eine oder zwei davon."]
+  },
+  "hs-widechest": {
+    main: [M.pec], sup: [M.dAnt, M.tri],
+    why: "Drücken mit breiter Armführung. Die Brust wird in der Ausgangsposition stärker gedehnt als bei enger Führung. Eine sinnvolle Alternative zur klassischen Brustpresse.",
+    setup: ["Sitz so einstellen, dass die Griffe etwa auf Brusthöhe liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
+    steps: ["Schulterblätter leicht zurück und unten.", "Die Griffe nach vorn zusammenführen, bis die Arme fast gestreckt sind.", "Langsam zurück, nur so weit, wie die Dehnung in der Brust angenehm kontrollierbar bleibt.", "Die Schultern bleiben unten und hinten."],
+    breath: BREATH_PUSH,
+    mistakes: [["Zu weit nach hinten in eine unangenehme Schulterdehnung", "Nur so weit zurück, wie es schmerzfrei bleibt."], ["Handgelenke knicken ab", "Handgelenke in Verlängerung der Unterarme halten."]],
+    safety: ["Breite Armführung belastet die Schulter in der Dehnung stärker. Bei Beschwerden lieber die klassische Brustpresse wählen."],
+    tips: [ISO]
+  },
+  "hs-fly": {
+    main: [M.pec], sup: [M.dAnt],
+    why: "Eine Isolationsübung für die Brust: Die Arme werden bogenförmig vor dem Körper zusammengeführt (horizontale Adduktion). Der Trizeps arbeitet kaum mit, dadurch lässt sich die Brust auch nach Druckübungen noch gezielt trainieren.",
+    setup: ["Sitzhöhe so wählen, dass die Arme etwa auf Schulterhöhe oder knapp darunter liegen.", "Startposition so einstellen, dass du eine angenehme Dehnung in der Brust spürst, ohne Zug im Schultergelenk.", "Rücken an der Lehne."],
+    steps: ["Ellbogen leicht gebeugt und in dieser Stellung halten.", "Die Arme in einem Bogen vor der Brust zusammenführen.", "Kurz halten und die Brust anspannen.", "Langsam zurück bis zur Startposition.", "Die Schultern bleiben unten."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogenwinkel ändert sich, Bewegung wird zum Drücken", "Den Ellbogenwinkel während der ganzen Bewegung gleich halten."], ["Zu weite Startposition", "Startposition so wählen, dass die Schulter nicht überdehnt wird."]],
+    safety: ["Bei Schulterbeschwerden die Startposition enger wählen."],
+    tips: ["Gut als zweite Brustübung nach einer Druckübung.", "Kleine Gewichtsschritte wählen, weil die Kraft hier geringer ist als beim Drücken."]
+  },
+  "hs-row": {
+    main: [M.lat, M.trapM, M.rhomb], sup: [M.dPost, M.bic, M.brach],
+    why: "Eine Grundübung für den Rücken. Horizontales Ziehen kräftigt die Muskeln, die die Schulterblätter zusammenführen und die Arme nach hinten bewegen – ein Gegengewicht zu den vielen Druckübungen und zu langem Sitzen.",
+    setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst und die Schulterblätter in der Dehnung nach vorn gleiten können.", "Sitzhöhe so, dass die Griffe etwa auf Höhe der unteren Brust liegen.", "Füße fest abstellen."],
+    steps: ["Brust am Polster, Blick nach vorn.", "Mit den Ellbogen nach hinten ziehen, als wolltest du sie an den Körper führen.", "Am Ende die Schulterblätter zusammenführen und kurz halten.", "Kontrolliert nach vorn nachgeben, bis die Arme gestreckt sind und der Rücken sich dehnt.", "Den Oberkörper nicht vom Polster lösen."],
+    breath: BREATH_PULL,
+    mistakes: [["Schwung aus dem Oberkörper", "Brust bleibt am Polster, die Bewegung kommt aus Rücken und Armen."], ["Schultern ziehen nach oben", "Schultern unten lassen, Nacken lang."], ["Nur mit den Armen ziehen", "Gedanklich mit den Ellbogen ziehen, die Hände halten nur fest."]],
+    safety: ["Bei Schmerzen im unteren Rücken prüfen, ob die Brust wirklich am Polster bleibt."],
+    tips: [ISO, "Ein enger Griff mit Ellbogen nah am Körper betont den breiten Rückenmuskel, weit abgespreizte Ellbogen stärker den oberen Rücken."]
+  },
+  "hs-lowrow": {
+    main: [M.lat, M.trapM, M.rhomb], sup: [M.dPost, M.bic, M.brach],
+    why: "Zug von vorn-unten zur Hüfte. Mit den Ellbogen nah am Körper arbeitet besonders der breite Rückenmuskel, dessen Hauptaufgabe es ist, den Arm nach hinten-unten zu führen.",
+    setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst.", "Sitzhöhe so, dass die Zugrichtung etwa zum Bauch bzw. zur Hüfte zeigt.", "Füße fest abstellen."],
+    steps: ["Brust am Polster, Rücken gerade.", "Die Griffe Richtung Hüfte ziehen, Ellbogen dicht am Körper.", "Am Ende kurz halten und den Rücken anspannen.", "Langsam nach vorn nachgeben, bis die Arme gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Oberkörper kippt nach hinten", "Brust bleibt am Polster."], ["Ellbogen spreizen weit ab", "Ellbogen nah am Körper führen."]],
+    safety: ["Rücken nicht rund machen, um mehr Weg zu gewinnen."],
+    tips: [ISO]
+  },
+  "hs-highrow": {
+    main: [M.lat, M.teres, M.trapL], sup: [M.rhomb, M.dPost, M.bic, M.brach],
+    why: "Zug schräg von oben nach unten-hinten. Die Bewegung liegt zwischen Rudern und Latziehen und kräftigt vor allem den breiten Rückenmuskel und den großen Rundmuskel.",
+    setup: ["Sitz so einstellen, dass du die Griffe mit gestreckten Armen über dem Kopf erreichst.", "Oberschenkelpolster (falls vorhanden) fest gegen die Beine stellen.", "Rücken aufrecht."],
+    steps: ["Arme gestreckt, Schultern zuerst leicht nach unten ziehen.", "Die Griffe diagonal nach unten-hinten ziehen, bis die Hände etwa auf Schulter- bis Brusthöhe sind.", "Kurz halten.", "Kontrolliert nach oben nachgeben, bis die Arme wieder gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Schultern ziehen zu den Ohren", "Bewegung mit dem Absenken der Schultern beginnen."], ["Oberkörper schaukelt", "Aufrecht sitzen und den Rumpf ruhig halten."]],
+    safety: ["In der oberen Position nicht ruckartig in die Dehnung fallen lassen."],
+    tips: [ISO]
+  },
+  "hs-pulldown": {
+    main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach],
+    why: "Vertikales Ziehen von oben zur Brust – die Grundübung für einen breiten Rücken und eine Alternative zum Klimmzug, bei der sich das Gewicht genau dosieren lässt.",
+    setup: ["Sitz und Knieposter so einstellen, dass die Oberschenkel fest fixiert sind.", "Die Griffe sollten mit gestreckten Armen gerade noch erreichbar sein."],
+    steps: ["Arme gestreckt, Brust leicht aufgerichtet.", "Die Griffe zur oberen Brust ziehen, die Ellbogen zeigen nach unten.", "Unten kurz halten.", "Langsam nach oben nachgeben, bis die Arme gestreckt sind und der Rücken gedehnt ist."],
+    breath: BREATH_PULL,
+    mistakes: [["Starkes Zurücklehnen", "Nur leichte Rücklage, die Bewegung kommt aus dem Rücken."], ["Halbe Bewegung oben", "Oben die Arme fast ganz strecken."], ["Schwung", "Gewicht wählen, das du ohne Schwung bewegst."]],
+    safety: ["Den Kopf nicht nach vorn schieben."],
+    tips: [ISO]
+  },
+  "hs-dyrow": {
+    main: [M.lat, M.trapM, M.rhomb], sup: [M.bic, M.brach, M.dPost],
+    why: "Eine Rudervariante mit Untergriff. Im Untergriff arbeitet der Bizeps stärker mit, weil er neben der Ellbogenbeugung auch für die Drehung des Unterarms zuständig ist.",
+    setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen erreichst.", "Sitzhöhe so, dass die Zugrichtung etwa zum Bauch zeigt.", "Füße fest abstellen."],
+    steps: ["Brust am Polster, Untergriff.", "Die Ellbogen nah am Körper nach hinten Richtung Hüfte ziehen.", "Am Ende kurz halten.", "Langsam nach vorn nachgeben, bis die Arme gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Zug nur aus den Armen", "Mit den Ellbogen ziehen, Rücken bewusst anspannen."], ["Oberkörper hebt vom Polster ab", "Brust bleibt am Polster."]],
+    safety: ["Bei Beschwerden am Ellbogen oder Handgelenk lieber eine Variante mit neutralem Griff wählen."],
+    tips: [ISO]
+  },
+  "hs-lat": {
+    main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach],
+    why: "Latziehen mit Steckgewicht: vertikales Ziehen für den breiten Rücken. Durch das Steckgewicht lässt sich das Gewicht schnell und in kleinen Schritten anpassen.",
+    setup: ["Knieposter so einstellen, dass die Oberschenkel fest fixiert sind.", "Stange bzw. Griffe etwas breiter als schulterbreit greifen."],
+    steps: ["Arme gestreckt, Brust leicht aufgerichtet.", "Zur oberen Brust ziehen, die Ellbogen zeigen nach unten.", "Unten kurz halten.", "Langsam nach oben nachgeben, bis die Arme gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Ziehen hinter den Kopf", "Vor dem Kopf zur oberen Brust ziehen."], ["Zurücklehnen und Schwung", "Nur leichte Rücklage, ruhiger Rumpf."]],
+    safety: ["Gewicht am Ende des Satzes kontrolliert ablegen, nicht fallen lassen."],
+    tips: ["Ein engerer, neutraler Griff ist eine gute Variante, wenn breite Griffe die Schultern stören."]
+  },
+  "hs-shoulder": {
+    main: [M.dAnt], sup: [M.dLat, M.tri, M.trapU, M.serr],
+    why: "Drücken über Kopf – die Grundübung für die Schultern. Sie kräftigt die Schulter in einer Bewegung, die auch beim Heben von Dingen über Kopf vorkommt.",
+    setup: ["Sitz so einstellen, dass die Griffe in der Ausgangsposition etwa auf Schulter- bis Kinnhöhe liegen.", "Rücken an der Lehne, Füße fest auf dem Boden."],
+    steps: ["Bauch leicht anspannen, Rücken an der Lehne.", "Die Griffe nach oben drücken, bis die Arme fast gestreckt sind.", "Kurz kontrollieren, ohne die Ellbogen durchzuschlagen.", "Langsam zurück bis zur Ausgangsposition."],
+    breath: BREATH_PUSH,
+    mistakes: [["Hohlkreuz beim Drücken", "Bauch anspannen, Rücken bleibt an der Lehne."], ["Schultern ziehen zu den Ohren", "Schultern unten lassen, so weit es die Bewegung erlaubt."], ["Halbe Wiederholungen", "Bis zur Ausgangshöhe zurück, solange schmerzfrei."]],
+    safety: ["Bei Schulterschmerzen über Kopf den Bewegungsumfang oben begrenzen oder eine Alternative wählen."],
+    tips: [ISO]
+  },
+  "hs-lateral": {
+    main: [M.dLat], sup: [M.supra, M.trapU],
+    why: "Seitheben trainiert gezielt den seitlichen Deltamuskel, der die Schulterbreite prägt. Bei Druckübungen arbeitet dieser Teil weniger mit, darum hat Seitheben einen eigenen Platz im Plan.",
+    setup: ["Sitz so einstellen, dass das Schultergelenk etwa auf Höhe der Drehachse der Maschine liegt.", "Die Polster liegen an der Außenseite der Oberarme."],
+    steps: ["Aufrecht sitzen, Schultern unten.", "Die Arme seitlich anheben, bis die Oberarme etwa waagerecht sind.", "Kurz halten.", "Langsam absenken, ohne das Gewicht abzulegen."],
+    breath: "Beim Heben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Schultern ziehen mit nach oben", "Schultern bewusst unten lassen – sonst übernimmt der obere Trapezmuskel."], ["Schwung", "Kleineres Gewicht wählen und langsam absenken."], ["Zu hoch heben", "Etwa bis Schulterhöhe, darüber arbeitet zunehmend der Trapezmuskel."]],
+    safety: ["Bei Schulterbeschwerden nur bis knapp unter Schulterhöhe heben."],
+    tips: ["Kleine Gewichtsschritte wählen – der seitliche Deltamuskel ist ein kleiner Muskel.", "Höhere Wiederholungszahlen funktionieren hier gut, solange die Sätze anstrengend sind."]
+  },
+  "hs-reardelt": {
+    main: [M.dPost], sup: [M.trapM, M.rhomb, M.rotAuss],
+    why: "Trainiert den hinteren Teil der Schulter und die Muskeln zwischen den Schulterblättern. Diese Bereiche kommen bei Druckübungen kaum vor und tragen zu einer ausgewogenen Schulter bei.",
+    setup: ["Sitzhöhe so, dass die Arme etwa auf Schulterhöhe liegen.", "Brust an das Polster, Griffe mit leicht gebeugten Ellbogen."],
+    steps: ["Arme leicht gebeugt nach vorn.", "Die Arme in einem weiten Bogen nach hinten führen, bis sie etwa auf Höhe des Oberkörpers sind.", "Kurz halten.", "Langsam nach vorn zurück."],
+    breath: "Beim Zurückführen ausatmen, beim Nachgeben einatmen.",
+    mistakes: [["Schulterblätter ziehen stark zusammen, Bewegung wird zum Rudern", "Bewegung aus den Armen im Bogen, Ellbogenwinkel gleich halten."], ["Schultern ziehen nach oben", "Schultern unten lassen."]],
+    safety: ["Mit leichtem Gewicht beginnen; die hintere Schulter ist meist deutlich schwächer als die Brust."],
+    tips: ["Kleine Gewichtsschritte und eher höhere Wiederholungszahlen."]
+  },
+  "hs-curl": {
+    main: [M.bic, M.brach], sup: [M.brachrad],
+    why: "Isoliertes Training der Armbeuger. Die aufliegenden Oberarme verhindern Schwung, sodass der Bizeps die Arbeit wirklich leisten muss.",
+    setup: ["Sitz so einstellen, dass die Oberarme flach auf dem Polster liegen.", "Die Ellbogen liegen auf Höhe der Drehachse der Maschine."],
+    steps: ["Arme fast gestreckt, Oberarme auf dem Polster.", "Die Griffe zur Schulter beugen.", "Oben kurz halten.", "Langsam absenken, bis die Arme fast gestreckt sind."],
+    breath: "Beim Beugen ausatmen, beim Absenken einatmen.",
+    mistakes: [["Oberarme heben vom Polster ab", "Oberarme bleiben aufliegend."], ["Unten nicht ganz strecken", "Den gedehnten Teil der Bewegung bewusst mitnehmen."], ["Absenken zu schnell", "2–3 Sekunden nachgeben."]],
+    safety: ["Am Ende der Streckung nicht in das Gelenk fallen lassen."],
+    tips: ["Kleine Gewichtsschritte wählen."]
+  },
+  "hs-dip": {
+    main: [M.tri], sup: [M.pecS, M.dAnt],
+    why: "Eine Druckübung nach unten, bei der vor allem der Trizeps arbeitet. Im Gegensatz zum freien Dip lässt sich das Gewicht genau dosieren.",
+    setup: ["Sitz so einstellen, dass die Griffe in der Ausgangsposition etwa neben der unteren Brust liegen.", "Falls vorhanden: Oberschenkelpolster fest einstellen."],
+    steps: ["Aufrecht sitzen, Schultern unten.", "Die Griffe nach unten drücken, bis die Arme fast gestreckt sind.", "Kurz halten.", "Langsam nach oben zurück, ohne dass die Schultern nach vorn kippen."],
+    breath: BREATH_PUSH,
+    mistakes: [["Schultern rollen nach vorn", "Brust aufgerichtet lassen."], ["Ellbogen schlagen durch", "Kurz vor der vollen Streckung abbremsen."], ["Zu tief zurück", "Nur so weit, wie die Schulter es schmerzfrei zulässt."]],
+    safety: ["Bei Schulterbeschwerden den Weg nach oben begrenzen."],
+    tips: ["Passt gut als Trizepsübung an Drück-Tagen."]
+  },
+  "hs-triext": {
+    main: [M.tri], sup: [],
+    why: "Isoliertes Strecken des Ellbogens für alle drei Köpfe des Trizeps. Der Trizeps macht einen großen Teil des Oberarmumfangs aus.",
+    setup: ["Sitz so einstellen, dass die Oberarme auf dem Polster liegen.", "Die Ellbogen liegen auf Höhe der Drehachse der Maschine."],
+    steps: ["Arme gebeugt, Oberarme auf dem Polster.", "Die Arme strecken, bis sie fast gerade sind.", "Kurz halten.", "Langsam zurück in die Beugung."],
+    breath: "Beim Strecken ausatmen, beim Beugen einatmen.",
+    mistakes: [["Oberarme heben ab", "Oberarme bleiben aufliegend."], ["Schwung", "Gewicht wählen, das du gleichmäßig bewegst."]],
+    safety: ["Bei Ellbogenbeschwerden mit leichtem Gewicht und langsamem Tempo beginnen."],
+    tips: ["Kleine Gewichtsschritte wählen."]
+  },
+  "hs-legpress": {
+    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    why: "Eine Grundübung für die Beine. Der Rücken ist gestützt, deshalb lassen sich Oberschenkel und Gesäß schwer trainieren, ohne dass der Rumpf das Gewicht balancieren muss.",
+    setup: ["Rückenlehne so einstellen, dass du in der unteren Position tief beugen kannst, ohne dass sich das Becken von der Lehne abrollt.", "Füße etwa schulterbreit mittig auf die Platte stellen."],
+    steps: ["Sicherung lösen, Beine sind leicht gebeugt.", "Kontrolliert absenken, die Knie zeigen in Richtung der Zehen.", "So tief gehen, wie das Becken an der Lehne bleibt.", "Über die ganze Fußsohle nach oben drücken.", "Oben die Knie nicht ganz durchstrecken."],
+    breath: BREATH_LEG,
+    mistakes: [["Becken rollt unten von der Lehne ab", "Weniger tief gehen oder die Lehne anders einstellen."], ["Knie fallen nach innen", "Knie in Richtung der Zehen führen."], ["Knie werden oben durchgedrückt", "Kurz vor der vollen Streckung stoppen."], ["Fersen heben ab", "Über die ganze Fußsohle drücken."]],
+    safety: ["Vor dem Aussteigen die Sicherung wieder einlegen.", "Scheiben gleichmäßig verteilen."],
+    tips: ["Die Fußposition verändert die Verteilung der Arbeit: Weiter unten auf der Platte beugt sich das Knie stärker und die Oberschenkelvorderseite arbeitet mehr; weiter oben wird die Hüfte stärker gebeugt und das Gesäß arbeitet mehr.", "Große Muskeln vertragen größere Gewichtsschritte."]
+  },
+  "hs-isolegpress": {
+    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    why: "Beinpresse mit unabhängigen Seiten. Du kannst beidbeinig oder einbeinig trainieren und so Unterschiede zwischen den Beinen erkennen und ausgleichen.",
+    setup: ["Rückenlehne so einstellen, dass das Becken in der unteren Position an der Lehne bleibt.", "Füße hüftbreit auf die Fußplatten stellen."],
+    steps: ["Beine leicht gebeugt, Rücken an der Lehne.", "Kontrolliert absenken, Knie zeigen in Richtung der Zehen.", "So tief, wie das Becken an der Lehne bleibt.", "Über die ganze Fußsohle nach oben drücken, ohne die Knie durchzustrecken."],
+    breath: BREATH_LEG,
+    mistakes: [["Becken rollt ab", "Weniger tief gehen."], ["Knie fallen nach innen", "Knie über den Zehen führen."]],
+    safety: ["Einbeinig mit deutlich weniger Gewicht beginnen."],
+    tips: ["Einbeinig trainieren: Das schwächere Bein zuerst und mit dem anderen Bein dieselbe Wiederholungszahl machen.", ISO]
+  },
+  "hs-vsquat": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Eine geführte Kniebeuge. Die Schulterpolster nehmen das Gewicht auf, der Rücken lehnt am Polster – so lassen sich die Beine schwer trainieren, ohne eine Langhantel balancieren zu müssen.",
+    setup: ["Schultern unter die Polster, Rücken am Rückenpolster.", "Füße etwa schulterbreit und leicht vor dem Körper aufsetzen."],
+    steps: ["Sicherung lösen, aufrecht stehen.", "Kontrolliert in die Hocke gehen, Knie in Richtung der Zehen.", "So tief, wie du sauber kontrollieren kannst und der Rücken am Polster bleibt.", "Über die ganze Fußsohle nach oben drücken."],
+    breath: BREATH_LEG,
+    mistakes: [["Fersen heben ab", "Gewicht über die ganze Fußsohle verteilen, ggf. Füße etwas weiter vorn aufsetzen."], ["Rücken löst sich vom Polster", "Rumpf anspannen, Tiefe anpassen."]],
+    safety: ["Vor dem Aussteigen die Sicherung einlegen."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte."]
+  },
+  "hs-hack": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Eine geführte Kniebeuge mit aufrechtem, gestütztem Rücken. Die Knie bewegen sich deutlich nach vorn, dadurch arbeitet die Oberschenkelvorderseite stark.",
+    setup: ["Rücken flach am Polster, Schultern unter den Polstern.", "Füße etwa schulterbreit auf die Plattform."],
+    steps: ["Sicherung lösen.", "Kontrolliert tief beugen, Knie in Richtung der Zehen.", "Die Fersen bleiben auf der Plattform.", "Über die ganze Fußsohle nach oben drücken, ohne die Knie durchzustrecken."],
+    breath: BREATH_LEG,
+    mistakes: [["Fersen heben ab", "Füße etwas weiter vorn aufsetzen."], ["Knie fallen nach innen", "Knie über den Zehen führen."], ["Becken löst sich unten vom Polster", "Weniger tief gehen."]],
+    safety: ["Vor dem Aussteigen die Sicherung einlegen."],
+    tips: ["Weiter vorn aufgesetzte Füße verringern die Kniebeugung und verlagern die Arbeit tendenziell mehr ins Gesäß; weiter hinten aufgesetzte Füße fordern die Oberschenkelvorderseite stärker."]
+  },
+  "hs-legext": {
+    main: [M.quad], sup: [],
+    why: "Trainiert das Kniestrecken isoliert, ohne dass Hüfte oder Rumpf mitarbeiten müssen. Alle vier Köpfe des Quadrizeps strecken das Knie, auch der gerade Schenkelmuskel, der zusätzlich über das Hüftgelenk zieht.",
+    setup: ["Rückenlehne so einstellen, dass das Kniegelenk auf Höhe der Drehachse liegt.", "Das Polster liegt vorn knapp oberhalb der Sprunggelenke."],
+    steps: ["Rücken an der Lehne, Griffe seitlich festhalten.", "Die Beine strecken, bis sie fast gerade sind.", "Oben kurz halten und den Oberschenkel anspannen.", "Langsam absenken, ohne das Gewicht abzulegen."],
+    breath: "Beim Strecken ausatmen, beim Absenken einatmen.",
+    mistakes: [["Gesäß hebt vom Sitz ab", "Gewicht reduzieren, Griffe festhalten."], ["Gewicht fällt zurück", "2–3 Sekunden kontrolliert absenken."], ["Kniegelenk nicht auf der Drehachse", "Lehne einstellen, bis Knie und Drehachse übereinstimmen."]],
+    safety: ["Bei Knieschmerzen den Bewegungsumfang auf den schmerzfreien Bereich begrenzen."],
+    tips: [ISO, "Gut als Ergänzung zu einer Beinpresse oder Kniebeuge."]
+  },
+  "hs-kneelcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Einbeiniges Beugen des Knies für die hintere Oberschenkelmuskulatur. Jedes Bein muss die Arbeit allein leisten.",
+    setup: ["Ein Knie auf das Kniepolster, den Oberkörper auf das Brustpolster.", "Die Rolle liegt knapp oberhalb der Ferse an der Achillessehne bzw. am unteren Unterschenkel.", "Das Kniegelenk liegt etwa auf Höhe der Drehachse."],
+    steps: ["Bein fast gestreckt, Hüfte auf dem Polster.", "Die Ferse in Richtung Gesäß ziehen.", "Oben kurz halten.", "Langsam strecken, ohne das Gewicht abzulegen."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Hüfte hebt vom Polster", "Gewicht reduzieren, Hüfte unten halten."], ["Schwung", "Gleichmäßig beugen und langsam strecken."]],
+    safety: ["Mit leichtem Gewicht beginnen und die Bewegung erst sauber lernen."],
+    tips: ["Mit dem schwächeren Bein beginnen und dieselbe Wiederholungszahl mit dem anderen Bein machen."]
+  },
+  "hs-seatcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Beinbeugen im Sitzen. Durch die gebeugte Hüfte ist die hintere Oberschenkelmuskulatur stärker gedehnt als im Liegen. In einer Studie wuchs sie mit dem Beinbeuger im Sitzen in 12 Wochen im Mittel stärker (+14 %) als im Liegen (+9 %). Die Studie war klein und mit Untrainierten, ist aber ein guter Hinweis.",
+    setup: ["Rückenlehne so einstellen, dass das Kniegelenk auf Höhe der Drehachse liegt.", "Die Rolle liegt hinten knapp oberhalb der Ferse.", "Das Oberschenkelpolster fest auf die Oberschenkel stellen."],
+    steps: ["Beine fast gestreckt, Oberschenkel fixiert.", "Die Fersen nach unten-hinten ziehen.", "Unten kurz halten.", "Langsam strecken, ohne das Gewicht abzulegen."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Oberschenkelpolster zu locker", "Fest einstellen, damit die Oberschenkel nicht abheben."], ["Gewicht fällt zurück", "Den Rückweg 2–3 Sekunden kontrollieren."]],
+    safety: ["Mit leichtem Gewicht beginnen."],
+    tips: ["Den gedehnten Teil der Bewegung (Beine fast gestreckt) bewusst mitnehmen."],
+    src: ["curl2021"]
+  },
+  "hs-hipthrust": {
+    main: [M.glut], sup: [M.ham, M.add, M.quad],
+    why: "Hüftstrecken gegen Widerstand mit Schwerpunkt auf dem großen Gesäßmuskel. Die größte Belastung liegt typischerweise in der oberen Position, wenn die Hüfte gestreckt ist – anders als bei Kniebeuge oder Beinpresse, wo sie unten am größten ist.",
+    setup: ["Oberen Rücken bzw. Polster so einstellen, dass die Hüfte unten frei absinken kann.", "Füße hüftbreit, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
+    steps: ["Kinn leicht zur Brust, Bauch anspannen.", "Die Hüfte nach oben drücken, bis sie gestreckt ist.", "Oben kurz halten und das Gesäß anspannen.", "Kontrolliert absenken."],
+    breath: BREATH_LEG,
+    mistakes: [["Hohlkreuz statt Hüftstreckung oben", "Becken leicht einrollen, Rippen unten lassen."], ["Füße zu nah oder zu weit", "So aufsetzen, dass die Unterschenkel oben senkrecht stehen."]],
+    safety: ["Gewicht so wählen, dass du oben ohne Hohlkreuz halten kannst."],
+    tips: ["Eine kurze Pause in der oberen Position hilft, die Hüfte wirklich zu strecken."]
+  },
+  "hs-calf": {
+    main: [M.gastro, M.sol], sup: [],
+    why: "Wadenheben im Stehen mit gestrecktem Knie trainiert beide großen Wadenmuskeln. In einer Studie wuchs der Zwillingswadenmuskel mit Wadenheben im Stehen deutlich stärker als im Sitzen; beim Schollenmuskel gab es keinen klaren Unterschied.",
+    setup: ["Schultern unter die Polster, Höhe so einstellen, dass du aufrecht mit leicht gebeugten Knien startest.", "Fußballen auf die Kante, die Fersen hängen frei."],
+    steps: ["Knie gestreckt, aber nicht durchgedrückt.", "Fersen tief absenken, bis die Waden deutlich gedehnt sind.", "Unten kurz halten.", "So hoch wie möglich auf die Fußballen drücken.", "Oben kurz halten und langsam wieder absenken."],
+    breath: "Beim Heben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Kurze, federnde Wiederholungen", "Unten kurz halten, voller Bewegungsumfang."], ["Knie beugen sich mit", "Knie ruhig halten, die Bewegung kommt aus dem Sprunggelenk."]],
+    safety: ["Bei Achillessehnenbeschwerden die Dehnung unten vorsichtig dosieren."],
+    tips: ["Die Dehnung unten und die volle Streckung oben sind wichtiger als viel Gewicht."],
+    src: ["calf2023"]
+  },
+  "hs-seatcalf": {
+    main: [M.sol], sup: [M.gastro],
+    why: "Wadenheben im Sitzen mit gebeugtem Knie. Der Zwillingswadenmuskel zieht über das Kniegelenk und ist im Sitzen verkürzt, deshalb arbeitet hier vor allem der Schollenmuskel. Für den Zwillingswadenmuskel ist das Wadenheben im Stehen deutlich wirksamer.",
+    setup: ["Polster fest auf die Oberschenkel knapp oberhalb der Knie.", "Fußballen auf die Kante, die Fersen hängen frei."],
+    steps: ["Sicherung lösen.", "Fersen tief absenken bis zur deutlichen Dehnung.", "Unten kurz halten.", "So hoch wie möglich auf die Fußballen drücken, oben kurz halten.", "Langsam absenken."],
+    breath: "Beim Heben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Federn ohne Pause", "Unten und oben kurz halten."], ["Nur halbe Bewegung", "Volle Dehnung und volle Streckung."]],
+    safety: ["Vor dem Aufstehen die Sicherung einlegen."],
+    tips: ["Gut als Ergänzung zum Wadenheben im Stehen, nicht als Ersatz."],
+    src: ["calf2023"]
+  },
+  "hs-ab": {
+    main: [M.rect], sup: [M.obl],
+    why: "Beugen der Wirbelsäule gegen Widerstand für den geraden Bauchmuskel. An der Maschine lässt sich der Widerstand genau dosieren und schrittweise steigern.",
+    setup: ["Sitz so einstellen, dass die Drehachse etwa auf Höhe des Bauchs liegt.", "Füße einhaken bzw. fest abstellen, Griffe oder Polster nach Gerät."],
+    steps: ["Aufrecht starten, Bauch anspannen.", "Den Oberkörper einrollen, als wolltest du das Brustbein zum Becken bringen.", "Unten kurz halten.", "Langsam aufrollen, ohne die Spannung ganz abzugeben."],
+    breath: "Beim Einrollen ausatmen, beim Aufrollen einatmen.",
+    mistakes: [["Ziehen mit den Armen", "Die Arme halten nur fest, die Bewegung kommt aus dem Bauch."], ["Nur aus der Hüfte beugen", "Die Wirbelsäule bewusst einrollen."], ["Schwung", "Langsam und gleichmäßig bewegen."]],
+    safety: ["Bei Rückenbeschwerden mit leichtem Widerstand und kleinem Bewegungsumfang beginnen."],
+    tips: ["Wie andere Muskeln profitiert auch der Bauch von steigender Belastung über die Zeit."]
+  }
+};
+const MODEL_NOTE = "Bauweise und Einstellmöglichkeiten unterscheiden sich je nach Modellgeneration. Maßgeblich sind die Hinweise am Gerät in deinem Studio.";
+
 
 // Kurze Ausführungstipps (Einstellung · Bewegung · Fehler vermeiden)
 const TIPS = {
@@ -958,6 +1378,108 @@ function progShort(x, e, si) {
   return { cls: "", arr: "", txt: "Gleiches Gewicht · Ziel +1 Wdh." };
 }
 
+/* ================= Übungsbibliothek & Wissen ================= */
+let libQuery = "", exDetail = null, exBack = "lib", artId = null, artBack = "wissen", guideRet = null;
+// Persönliche Werte an einem Gerät (nur echte, gültige Sätze mit derselben Gewichtsangabe)
+function personalStats(id) {
+  const u = unitOf(ex(id)), ss = compSessions(id, u);
+  if (!ss.length) return null;
+  const top = s => Math.max(...s.sets.map(t => t.kg));
+  let best = null;
+  ss.forEach(s => s.sets.forEach(t => { if (!best || t.kg > best.kg || (t.kg === best.kg && t.reps > best.reps)) best = { kg: t.kg, reps: t.reps, date: s.date }; }));
+  return { n: ss.length, first: ss[0], last: ss[ss.length - 1], firstKg: top(ss[0]), lastKg: top(ss[ss.length - 1]), best, u };
+}
+const fmtDate = ms => new Date(ms).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+function statsHtml(id) {
+  const p = personalStats(id), unit = UNIT[unitOf(ex(id))];
+  if (!p) return `<p class="muted">Noch keine Einträge an diesem Gerät. Nach deinem ersten Training siehst du hier deine Entwicklung.</p>`;
+  const d = Math.round((p.lastKg - p.firstKg) * 100) / 100;
+  const pl = plateau(id);
+  return `<div class="grid3">
+      <div class="stat"><div class="cap">Einheiten</div><div class="num">${p.n}</div><div class="small faint">seit ${new Date(p.first.date).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}</div></div>
+      <div class="stat"><div class="cap">Bestwert</div><div class="num">${kgTxt(p.best.kg)}</div><div class="small faint">${unit} × ${p.best.reps}</div></div>
+      <div class="stat"><div class="cap">Seit Beginn</div><div class="num" style="color:${d > 0 ? "var(--ok)" : "var(--text)"}">${d > 0 ? "+" : ""}${kgTxt(d)}</div><div class="small faint">kg</div></div>
+    </div>
+    <p class="small muted">Erstes Training am ${fmtDate(p.first.date)} mit ${kgTxt(p.firstKg)} ${unit}. Zuletzt ${p.last.sets.map(t => `${kgTxt(t.kg)} × ${t.reps}`).join(", ")}.${d > 0 ? ` Das sind ${kgTxt(d)} kg mehr als zu Beginn.` : ""}</p>
+    ${pl ? `<p class="small" style="color:var(--warn)">${esc(plateauTxt(pl))}</p>` : ""}`;
+}
+// Ausführliche Anleitung (geteilt von Übungsseite und Bottom-Sheet)
+function guideHtml(id) {
+  const e = ex(id), g = GUIDE[id];
+  const colors = { [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) };
+  const sec = (title, inner) => `<section class="gsec"><h2>${title}</h2>${inner}</section>`;
+  const ol = arr => `<ol class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ol>`;
+  const ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  const head = `<div class="ghead"><div class="gmus">
+      <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
+      ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
+    </div><div class="gfig">${figure(colors, e.name)}</div></div>`;
+  if (!g) return `${head}${sec("Hinweis", `<p class="muted">Für eigene Geräte gibt es keine ausführliche Anleitung. Muskeln und Bewegungsmuster stammen aus deinen Angaben.</p>`)}`;
+  const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
+  return `${head}
+    ${sec("Warum diese Übung", `<p>${esc(g.why)}</p>`)}
+    ${sec("Einstellen", ol(g.setup))}
+    ${sec("Ausführung", ol(g.steps))}
+    ${sec("Atmung", `<p>${esc(g.breath)}</p>`)}
+    ${sec("Häufige Fehler", `<ul class="glist mist">${g.mistakes.map(([f, k]) => `<li><b>${esc(f)}</b><span>${esc(k)}</span></li>`).join("")}</ul>`)}
+    ${sec("Sicherheit", ul(g.safety))}
+    ${sec("Tipps", ul(g.tips))}
+    <section class="gsec gnote"><p class="small faint">${esc(MODEL_NOTE)} Anatomie und Ausführung entsprechen anerkanntem Fachwissen; Aussagen aus Studien sind mit Quelle angegeben.</p>
+      ${srcs.length ? `<div class="cap">Quellen</div>${srcList(g.src)}` : ""}</section>`;
+}
+function srcList(keys) {
+  return `<ul class="glist srcs">${keys.map(k => SOURCES[k]).filter(Boolean).map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.t)}</a><span class="faint"> · ${esc(s.j)}</span></li>`).join("")}</ul>`;
+}
+function vLib() {
+  const q = libQuery.toLowerCase();
+  const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
+  const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Übungen</div>
+      <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
+    <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
+    <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
+      <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
+        <div style="width:36px;flex:0 0 36px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
+        <div class="grow"><div class="t">${esc(e.name)}</div><div class="s">${e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"}${e.off ? " · nicht im Studio" : ""}</div></div>
+        ${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}<span class="chev">›</span></button>`).join("")}</div></section>`).join("") || `<p class="muted">Nichts gefunden.</p>`}</div>
+  </div>`;
+}
+function vEx() {
+  const id = exDetail, e = ex(id);
+  $app.innerHTML = `<div class="page guide">
+    <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
+      <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
+      <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
+      <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
+    <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
+    ${guideHtml(id)}
+  </div>`;
+}
+function vWissen() {
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Trainingswissen</div>
+      <p class="sub">Die Grundlagen hinter deinem Plan – kurz erklärt und mit Quellen belegt.</p></div>
+    <div class="group">${ARTICLES.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
+      <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div>
+  </div>`;
+}
+function vArt() {
+  const a = ARTICLES.find(x => x.id === artId) || ARTICLES[0];
+  $app.innerHTML = `<div class="page guide">
+    <div class="head"><button class="link" data-a="artBack">‹ Zurück</button><div class="cap">Trainingswissen</div>
+      <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(a.title)}</div></div>
+    <p class="lead">${esc(a.lead)}</p>
+    <div class="stack" style="gap:var(--s4)">${a.body.map(p => `<p>${esc(p)}</p>`).join("")}</div>
+    <section class="gsec gnote"><div class="cap">Quellen</div>${srcList(a.src)}
+      <p class="small faint">Studien beschreiben Durchschnittswerte. Wie stark du persönlich reagierst, kann davon abweichen.</p></section>
+  </div>`;
+}
+function guideSheet(id, ret) {
+  const back = ret === "pick" || ret === "train" || ret === "item";
+  return `${sheetHead(esc(ex(id).name), back ? "Zurück" : "Fertig", back ? "guideBack" : "closeSheet")}${guideHtml(id)}`;
+}
+
 /* ================= Navigation ================= */
 function go(v) {
   view = v;
@@ -965,12 +1487,12 @@ function go(v) {
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on",
-    b.dataset.v === v || (v === "day" && b.dataset.v === "plan")));
+    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : "plan"))));
   render(); window.scrollTo(0, 0);
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1065,6 +1587,8 @@ function vHome() {
     <div class="plain-list">
       ${lastH ? `<div class="li"><div class="grow"><div class="s">Zuletzt</div><div class="t">${esc(lastH.day)} <span class="muted" style="font-weight:400">· ${agoTxt} · ${Math.max(1, Math.round((lastH.durationSec || 0) / 60))} Min.</span></div></div></div>` : ""}
       <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
+      ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
+        return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
     </div>
   </div>`;
 }
@@ -1182,6 +1706,12 @@ function vPlan() {
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
     </div>
+    <section class="section"><h2>Übungen & Wissen</h2>
+      <div class="group">
+        <button class="li" data-a="tab" data-v="lib"><div class="grow"><div class="t">Übungsbibliothek</div><div class="s">${allEx().length} Geräte: Muskeln, Einstellung, Ausführung, Fehler</div></div><span class="chev">›</span></button>
+        <button class="li" data-a="tab" data-v="wissen"><div class="grow"><div class="t">Trainingswissen</div><div class="s">${ARTICLES.length} Grundlagen mit Quellen</div></div><span class="chev">›</span></button>
+      </div>
+    </section>
     <section class="section"><h2>Einstellungen</h2>
       <div class="group">
         <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
@@ -1297,12 +1827,13 @@ function pickerHtml() {
     <div class="chips">${[["alle", "Alle"], ...Object.entries(MUSCLES)].map(([k, l]) =>
       `<button class="chip ${pickFilter === k ? "on" : ""}" data-a="pickFilter" data-k="${k}">${l}</button>`).join("")}</div>
     ${list.length ? `<div class="group" id="pickList">${list.map(e => `
-      <button class="li" data-a="pick" data-id="${e.id}">
+      <div class="li" style="padding-right:var(--s2)"><button class="row grow" data-a="pick" data-id="${e.id}" style="text-align:left;gap:var(--s3)">
         <div style="width:40px;flex:0 0 40px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
         <div class="grow"><div class="row wrap" style="gap:6px"><span class="t">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
-          <div class="s">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div></div>
-        <span class="badge">${e.id.startsWith("c-") ? "Eigenes" : e.type === "stack" ? "Block" : e.load === "side" ? "pro Seite" : "insgesamt"}</span>
-      </button>`).join("")}</div>` : `<p class="muted" id="pickList">Nichts gefunden.</p>`}
+          <div class="s">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""} · ${e.id.startsWith("c-") ? "eigenes Gerät" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "insgesamt"}</div></div>
+        <span class="badge added" hidden></span></button>
+        <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button>
+      </div>`).join("")}</div>` : `<p class="muted" id="pickList">Nichts gefunden.</p>`}
     ${hidden ? `<p class="small faint">${hidden} ${hidden === 1 ? "Gerät ist" : "Geräte sind"} als „nicht im Studio“ ausgeblendet.</p>` : ""}
     <button class="btn block" data-a="newDev" data-ret="pick">+ Eigenes Gerät anlegen</button>`;
 }
@@ -1330,6 +1861,7 @@ function itemSheet() {
       <input id="noteIn" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     <div class="stack-sm">
       <button class="btn primary block xl" data-a="saveItem">Speichern</button>
+      <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="item">Anleitung ansehen</button>
       <button class="btn block" data-a="editDev" data-id="${e.id}" data-ret="item">Gerät bearbeiten</button>
       <button class="btn danger quiet block" data-a="delItem">Aus dem Tag entfernen</button>
     </div>`;
@@ -1604,6 +2136,7 @@ function devInfoSheet() {
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
     <p class="small muted">${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="stack-sm">
+      <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="train">Ausführliche Anleitung</button>
       <button class="btn block" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>Gerät tauschen</button>
       <button class="btn block" data-a="editDev" data-id="${e.id}" data-ret="train">Gerät bearbeiten</button>
     </div>`;
@@ -1871,6 +2404,7 @@ function exChart(exId, u = unitOf(ex(exId))) {
       <text x="${X(0)}" y="${H - 6}" text-anchor="${pts.length === 1 ? "middle" : "start"}" font-size="11" fill="var(--text-3)">${dl(pts[0].d)}</text>
       ${pts.length > 1 ? `<text x="${X(pts.length - 1)}" y="${H - 6}" text-anchor="end" font-size="11" fill="var(--text-3)">${dl(lastP.d)}</text>` : ""}
     </svg>
+    <button class="btn block" data-a="openEx" data-id="${exId}" data-ret="history">Anleitung und alle Werte</button>
     <div class="group">${[...pts].reverse().slice(0, 5).map(p => `<div class="li"><div class="grow small muted">${p.d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })}</div>
       <div class="small">${p.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join(" · ")}</div></div>`).join("")}</div>`;
 }
@@ -1939,6 +2473,12 @@ const A = {
   newPlan: () => go("setup"),
   selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
+  openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
+  exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
+  openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
+  artBack: () => go(artBack === "home" ? "home" : "wissen"),
+  openGuideSheet: el => { guideRet = el.dataset.ret || null; openSheet(guideSheet(el.dataset.id, guideRet)); },
+  guideBack: () => { if (guideRet === "pick") openSheet(pickerHtml()); else if (guideRet === "train") openSheet(devInfoSheet()); else if (guideRet === "item") openSheet(itemSheet()); else closeSheet(); },
   openTime: () => { const tp = activeTimeplan(nextDay()); timeSel = tp ? tp.minutes : null; openSheet(timeSheet()); },
   timePick: el => { timeSel = +el.dataset.m; openSheet(timeSheet()); },
   timeApply: () => { const day = nextDay();
@@ -1975,7 +2515,7 @@ const A = {
   delItem: () => { curDay().items.splice(draft._i, 1); save(); closeSheet(); vDay(); },
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
-  pick: el => { addToDay(el.dataset.id); el.querySelector(".badge").textContent = "✓ Hinzugefügt"; el.querySelector(".badge").className = "badge up"; },
+  pick: el => { addToDay(el.dataset.id); const bd = el.querySelector(".badge.added"); if (bd) { bd.textContent = "Hinzugefügt"; bd.className = "badge up added"; bd.hidden = false; } },
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
   devsDone: () => { closeSheet(); render(); },
   devFilt: el => { devFilter = el.dataset.k; openSheet(devListHtml()); },
@@ -2092,6 +2632,7 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
+  else if (k === "libQ") { libQuery = el.value; const pos = el.selectionStart; vLib(); const i = byId("libQ"); i.focus(); i.setSelectionRange(pos, pos); }
   else if (k === "devName") devDraft.name = el.value;
   else if (k === "devMuscle") devDraft.muscle = el.value;
   else if (k === "devPattern") devDraft.pattern = PATTERNS[el.value] ? el.value : null;
@@ -2119,7 +2660,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
