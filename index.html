@@ -958,6 +958,12 @@ const ICON = {
 };
 const fmtVol = v => v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + "<span class='small muted'> t</span>" : Math.round(v) + "<span class='small muted'> kg</span>";
 // Kurzfassung der Progressionsbegründung (volle Begründung per Tipp)
+function refreshProg() {
+  const s = S(), el = document.querySelector("#app .prog"); if (!s || !el) return;
+  const x = s.list[s.idx], pg = progShort(x, ex(x.exId), curSetIdx(x));
+  el.className = "prog " + pg.cls;
+  el.innerHTML = `${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span>`;
+}
 function progShort(x, e, si) {
   const set = si != null ? x.sets[si] : null, rec = x.rec ? x.rec[si] : null;
   if (set && rec != null && set.kg != null && Math.abs(set.kg - rec) > 1e-9) return { cls: "", arr: "", txt: `Eigenes Gewicht · Empfehlung ${kgTxt(rec)} kg` };
@@ -2044,7 +2050,7 @@ const A = {
     showSetError("");
     // gleiches Gewicht für die restlichen Sätze übernehmen
     if (el.dataset.k === "kg") x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
-    save(); },
+    refreshProg(); save(); },
   doneSet: () => doneSet(),
   skipRest: () => endRest(),
   restAdd: el => { const s = S(); s.restEnd += +el.dataset.d * 1000; s.restTotal = Math.max(1, s.restTotal + +el.dataset.d); save(); tick(); },
@@ -2115,7 +2121,7 @@ document.addEventListener("input", ev => {
       t.kg = v === null ? null : v;                 // ungültige Werte bleiben sichtbar, „Satz fertig“ prüft
       if (v === null || (v > 0 && v <= 1000)) x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
     } else { const v = num(el.value); t.reps = v === null ? NaN : v; }
-    showSetError(""); save();
+    showSetError(""); refreshProg(); save();
   }
 });
 document.addEventListener("keydown", ev => {
