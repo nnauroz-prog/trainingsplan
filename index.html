@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Training">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>Trainingsplan</title>
 <style>
   :root{--bg:#111418;--card:#1b2026;--line:#2a3039;--text:#f2f4f7;--muted:#8b93a1;--accent:#ff7a1a;--ok:#2fbf71;--danger:#e5484d}
@@ -53,6 +55,7 @@
 <nav class="bottom">
   <button id="nav-home" data-view="home">Heute</button>
   <button id="nav-plan" data-view="plan">Plan</button>
+  <button id="nav-history" data-view="history">Verlauf</button>
 </nav>
 
 <script>
@@ -152,6 +155,39 @@
     if (view === "plan") return renderPlan();
     if (view === "train") return renderTrain();
     if (view === "editDay") return renderEditDay();
+    if (view === "history") return renderHistory();
+  }
+
+  // VERLAUF
+  function renderHistory() {
+    const list = [...state.history].reverse().slice(0, 30);
+    $app.innerHTML = `
+      <h1>Verlauf</h1>
+      ${list.length ? list.map(h => {
+        const d = new Date(h.date);
+        const when = d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" });
+        return `
+        <div class="card">
+          <div class="row">
+            <h2 style="margin:0">${esc(h.day)}</h2>
+            <span class="muted shrink" style="flex:0 0 auto">${when} · ${h.durationMin} Min.</span>
+          </div>
+          ${h.exercises.map(e => {
+            const kgs = e.sets.map(s => s.kg).filter(k => k !== null);
+            const best = kgs.length ? Math.max(...kgs) : null;
+            return `<div class="list-item">
+              <div>${esc(e.name)}</div>
+              <div class="muted">${e.sets.length} Sätze · ${best !== null ? "bis " + fmtKg(best) : "ohne Gewicht"}</div>
+            </div>`;
+          }).join("")}
+        </div>`;
+      }).join("") : `<div class="card"><p class="muted">Noch keine Trainings gespeichert.</p></div>`}
+      ${state.history.length ? `<button class="small danger" id="clearHist">Verlauf löschen</button>` : ""}`;
+    const clear = document.getElementById("clearHist");
+    if (clear) clear.onclick = () => {
+      if (!confirm("Gesamten Verlauf löschen?")) return;
+      state.history = []; save(); renderHistory();
+    };
   }
 
   // HEUTE
