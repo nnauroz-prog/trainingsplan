@@ -623,23 +623,24 @@ function startTraining(day) {
   tone(660, .08, .05); // Ton durch den Tap freischalten
   state.session = {
     dayId: day.id, dayName: day.name, start: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
-    list: day.items.map(it => {
+    list: day.items.map(makeEntry)
+  };
+  state.selDay = null; save(); awake(true); go("train"); startTick();
+}
+function makeEntry(it) {
       const e = ex(it.exId), last = lastPerf(it.exId), step = stepFor(e);
       const hasKg = !!(last && last.some(s => s.kg !== null));
       const top = last ? Math.max(...last.map(s => s.kg ?? 0)) : null;
       // Anpassung: alle Wdh. geschafft -> mehr Gewicht; Mindest-Wdh. in keinem Satz geschafft -> weniger
       const up = hasKg && last.every(s => s.reps >= it.rmax);
       const down = hasKg && !up && top - step > 0 && last.every(s => s.reps < it.rmin);
-      return { exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up, down,
+      return { itemId: it.id, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, step, up, down,
         sets: Array.from({ length: it.sets }, (_, i) => {
           const ls = last ? (last[i] || last[last.length - 1]) : null;
           return up ? { kg: top + step, reps: it.rmin, done: false }
                : down ? { kg: top - step, reps: it.rmin, done: false }
                     : { kg: ls ? ls.kg : null, reps: ls ? Math.min(it.rmax, Math.max(it.rmin, ls.reps)) : it.rmax, done: false };
         }) };
-    })
-  };
-  state.selDay = null; save(); awake(true); go("train"); startTick();
 }
 const S = () => state.session;
 const curSetIdx = x => x.sets.findIndex(s => !s.done);
@@ -725,8 +726,15 @@ function vTrain() {
         <div style="width:64px;flex:0 0 64px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
       </div>
       <input class="note-in" id="noteT" data-i="note" data-ex="${e.id}" placeholder="⚙ Geräte-Einstellung notieren, z. B. Sitz 4" value="${esc(state.notes[e.id] || "")}" autocomplete="off">
-      ${TIPS[e.id] ? `<details class="tips"><summary>So geht's</summary><ol>${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></details>` : ""}
-      <div class="sets">${x.sets.map((t, i) => `<span class="set-pill ${t.done ? "done" : ""} ${i === si ? "cur" : ""}">${t.done ? "✓" : i + 1}</span>`).join("")}</div>
+      <div class="row between wrap" style="gap:8px">
+        ${TIPS[e.id] ? `<details class="tips grow"><summary>So geht's</summary><ol>${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></details>` : "<span></span>"}
+        ${x.sets.some(t => t.done) ? "" : `<button class="link small" data-a="openSwap" style="align-self:flex-start">⇄ Gerät tauschen</button>`}
+      </div>
+      <div class="sets">${x.sets.map((t, i) => t.done
+        ? `<button class="set-pill done" data-a="editSet" data-i2="${i}" aria-label="Satz ${i + 1} ändern">${t.kg !== null ? kgTxt(t.kg) : "–"}×${t.reps}</button>`
+        : `<span class="set-pill ${i === si ? "cur" : ""}">${i + 1}</span>`).join("")}</div>
+      ${x.sets.some(t => t.done) ? `<p class="muted small" style="margin-top:-4px">Erledigte Sätze antippen, um sie zu ändern.</p>` : ""}
+      ${s.list.every(l => l.sets.every(t => !t.done)) ? `<p class="small" style="background:var(--surface2);padding:10px 12px;border-radius:12px">Aufwärmen: vorher 1 lockerer Satz mit ${set.kg ? `ca. <b>${kgTxt(Math.max(x.step, Math.round(set.kg * .5 / x.step) * x.step))} kg × 10</b>` : "<b>etwa halbem Gewicht × 10</b>"}.</p>` : ""}
     </div>
     <div class="card">
       <div class="row between"><div class="label">Satz ${si + 1}</div><div class="small muted">${lastSet ? "Letztes Mal: " + (lastSet.kg !== null ? kgTxt(lastSet.kg) + " kg" : "–") + " × " + lastSet.reps : "Erstes Mal"}</div></div>
@@ -750,6 +758,28 @@ function jumpSheet() {
     return `<button class="li" data-a="jump" data-i2="${i}" ${d === x.sets.length ? "disabled" : ""}>
       <div class="grow"><div style="font-weight:600">${esc(ex(x.exId).name)}</div><div class="muted small">${d} von ${x.sets.length} Sätzen</div></div>
       ${i === s.idx ? `<span class="badge pr">Aktuell</span>` : d === x.sets.length ? `<span class="badge up">Fertig</span>` : ""}</button>`; }).join("")}</div>`;
+}
+
+let swapPerm = false, setEdit = null;
+function swapSheet() {
+  const s = S(), x = s.list[s.idx], cur = ex(x.exId);
+  const used = new Set(s.list.map(l => l.exId));
+  const alts = allEx().filter(e => !used.has(e.id) && (e.muscle === cur.muscle));
+  const more = allEx().filter(e => !used.has(e.id) && e.muscle !== cur.muscle && e.sec.includes(cur.muscle));
+  const row = e => `<button class="li" data-a="swap" data-id="${e.id}">
+      <div style="width:40px;flex:0 0 40px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
+      <div class="grow"><div style="font-weight:600">${esc(e.name)}</div><div class="muted small">${MUSCLES[e.muscle]}${lastPerf(e.id) ? " · schon gemacht" : ""}</div></div></button>`;
+  return `<div class="row between"><h2 class="grow">Statt ${esc(cur.name)}</h2><button class="btn sm" data-a="closeSheet">Abbrechen</button></div>
+    <div class="seg"><button data-a="swapMode" data-v="0" class="${swapPerm ? "" : "on"}">Nur heute</button><button data-a="swapMode" data-v="1" class="${swapPerm ? "on" : ""}">Auch im Plan</button></div>
+    ${alts.length ? `<div class="label">Gleicher Muskel: ${MUSCLES[cur.muscle]}</div><div class="list">${alts.map(row).join("")}</div>` : `<p class="muted">Kein anderes Gerät für ${MUSCLES[cur.muscle]}.</p>`}
+    ${more.length ? `<div class="label">Trainiert ${MUSCLES[cur.muscle]} mit</div><div class="list">${more.map(row).join("")}</div>` : ""}`;
+}
+function setSheet() {
+  const ms = (k, l, v) => `<div><label>${l}</label><div class="mini-step"><button data-a="setAdj" data-k="${k}" data-d="-1" aria-label="${l} weniger">−</button>
+    <output>${v}</output><button data-a="setAdj" data-k="${k}" data-d="1" aria-label="${l} mehr">+</button></div></div>`;
+  return `<h2>Satz ${setEdit.i + 1} ändern</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${ms("kg", "kg", setEdit.kg !== null ? kgTxt(setEdit.kg) : "–")}${ms("reps", "Wiederholungen", setEdit.reps)}</div>
+    <button class="btn primary block" data-a="setSave">Speichern</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`;
 }
 
 function vSummary() {
@@ -947,6 +977,21 @@ const A = {
     openSheet(`<h2>Training beenden?</h2>
       ${any ? `<button class="btn primary block" data-a="stopSave">Speichern & beenden</button>` : `<p class="muted">Du hast noch keinen Satz abgeschlossen.</p>`}
       <button class="btn block danger" data-a="stopDiscard">Verwerfen</button><button class="btn block" data-a="closeSheet">Weiter trainieren</button>`); },
+  openSwap: () => { swapPerm = false; openSheet(swapSheet()); },
+  swapMode: el => { swapPerm = el.dataset.v === "1"; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + swapSheet(); },
+  swap: el => {
+    const s = S(), x = s.list[s.idx], newId = el.dataset.id;
+    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest });
+    s.list[s.idx] = entry;
+    if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
+    save(); closeSheet(); render();
+  },
+  editSet: el => { const s = S(); setEdit = { i: +el.dataset.i2, ...s.list[s.idx].sets[+el.dataset.i2] }; openSheet(setSheet()); },
+  setAdj: el => { const x = S().list[S().idx];
+    if (el.dataset.k === "kg") setEdit.kg = Math.max(0, Math.round(((setEdit.kg ?? 0) + +el.dataset.d * x.step) * 100) / 100);
+    else setEdit.reps = Math.max(0, setEdit.reps + +el.dataset.d);
+    $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + setSheet(); },
+  setSave: () => { const t = S().list[S().idx].sets[setEdit.i]; t.kg = setEdit.kg; t.reps = setEdit.reps; save(); closeSheet(); render(); },
   stopSave: () => finish(true),
   stopDiscard: () => finish(false)
 };
