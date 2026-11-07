@@ -283,7 +283,7 @@ function load() {
   } catch (e) {}
   return s;
 }
-function blank() { return { plan:null, custom:[], notes:{}, history:[], session:null, selDay:null }; }
+function blank() { return { plan:null, custom:[], notes:{}, history:[], weights:[], session:null, selDay:null }; }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 function exIdByName(name, s) {
   const hit = LIB.find(e => e.name.toLowerCase() === name.toLowerCase()) || s.custom.find(e => e.name.toLowerCase() === name.toLowerCase());
@@ -884,6 +884,7 @@ function vHistory() {
 
   $app.innerHTML = `<div class="stack-lg">
     <div><div class="label">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1>Verlauf</h1></div>
+    ${weightCard()}
     <div class="card">
       <div class="row between"><div class="label">Sätze pro Muskel · diese Woche</div><span class="small muted">Ziel ${tmin}–${tmax}</span></div>
       <div class="mlist">${muscleRows}</div>
@@ -915,6 +916,47 @@ function vHistory() {
 }
 
 let calOffset = 0;
+function weightCard() {
+  const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
+  const today = new Date().toISOString().slice(0, 10);
+  const todayEntry = W.find(w => w.d === today);
+  const last = W[W.length - 1];
+  // Veränderung gegenüber dem ältesten Eintrag der letzten 30 Tage
+  const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  const base = W.find(w => w.d >= since);
+  const diff = last && base && last !== base ? Math.round((last.kg - base.kg) * 10) / 10 : null;
+  let chart = "";
+  const pts = W.slice(-30);
+  if (pts.length >= 2) {
+    const w = 320, h = 104, pl = 34, pr = 8, pt = 10, pb = 28;
+    let lo = Math.min(...pts.map(p => p.kg)), hi = Math.max(...pts.map(p => p.kg));
+    if (hi - lo < 1) { lo -= .5; hi += .5; }
+    const t0 = new Date(pts[0].d).getTime(), t1 = new Date(pts[pts.length - 1].d).getTime() || t0 + 1;
+    const X = p => pl + (new Date(p.d).getTime() - t0) / Math.max(1, t1 - t0) * (w - pl - pr);
+    const Y = v => pt + (hi - v) / (hi - lo) * (h - pt - pb);
+    const line = pts.map((p, i) => `${i ? "L" : "M"}${X(p).toFixed(1)},${Y(p.kg).toFixed(1)}`).join("");
+    const dl = s => { const d = new Date(s); return d.getDate() + "." + (d.getMonth() + 1) + "."; };
+    chart = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto" role="img" aria-label="Körpergewicht der letzten Einträge">
+      <line x1="${pl}" x2="${w - pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+      <line x1="${pl}" x2="${w - pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--line)" stroke-dasharray="3 4"/>
+      <text x="${pl - 6}" y="${Y(hi) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${kgTxt(Math.round(hi * 10) / 10)}</text>
+      <text x="${pl - 6}" y="${Y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${kgTxt(Math.round(lo * 10) / 10)}</text>
+      <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(pts[pts.length - 1])}" cy="${Y(pts[pts.length - 1].kg)}" r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>
+      <text x="${pl}" y="${h - 4}" font-size="11" fill="var(--muted)">${dl(pts[0].d)}</text>
+      <text x="${w - pr}" y="${h - 4}" text-anchor="end" font-size="11" fill="var(--muted)">${dl(pts[pts.length - 1].d)}</text></svg>`;
+  }
+  return `<div class="card">
+    <div class="row between"><div class="label">Körpergewicht</div>
+      ${diff !== null ? `<span class="small" style="font-weight:600">${diff > 0 ? "+" : ""}${kgTxt(diff)} kg in 30 Tagen</span>` : ""}</div>
+    ${last ? `<div class="num" style="font-size:34px">${kgTxt(last.kg)}<span class="small muted"> kg</span></div>` : `<p class="muted small">Trag dein Gewicht ein, z. B. einmal pro Woche morgens. So siehst du deine Veränderung.</p>`}
+    ${chart}
+    <div class="row"><input id="bwIn" class="grow" inputmode="decimal" placeholder="${todayEntry ? "Heute: " + kgTxt(todayEntry.kg) + " kg" : "Gewicht heute in kg"}" aria-label="Körpergewicht in kg" autocomplete="off">
+      <button class="btn primary" data-a="addWeight">${todayEntry ? "Ändern" : "Eintragen"}</button></div>
+    <p class="error" id="bwErr" hidden>Bitte eine Zahl zwischen 30 und 300 eingeben.</p>
+  </div>`;
+}
+
 function exChart(exId) {
   const pts = state.history.map(h => { const x = h.exercises.find(e => e.exId === exId); if (!x) return null;
     const kgs = x.sets.map(t => t.kg).filter(k => k !== null); return kgs.length ? { d: new Date(h.date), kg: Math.max(...kgs), sets: x.sets } : null; })
@@ -1004,6 +1046,13 @@ const A = {
     } catch (e) { msg.textContent = "Der Code ist ungültig. Kopiere ihn vollständig, er beginnt mit TP1:"; msg.style.color = "var(--bad)"; }
   },
   showEx: el => openSheet(exChart(el.dataset.id)),
+  addWeight: () => {
+    const v = num(byId("bwIn").value);
+    if (v === null || v < 30 || v > 300) { byId("bwErr").hidden = false; byId("bwIn").focus(); return; }
+    const d = new Date().toISOString().slice(0, 10);
+    state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
+    save(); vHistory();
+  },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => go("setup"),
   selDay: el => { state.selDay = el.dataset.id; save(); vHome(); },
