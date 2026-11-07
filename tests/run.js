@@ -1049,6 +1049,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Ausgeschaltet: kein Health-Button nach dem Training", (await page.textContent("#app")).includes("Stark gemacht") && !(await page.$("[data-a=sendHealth]")));
       await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary");
       ok("Ausgeschaltet: kein Health-Button im Verlauf", !(await page.$("[data-a=sendHealth]")));
+      ok("Verlauf: „1 Eintrag“ statt „1 Einträge“", (await page.textContent("#discLog summary")).includes("1 Eintrag") && !(await page.textContent("#discLog summary")).includes("Einträge"));
       // Einschalten in den Einstellungen
       await page.click("[data-a=tab][data-v=plan]");
       ok("Einstellungen zeigen „Apple Health · Aus“", (await page.textContent("[data-a=openHealth]")).includes("Aus"));

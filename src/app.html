@@ -2399,7 +2399,7 @@ function vHistory() {
         `<div class="row between"><button class="icon-btn" data-a="calMonth" data-d="-1" aria-label="Voriger Monat">‹</button>
           <h3>${cm.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h3>
           <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button></div>${cal}`, calOffset !== 0)}
-      ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} Einträge`,
+      ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
           <div class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></div>
           <div class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</div>
