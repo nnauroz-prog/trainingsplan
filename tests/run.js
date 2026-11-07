@@ -100,13 +100,13 @@ async function finishAllSets(page, kg, reps) {
       ok("Ungültige alte Sätze bleiben gespeichert (nicht gelöscht)", s.history[0].exercises[2].sets.length === 3);
       ok("Eigenes Gerät, Notiz, Körpergewicht, Plan erhalten",
         s.custom[0].name === "Alte Rudermaschine" && s.notes["hs-chest"] === "Sitz 4" && s.weights[0].kg === 82.4 && s.plan.days[0].items.length === 4);
-      ok("Neue Felder mit Standardwerten (dev = {}, v = 5)", JSON.stringify(s.dev) === "{}" && s.v === 5);
+      ok("Neue Felder mit Standardwerten (dev = {}, v = 6)", JSON.stringify(s.dev) === "{}" && s.v === 6);
       await page.click("[data-a=selDay]").catch(() => {}); // löst Speichern aus
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
       await page.evaluate(() => { window.__tp.state.selDay = "d1"; });
       await page.click("[data-a=start]"); await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
       const st = await stored(page);
-      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 5);
+      ok("Nach dem Speichern: Verlauf und Einheiten dauerhaft im Speicher", st.history.length === 1 && st.history[0].exercises[0].u === "s" && st.v === 6);
       await ctx.close();
     }
     {
@@ -253,14 +253,16 @@ async function finishAllSets(page, kg, reps) {
       r = await run([{ kg: 40, reps: 10, f: "l" }, { kg: 40, reps: 10, f: "l" }, { kg: 40, reps: 9, f: "h" }]);
       ok("Leicht, aber letzter Satz schwer → keine Steigerung", r.mode === "hold");
       r = await run([{ kg: 40, reps: 6 }, { kg: 40, reps: 6 }, { kg: 40, reps: 5 }]);
-      ok("Alle unter Minimum → Reduktion (37,5)", r.mode === "down" && r.kg[0] === 37.5, JSON.stringify(r));
+      ok("Einmal alle unter Minimum → noch keine Reduktion", r.mode === "hold" && r.kg[0] === 40, JSON.stringify(r));
+      r = await run([{ kg: 40, reps: 6 }, { kg: 40, reps: 6 }, { kg: 40, reps: 5 }], { extra: [hist("hs-chest", [{ kg: 40, reps: 7 }, { kg: 40, reps: 6 }, { kg: 40, reps: 6 }], 5, "s")] });
+      ok("Zweimal in Folge unter Minimum → Reduktion (37,5)", r.mode === "down" && r.kg[0] === 37.5, JSON.stringify(r));
       r = await run([{ kg: 40, reps: 10 }, { kg: 40, reps: 9 }, { kg: 40, reps: 9 }]);
       ok("Sonst: Gewicht halten, +1 Wdh. als Ziel", r.mode === "keep" && r.kg.every(k => k === 40) && r.reps.join() === "11,10,10", JSON.stringify(r));
-      r = await run([{ kg: null, reps: 12 }, { kg: 40, reps: 0 }], { extra: [hist("hs-chest", [{ kg: 35, reps: 12 }, { kg: 35, reps: 12 }], 10, "s")] });
+      r = await run([{ kg: null, reps: 12 }, { kg: 40, reps: 0 }], { extra: [hist("hs-chest", [{ kg: 35, reps: 12 }, { kg: 35, reps: 12 }, { kg: 35, reps: 12 }], 10, "s")] });
       ok("Ungültige Sätze werden ignoriert (frühere gültige Einheit zählt)", r.mode === "up" && r.kg[0] === 37.5, JSON.stringify(r));
       r = await run([{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], { dev: { "hs-chest": { load: "total" } } });
       ok("Andere Gewichtsangabe wird nicht verglichen", r.mode === "keep" && r.kg[0] === null && r.why.includes("Noch keine gültigen Werte"), JSON.stringify(r));
-      r = await run([{ kg: 2.5, reps: 5 }, { kg: 2.5, reps: 5 }]);
+      r = await run([{ kg: 2.5, reps: 5 }, { kg: 2.5, reps: 5 }, { kg: 2.5, reps: 5 }], { extra: [hist("hs-chest", [{ kg: 2.5, reps: 5 }, { kg: 2.5, reps: 5 }, { kg: 2.5, reps: 5 }], 5, "s")] });
       ok("Reduktion nie unter 0 (kleinstes Gewicht bleibt)", r.mode === "hold" && r.kg[0] === 2.5, JSON.stringify(r));
       await ctx.close();
     }
@@ -357,7 +359,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v8)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v8")));
+      ok("Service Worker aktiv (Cache trainingsplan-v9)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v9")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -751,7 +753,167 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("21. Konsole");
+    section("21. Progression 2.0");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      // run(sessions, item, dev): sessions = [{sets, planned?, rmin?, rmax?, daysAgo?, u?}] alt → neu
+      const run = (sessions, item = {}, dev = {}) => tp(page, ([sessions, item, dev]) => {
+        const T = window.__tp;
+        T.state.dev = dev;
+        T.state.history = sessions.map((s, i) => ({ id: "h" + i, dayId: "d1", day: "T", date: new Date(Date.now() - (s.daysAgo ?? (sessions.length - i) * 3) * 864e5).toISOString(), durationSec: 1,
+          exercises: [Object.assign({ exId: "hs-chest", name: "c", u: s.u || "s", sets: s.sets }, s.planned ? { planned: s.planned } : {}, s.rmin ? { rmin: s.rmin, rmax: s.rmax } : {})] }));
+        const e = T.makeEntry(Object.assign({ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, item));
+        return { mode: e.mode, why: e.why, short: e.short, kg: e.sets.map(s => s.kg), reps: e.sets.map(s => s.reps) };
+      }, [sessions, item, dev]);
+      const S3 = (kg, reps, extra = {}) => reps.map((r, i) => Object.assign({ kg: Array.isArray(kg) ? kg[i] : kg, reps: r }, typeof extra === "function" ? extra(i) : extra));
+      let r = await run([{ sets: S3(40, [12, 12, 12]), planned: 3, rmin: 8, rmax: 12 }]);
+      ok("1. Drei vollständige Sätze am oberen Ziel → +1 Schritt", r.mode === "up" && r.kg.every(k => k === 42.5) && /alle 3 Sätze mit 12 Wdh\. bei 40 kg pro Seite\. Heute 42,5 kg pro Seite/.test(r.why), JSON.stringify(r));
+      r = await run([{ sets: S3(40, [12, 12, 12], i => i === 2 ? { f: "h" } : {}), planned: 3 }]);
+      ok("2. Letzter Satz schwer → Gewicht halten, mit Begründung", r.mode === "hold" && r.kg.every(k => k === 40) && r.why.includes("als schwer bewertet"), r.why);
+      r = await run([{ sets: S3(40, [12, 12]), planned: 4 }], { sets: 4 });
+      ok("3. 2 von 4 Sätzen mit 12 Wdh. → keine Steigerung", r.mode === "hold" && r.kg.every(k => k === 40) && r.why.includes("nur 2 von 4 Sätzen"), r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12, 12]), planned: 4 }, { sets: S3(40, [12, 12]), planned: 4 }], { sets: 4 });
+      ok("3. Unvollständig, aber davor vollständig am Ziel → +1 Schritt", r.mode === "up" && r.kg[0] === 42.5 && r.why.includes("davor alle 4 Sätze"), r.why);
+      r = await run([{ sets: S3(40, [12, 12]) }], { sets: 4 });
+      ok("3. Ältere Einträge ohne Planung: weniger Sätze als heute geplant → halten", r.mode === "hold" && r.kg[0] === 40);
+      r = await run([{ sets: S3([40, 45, 40], [12, 10, 9]), planned: 3 }]);
+      ok("4. Unterschiedliche Gewichte → satzweise übernommen, keine pauschale Steigerung", r.mode === "hold" && JSON.stringify(r.kg) === "[40,45,40]" && !r.kg.includes(47.5) && r.why.includes("unterschiedliche Gewichte"), JSON.stringify(r));
+      ok("4. Ziel je 1 Wdh. mehr pro Satz (gedeckelt am oberen Ziel)", JSON.stringify(r.reps) === "[12,11,10]", JSON.stringify(r.reps));
+      r = await run([{ sets: S3(40, [12, 12, 12], i => i === 2 ? { rir: 0 } : {}), planned: 3 }]);
+      ok("5. RIR 0 bei vollständiger Wiederholungszahl → Gewicht halten", r.mode === "hold" && r.kg[0] === 40 && r.why.includes("RIR 0"), r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12], { rir: 3 }), planned: 3 }]);
+      ok("6. RIR 3 bei vollständiger Wiederholungszahl → +1 Schritt", r.mode === "up" && r.kg[0] === 42.5);
+      r = await run([{ sets: S3(40, [10, 10, 9], { rir: 3 }), planned: 3 }]);
+      ok("6. RIR ≥ 3 in allen Sätzen, Wdh. im Bereich → +1 Schritt mit Begründung", r.mode === "up" && r.why.includes("Reserve"), r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12]), planned: 3 }]);
+      ok("7. Ohne RIR-Angabe: normale Regeln (fehlend ≠ RIR 0)", r.mode === "up");
+      r = await run([{ sets: S3(40, [6, 6, 5], i => i === 2 ? { rir: 0 } : {}), planned: 3 }]);
+      ok("Einzelner RIR-0-Satz unter Ziel führt nicht allein zur Reduktion", r.mode === "hold" && r.kg[0] === 40, r.why);
+      r = await run([{ sets: S3(40, [7, 6, 6]), planned: 3 }, { sets: S3(40, [6, 6, 5], i => i === 2 ? { rir: 0 } : {}), planned: 3 }]);
+      ok("Wiederholte Überforderung (zweimal unter Ziel) → Reduktion", r.mode === "down" && r.kg[0] === 37.5, r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12]), planned: 3, rmin: 8, rmax: 12 }], { rmin: 4, rmax: 6 });
+      ok("Geänderter Wiederholungsbereich → Gewicht halten", r.mode === "hold" && r.kg[0] === 40 && r.why.includes("Wiederholungsbereich geändert"), r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12]), planned: 3 }], { sets: 4 });
+      ok("Heute mehr Sätze geplant als zuletzt → halten", r.mode === "hold" && r.why.includes("4 statt 3 Sätze"), r.why);
+      r = await run([{ sets: S3(40, [12, 12, 12]), planned: 3 }], {}, { "hs-chest": { load: "total" } });
+      ok("10. Andere Gewichtsangabe (insgesamt statt pro Seite) wird nicht verglichen", r.mode === "keep" && r.kg[0] === null);
+      r = await run([{ sets: S3(40, [8, 8, 8]), planned: 3 }, { sets: S3(40, [9, 9, 8]), planned: 3 }, { sets: S3(40, [10, 9, 9]), planned: 3 }]);
+      ok("13. Wiederholungsfortschritt ohne Gewichtssteigerung: halten, Ziel +1 Wdh.", r.mode === "keep" && r.kg[0] === 40 && JSON.stringify(r.reps) === "[11,10,10]", JSON.stringify(r));
+      // 12. Stillstand
+      const pl = sessions => tp(page, sessions => { const T = window.__tp;
+        T.state.history = sessions.map((s, i) => ({ id: "p" + i, dayId: "d1", day: "T", date: new Date(Date.now() - s.d * 864e5).toISOString(), durationSec: 1, adj: s.adj,
+          exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: s.planned || 3, sets: s.sets }] }));
+        return T.plateau("hs-chest"); }, sessions);
+      const flat = [28, 21, 14, 7, 1].map(d => ({ d, sets: S3(40, [10, 10, 10]) }));
+      let p = await pl(flat);
+      ok("12. Mehrere Wochen ohne Fortschritt erkannt (Wochen, Anzahl)", p && p.weeks >= 3 && p.n === 5, JSON.stringify(p));
+      p = await pl([10, 7, 4, 1].map(d => ({ d, sets: S3(40, [10, 10, 10]) })));
+      ok("12. Kein Stillstand bei zu kurzem Zeitraum (< 3 Wochen)", p === null);
+      p = await pl([28, 14, 1].map(d => ({ d, sets: S3(40, [10, 10, 10]) })));
+      ok("12. Kein Stillstand bei zu wenigen Einheiten", p === null);
+      p = await pl([28, 21, 14, 7, 1].map((d, i) => ({ d, sets: S3(40, [8 + i, 8 + i, 8 + i]) })));
+      ok("13. Wiederholungsfortschritt zählt als Fortschritt", p === null);
+      p = await pl([28, 21, 14, 7, 1].map((d, i) => ({ d, sets: i % 2 ? S3(40, [10, 10]) : S3(40, [10, 10, 10]) })));
+      ok("12. Unvollständige Einheiten zählen nicht für den Stillstand", p === null);
+      p = await pl([28, 21, 14, 7, 1].map((d, i) => ({ d, sets: S3(40, [10, 10, 10], i === 4 ? { rir: 3 } : {}) })));
+      ok("12. Mit Reserve trainiert: Hinweis „näher ans Limit“ statt Gerätewechsel", p && p.reserve === true);
+      await ctx.close();
+    }
+    {
+      // 12. Stillstand in der Oberfläche
+      const S3 = (kg, reps) => reps.map(r => ({ kg, reps: r }));
+      const histP = [28, 21, 14, 7, 1].map((d, i) => ({ id: "q" + i, dayId: "d1", day: "Test", date: new Date(Date.now() - d * 864e5).toISOString(), durationSec: 1,
+        exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 2, sets: S3(40, [10, 10]) }] }));
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: histP });
+      await page.click("[data-a=start]");
+      ok("12. Training zeigt Stillstandshinweis mit Zeitraum und Optionen", (await page.textContent("#plateauHint")).includes("Wochen") && (await page.textContent("#plateauHint")).includes("Möglich"));
+      await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
+      await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=showEx] >> nth=0");
+      ok("1RM als Näherung gekennzeichnet", (await page.textContent(".sheet")).includes("1RM geschätzt") && (await page.textContent(".sheet")).includes("Näherung"));
+      await ctx.close();
+    }
+    {
+      // 8. Manuelle Änderung, RIR im Ablauf, 15. Neustart, 9. Tausch
+      const p4 = JSON.parse(JSON.stringify(PLAN_SMALL)); p4.days[0].items[0].rest = 90; p4.days[0].items[0].sets = 3;
+      const { ctx, page } = await open({ plan: p4, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      ok("8. Empfehlung vorbelegt (42,5)", (await page.inputValue("#kgIn")) === "42,5");
+      await page.click("[data-a=adj][data-k=kg][data-d='-1']");
+      ok("8. Manuelle Änderung hat Vorrang und wird gekennzeichnet", (await page.inputValue("#kgIn")) === "40" && (await page.textContent("#app .prog")).includes("Eigenes Gewicht"));
+      await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=openRir]"); await page.click("[data-a=setRir][data-v='2']");
+      ok("RIR-Angabe in der Pause gespeichert (am Satz)", (await stored(page)).session.list[0].sets[0].rir === 2 && (await page.textContent(".feel-q")).includes("RIR 2"));
+      ok("Leicht/Passt/Schwer bleibt unabhängig (keine Umrechnung)", (await stored(page)).session.list[0].sets[0].f === undefined);
+      await page.reload();
+      ok("15. Neustart: RIR, Sätze und Empfehlungsgrund bleiben erhalten", (await stored(page)).session.list[0].sets[0].rir === 2 && (await stored(page)).session.list[0].short.includes("+2,5"));
+      await page.click("[data-a=skipRest]");
+      await page.click("[data-a=editSet]"); await page.click("[data-a=editRir][data-v='']"); await page.click("[data-a=setSave]");
+      ok("RIR lässt sich wieder auf „nicht bewertet“ setzen", (await stored(page)).session.list[0].sets[0].rir === undefined);
+      await page.click("[data-a=editSet]"); await page.click("[data-a=editRir][data-v='0']"); await page.click("[data-a=setSave]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]"); await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]"); await page.click("[data-a=skipRest]");
+      // 9. Tausch der nächsten Übung behält die geplante Satzanzahl
+      await page.click(".actions3 [data-a=openSwap]"); await page.click(".sheet [data-a=swap] >> nth=0");
+      const sw = (await stored(page)).session.list[1];
+      ok("9. Gerätetausch: geplante Satzanzahl bleibt, eigene Werte des neuen Geräts", sw.planned === 1 && sw.exId !== "hs-legpress");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const h = (await stored(page)).history.at(-1).exercises[0];
+      ok("Historie speichert Planung, Bereich und RIR satzweise", h.planned === 3 && h.rmin === 8 && h.rmax === 12 && h.sets[0].rir === 0 && h.sets[1].rir === undefined && h.sets.every(s => s.kg === 40));
+      const next = await tp(page, () => window.__tp.makeEntry(window.__tp.state.plan.days[0].items[0]));
+      ok("8. Nächste Empfehlung basiert auf tatsächlich gewähltem Gewicht (40 → 42,5)", next.mode === "up" && next.sets[0].kg === 42.5, next.why);
+      await ctx.close();
+    }
+    {
+      // 11. Unvollständig nach Zeitanpassung
+      const p4 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [
+        { id: "i1", exId: "hs-chest", sets: 4, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-row", sets: 4, rmin: 8, rmax: 12, rest: 90 },
+        { id: "i3", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i4", exId: "hs-curl", sets: 3, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const { ctx, page } = await open({ plan: p4, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 4, "s")] });
+      await page.click("[data-a=start]");
+      for (let i = 0; i < 2; i++) { await page.fill("#kgIn", "40"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]"); await page.click("[data-a=skipRest]"); }
+      await page.click("[data-a=openJump]"); await page.click("[data-a=openTimeLive]"); await page.click("[data-a=liveTimePick][data-m='10']");
+      if (await page.isVisible("#timeNoFit")) await page.click("#timeNoFit [data-a=liveTimePick]");
+      await page.click("[data-a=liveTimeApply]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const h = (await stored(page)).history.at(-1).exercises.find(x => x.exId === "hs-chest");
+      ok("11. Zeitlich gekürzte Einheit: 2 von 4 Sätzen gespeichert", h.planned === 4 && h.sets.length === 2);
+      const next = await tp(page, () => window.__tp.makeEntry(window.__tp.state.plan.days[0].items[0]));
+      ok("11. Danach keine Steigerung trotz 12 Wdh. (nur 2 von 4 Sätzen)", next.mode === "hold" && next.sets[0].kg === 40 && next.why.includes("nur 2 von 4"), next.why);
+      await ctx.close();
+    }
+    {
+      // 14. Alte Daten ohne RIR, 16. Export/Import mit neuen Feldern
+      const { ctx, page } = await open(OLD_V2);
+      const s = await tp(page, () => window.__tp.state);
+      ok("14. Alte Daten: keine erfundenen RIR-Werte", s.history.every(h => h.exercises.every(x => x.sets.every(t => t.rir === undefined))));
+      ok("14. Alte Daten: keine erfundene Planung", s.history[0].exercises.every(x => x.planned === undefined && x.rmin === undefined));
+      await page.evaluate(() => { const T = window.__tp; T.state.history.push({ id: "n1", dayId: "d1", day: "Push", date: new Date().toISOString(), durationSec: 600,
+        exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 4, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 12, rir: 2 }, { kg: 40, reps: 11, f: "h", rir: 0 }] }] }); });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
+      const before = await tp(page, () => JSON.parse(JSON.stringify(window.__tp.state.history)));
+      await page.evaluate(() => localStorage.clear()); await page.reload();
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
+      const after = (await stored(page)).history;
+      ok("16. Export/Import: RIR, Planung, Bereich und Bewertung erhalten", canon(after) === canon(before) && after.at(-1).exercises[0].sets[1].rir === 0 && after.at(-1).exercises[0].planned === 4);
+      await ctx.close();
+    }
+    for (const [w, light] of [[360, false], [360, true], [390, false], [390, true]]) {
+      // 18. Darstellung der RIR-Eingabe
+      const ctx = await browser.newContext({ viewport: { width: w, height: 760 }, colorScheme: light ? "light" : "dark", serviceWorkers: "block" });
+      const p2 = JSON.parse(JSON.stringify(PLAN_SMALL)); p2.days[0].items[0].rest = 90;
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: p2 })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      const a = await noOverflow(page);
+      await page.click("[data-a=openRir]"); const b = await noOverflow(page);
+      const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
+      ok(`18. ${w} px ${light ? "hell" : "dunkel"}: Pause mit RIR und RIR-Sheet ohne seitliches Scrollen, passende Farben`, a && b && (light ? /255, 255, 255/.test(bg) : !/255, 255, 255/.test(bg)), bg);
+      await ctx.close();
+    }
+
+    section("22. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

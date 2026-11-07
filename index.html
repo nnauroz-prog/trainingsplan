@@ -444,7 +444,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 5, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -498,7 +498,9 @@ function normalize(raw) {
         return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
           rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
     gaps: Array.isArray(raw.plan.gaps) ? raw.plan.gaps.filter(isObj).map(g => ({ day: String(g.day || ""), name: String(g.name || ""), pattern: PATTERNS[g.pattern] ? g.pattern : null })) : [] };
-  const cleanSet = t => { const o = { kg: kgOrNull(t.kg), reps: clampInt(t.reps, 0, 999, 0) }; if (["l", "m", "h"].includes(t.f)) o.f = t.f; return o; };
+  // RIR: nur übernehmen, wenn wirklich angegeben (0–4, 4 = 4+); fehlende Werte bleiben leer
+  const cleanSet = t => { const o = { kg: kgOrNull(t.kg), reps: clampInt(t.reps, 0, 999, 0) }; if (["l", "m", "h"].includes(t.f)) o.f = t.f;
+    if (Number.isInteger(t.rir) && t.rir >= 0 && t.rir <= 4) o.rir = t.rir; return o; };
   // Verlauf: nichts verwerfen, nur Typen absichern; fehlende Einheit einmalig aus dem damaligen Gerät festschreiben
   s.history = Array.isArray(raw.history) ? raw.history.filter(h => isObj(h) && Array.isArray(h.exercises)).map(h => ({
     id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: String(h.day || "Training"),
@@ -507,6 +509,8 @@ function normalize(raw) {
     exercises: h.exercises.filter(x => isObj(x) && x.exId).map(x => ({
       exId: String(x.exId), name: String(x.name || devFrom(s, String(x.exId)).name),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
+      planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
+      rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
       sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [] })) })) : [];
   s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => ({ d: w.d, kg: +w.kg })) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
@@ -518,14 +522,19 @@ function normalize(raw) {
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
       trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
-      ord: Number.isInteger(x.ord) ? x.ord : undefined }));
+      ord: Number.isInteger(x.ord) ? x.ord : undefined,
+      planned: clampInt(x.planned, 1, 20, x.sets.length + (Array.isArray(x.trim) ? x.trim.length : 0)),
+      short: typeof x.short === "string" ? x.short : undefined, recKg: typeof x.recKg === "number" ? x.recKg : undefined,
+      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
     const hiddenRaw = Array.isArray(r.timeHidden) ? r.timeHidden : [];
     const timeHidden = hiddenRaw.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
       key: String(x.key || uid()), itemId: x.itemId ? String(x.itemId) : null, exId: String(x.exId),
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
-      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined }));
+      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined,
+      planned: clampInt(x.planned, 1, 20, x.sets.length), short: typeof x.short === "string" ? x.short : undefined,
+      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
@@ -836,18 +845,28 @@ function nextDay() {
   return rot;
 }
 let nextReason = "";
+// Geschätztes 1RM nach Epley – nur eine Näherung, an Maschinen grob vergleichbar
 function e1rm(t) { return t.kg ? t.kg * (1 + Math.min(t.reps, 12) / 30) : 0; }
-function sessionsE1(exId) {
-  const u = unitOf(ex(exId));
-  return state.history.map(h => h.exercises.find(x => x.exId === exId && x.u === u)).filter(Boolean)
-    .map(x => Math.max(0, ...x.sets.filter(validSet).map(e1rm))).filter(v => v > 0);
-}
+// Stillstand nur bei ausreichender Datenlage: mindestens 4 vollständige, einheitliche Einheiten über mindestens
+// 3 Wochen (letzte 6 betrachtet) ohne neues Höchstgewicht und ohne mehr Wiederholungen beim gleichen Gewicht.
 function plateau(exId) {
-  const v = sessionsE1(exId);
-  if (v.length < 4) return false;
-  const before = Math.max(...v.slice(0, -3)), recent = Math.max(...v.slice(-3));
-  return recent <= before + 0.01;
+  const all = compSessions(exId);
+  const comp = all.filter(s => s.uniform && !s.adj && (s.planned ? s.sets.length >= s.planned : true));
+  const win = comp.slice(-6);
+  if (win.length < 4) return null;
+  const days = (win[win.length - 1].date - win[0].date) / 864e5;
+  if (days < 21) return null;
+  let best = win[0], progressed = false;
+  for (const s of win.slice(1)) {
+    if (s.kg > best.kg || (s.kg === best.kg && avgReps(s) > avgReps(best) + 0.5)) { progressed = true; best = s; }
+  }
+  if (progressed) return null;
+  const lastS = win[win.length - 1];
+  return { weeks: Math.round(days / 7), n: win.length, reserve: lastS.sets.some(t => t.rir != null && t.rir >= 3) };
 }
+const plateauTxt = p => p.reserve
+  ? `Seit ${p.weeks} Wochen (${p.n} vollständige Einheiten) kein Fortschritt, zuletzt aber mit Reserve trainiert. Versuch zuerst, näher an dein Limit zu gehen.`
+  : `Seit ${p.weeks} Wochen (${p.n} vollständige Einheiten) kein Fortschritt bei Gewicht oder Wiederholungen. Möglich: anderes Gerät, anderer Wiederholungsbereich oder mehr Erholung.`;
 
 /* Ton & Wachhalten */
 let actx = null;
@@ -939,7 +958,16 @@ const ICON = {
 };
 const fmtVol = v => v >= 1000 ? (v / 1000).toFixed(1).replace(".", ",") + "<span class='small muted'> t</span>" : Math.round(v) + "<span class='small muted'> kg</span>";
 // Kurzfassung der Progressionsbegründung (volle Begründung per Tipp)
-function progShort(x, e) {
+function refreshProg() {
+  const s = S(), el = document.querySelector("#app .prog"); if (!s || !el) return;
+  const x = s.list[s.idx], pg = progShort(x, ex(x.exId), curSetIdx(x));
+  el.className = "prog " + pg.cls;
+  el.innerHTML = `${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span>`;
+}
+function progShort(x, e, si) {
+  const set = si != null ? x.sets[si] : null, rec = x.rec ? x.rec[si] : null;
+  if (set && rec != null && set.kg != null && Math.abs(set.kg - rec) > 1e-9) return { cls: "", arr: "", txt: `Eigenes Gewicht · Empfehlung ${kgTxt(rec)} kg` };
+  if (x.short) return { cls: x.mode === "up" ? "up" : x.mode === "down" ? "down" : "", arr: x.mode === "up" ? "↑" : x.mode === "down" ? "↓" : x.mode === "hold" ? "=" : "", txt: x.short };
   if (x.mode === "up") return { cls: "up", arr: "↑", txt: `+${kgTxt(e.step)} kg · ${/leicht/.test(x.why) ? "letztes Mal leicht" : "letztes Mal alles geschafft"}` };
   if (x.mode === "down") return { cls: "down", arr: "↓", txt: `−${kgTxt(e.step)} kg · letztes Mal zu schwer` };
   if (x.mode === "hold") return { cls: "", arr: "=", txt: /schwer/.test(x.why) ? "Gewicht halten · letzter Satz schwer" : "Gewicht halten" };
@@ -1344,37 +1372,114 @@ function startTraining(day) {
   }
   state.timeplan = null; state.selDay = null; save(); awake(true); go("train"); startTick();
 }
+/* ================= Progression 2.0 ================= */
+// Vergleichbare Einheiten an einem Gerät: gleiche Gewichtsangabe, nur gültige Arbeitssätze (alt → neu).
+// Gespeicherte Planung (planned, rmin, rmax) wird genutzt, wenn vorhanden; ältere Einträge haben sie nicht.
+function compSessions(exId, u = unitOf(ex(exId))) {
+  const out = [];
+  state.history.forEach(h => {
+    const x = h.exercises.find(e => e.exId === exId && e.u === u); if (!x) return;
+    const v = x.sets.filter(validSet); if (!v.length) return;
+    const kgs = [...new Set(v.map(t => t.kg))];
+    out.push({ date: new Date(h.date).getTime(), sets: v, planned: x.planned || null, rmin: x.rmin || null, rmax: x.rmax || null,
+      uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj });
+  });
+  return out;
+}
+const rirTxt = r => r >= 4 ? "4+" : String(r);
+const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
+// Regeln (in dieser Reihenfolge, immer mit Begründung aus den echten Daten):
+// 1. Wiederholungsbereich seit letztem Mal geändert → Gewicht halten
+// 2. Unterschiedliche Gewichte in den Sätzen → satzweise übernehmen, keine pauschale Steigerung
+// 3. Letzte Einheit unvollständig (weniger Sätze als geplant) → halten; Steigerung nur, wenn die Einheit davor
+//    vollständig am oberen Ziel war
+// 4. Letzter Satz schwer oder RIR 0 → keine Steigerung; Reduktion nur bei zwei Einheiten in Folge unter dem Ziel
+// 5. Heute mehr Sätze geplant als zuletzt gemacht → halten
+// 6. Alle Sätze am oberen Ziel → +1 Schritt
+// 7. Alle Sätze „leicht“ oder RIR ≥ 3 und mindestens am unteren Ziel → +1 Schritt
+// 8. Alle Sätze unter dem Ziel → halten; erst beim zweiten Mal in Folge −1 Schritt
+// 9. Sonst Gewicht halten, Ziel je 1 Wiederholung mehr
 function makeEntry(it, ctx) {
-  const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step;
-  const last = lastPerf(it.exId, u);               // nur gültige Sätze, gleiche Einheit
-  const reps = last ? last.map(s => s.reps) : [];
-  const top = last ? Math.max(...last.map(s => s.kg)) : null;
-  const repsList = reps.join("/");
-  const lastHard = !!(last && last[last.length - 1].f === "h");
-  const allTop = !!last && reps.every(r => r >= it.rmax);
-  const allEasy = !!last && last.every(s => s.f === "l") && reps.every(r => r >= it.rmin);
-  const below = !!last && reps.every(r => r < it.rmin);
+  const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step, n = it.sets;
+  const planned = it.planned || it.sets;
+  const hist = compSessions(it.exId, u);
+  const L = hist[hist.length - 1] || null, P = hist[hist.length - 2] || null;
   const w = v => `${kgTxt(v)} ${unit}`;
-  let mode = "keep", why;
-  if (!last && ctx && ctx.from) why = `Neu an diesem Gerät: Beginne mit einem kontrollierbaren Einstiegsgewicht. Werte von ${ctx.from} werden nicht übertragen, weil Maschinen unterschiedliche Widerstandsverläufe haben.`;
-  else if (!last) why = `Noch keine gültigen Werte mit „${unit}“. Wähle ein Gewicht, mit dem du ${it.rmax} saubere Wdh. schaffst.`;
-  // Regel 3 hat Vorrang: letzter Satz schwer -> keine Steigerung
-  else if (lastHard && below && top - step > 0) { mode = "down"; why = `Letztes Mal ${w(top)} × ${repsList}, letzter Satz schwer und unter ${it.rmin} Wdh. Heute ${w(top - step)} (−${kgTxt(step)} kg).`; }
-  else if (lastHard) { mode = "hold"; why = `Letzter Satz war schwer (${w(top)} × ${reps[reps.length - 1]}). Keine Steigerung: heute wieder ${w(top)}.`; }
-  else if (allTop) { mode = "up"; why = `Letztes Mal alle ${reps.length} Sätze mit ${reps.every(r => r === reps[0]) ? reps[0] : "mind. " + Math.min(...reps)} Wdh. bei ${w(top)}. Heute ${w(top + step)} (+${kgTxt(step)} kg).`; }
-  else if (allEasy) { mode = "up"; why = `Letztes Mal alle Sätze „leicht“ (${repsList} Wdh. bei ${w(top)}). Heute ${w(top + step)} (+${kgTxt(step)} kg).`; }
-  else if (below && top - step > 0) { mode = "down"; why = `Letztes Mal nur ${repsList} Wdh. bei ${w(top)}, Ziel ${it.rmin}–${it.rmax}. Heute ${w(top - step)} (−${kgTxt(step)} kg).`; }
-  else if (below) { mode = "hold"; why = `Letztes Mal ${repsList} Wdh. bei ${w(top)}, schon das kleinste Gewicht. Heute gleich bleiben.`; }
-  else why = `Letztes Mal ${w(top)} × ${repsList}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
-  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, mode, why,
-    sets: Array.from({ length: it.sets }, (_, i) => {
-      const ls = last ? (last[i] || last[last.length - 1]) : null;
-      if (mode === "up") return { kg: top + step, reps: it.rmin, done: false };
-      if (mode === "down") return { kg: top - step, reps: it.rmin, done: false };
-      if (!ls) return { kg: null, reps: it.rmax, done: false };
-      const target = mode === "hold" ? ls.reps : ls.reps + 1;
-      return { kg: mode === "hold" ? top : ls.kg, reps: Math.min(it.rmax, Math.max(it.rmin, target)), done: false };
-    }) };
+  const clampR = r => Math.min(it.rmax, Math.max(it.rmin, r));
+  let mode = "keep", why, short, sets;
+  const fromLast = plus => Array.from({ length: n }, (_, i) => { const ls = L.sets[i] || L.sets[L.sets.length - 1];
+    return { kg: ls.kg, reps: clampR(ls.reps + plus), done: false }; });
+  const uniformSets = (kg, reps) => Array.from({ length: n }, () => ({ kg, reps, done: false }));
+  if (!L) {
+    why = ctx && ctx.from
+      ? `Neu an diesem Gerät: Beginne mit einem kontrollierbaren Einstiegsgewicht. Werte von ${ctx.from} werden nicht übertragen, weil Maschinen unterschiedliche Widerstandsverläufe haben.`
+      : `Noch keine gültigen Werte mit „${unit}“. Wähle ein Gewicht, mit dem du ${it.rmax} saubere Wdh. schaffst.`;
+    short = "Neues Gerät · Einstiegsgewicht wählen";
+    sets = uniformSets(null, it.rmax);
+  } else {
+    const reps = L.sets.map(t => t.reps), done = L.sets.length, ls = L.sets[done - 1];
+    const repsList = reps.join("/");
+    const lastTxt = L.uniform ? `${w(L.kg)} × ${repsList}` : `${L.sets.map(t => `${kgTxt(t.kg)} × ${t.reps}`).join(", ")} (${unit})`;
+    const lastHard = ls.f === "h" || ls.rir === 0;
+    const hardTxt = ls.rir === 0 ? "mit RIR 0 abgeschlossen" : "als schwer bewertet";
+    const rangeChanged = !!(L.rmin && L.rmax && (L.rmin !== it.rmin || L.rmax !== it.rmax));
+    const ref = L.planned || n;                         // ohne gespeicherte Planung: mit dem heutigen Plan vergleichen
+    const incomplete = done < ref;
+    const moreSets = !incomplete && done < n;
+    const allTop = reps.every(r => r >= it.rmax);
+    const below = reps.every(r => r < it.rmin);
+    const allEasy = L.sets.every(t => t.f === "l" || (t.rir != null && t.rir >= 3)) && reps.every(r => r >= it.rmin);
+    const easyTxt = L.sets.every(t => t.rir != null && t.rir >= 3) ? "mit mindestens 3 Wdh. Reserve" : "„leicht“";
+    const complete = s => s.sets.length >= (s.planned || n);
+    const prevBelow = !!(P && P.uniform && L.uniform && P.kg === L.kg && P.sets.every(t => t.reps < it.rmin));
+    const canDown = L.uniform && L.kg - step > 0;
+    if (rangeChanged) {
+      mode = "hold"; sets = fromLast(0); short = "Gewicht halten · neuer Wdh.-Bereich";
+      why = `Wiederholungsbereich geändert (${L.rmin}–${L.rmax} → ${it.rmin}–${it.rmax}). Letztes Mal ${lastTxt}. Gewicht zunächst wie zuletzt.`;
+    } else if (!L.uniform) {
+      mode = "hold"; sets = fromLast(lastHard ? 0 : 1); short = "Gewichte satzweise · zuletzt uneinheitlich";
+      why = `Letztes Mal unterschiedliche Gewichte: ${lastTxt}. Gewichte satzweise übernommen${lastHard ? `, letzter Satz ${hardTxt}` : ", Ziel je 1 Wdh. mehr"}. Keine pauschale Steigerung.`;
+    } else if (incomplete) {
+      const prevOk = !lastHard && allTop && P && P.uniform && P.kg === L.kg && complete(P) && P.sets.every(t => t.reps >= it.rmax);
+      if (prevOk) {
+        mode = "up"; sets = uniformSets(L.kg + step, it.rmin); short = `+${kgTxt(step)} kg · davor vollständig geschafft`;
+        why = `Zuletzt nur ${done} von ${ref} Sätzen (${lastTxt}), davor alle ${P.sets.length} Sätze mit mind. ${Math.min(...P.sets.map(t => t.reps))} Wdh. bei ${w(P.kg)}. Heute ${w(L.kg + step)} (+${kgTxt(step)} kg).`;
+      } else {
+        mode = "hold"; sets = fromLast(0); short = "Gewicht halten · letzte Einheit unvollständig";
+        why = `Zuletzt nur ${done} von ${ref} Sätzen absolviert (${lastTxt}). Gewicht zunächst beibehalten.${lastHard ? ` Letzter Satz ${hardTxt}.` : ""}`;
+      }
+    } else if (lastHard) {
+      if (below && prevBelow && canDown) {
+        mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · zweimal unter Ziel`;
+        why = `Zwei Einheiten in Folge unter ${it.rmin} Wdh. bei ${w(L.kg)}, zuletzt ${hardTxt}. Heute ${w(L.kg - step)} (−${kgTxt(step)} kg).`;
+      } else {
+        mode = "hold"; sets = fromLast(0); short = `Gewicht halten · letzter Satz ${ls.rir === 0 ? "RIR 0" : "schwer"}`;
+        why = `Letzter Satz ${hardTxt} (${w(ls.kg)} × ${ls.reps}). Gewicht beibehalten.${below ? " Bleibt es beim nächsten Mal unter dem Ziel, schlägt die App weniger Gewicht vor." : ""}`;
+      }
+    } else if (moreSets) {
+      mode = "hold"; sets = fromLast(0); short = "Gewicht halten · mehr Sätze geplant";
+      why = `Heute ${n} statt ${done} Sätze geplant. Letztes Mal ${lastTxt}. Gewicht zunächst beibehalten.`;
+    } else if (allTop) {
+      mode = "up"; sets = uniformSets(L.kg + step, it.rmin); short = `+${kgTxt(step)} kg · letztes Mal alles geschafft`;
+      why = `Letztes Mal alle ${done} Sätze mit ${reps.every(r => r === reps[0]) ? reps[0] : "mind. " + Math.min(...reps)} Wdh. bei ${w(L.kg)}. Heute ${w(L.kg + step)} (+${kgTxt(step)} kg).`;
+    } else if (allEasy) {
+      mode = "up"; sets = uniformSets(L.kg + step, it.rmin); short = `+${kgTxt(step)} kg · letztes Mal leicht`;
+      why = `Letztes Mal alle Sätze ${easyTxt} (${repsList} Wdh. bei ${w(L.kg)}). Heute ${w(L.kg + step)} (+${kgTxt(step)} kg).`;
+    } else if (below) {
+      if (prevBelow && canDown) {
+        mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · zweimal unter Ziel`;
+        why = `Zwei Einheiten in Folge unter ${it.rmin} Wdh. bei ${w(L.kg)} (zuletzt ${repsList}). Heute ${w(L.kg - step)} (−${kgTxt(step)} kg).`;
+      } else {
+        mode = "hold"; sets = fromLast(0); short = "Gewicht halten · zuletzt unter Ziel";
+        why = `Letztes Mal ${repsList} Wdh. bei ${w(L.kg)}, Ziel ${it.rmin}–${it.rmax}. ${canDown ? "Gewicht halten, eine Einheit allein reicht nicht für eine Reduktion." : "Schon das kleinste Gewicht, heute gleich bleiben."}`;
+      }
+    } else {
+      mode = "keep"; sets = fromLast(1); short = "Gleiches Gewicht · Ziel +1 Wdh.";
+      why = `Letztes Mal ${lastTxt}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
+    }
+  }
+  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, short,
+    recKg: sets[0] ? sets[0].kg : null, rec: sets.map(s => s.kg), sets };
 }
 const S = () => state.session;
 const curSetIdx = x => x.sets.findIndex(s => !s.done);
@@ -1409,7 +1514,8 @@ function finish(saveIt) {
   const s = S();
   if (saveIt) {
     const exs = s.list.map(x => ({ exId: x.exId, name: ex(x.exId).name, u: x.u || unitOf(ex(x.exId)),
-      sets: x.sets.filter(t => t.done).map(t => t.f ? { kg: t.kg, reps: t.reps, f: t.f } : { kg: t.kg, reps: t.reps }) })).filter(x => x.sets.length);
+      planned: x.planned || x.sets.length + (x.trim || []).length, rmin: x.rmin, rmax: x.rmax,
+      sets: x.sets.filter(t => t.done).map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {}, t.rir != null ? { rir: t.rir } : {})) })).filter(x => x.sets.length);
     if (exs.length) {
       const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
         return b === null || m > b ? { name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
@@ -1456,7 +1562,8 @@ function vTrain() {
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
           <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
-          <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}" style="justify-self:start">Satz korrigieren</button></div>` : ""}
+          <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `RIR ${rirTxt(lt.rir)}` : "RIR angeben"}</button>
+            <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}">Satz korrigieren</button></div></div>` : ""}
       <div class="next"><div class="cap">${sameEx ? "Nächster Satz" : "Nächste Übung"}</div>
         <h2>${esc(ne.name)}</h2>
         <p class="small muted">Satz ${ni + 1} von ${nx.sets.length} · ${ns.kg !== null ? kgTxt(ns.kg) + " " + unitTxt(ne) : "Gewicht wählen"} × ${ns.reps}</p>
@@ -1469,7 +1576,7 @@ function vTrain() {
   const note = state.notes[e.id];
   const firstOfSession = s.list.every(l => l.sets.every(t => !t.done));
   const warm = firstOfSession && set.kg ? Math.max(e.step, Math.round(set.kg * .5 / e.step) * e.step) : null;
-  const pg = progShort(x, e);
+  const pg = progShort(x, e, si);
   const lastTxt = lastSet ? `Letztes Mal ${lastSet.kg !== null ? kgTxt(lastSet.kg) : "–"} × ${lastSet.reps}` : "Noch keine Werte an diesem Gerät";
   $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
     <div class="ex-head">
@@ -1477,7 +1584,8 @@ function vTrain() {
       <h1>${esc(e.name)}</h1>
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
       ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
-      ${plateau(x.exId) && x.mode !== "up" && !x.sets.some(t => t.done) ? `<p class="reason">Seit 3 Trainings kein Fortschritt. <button class="link" data-a="openSwap">Anderes Gerät</button> setzt einen neuen Reiz.</p>` : ""}
+      ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
+        return pl ? `<p class="reason" id="plateauHint">${esc(plateauTxt(pl))}${pl.reserve ? "" : ` <button class="link" data-a="openSwap">Gerät tauschen</button>`}</p>` : ""; })()}
     </div>
     <div class="sets" aria-label="Satzfortschritt">${x.sets.map((t, i) => t.done
       ? `<button class="set-pill done" data-a="editSet" data-key="${x.key}" data-i2="${i}" aria-label="Satz ${i + 1} ändern">${t.kg !== null ? kgTxt(t.kg) : "–"}×${t.reps}</button>`
@@ -1579,12 +1687,24 @@ function swapSheet() {
     ${other.length ? `<div class="stack-sm"><div class="cap">Andere Übung für ${MUSCLES[cur.muscle]}</div><div class="group" id="swapOther">${other.map(a => row(a, "other")).join("")}</div></div>` : ""}
     ${!direct.length && !other.length ? `<p class="small muted">Kein anderes verfügbares Gerät für ${MUSCLES[cur.muscle]}. Überspringe die Übung über „Übungen“.</p>` : ""}`;
 }
+let rirTarget = null;
+const RIR_OPTS = [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4+"]];
+function rirSheet() {
+  const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i];
+  if (!t) return sheetHead("RIR");
+  return `${sheetHead("Wiederholungen in Reserve")}
+    <p class="small muted" style="margin-top:-8px">Satz ${rirTarget.i + 1} · ${t.kg !== null ? kgTxt(t.kg) + " kg × " : ""}${t.reps}. Wie viele saubere Wiederholungen wären noch möglich gewesen? Freiwillig.</p>
+    <div class="seg" id="rirSeg">${RIR_OPTS.map(([v, l]) => `<button data-a="setRir" data-v="${v}" class="${t.rir === v ? "on" : ""}">${l}</button>`).join("")}</div>
+    <p class="small faint">0 = keine weitere saubere Wiederholung möglich.</p>
+    <button class="btn ${t.rir == null ? "" : "quiet"} block" data-a="setRir" data-v="">Nicht bewertet</button>`;
+}
 function setSheet() {
   const ms = (k, l, v) => `<div class="field"><label>${l}</label><div class="mini-step"><button data-a="setAdj" data-k="${k}" data-d="-1" aria-label="${l} weniger">−</button>
     <output>${v}</output><button data-a="setAdj" data-k="${k}" data-d="1" aria-label="${l} mehr">+</button></div></div>`;
   const e = ex(S().list.find(l => l.key === setEdit.key).exId);
   return `${sheetHead(`Satz ${setEdit.i + 1} ändern`, "")}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">${ms("kg", unitTxt(e), setEdit.kg !== null ? kgTxt(setEdit.kg) : "–")}${ms("reps", "Wiederholungen", setEdit.reps)}</div>
+    <div class="field"><label>RIR (freiwillig)</label><div class="seg">${RIR_OPTS.map(([v, l]) => `<button data-a="editRir" data-v="${v}" class="${setEdit.rir === v ? "on" : ""}">${l}</button>`).join("")}<button data-a="editRir" data-v="" class="${setEdit.rir == null ? "on" : ""}">–</button></div></div>
     <p class="error" id="setEditErr" role="alert" hidden></p>
     <div class="stack-sm"><button class="btn primary block xl" data-a="setSave">Speichern</button><button class="btn quiet block" data-a="closeSheet">Abbrechen</button></div>`;
 }
@@ -1753,9 +1873,10 @@ function exChart(exId, u = unitOf(ex(exId))) {
     <div class="grid3">
       <div class="stat"><div class="cap">Aktuell</div><div class="num">${kgTxt(lastP.kg)}<span class="small muted"> kg</span></div><div class="small faint">${UNIT_SHORT[u]} · ${lastP.sets.map(t => t.reps).join("/")} Wdh.</div></div>
       <div class="stat"><div class="cap">Seit Beginn</div><div class="num" style="color:${diff > 0 ? "var(--ok)" : "var(--text)"}">${diff > 0 ? "+" : ""}${kgTxt(diff)}<span class="small muted"> kg</span></div></div>
-      <div class="stat"><div class="cap">Max. (1RM)</div><div class="num">≈${kgTxt(Math.round(Math.max(...lastP.sets.map(e1rm)) * 2) / 2)}<span class="small muted"> kg</span></div></div>
+      <div class="stat"><div class="cap">1RM geschätzt</div><div class="num">≈${kgTxt(Math.round(Math.max(...lastP.sets.map(e1rm)) * 2) / 2)}<span class="small muted"> kg</span></div><div class="small faint">Näherung</div></div>
     </div>
-    ${plateau(exId) ? `<p class="small" style="color:var(--warn)">Seit 3 Trainings kein Fortschritt. Probier ein anderes Gerät für denselben Muskel.</p>` : ""}${otherNote}
+    ${(() => { const pl = plateau(exId); return pl ? `<p class="small" style="color:var(--warn)" id="plateauChart">${esc(plateauTxt(pl))}</p>` : ""; })()}${otherNote}
+    <p class="small faint">1RM nach Epley aus deinen Sätzen geschätzt. An Maschinen nur eine grobe Näherung.</p>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Gewichtsverlauf ${esc(name)}">
       <line x1="${pl}" x2="${W - pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--hair)"/>
       <line x1="${pl}" x2="${W - pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--hair)"/>
@@ -1901,7 +2022,7 @@ const A = {
     // Laufendes Training: noch nicht begonnene Übungen dieses Geräts mit neuer Einstellung neu berechnen
     const ses = state.session;
     if (ses) ses.list = ses.list.map(x => x.exId === d.id && !x.sets.some(t => t.done) && unitOf(ex(d.id)) !== oldU
-      ? makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest }) : x);
+      ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest }), { ord: x.ord }) : x);
     if ((d.note || "").trim()) state.notes[d.id] = d.note.trim(); else delete state.notes[d.id];
     save(); devBack(d._new ? d.id : null); },
   devCancel: () => devBack(null),
@@ -1929,7 +2050,7 @@ const A = {
     showSetError("");
     // gleiches Gewicht für die restlichen Sätze übernehmen
     if (el.dataset.k === "kg") x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
-    save(); },
+    refreshProg(); save(); },
   doneSet: () => doneSet(),
   skipRest: () => endRest(),
   restAdd: el => { const s = S(); s.restEnd += +el.dataset.d * 1000; s.restTotal = Math.max(1, s.restTotal + +el.dataset.d); save(); tick(); },
@@ -1955,7 +2076,7 @@ const A = {
   swapMode: el => { swapPerm = el.dataset.v === "1"; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + swapSheet(); },
   swap: el => {
     const s = S(), x = s.list[s.idx], newId = el.dataset.id;
-    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, rmin: x.rmin, rmax: x.rmax, rest: x.rest }, { from: ex(x.exId).name });
+    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest }, { from: ex(x.exId).name });
     entry.ord = x.ord; s.list[s.idx] = entry;
     if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
     save(); closeSheet(); render();
@@ -1966,7 +2087,12 @@ const A = {
     else setEdit.reps = Math.max(0, setEdit.reps + +el.dataset.d);
     $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + setSheet(); },
   setSave: () => { const err = setError(setEdit); if (err) { const el = byId("setEditErr"); el.textContent = err; el.hidden = false; return; }
-    const t = S().list.find(l => l.key === setEdit.key).sets[setEdit.i]; t.kg = setEdit.kg; t.reps = setEdit.reps; save(); closeSheet(); render(); },
+    const t = S().list.find(l => l.key === setEdit.key).sets[setEdit.i]; t.kg = setEdit.kg; t.reps = setEdit.reps;
+    if (setEdit.rir == null) delete t.rir; else t.rir = setEdit.rir; save(); closeSheet(); render(); },
+  editRir: el => { setEdit.rir = el.dataset.v === "" ? null : +el.dataset.v; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + setSheet(); },
+  openRir: el => { rirTarget = { key: el.dataset.key, i: +el.dataset.i2 }; openSheet(rirSheet()); },
+  setRir: el => { const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i]; if (!t) return closeSheet();
+    if (el.dataset.v === "") delete t.rir; else t.rir = +el.dataset.v; save(); closeSheet(); render(); },
   feel: el => { const s = S(), ld = s.lastDone; const x = ld && s.list.find(l => l.key === ld.key); if (!x) return; const t = x.sets[ld.si]; t.f = t.f === el.dataset.f ? undefined : el.dataset.f; save(); render(); },
   stopSave: () => finish(true),
   stopDiscard: () => finish(false)
@@ -1995,7 +2121,7 @@ document.addEventListener("input", ev => {
       t.kg = v === null ? null : v;                 // ungültige Werte bleiben sichtbar, „Satz fertig“ prüft
       if (v === null || (v > 0 && v <= 1000)) x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
     } else { const v = num(el.value); t.reps = v === null ? NaN : v; }
-    showSetError(""); save();
+    showSetError(""); refreshProg(); save();
   }
 });
 document.addEventListener("keydown", ev => {
@@ -2011,7 +2137,7 @@ document.addEventListener("keydown", ev => {
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
