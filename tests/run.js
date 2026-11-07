@@ -359,7 +359,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v12)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v12")));
+      ok("Service Worker aktiv (Cache trainingsplan-v13)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v13")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1138,7 +1138,52 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("24. Konsole");
+    section("24. Apple Watch (parallel aufzeichnen)");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, health: true });
+      const nz = await tp(page, () => { const T = window.__tp; return [T.normalize({}).watch, T.normalize({ watch: "ja" }).watch, T.normalize({ watch: true }).watch]; });
+      ok("Standard aus; nur echtes „an“ wird übernommen", nz[0] === false && nz[1] === false && nz[2] === true);
+      ok("Ausgeschaltet: keine Watch-Erinnerung auf „Heute“", !(await page.$("#watchHint")));
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Einstellungen zeigen „Apple Watch · Aus“", (await page.textContent("[data-a=openWatch]")).includes("Aus"));
+      await page.click("[data-a=openWatch]");
+      const sh = await page.textContent(".sheet");
+      ok("Ehrliche Erklärung und Anleitung (Training → Traditionelles Krafttraining → Beenden)", sh.includes("keine Web-Apps") && sh.includes("Traditionelles Krafttraining") && sh.includes("Beenden") && (await page.$$(".sheet ol.glist li")).length === 3);
+      ok("Watch-Sheet bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click(".sheet [data-a=setWatch][data-v='1']");
+      ok("Einschalten wird gespeichert und angezeigt", (await stored(page)).watch === true && await page.$eval(".sheet [data-a=setWatch][data-v='1']", b => b.classList.contains("on")) && (await page.textContent("[data-a=openWatch]")).includes("Zeichnet mit auf"));
+      await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=openHealth]");
+      ok("Health-Einstellungen erklären, warum die Trainings-Übergabe entfällt", await page.isVisible("#hkWatchNote"));
+      await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Eingeschaltet: Erinnerung vor dem Start", (await page.textContent("#watchHint")).includes("Traditionelles Krafttraining"));
+      ok("„Heute“ mit Erinnerung bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      ok("Nach dem Training: Erinnerung ans Beenden auf der Watch", (await page.textContent("#watchEnd")).includes("Beenden"));
+      ok("Keine Trainings-Übergabe an Health (kein Doppeleintrag)", !(await page.$("#hkBox")) && !(await page.$("[data-a=sendHealth]")));
+      await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]");
+      ok("Verlauf: keine Trainings-Übergabe", !(await page.$("[data-a=sendHealth]")));
+      await page.click("#discWeight summary"); await page.fill("#bwIn", "80"); await page.click("[data-a=addWeight]");
+      ok("Körpergewicht lässt sich weiter übergeben", await page.isVisible("#bwHk [data-a=sendWeight]"));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openWatch]"); await page.click(".sheet [data-a=setWatch][data-v='0']"); await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Ausschalten: Trainings-Übergabe wieder da", (await stored(page)).watch === false && !!(await page.$("[data-a=sendHealth]")));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Ausschalten: keine Erinnerung mehr", !(await page.$("#watchHint")));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, health: true, watch: true }, { light });
+      const a = await noOverflow(page);
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      ok(`360 px ${light ? "hell" : "dunkel"}: „Heute“ und Zusammenfassung mit Watch ohne seitliches Scrollen`, a && await noOverflow(page) && await page.isVisible("#watchEnd"));
+      await ctx.close();
+    }
+
+    section("25. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
