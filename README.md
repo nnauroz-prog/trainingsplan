@@ -19,6 +19,10 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 
 Alle Daten liegen lokal im Browser des Geräts.
 
+## Design
+
+Designsystem „Instrument“ (CSS-Tokens in `src/app.html`): Inhalte direkt auf Graphit statt in Karten, Hierarchie über Typografie (Barlow Condensed für Titel und Zahlen, Barlow für Text) und Weißraum. Orange nur für die Hauptaktion je Ansicht, Grün für erledigt/erholt. Gruppierte Listen nur für echte Listen, Details in Bottom-Sheets oder aufklappbaren Bereichen. Im Training sitzt „Satz fertig“ fest im Daumenbereich und folgt der Tastatur.
+
 ## Entwicklung
 
 - Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)

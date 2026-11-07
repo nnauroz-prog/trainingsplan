@@ -267,7 +267,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       await page.click("[data-a=start]"); await finishAllSets(page, 40, 12);
       await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
-      const why2 = await page.textContent("#app .reason");
+      const why2 = await page.getAttribute("#app .prog", "data-why");
       ok("Zweites Training: Steigerung mit Begründung sichtbar", why2.includes("Heute 42,5 kg pro Seite"), why2);
       ok("Zweites Training: Gewicht vorbelegt", (await page.inputValue("#kgIn")) === "42,5");
       await ctx.close();
@@ -355,7 +355,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v6)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v6")));
+      ok("Service Worker aktiv (Cache trainingsplan-v7)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v7")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -377,7 +377,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Andere Geräte unverändert", st.history[0].exercises[1].u === "t" && st.history[0].exercises[2].u === "b");
       await page.click("[data-a=devCancel]"); await page.click("[data-a=devsDone]");
       await page.evaluate(() => { window.__tp.state.selDay = "d1"; }); await page.click("[data-a=start]");
-      const why = await page.textContent("#app .reason");
+      const why = await page.getAttribute("#app .prog", "data-why");
       ok("Progression nutzt die umgestellten Einträge (insgesamt)", why.includes("kg insgesamt") && (await page.inputValue("#kgIn")) === "45", why);
       await page.reload();
       ok("Hinweis bleibt nach Neustart ausgeblendet", !(await page.isVisible("[data-a=hintUnitsOpen]")));
@@ -462,7 +462,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click(".actions3 [data-a=openSwap]");
       ok("Nie genutztes Gerät: Hinweis Einstiegsgewicht", (await page.textContent(".sheet [data-id=hs-widechest]")).includes("Einstiegsgewicht"));
       await page.click(".sheet [data-a=swap][data-id=hs-widechest]");
-      const why = await page.textContent("#app .reason");
+      const why = await page.getAttribute("#app .prog", "data-why");
       ok("Nie genutztes Gerät: kein übertragenes Gewicht", (await page.inputValue("#kgIn")) === "" && why.includes("kontrollierbaren Einstiegsgewicht") && !why.includes("50"), why);
       await page.fill("#kgIn", "20"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]");
       await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
@@ -536,7 +536,48 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("19. Konsole");
+    section("19. Oberfläche (Redesign)");
+    for (const [w, h] of [[360, 740], [390, 844]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } },
+        [KEY, JSON.stringify({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message));
+      await page.goto(URL);
+      const startBox = await page.locator("[data-a=start]").boundingBox();
+      ok(`${w} px: „Training starten“ ohne Scrollen sichtbar`, startBox && startBox.y + startBox.height <= h);
+      await page.click("[data-a=start]");
+      const box = await page.locator("[data-a=doneSet]").boundingBox();
+      ok(`${w} px: „Satz fertig“ fest im Daumenbereich`, box && box.y + box.height <= h && box.y > h * 0.75, JSON.stringify(box));
+      ok(`${w} px: Tab-Leiste im Training ausgeblendet`, await page.isHidden("#tabs"));
+      const sizes = await page.$$eval("[data-a=adj], [data-a=doneSet], [data-a=askStop], [data-a=openJump]", els => els.map(e => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height); }));
+      ok(`${w} px: Tap-Flächen im Training mindestens 44 px`, sizes.length >= 6 && sizes.every(s => s >= 44), sizes.join(","));
+      const kgSize = await page.$eval("#kgIn", e => parseFloat(getComputedStyle(e).fontSize));
+      ok(`${w} px: Gewicht in großer Schrift (≥ 56 px)`, kgSize >= 56, String(kgSize));
+      await page.click("#app .prog");
+      ok(`${w} px: Kurze Begründung öffnet die volle Erklärung`, (await page.textContent(".sheet")).includes("Heute 42,5 kg pro Seite"));
+      await page.click(".sheet [data-a=closeSheet]");
+      ok(`${w} px: Training ohne seitliches Scrollen`, await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      const p2 = JSON.parse(JSON.stringify(PLAN_SMALL)); p2.days.push({ id: "d2", name: "Zweiter Tag", items: [{ id: "x1", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 60 }] });
+      const { ctx, page } = await open({ plan: p2, history: [hist("hs-legpress", [{ kg: 100, reps: 10 }], 0.5, "t")] }, { light: true });
+      await page.click("[data-a=pickDay]");
+      const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
+      ok("Hellmodus: Bottom-Sheet ist hell", /255, 255, 255/.test(bg), bg);
+      await page.click(".sheet [data-a=selDay][data-id=d2]");
+      ok("„Anderes Training wählen“ übernimmt den Tag", (await page.textContent(".hero-name")) === "Zweiter Tag");
+      await page.click("[data-a=showRec]");
+      ok("Erholungsdetails erst auf Tipp (Sheet mit Muskeln)", (await page.textContent(".sheet")).includes("Erholung") && await page.isVisible(".sheet .fig"));
+      await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Verlauf: Häufigkeit und Bestwerte zuerst, Details eingeklappt", await page.isVisible(".kpi") && !(await page.isVisible("#discMuscle .body")));
+      await page.click("#discMuscle summary");
+      ok("Verlauf: Muskelbelastung aufklappbar", await page.isVisible("#discMuscle .mlist"));
+      await ctx.close();
+    }
+
+    section("20. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
