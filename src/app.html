@@ -177,6 +177,7 @@
   .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
   .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
+  .week .dot.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--raise-3);color:var(--text-3);text-decoration:line-through}
   .week .dot.today{box-shadow:inset 0 0 0 2px var(--text);color:var(--text)}
   .week .dot.done.today{box-shadow:inset 0 0 0 2px var(--on-accent)}
   .legend{display:flex;gap:var(--s4);flex-wrap:wrap;font-size:13px;color:var(--text-2)}
@@ -322,7 +323,8 @@
   .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
-  .ask{display:grid;gap:var(--s3);padding:var(--s3) 0 0}
+  .ins.ask{box-shadow:inset 3px 0 0 var(--text-3)}
+  .ask .chip{min-height:34px;font-size:14px}
   .trks{display:grid;gap:var(--s2)}
   .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
   .trk>summary{list-style:none;cursor:pointer;display:grid;gap:2px}
@@ -1747,9 +1749,11 @@ function vHome() {
   const now = new Date(); const dow = (now.getDay() + 6) % 7;
   const monday = new Date(now); monday.setHours(0, 0, 0, 0); monday.setDate(now.getDate() - dow);
   const doneDays = new Set(state.history.map(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); return d.getTime(); }));
+  const missDays = new Set((state.misses || []).map(m => dateOf(m.d).setHours(0, 0, 0, 0)));
   const week = ["M", "D", "M", "D", "F", "S", "S"].map((n, i) => {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
-    return `<div class="d">${n}<div class="dot ${doneDays.has(d.getTime()) ? "done" : ""} ${i === dow ? "today" : ""}">${d.getDate()}</div></div>`;
+    const k = d.getTime(), cls = doneDays.has(k) ? "done" : missDays.has(k) ? "miss" : "";
+    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div></div>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
   const goal = Math.max(1, state.plan.days.length);
@@ -1795,22 +1799,22 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
+    ${day && !ses ? missAskHtml() : ""}
     ${day && !ses ? previewHtml(day) : ""}
-    ${(() => { const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
-      const cat = x => x.id.split(":")[0], top = [L[0], L.find(x => cat(x) !== cat(L[0]))].filter(Boolean);
-      return `<section class="section" id="coach"><div class="section-head"><h2>Der Buddy hat bemerkt</h2><button class="link small" data-a="openCoach" data-ret="home">${L.length > 2 ? `Alle ${L.length}` : "Analyse"} ›</button></div>
-        ${top.map(x => insightCard(x, "home")).join("")}</section>`; })()}
-    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
-        <div class="cap">Neu: Gewicht pro Seite</div>
-        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
-        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
-      </div>` : ""}
     <section class="section">
       <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
       ${streak ? `<p class="small muted">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge das Wochenziel geschafft.</p>` : ""}
       ${state.history.length ? `<button class="link small" data-a="openWeek" data-ret="home" id="homeWeek" style="justify-self:start">Wochenrückblick ansehen ›</button>` : ""}
     </section>
+    ${(() => { const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
+      return `<section class="section" id="coach"><div class="section-head"><h2>Der Buddy hat bemerkt</h2><button class="link small" data-a="openCoach" data-ret="home">${L.length > 1 ? `Alle ${L.length}` : "Analyse"} ›</button></div>
+        ${insightCard(L[0], "home")}</section>`; })()}
+    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
+        <div class="cap">Neu: Gewicht pro Seite</div>
+        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
+        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
+      </div>` : ""}
     <div class="plain-list">
       ${(() => { const b = lastPR(); return b ? `<button class="li" data-a="openEx" data-id="${b.exId}" data-ret="home" id="homeBest"><div class="grow"><div class="s">Zuletzt verbessert · ${fmtWhenDay(b.date)}</div>
         <div class="t">${esc(b.name)}: ${kgTxt(b.from)} → ${kgTxt(b.kg)} ${UNIT[b.u]}</div></div><span class="chev">›</span></button>` : ""; })()}
@@ -3539,14 +3543,14 @@ function whySheet() {
     <button class="btn primary block" data-a="whySave">Speichern</button>`;
 }
 // Hinweise für den Buddy
-function goalHint(day) {
+function goalHint(day, today = true) {
   const recent = (state.goals || []).find(g => g.done && (Date.now() - new Date(g.done)) / 864e5 <= 3);
   if (recent) { const st = goalStatus(recent); return ` Ziel erreicht: ${kgTxt(recent.target)} ${st.unit} – ${st.name}.`; }
   if (!day) return "";
   const g = (state.goals || []).find(x => !x.done && x.kind === "kraft" && day.items.some(i => i.exId === x.exId));
   if (!g) return "";
   const st = goalStatus(g);
-  return ` Heute ist die ${st.name} dran – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
+  return ` ${today ? `Heute ist die ${st.name} dran` : `Nächstes Training: ${st.name}`} – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
 }
 
 /* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
@@ -3587,6 +3591,7 @@ function whenTxt(d) {
 // Pläne, die Hindernisse einbeziehen, wirkten in Studien stärker (Bélanger-Gravel 2013). Darum fragt der Buddy einmal nach dem Grund
 // und passt Plan B daran an. Krank oder unterwegs zählt nicht als verpasster Termin.
 const MISS_R = { zeit: "Keine Zeit", muede: "Zu müde", lust: "Keine Lust", krank: "Krank oder verletzt", weg: "Unterwegs", sonst: "Anderes" };
+const MISS_L = { zeit: "keine Zeit", muede: "zu müde", lust: "keine Lust", krank: "krank oder verletzt", weg: "unterwegs", sonst: "anderer Grund" };
 const missOn = d => (state.misses || []).find(m => m.d === d) || null;
 const dateOf = d => new Date(d + "T12:00");
 // Letzter Termin der letzten 7 Tage ohne Training (auch nicht am Folgetag), zu dem noch kein Grund vorliegt;
@@ -3612,8 +3617,11 @@ function missToAsk() {
   return recent ? null : { d: today, kind: "pause" };
 }
 function missAskHtml() {
+  const now = new Date();
+  if (state.session || trainedOn(now) || missOn(dkey(now)) || (state.misses || []).some(m => m.r === "krank" && (now - dateOf(m.d)) / 864e5 <= 3)) return "";
   const q = missToAsk(); if (!q) return "";
-  return `<div class="ask" id="missAsk"><p class="small" style="margin:0"><b>${q.kind === "sched" ? `Was war am ${WD_LONG[q.wd]} los?` : "Was hält dich gerade vom Training ab?"}</b> Ein Tipp genügt – der Buddy passt seinen Plan B daran an.</p>
+  return `<div class="ins ask" id="missAsk"><div class="t">${q.kind === "sched" ? `Was war am ${WD_LONG[q.wd]} los?` : "Was hält dich gerade vom Training ab?"}</div>
+    <p class="small" style="margin:0">Ein Tipp genügt – der Buddy passt seinen Plan B daran an.</p>
     <div class="chips wrap">${Object.entries(MISS_R).map(([k, l]) => `<button class="chip" data-a="missSet" data-d="${q.d}" data-r="${k}">${l}</button>`).join("")}</div>
     <button class="link small faint" data-a="missSkip" data-d="${q.d}" style="justify-self:start">Nicht jetzt</button></div>`;
 }
@@ -3623,18 +3631,18 @@ function missSheet() {
     <div class="group">${Object.entries(MISS_R).map(([k, l]) => `<button class="li" data-a="missSet" data-d="${dkey()}" data-r="${k}"><div class="grow t">${l}</div><span class="chev">›</span></button>`).join("")}</div>`;
 }
 function buddySays(day, thisWeek, goal, streak) {
-  const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [];
+  const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [], facts = [];
   const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
-  const goalTxt = thisWeek >= goal ? ` Wochenziel geschafft: ${thisWeek} von ${goal}.` : "";
   const short = () => act.push(["openTime30", "30-Min.-Version"]);
   const eod = new Date(now); eod.setHours(23, 59, 59, 0); const nx2 = nextSched(eod);
-  const mToday = trainedOn(now) ? null : missOn(dkey(now));
-  const sick = !mToday && !trainedOn(now) && (state.misses || []).find(m => m.r === "krank" && (now - dateOf(m.d)) / 864e5 <= 3);
+  const done = trainedOn(now), mToday = done ? null : missOn(dkey(now));
+  const sick = !mToday && !done && (state.misses || []).find(m => m.r === "krank" && (now - dateOf(m.d)) / 864e5 <= 3);
+  const missed = s ? missedThisWeek() : null, mw = missed !== null ? missOn(dkey((() => { const d = new Date(now); d.setDate(now.getDate() - (wdOf(now) - missed)); return d; })())) : null;
   let title, text;
-  if (trainedOn(now)) {
+  if (done) {
     const t = H.filter(h => dkey(new Date(h.date)) === dkey(now)), lt = t[t.length - 1];
     title = "Heute erledigt";
-    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${goalTxt}${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
+    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
   } else if (mToday) {
     title = s && s.days.includes(wdOf(now)) ? "Heute fällt aus" : "Heute Pause";
     const later = nx2 ? `Nächster Termin: ${whenTxt(nx2)} – ${dn}.` : `Morgen nachholen – ${dn}.`;
@@ -3648,11 +3656,11 @@ function buddySays(day, thisWeek, goal, streak) {
     title = "Erst mal gesund werden";
     text = `Du warst krank oder verletzt (${WD_LONG[wdOf(dateOf(sick.d))]}). Trainiere erst wieder, wenn du dich fit fühlst – und steig dann etwas leichter ein.`;
   } else if (s && s.days.includes(wdOf(now))) {
-    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min. Den Termin hast du dir selbst gesetzt.${goalTxt}`; act.push(["missToday", "Heute fällt aus", "link small"]); }
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min.`; act.push(["missToday", "Heute fällt aus", "link small"]); }
     else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
     else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
-  } else if (s && missedThisWeek() !== null) {
-    title = `${WD_LONG[missedThisWeek()]} ist ausgefallen`;
+  } else if (missed !== null) {
+    title = `${WD_LONG[missed]} ist ausgefallen${mw ? ` – ${MISS_L[mw.r]}` : ""}`;
     if (s.planB === "short") { text = `Plan B: heute die 30-Minuten-Version von ${dn}.`; short(); } else text = `Plan B: heute nachholen – ${dn}, ca. ${min} Min.`;
   } else if (last && (now - new Date(last.date)) / 864e5 >= 7) {
     title = `Seit ${Math.floor((now - new Date(last.date)) / 864e5)} Tagen kein Training`;
@@ -3666,16 +3674,20 @@ function buddySays(day, thisWeek, goal, streak) {
     title = "Lass uns feste Trainingstage ausmachen";
     text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um. Wähle Tage, Uhrzeit und einen Plan B – auf Wunsch mit Erinnerung im Kalender.";
     act.push(["openSched", "Termine festlegen"]);
-  } else { title = "Heute ist trainingsfrei"; text = `${nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""}${goalTxt}`; }
-  if (streak >= 2) text += ` ${streak} Wochen in Folge geschafft.`;
-  const gh = goalHint(trainedOn(now) ? null : day), pr = lastPR();
-  if (gh) text += gh;
-  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
-  if (state.why && last && !trainedOn(now) && !mToday && (now - new Date(last.date)) / 864e5 >= 4) text += ` Dein Warum: „${state.why}“.`;
+  } else { title = "Heute ist trainingsfrei"; text = nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""; }
+  // Kurze Fakten in einer eigenen Zeile (höchstens drei): Ziel oder Bestwert, Warum, Wochenziel, Serie, letzter Ausfall
+  const gh = goalHint(done || mToday || sick ? null : day, !s || s.days.includes(wdOf(now))), pr = lastPR();
+  if (gh) facts.push(gh.trim().replace(/\.$/, ""));
+  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
+  if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
+  if (thisWeek >= goal) facts.push(`Wochenziel geschafft: ${thisWeek} von ${goal}`);
+  if (streak >= 2) facts.push(`${streak} Wochen in Folge geschafft`);
+  const rm = (state.misses || []).filter(m => m.d !== dkey(now) && !trainedOn(dateOf(m.d)) && (now - dateOf(m.d)) / 864e5 <= 3).pop();
+  if (rm && !mw && !sick && !mToday) facts.push(`${WD_LONG[wdOf(dateOf(rm.d))]} ausgefallen – ${MISS_L[rm.r]}`);
   return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
-    ${mToday || sick ? "" : missAskHtml()}
-    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l, c]) => `<button class="${c || "btn sm"}" data-a="${a}">${l}</button>`).join("")}
-      ${s ? `<button class="link small" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
+    ${facts.length ? `<p class="small muted bfacts" style="margin:0">${facts.slice(0, 3).map(esc).join(" · ")}</p>` : ""}
+    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2) var(--s4);align-items:center">${act.map(([a, l, c]) => `<button class="${c || "btn sm"}" data-a="${a}">${l}</button>`).join("")}
+      ${s ? `<button class="link small" style="color:var(--text-3)" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
 }
 let schedDraft = null;
 function schedSheet() {
@@ -3999,7 +4011,7 @@ function entryBadge(e) {
 const entryLine = e => `${e.sets.length} × ${e.recKg !== null ? `${kgTxt(e.recKg)} kg ${UNIT_SHORT[e.u]}` : "Gewicht wählen"} · ${e.mode === "keep" && e.recKg !== null ? `Ziel ${e.sets.map(t => t.reps).join("/")}` : `${e.rmin}–${e.rmax}`} Wdh.`;
 function previewHtml(day) {
   prevList = previewEntries(day);
-  if (!prevList.length) return "";
+  if (!prevList.length || prevList.every(e => e.recKg === null)) return "";
   const ups = prevList.filter(e => e.mode === "up").length;
   return `<section class="section" id="todayPlan"><div class="section-head"><h2>Dein Training heute</h2><span class="small muted">${ups ? `${ups}× mehr Gewicht` : "Vorschläge vom Buddy"}</span></div>
     <div class="group">${prevList.map((e, i) => `<button class="li" data-a="prevWhy" data-n="${i}"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div><div class="s">${entryLine(e)}</div></div>${entryBadge(e)}</button>`).join("")}</div></section>`;
