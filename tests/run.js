@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v17)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v17")));
+      ok("Service Worker aktiv (Cache trainingsplan-v18)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v18")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1196,7 +1196,7 @@ async function finishAllSets(page, kg, reps) {
           if (p + c + f > 100.5) bad.push(id + " Summe > 100 g"); });
         const g = id => T.FOOD_DB.find(r => r[0] === id);
         return { n: T.FOOD_DB.length, bad, oats: g(173904).slice(3, 7), chick: g(171077).slice(3, 7), banana: g(173944).slice(3, 7), egg: g(171287), oil: g(171413).slice(3, 7) }; });
-      ok(`${db.n} Grundnahrungsmittel, alle vollständig und plausibel`, db.n === 110 && !db.bad.length, db.bad.join("; "));
+      ok(`${db.n} Grundnahrungsmittel, alle vollständig und plausibel`, db.n === 232 && !db.bad.length, db.bad.join("; "));
       ok("Stichproben entsprechen USDA SR Legacy (Haferflocken, Hähnchenbrust, Banane, Olivenöl)",
         JSON.stringify(db.oats) === "[379,13.2,67.7,6.52]" && JSON.stringify(db.chick) === "[120,22.5,0,2.62]" && JSON.stringify(db.banana) === "[89,1.09,22.8,0.33]" && JSON.stringify(db.oil) === "[884,0,0,100]");
       ok("Portionen aus USDA (1 Ei ohne Schale = 50 g)", db.egg[8][0] === "1 Ei ohne Schale" && db.egg[8][1] === 50);
@@ -1248,7 +1248,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Übersicht: 3.030 kcal übrig, Eiweißziel 128 g", (await page.textContent("#foodSum")).includes("3.030") && (await page.textContent("#foodSum")).includes("128 g"));
       // Grundnahrungsmittel hinzufügen
       await page.click("[data-a=foodAdd][data-m=f]");
-      ok("Hinzufügen-Sheet ohne Suche: Hinweis auf Datenbank", (await page.textContent("#foodRes")).includes("110 Grundnahrungsmittel"));
+      ok("Hinzufügen-Sheet ohne Suche: Hinweis auf Datenbank", (await page.textContent("#foodRes")).includes("232 Grundnahrungsmittel"));
       await page.fill("#foodQ", "hafer");
       ok("Suche findet Haferflocken", (await page.$$("#foodRes [data-a=foodPick]")).length >= 1 && (await page.textContent("#foodRes")).includes("379 kcal"));
       await page.click("[data-a=foodPick][data-k='u:173904']");
@@ -1547,7 +1547,51 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("28. Konsole");
+    section("28. Mehr Lebensmittel und „Meine Mahlzeiten“");
+    {
+      const pad = n => String(n).padStart(2, "0"), dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, today = dk(new Date());
+      const E = (id, m, n, src, g, per) => ({ id, m, n, src, g, per });
+      const food = { [today]: [E("a", "f", "Haferflocken", "usda:173904", 80, { k: 379, p: 13.2, c: 67.7, f: 6.52, fib: 10.1 }),
+        E("b", "f", "Banane", "usda:173944", 118, { k: 89, p: 1.09, c: 22.8, f: 0.33, fib: 2.6 }),
+        E("c", "m", "Reis, weiß (Langkorn), gekocht", "usda:168878", 250, { k: 130, p: 2.69, c: 28.2, f: 0.28 })] };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, food, meals: [{ n: "", items: [] }, { n: "Kaputt", items: [{ g: -1 }] }] });
+      const db = await tp(page, () => { const T = window.__tp, g = id => T.FOOD_DB.find(r => r[0] === id);
+        return { n: T.FOOD_DB.length, kohlrabi: g(168424).slice(3, 7), edamer: g(173419).slice(3, 7), kerne: g(170556).slice(3, 7), wurst: g(171620)[8], meals: T.state.meals.length,
+          find: ["brezel", "sauerkraut", "rotkohl", "leberwurst", "kohlrabi", "emmentaler", "dinkel"].map(q => T.FOOD_DB.filter(r => r[1].toLowerCase().includes(q)).length) }; });
+      ok("232 Grundnahrungsmittel aus USDA", db.n === 232);
+      ok("Neue Stichproben entsprechen USDA (Kohlrabi, Edamer, Kürbiskerne; 1 Bratwurst = 85 g)",
+        JSON.stringify(db.kohlrabi) === "[27,1.7,6.2,0.1]" && JSON.stringify(db.edamer) === "[357,25,1.43,28.6]" && JSON.stringify(db.kerne) === "[559,30.2,10.7,49]" && db.wurst[1] === 85);
+      ok("Typische Lebensmittel auffindbar (Brezel, Sauerkraut, Rotkohl, Leberwurst, Kohlrabi, Emmentaler, Dinkel)", db.find.every(n => n >= 1), db.find.join());
+      ok("Ungültige gespeicherte Mahlzeiten werden verworfen", db.meals === 0);
+      await page.click("[data-a=tab][data-v=food]");
+      ok("„Als Mahlzeit speichern“ ab zwei Einträgen", !!(await page.$("[data-a=mealSaveOpen][data-m=f]")) && !(await page.$("[data-a=mealSaveOpen][data-m=m]")));
+      await page.click("[data-a=mealSaveOpen][data-m=f]");
+      ok("Speichern zeigt Inhalt mit Mengen", (await page.textContent(".sheet")).includes("Haferflocken · 80 g") && (await page.inputValue("#mealN")) === "Mein Frühstück");
+      await page.fill("#mealN", ""); await page.click("[data-a=mealSave]");
+      ok("Ohne Namen: Hinweis", await page.isVisible("#mealErr"));
+      await page.fill("#mealN", "Haferfrühstück"); await page.click("[data-a=mealSave]");
+      let st = await stored(page);
+      ok("Mahlzeit gespeichert (Lebensmittel, Mengen, Werte je 100 g)", st.meals.length === 1 && st.meals[0].n === "Haferfrühstück" && st.meals[0].items.length === 2
+        && st.meals[0].items[0].g === 80 && st.meals[0].items[0].per.k === 379 && !("id" in st.meals[0].items[0]));
+      await page.click("[data-a=foodAdd][data-m=s]");
+      ok("„Meine Mahlzeiten“ oben im Hinzufügen-Sheet mit kcal", (await page.textContent("#foodRes")).includes("Meine Mahlzeiten") && (await page.textContent("#foodRes")).includes("Haferfrühstück") && (await page.textContent("#foodRes")).includes("408 kcal"));
+      await page.fill("#foodQ", "hafer");
+      ok("Suche findet auch gespeicherte Mahlzeiten", (await page.textContent("#foodRes")).includes("Haferfrühstück") && (await page.textContent("#foodRes")).includes("Haferflocken"));
+      await page.click("[data-a=mealUse]");
+      st = await stored(page);
+      const snacks = st.food[today].filter(e => e.m === "s");
+      ok("Ein Tipp fügt alle Lebensmittel mit Mengen ein (als Snack, neue Einträge)", snacks.length === 2 && snacks[0].g === 80 && snacks.every(e => !["a", "b"].includes(e.id)));
+      ok("Übersicht zählt die eingefügte Mahlzeit mit", (await page.textContent("#app")).includes("Snacks") && (await page.textContent("#app")).includes("408 kcal"));
+      await page.click("[data-a=foodAdd][data-m=a]"); await page.click("[data-a=mealDel]");
+      ok("Löschen fragt nach", (await page.textContent(".sheet")).includes("Einträge im Tagebuch bleiben erhalten"));
+      await page.click("[data-a=mealDelDo]");
+      st = await stored(page);
+      ok("Mahlzeit gelöscht, Tagebuch unverändert", st.meals.length === 0 && st.food[today].length === 5 && await page.isVisible("#foodQ"));
+      ok("Hinzufügen-Sheet bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("29. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
