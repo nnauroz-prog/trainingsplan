@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v30)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v30")));
+      ok("Service Worker aktiv (Cache trainingsplan-v31)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v31")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -947,10 +947,10 @@ async function finishAllSets(page, kg, reps) {
       ok("Bibliothek bei 360 px ohne seitliches Scrollen", await noOverflow(page));
       await page.click("[data-a=openEx][data-id=hs-seatcurl]");
       const seat = await page.textContent("#app");
-      ok("Übungsseite zeigt alle Abschnitte", ["Warum diese Übung", "Einstellen", "Ausführung", "Atmung", "Häufige Fehler", "Sicherheit", "Tipps", "Hauptsächlich"].every(s => seat.includes(s)));
+      ok("Übungsseite zeigt alle Abschnitte", ["Warum diese Übung", "Einstellen", "Ausführung", "Häufige Fehler", "Sicherheit", "Hauptsächlich", "Tricks für dieses Gerät"].every(s => seat.includes(s)));
       ok("Studienaussage mit Quelle verlinkt (Beinbeuger sitzend)", (await page.$$eval("#app .srcs a", a => a.map(x => x.href))).some(h => h.includes("33009197")));
       ok("Ohne eigene Einträge: ehrlicher Hinweis statt erfundener Werte", (await page.textContent("#exStats")).includes("Noch keine Einträge"));
-      ok("Steckgewicht: Hinweis zum Steckstift, dazu Schmerz als Stoppsignal", seat.includes("Steckstift") && seat.includes("Stoppsignal") && !seat.includes("Scheiben vor dem ersten Satz"));
+      ok("Allgemeine Sicherheit (Steckstift, Schmerz als Stoppsignal) nicht auf jeder Geräteseite, sondern über „Für alle Übungen“", !seat.includes("Stoppsignal") && !seat.includes("Steckstift vollständig") && !!(await page.$("[data-a=genTricks]")));
       ok("Nicht im Plan: ehrlicher Hinweis", (await page.textContent("#exPlan")).includes("In keinem Trainingstag"));
       await page.click("[data-a=exBack]");
       ok("Zurück führt zur Bibliothek", await page.isVisible("#libQ"));
@@ -959,7 +959,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Deine Werte aus echten Daten: 3 Einheiten, Bestwert 42,5, +10 kg seit Beginn", st.includes("3") && st.includes("42,5") && st.includes("+10") && st.includes("32,5"), st.slice(0, 200));
       ok("Übungsseite bei 360 px ohne seitliches Scrollen", await noOverflow(page));
       const chestTxt = await page.textContent("#app");
-      ok("Scheibengerät: Hinweis zu den Scheiben, kein Steckstift", chestTxt.includes("Scheiben vor dem ersten Satz") && !chestTxt.includes("Steckstift"));
+      ok("Scheibengerät: keine allgemeinen Scheiben- oder Steckstift-Hinweise auf der Geräteseite", !chestTxt.includes("Scheiben vor dem ersten Satz") && !chestTxt.includes("Steckstift"));
       ok("„In deinem Plan“ zeigt Tag, Sätze und Wiederholungen aus dem Plan", (await page.textContent("#exPlan")).includes("Test: 2 × 8–12 Wdh."));
       const alts = await page.$$eval("#exAlt [data-a=openEx]", b => b.map(x => x.dataset.id));
       const exp = await tp(page, () => { const r = window.__tp.rankAlternatives("hs-chest", new Set()); return [...r.direct.slice(0, 4), ...r.other.slice(0, 3)].map(a => a.e.id); });
@@ -1816,7 +1816,7 @@ async function finishAllSets(page, kg, reps) {
       ok("„Training“ zeigt die Termine mit Plan B", (await page.textContent("#schedRow")).includes(curT) && (await page.textContent("#schedRow")).includes("Kurzversion"));
       const pc = await tp(page, () => window.__tp.planCheck());
       const pcTxt = await page.textContent("#planCheck");
-      ok("Plan-Check findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Plan-Check") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
+      ok("Planprüfung findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Planprüfung") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
       ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("2 Termine pro Woche"));
       await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
       ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
@@ -1850,7 +1850,7 @@ async function finishAllSets(page, kg, reps) {
         { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
       const { ctx, page } = await open({ plan: bal });
       await page.click("[data-a=tab][data-v=plan]");
-      ok("Ausgewogener Plan: Plan-Check bestätigt, nichts darunter", (await page.textContent("#planCheck")).includes("Alle großen Muskelgruppen sind dabei") && !(await page.$("#lowNote")));
+      ok("Ausgewogener Plan: Planprüfung bestätigt, nichts darunter", (await page.textContent("#planCheck")).includes("Alle großen Muskelgruppen sind dabei") && !(await page.$("#lowNote")));
       await tp(page, () => { const p = window.__tp.state.plan; p.days[0].items.push({ id: "a2", exId: "hs-incline", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "a3", exId: "hs-fly", sets: 5, rmin: 8, rmax: 12, rest: 90 }); p.minutes = 30; });
       await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]");
       const t = await page.textContent("#planCheck");
@@ -2229,19 +2229,32 @@ async function finishAllSets(page, kg, reps) {
         const it = (exId, sets = 3) => ({ exId, sets: Array.from({ length: sets }, () => ({})) });
         return { n: devs.map(e => T.tricksFor(e).length), dupT: dup("t"), dupShort: dup("short"), dupS: dup("s"), gen: T.GEN_TRICKS.map(k => k.t),
           generic: all.filter(k => ["Nah ans Limit", "Dehnung mitnehmen", "Pause nicht zu knapp", "Einstellung merken", "Drop-Satz spart Zeit"].includes(k.t)).length,
-          seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s,
+          seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s, seatWhy: T.GUIDE["hs-seatcurl"].why, incWhy: T.GUIDE["hs-incline"].why,
           now: [T.trickNow(it("hs-chest"), 0).t, T.trickNow(it("hs-chest"), 1).t, T.trickNow(it("hs-chest"), 2).t], custom: T.tricksFor({ id: "c-x" }).length }; });
-      ok("Jedes der 28 Geräte hat eigene Tricks (mindestens 2)", tr.n.length === 28 && tr.n.every(n => n >= 2), JSON.stringify(tr.n));
+      ok("Jedes der 28 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 28 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
       ok("Kein Trick steht bei zwei Geräten (Titel, Kurztext und Erklärung jeweils einmalig)", !tr.dupT.length && !tr.dupShort.length && !tr.dupS.length, [...tr.dupT, ...tr.dupShort, ...tr.dupS].join(" | "));
       ok("Allgemeine Grundsätze nicht mehr bei den Geräten, sondern einmal gesammelt", tr.generic === 0 && tr.gen.includes("Nah ans Limit") && tr.gen.includes("Drop-Satz am Steckgewicht"));
-      ok("Studienbelege stehen beim passenden Gerät (Beinbeuger sitzend +14 %, Armbeuger +12,4 %, Schräge Brustpresse 45°)", tr.seat.includes("+14 % statt +9 %") && tr.curl.includes("+12,4 %") && tr.inc.includes("45°"));
+      ok("Studienbelege einmal pro Seite: Armbeuger im Trick (+12,4 %), Beinbeuger sitzend und Schräge Brustpresse unter „Warum“ statt doppelt im Trick", tr.curl.includes("+12,4 %") && tr.seatWhy.includes("Studie") && tr.incWhy.includes("45°") && !tr.seat.includes("%") && !tr.inc.includes("45°"));
       ok("Im Training wechseln die Tricks des Geräts von Satz zu Satz", tr.now[0] !== tr.now[1] && tr.now[2] === tr.now[0], JSON.stringify(tr.now));
+      const ov = await tp(page, () => { const T = window.__tp, STOP = new Set("der die das und oder nicht mit ohne auf zu zur zum im in an am den dem des ein eine einen einer bis so dass wie auch nur noch dann wenn beim bei vor nach über unter du dich dir sich es ist sind wird werden bleibt bleiben kurz sehr mehr weniger etwas leicht ganz voll halten".split(" "));
+        const words = s => new Set(s.toLowerCase().replace(/[^a-zäöüß ]/g, " ").split(/\s+/).filter(w => w.length > 3 && !STOP.has(w)).map(w => w.replace(/(en|er|es|e|n|s)$/, "")));
+        const sim = (a, b) => { const A = words(a), B = words(b); let i = 0; A.forEach(w => B.has(w) && i++); return i / Math.max(1, Math.min(A.size, B.size)); };
+        const out = [];
+        for (const e of T.allEx().filter(x => x.id.startsWith("hs-"))) { const g = T.GUIDE[e.id];
+          const items = [...(T.TIPS[e.id] || []), g.why, ...g.setup, ...g.steps, ...g.mistakes.map(([f, k]) => f + " – " + k), ...g.tips.filter(x => !T.GENERIC_TIPS.has(x))];
+          T.tricksFor(e).forEach(k => items.forEach(s => { const v = sim(k.short + " " + k.s, s); if (v >= 0.7) out.push(`${e.id}: ${k.t} ~ ${s.slice(0, 60)}`); })); }
+        return out; });
+      ok("Kein Trick wiederholt, was auf derselben Geräteseite schon steht", ov.length === 0, ov.slice(0, 4).join(" | "));
       ok("Eigene Geräte ohne erfundene Tricks", tr.custom === 0);
       const ab = await tp(page, () => Object.values(window.__tp.ABOUT_X));
       ok("Jedes Gerät hat eine eigene Kurzbeschreibung (28, keine doppelt)", ab.length === 28 && new Set(ab).size === 28);
       await page.click("[data-a=tab][data-v=lib]");
       const subs = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()));
       ok("Übungsliste: keine Beschreibung doppelt", subs.length >= 28 && new Set(subs).size === subs.length, subs.slice(0, 6).join(" | "));
+      await page.click("[data-a=openEx][data-id=hs-legpress]");
+      const alts = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()).filter(Boolean));
+      ok("Alternativen: jede mit eigener Beschreibung, nichts wortgleich", alts.length >= 3 && new Set(alts).size === alts.length && !alts.some(s => s.includes("Widerstandsverlauf")), alts.join(" | "));
+      await page.click("[data-a=exBack]");
       await page.click("[data-a=tab][data-v=home]");
       await page.click("[data-a=start]");
       ok("Training: Trick der Brustpresse für den ersten Satz", (await page.textContent("#trickNow")).includes("Ellbogen leicht unter Schulterhöhe führen"));
@@ -2489,7 +2502,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Neuer Nutzer: kein Hinweis „Gewicht pro Seite“, keine Erholung, keine Artikelzeile", !(await page.$("[data-a=hintUnitsOpen]")) && !(await page.$("[data-a=showRec]")) && !(await page.$("#homeArt")));
       await page.click("[data-a=tab][data-v=plan]");
       const pc = await page.textContent("#planCheck");
-      ok("Plan-Check kritisiert den eigenen Plan nicht: keine „+ Übung“-Alarme, Erklärung statt Warnung", !(await page.$("#planCheck [data-a=checkFix]")) && pc.includes("Alle großen Muskelgruppen sind dabei") && (await page.textContent("#lowNote")).includes("Einsteiger-Pläne starten mit höchstens 3 Sätzen pro Übung"));
+      ok("Planprüfung kritisiert den eigenen Plan nicht: keine „+ Übung“-Alarme, Erklärung statt Warnung", !(await page.$("#planCheck [data-a=checkFix]")) && pc.includes("Alle großen Muskelgruppen sind dabei") && (await page.textContent("#lowNote")).includes("Einsteiger-Pläne starten mit höchstens 3 Sätzen pro Übung"));
       ok("Training-Tab ohne Erholungskarte, wenn alles erholt ist", !(await page.$("[data-a=showRec]")));
       await page.click("[data-a=tab][data-v=history]");
       const f = await page.textContent("#app");
@@ -2534,7 +2547,29 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("42. Konsole");
+    section("42. Keine wortgleichen Texte bei verschiedenen Geräten");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const G = window.__tp.GUIDE, seen = {}, dup = [];
+        const add = (k, s, id) => { const key = k + "|" + s; if (seen[key] && seen[key] !== id) dup.push(`${k}: ${s} (${seen[key]}, ${id})`); seen[key] = seen[key] || id; };
+        for (const [id, g] of Object.entries(G)) { g.setup.forEach(s => add("Einstellen", s, id)); g.steps.forEach(s => add("Ausführung", s, id));
+          g.mistakes.forEach(([, k]) => add("Korrektur", k, id)); g.safety.forEach(s => add("Sicherheit", s, id)); }
+        return dup; });
+      ok("Einstellen, Ausführung, Korrekturen und gerätebezogene Sicherheit: kein Satz bei zwei Geräten", r.length === 0, r.slice(0, 5).join(" | "));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-row]"); await page.$$eval("details", d => d.forEach(x => x.open = true));
+      const t1 = await page.textContent("#app");
+      ok("Geräteseite ohne allgemeine Atmung, Schmerz- und Scheibenhinweise und ohne Modellhinweis", !t1.includes("Beim Ziehen ausatmen") && !t1.includes("Schmerz ist ein Stoppsignal") && !t1.includes("Scheiben vor dem ersten Satz prüfen") && !t1.includes("Modellgeneration"));
+      await page.click("[data-a=genTricks]");
+      const g = await page.textContent(".sheet");
+      ok("„Für alle Übungen“: Atmung, Sicherheit an jedem Gerät und Modellhinweis einmal gesammelt", g.includes("Beim Ziehen ausatmen") && g.includes("Schmerz ist ein Stoppsignal") && g.includes("Scheiben vor dem ersten Satz prüfen") && g.includes("Modellgeneration"));
+      await page.click(".sheet [data-a=genTricksBack]");
+      ok("„Zurück“ schließt das Blatt, wenn es von der Geräteseite kam", !(await page.$(".sheet")));
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Planprüfung statt „Plan-Check“", (await page.textContent("#planCheck")).includes("Planprüfung") && !(await page.textContent("#app")).includes("Plan-Check"));
+      await ctx.close();
+    }
+
+    section("43. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
