@@ -286,6 +286,14 @@
   .cal .dot.today{box-shadow:inset 0 0 0 2px var(--text)}
   .stat{display:grid;gap:var(--s1)}
   .stat .num{font-size:34px}
+  .nutgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
+  .nutgrid .num{font-size:22px}
+  .nutgrid.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
+  .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+  .addrow{color:var(--accent);font-weight:600;min-height:48px}
+  .check{width:22px;height:22px;flex:0 0 22px;border-radius:50%;border:2px solid var(--text-3);margin-top:2px}
+  .check.on{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 4px var(--raise)}
 
   /* ---------- Bottom-Sheet ---------- */
   .scrim{position:fixed;inset:0;background:var(--scrim);z-index:40;display:flex;align-items:flex-end;justify-content:center;animation:fade .18s ease-out}
@@ -314,6 +322,7 @@
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
   <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Plan</button>
+  <button data-a="tab" data-v="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 0-3.5 2.6-3.5 6.5S15 14 17 14"/></svg>Essen</button>
   <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Verlauf</button>
 </div></nav>
 <div id="sheet-root"></div>
@@ -403,7 +412,15 @@ const SOURCES = {
   health2022: { t: "Momma et al.: Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases", j: "Br J Sports Med 2022;56(13):755–763", url: "https://bjsm.bmj.com/content/56/13/755" },
   curl2021: { t: "Maeo et al.: Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths", j: "Med Sci Sports Exerc 2021;53(4):825–837", url: "https://pubmed.ncbi.nlm.nih.gov/33009197/" },
   calf2023: { t: "Kinoshita et al.: Triceps surae muscle hypertrophy is greater after standing versus seated calf-raise training", j: "Front Physiol 2023;14:1272106", url: "https://doi.org/10.3389/fphys.2023.1272106" },
-  bench2020: { t: "Rodríguez-Ridao et al.: Effect of five bench inclinations on the electromyographic activity of the pectoralis major, anterior deltoid, and triceps brachii during the bench press exercise", j: "Int J Environ Res Public Health 2020;17(19):7339", url: "https://doi.org/10.3390/ijerph17197339" }
+  bench2020: { t: "Rodríguez-Ridao et al.: Effect of five bench inclinations on the electromyographic activity of the pectoralis major, anterior deltoid, and triceps brachii during the bench press exercise", j: "Int J Environ Res Public Health 2020;17(19):7339", url: "https://doi.org/10.3390/ijerph17197339" },
+  mifflin1990: { t: "Mifflin MD, St Jeor ST, Hill LA et al.: A new predictive equation for resting energy expenditure in healthy individuals", j: "Am J Clin Nutr 1990;51(2):241–247", url: "https://pubmed.ncbi.nlm.nih.gov/2305711/" },
+  frankenfield2005: { t: "Frankenfield D, Roth-Yousey L, Compher C: Comparison of predictive equations for resting metabolic rate in healthy nonobese and obese adults: a systematic review", j: "J Am Diet Assoc 2005;105(5):775–789", url: "https://pubmed.ncbi.nlm.nih.gov/15883556/" },
+  fao2004: { t: "FAO/WHO/UNU: Human energy requirements – Report of a Joint FAO/WHO/UNU Expert Consultation, Kapitel 5: Energiebedarf Erwachsener", j: "FAO Food and Nutrition Technical Report Series 1, Rom 2004", url: "https://www.fao.org/4/y5686e/y5686e07.htm" },
+  morton2018: { t: "Morton RW, Murphy KT, McKellar SR et al.: A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults", j: "Br J Sports Med 2018;52(6):376–384", url: "https://pubmed.ncbi.nlm.nih.gov/28698222/" },
+  helms2014: { t: "Helms ER, Aragon AA, Fitschen PJ: Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation", j: "J Int Soc Sports Nutr 2014;11:20", url: "https://pubmed.ncbi.nlm.nih.gov/24864135/" },
+  iraki2019: { t: "Iraki J, Fitschen P, Espinar S, Helms E: Nutrition recommendations for bodybuilders in the off-season: a narrative review", j: "Sports 2019;7(7):154", url: "https://pubmed.ncbi.nlm.nih.gov/31247944/" },
+  usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
+  off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" }
 };
 
 // Trainingsprinzipien: kurz, belegt, ohne Übertreibung. Unsicherheiten werden benannt.
@@ -463,7 +480,22 @@ const ARTICLES = [
       "Eine Meta-Analyse von Kohortenstudien fand: Menschen mit muskelstärkendem Training hatten ein um etwa 10–20 % geringeres Risiko für vorzeitigen Tod, Herz-Kreislauf-Erkrankungen und Krebs. Der größte Zusammenhang zeigte sich bei etwa 30–60 Minuten pro Woche.",
       "Kombiniert mit Ausdauertraining war der Zusammenhang noch deutlicher.",
       "Wichtig: Solche Beobachtungsstudien zeigen Zusammenhänge, keine bewiesene Ursache. Sie sind aber ein guter Grund, dranzubleiben."
-    ], src: ["health2022"] }
+    ], src: ["health2022"] },
+  { id: "eiweiss", title: "Wie viel Eiweiß brauchst du für Muskelaufbau?",
+    lead: "Für Muskelaufbau mit Krafttraining sind etwa 1,6 g Eiweiß pro Kilogramm Körpergewicht und Tag ein gut belegter Richtwert.",
+    body: [
+      "Eine Meta-Analyse von 49 Studien mit zusammen 1.863 Teilnehmenden untersuchte, wie zusätzliches Eiweiß die Ergebnisse von mindestens sechs Wochen Krafttraining beeinflusst. Mit mehr Eiweiß nahmen fettfreie Masse und Kraft im Mittel etwas stärker zu: um rund 0,3 kg fettfreie Masse und 2,5 kg im Maximalkrafttest.",
+      "Oberhalb von etwa 1,6 g pro kg und Tag brachte mehr Eiweiß im Mittel keinen weiteren Zuwachs an fettfreier Masse. Weil Menschen unterschiedlich reagieren, nennen die Autoren die obere Grenze des Vertrauensbereichs – 2,2 g pro kg – für alle, die sichergehen wollen.",
+      "Gezählt wird die gesamte Eiweißmenge des Tages, egal ob aus Lebensmitteln oder Pulver. Unter „Essen“ zeigt dir die App dein Ziel und wie viel du heute schon gegessen hast."
+    ], src: ["morton2018"] },
+  { id: "kalorien", title: "Kalorienbedarf: eine gute Schätzung, keine exakte Zahl",
+    lead: "Formeln schätzen deinen Bedarf. Wie genau die Schätzung bei dir passt, zeigt erst dein Gewichtsverlauf.",
+    body: [
+      "Die App schätzt deinen Grundumsatz mit der Formel von Mifflin und St Jeor. Sie wurde 1990 an 498 gesunden Erwachsenen entwickelt, deren Energieverbrauch in Ruhe gemessen wurde. Eine Übersichtsarbeit von 2005 fand, dass diese Formel häufiger als andere innerhalb von 10 % des gemessenen Werts lag – bei einzelnen Menschen kann sie aber auch deutlich danebenliegen.",
+      "Für den Tagesbedarf wird der Grundumsatz mit einem Aktivitätsfaktor multipliziert. Die Bereiche stammen aus einem Bericht von FAO, WHO und UNU: 1,40–1,69 für überwiegend sitzende, 1,70–1,99 für aktive und 2,00–2,40 für sehr aktive Menschen.",
+      "Zum Abnehmen empfehlen Fachleute für Kraftsportler etwa 0,5–1 % des Körpergewichts pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Für Muskelaufbau nennt eine Übersichtsarbeit für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.",
+      "Wiege dich regelmäßig. Nach zwei bis drei Wochen zeigt der Gewichtstrend unter „Essen“, ob dein Kalorienziel zu deinem Ziel passt."
+    ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] }
 ];
 
 // Ausführliche Übungsanleitungen. Grundsätze:
@@ -853,7 +885,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [] }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -922,7 +954,7 @@ function normalize(raw) {
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
       sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [] })) })) : [];
-  s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => ({ d: w.d, kg: +w.kg })) : [];
+  s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => Object.assign({ d: w.d, kg: +w.kg }, w.hk === true ? { hk: true } : {})) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
     const r = raw.session;
     const list = r.list.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
@@ -962,6 +994,8 @@ function normalize(raw) {
   }
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   s.health = raw.health === true;
+  s.watch = raw.watch === true;
+  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods);
   return s;
 }
 function load() {
@@ -1047,6 +1081,7 @@ let summary = null;
 let pickerCtx = null;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nEx = n => n === 1 ? "Übung" : "Übungen";
 const num = v => { const s = String(v ?? "").replace(",", ".").trim(); return s === "" || isNaN(+s) ? null : +s; };
 const kgTxt = v => v === null || v === undefined ? "–" : (Number.isInteger(+v) ? String(+v) : (+v).toFixed(2).replace(/0$/, "").replace(".", ","));
 const fmtTime = sec => { sec = Math.max(0, Math.round(sec)); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
@@ -1510,12 +1545,12 @@ function go(v) {
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on",
-    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : "plan"))));
+    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : artBack === "food" ? "food" : "plan"))));
   render(); window.scrollTo(0, 0);
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1589,7 +1624,7 @@ function vHome() {
         <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Empfohlen"}</div>
           <div class="hero-name">${esc(day.name)}</div>
           ${(() => { const tp = activeTimeplan(day);
-            return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> Übungen</span>
+            return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}</span>
               <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
               ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
@@ -1598,6 +1633,7 @@ function vHome() {
       ${why ? `<p class="reason" ${nextReason ? 'style="color:var(--text)"' : ""}>${esc(why)}</p>` : ""}
       <div class="stack-sm">
         <button class="btn primary xl block" data-a="start" ${day.items.length ? "" : "disabled"}>${ICON.play}Training starten</button>
+        ${state.watch && day.items.length ? `<p class="small muted" id="watchHint">Apple Watch: Zuerst in der App „Training“ <b style="color:var(--text)">Traditionelles Krafttraining</b> starten.</p>` : ""}
         ${day.items.length ? "" : `<button class="btn sm block" data-a="editDay" data-id="${day.id}">Übungen hinzufügen</button>`}
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
@@ -1610,6 +1646,8 @@ function vHome() {
     <div class="plain-list">
       ${lastH ? `<div class="li"><div class="grow"><div class="s">Zuletzt</div><div class="t">${esc(lastH.day)} <span class="muted" style="font-weight:400">· ${agoTxt} · ${Math.max(1, Math.round((lastH.durationSec || 0) / 60))} Min.</span></div></div></div>` : ""}
       <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
+      ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!G && !tt.k) return "";
+        return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
       ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
         return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
     </div>
@@ -1622,7 +1660,7 @@ const listNames = arr => arr.join(", ");
 function factsHtml(res, opts) {
   const lines = [];
   if (opts.prestart) {
-    lines.push(`<li><b>${res.exCount}</b> ${res.exCount === res.fullEx ? "Übungen" : `statt ${res.fullEx} Übungen`}</li>`);
+    lines.push(`<li><b>${res.exCount}</b> ${res.exCount === res.fullEx ? nEx(res.exCount) : `statt ${res.fullEx} ${nEx(res.fullEx)}`}</li>`);
     lines.push(`<li><b>${res.setCount}</b> ${res.setCount === res.fullSets ? "Arbeitssätze" : `statt ${res.fullSets} Arbeitssätze`}</li>`);
   }
   if (res.kept.length) lines.push(`<li>${res.lost.length ? "Weiterhin dabei" : "Alle Muskelgruppen dabei"}: ${res.kept.map(m => MUSCLES[m]).join(", ")}</li>`);
@@ -1699,7 +1737,7 @@ function dayPickSheet() {
   const cur = nextDay();
   return `${sheetHead("Training wählen")}
     <div class="group">${state.plan.days.map(d => `<button class="li" data-a="selDay" data-id="${d.id}">
-      <div class="grow"><div class="t">${esc(d.name)}</div><div class="s ellipsis">${d.items.length} Übungen · ≈ ${estMinutes(d)} Min. · ${[...new Set(d.items.map(i => MUSCLES[ex(i.exId).muscle]))].join(", ")}</div></div>
+      <div class="grow"><div class="t">${esc(d.name)}</div><div class="s ellipsis">${d.items.length} ${nEx(d.items.length)} · ≈ ${estMinutes(d)} Min. · ${[...new Set(d.items.map(i => MUSCLES[ex(i.exId).muscle]))].join(", ")}</div></div>
       ${cur && d.id === cur.id ? `<span class="badge pr">Gewählt</span>` : ""}</button>`).join("")}</div>`;
 }
 
@@ -1738,7 +1776,8 @@ function vPlan() {
     <section class="section"><h2>Einstellungen</h2>
       <div class="group">
         <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
+        <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button>
+        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
         <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
         <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
         <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button>
@@ -1760,7 +1799,7 @@ function vDay() {
       <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
       <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
-      <p class="small muted" style="margin-top:var(--s2)">${d.items.length} Übungen · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
+      <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${nEx(d.items.length)} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
     </div>
     ${d.items.length ? `<div class="group">${d.items.map((it, i) => { const e = ex(it.exId); return `
       <div class="li">
@@ -2261,19 +2300,25 @@ function healthPayload(h) {
 }
 const healthUrl = h => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_NAME)}&input=text&text=${encodeURIComponent(JSON.stringify(healthPayload(h)))}`;
 const HK_SENT = "An Health übergeben · erneut senden";
+// Gewicht in ganzen Gramm übergeben: kein Komma/Punkt, das Kurzbefehle je nach Region falsch lesen könnte
+const HK_WEIGHT = "Trainingsplan Gewicht";
+const weightUrl = kg => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_WEIGHT)}&input=text&text=${Math.round(kg * 1000)}`;
+const todayKey = () => new Date().toISOString().slice(0, 10);
 const healthTxt = h => { const p = healthPayload(h); return `Krafttraining, Start ${p.start.slice(11)} Uhr, ${p.minuten} Min.`; };
 function openExternal(url) { if (window.__tp) window.__tp.lastUrl = url; else location.href = url; }
 function healthSheet() {
   const step = (n, html) => `<li>${html}</li>`;
   return `${sheetHead("Apple Health")}
     <p>Diese App ist eine Web-App und darf nicht direkt auf Apple Health zugreifen. Über einen Kurzbefehl auf deinem iPhone kann sie ein Training trotzdem eintragen.</p>
-    <div class="field"><label>Nach dem Training anbieten</label><div class="seg" id="hkSeg">
+    <div class="field"><label>Übergabe an Health anbieten</label><div class="seg" id="hkSeg">
       <button data-a="setHealth" data-v="0" class="${state.health ? "" : "on"}">Aus</button><button data-a="setHealth" data-v="1" class="${state.health ? "on" : ""}">An</button></div></div>
     <section class="gsec"><h2>Was übertragen wird</h2><ul class="glist">
-      <li>Art „Krafttraining“, Startzeit und Dauer des Trainings.</li>
+      <li>Art „Krafttraining“, Startzeit und Dauer des Trainings – nach dem Training oder später aus dem Verlauf.</li>
+      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Verlauf → Körpergewicht).</li>
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
-      <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul></section>
+      <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul>
+      ${state.watch ? `<p class="small" id="hkWatchNote" style="color:var(--accent)">Deine Apple Watch zeichnet die Trainings auf. Damit sie nicht doppelt in Health stehen, bietet die App die Trainings-Übergabe nicht an. Das Körpergewicht lässt sich weiter übergeben.</p>` : ""}</section>
     <details class="disc" id="hkSetup" ${state.health ? "" : "open"}><summary><div class="grow"><h3>Kurzbefehl einrichten</h3><div class="small muted">Einmalig, etwa 3 Minuten</div></div><span class="chev">›</span></summary><div class="body">
       <ol class="glist">
         ${step(1, `App „Kurzbefehle“ öffnen und auf „+“ tippen. Den Kurzbefehl genau so nennen: <b>${HK_NAME}</b>`)}
@@ -2285,7 +2330,469 @@ function healthSheet() {
       </ol>
       <p class="small faint">Die Bezeichnungen können je nach iOS-Version leicht abweichen – suche dann nach dem Stichwort. Kommt nichts an: In Health über dein Profilbild unter „Apps“ bzw. „Apps und Dienste“ → Kurzbefehle das Schreiben von Workouts erlauben.</p>
       <p class="small faint">Prüfe nach dem ersten Training in Health, ob Startzeit und Dauer stimmen.</p>
+    </div></details>
+    <details class="disc" id="hkSetupW"><summary><div class="grow"><h3>Kurzbefehl für das Körpergewicht</h3><div class="small muted">Optional, etwa 1 Minute</div></div><span class="chev">›</span></summary><div class="body">
+      <ol class="glist">
+        ${step(1, `In „Kurzbefehle“ auf „+“ tippen. Name genau: <b>${HK_WEIGHT}</b>`)}
+        ${step(2, `Nach „Berechnen“ suchen und <b>Berechnen</b> hinzufügen: <b>Kurzbefehleingabe ÷ 1000</b>. Die App übergibt das Gewicht in Gramm (z. B. 82500 für 82,5 kg), damit Komma und Punkt nicht verwechselt werden.`)}
+        ${step(3, `Nach „Health“ suchen und <b>Health-Messung protokollieren</b> hinzufügen (englisch „Log Health Sample“). Typ: <b>Gewicht</b>. Wert: <b>Rechenergebnis</b>. Einheit: <b>kg</b>.`)}
+        ${step(4, `Beim ersten Eintragen das Schreiben von <b>Gewicht</b> erlauben.`)}
+      </ol>
+      <p class="small faint">Prüfe nach dem ersten Eintrag in Health, ob der Wert stimmt.</p>
     </div></details>`;
+}
+
+/* ================= Ernährung ================= */
+// Grundnahrungsmittel: Nährwerte je 100 g aus USDA FoodData Central, SR Legacy (April 2018), per Skript übernommen.
+// [FDC-ID, Name, Kategorie, kcal, Eiweiß g, Kohlenhydrate g, Fett g, Ballaststoffe g | null, [Portion, g]?]
+// Kommentar = Originalbezeichnung der USDA. Markenprodukte kommen online aus Open Food Facts (Packungsangaben).
+const FOOD_DB = [
+[173904, "Haferflocken", "getreide", 379, 13.2, 67.7, 6.52, 10.1],  // Cereals, oats, regular and quick, not fortified, dry
+[168877, "Reis, weiß (Langkorn), roh", "getreide", 365, 7.13, 80, 0.66, 1.3],  // Rice, white, long-grain, regular, raw, enriched
+[168878, "Reis, weiß (Langkorn), gekocht", "getreide", 130, 2.69, 28.2, 0.28, 0.4],  // Rice, white, long-grain, regular, enriched, cooked
+[169704, "Naturreis (Langkorn), gekocht", "getreide", 123, 2.74, 25.6, 0.97, 1.6],  // Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)
+[169736, "Nudeln, roh", "getreide", 371, 13, 74.7, 1.51, 3.2],  // Pasta, dry, enriched
+[169737, "Nudeln, gekocht", "getreide", 158, 5.8, 30.9, 0.93, 1.8],  // Pasta, cooked, enriched, without added salt
+[168910, "Vollkornnudeln, gekocht", "getreide", 149, 5.99, 30.1, 1.71, 3.9],  // Pasta, whole-wheat, cooked (Includes foods for USDA's Food Distribution Program)
+[170440, "Kartoffeln, gekocht, ohne Schale", "getreide", 86, 1.71, 20, 0.1, 1.8],  // Potatoes, boiled, cooked without skin, flesh, without salt
+[168484, "Süßkartoffel, gekocht, ohne Schale", "getreide", 76, 1.37, 17.7, 0.14, 2.5],  // Sweet potato, cooked, boiled, without skin
+[172688, "Weizenvollkornbrot", "getreide", 252, 12.4, 42.7, 3.5, 6, ["1 Scheibe", 32.0]],  // Bread, whole-wheat, commercially prepared
+[174924, "Weißbrot / Toastbrot", "getreide", 266, 8.85, 49.4, 3.33, 2.7, ["1 Scheibe", 29.0]],  // Bread, white, commercially prepared (includes soft bread crumbs)
+[172684, "Roggenmischbrot", "getreide", 259, 8.5, 48.3, 3.3, 5.8, ["1 Scheibe", 32.0]],  // Bread, rye
+[175031, "Brötchen / Kaisersemmel", "getreide", 293, 9.9, 52.7, 4.3, 2.3, ["1 Brötchen", 57.0]],  // Rolls, hard (includes kaiser)
+[172739, "Knäckebrot (Roggen)", "getreide", 366, 7.9, 82.2, 1.3, 16.5, ["1 Scheibe", 10.0]],  // Crackers, crispbread, rye
+[170250, "Reiswaffeln (Naturreis, ungesalzen)", "getreide", 387, 8.2, 81.5, 2.8, 4.2, ["1 Waffel", 9.0]],  // Snacks, rice cakes, brown rice, plain, unsalted
+[168917, "Quinoa, gekocht", "getreide", 120, 4.4, 21.3, 1.92, 2.8],  // Quinoa, cooked
+[169700, "Couscous, gekocht", "getreide", 112, 3.79, 23.2, 0.16, 1.4],  // Couscous, cooked
+[171077, "Hähnchenbrustfilet, roh", "fleisch", 120, 22.5, 0, 2.62, 0],  // Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw
+[171477, "Hähnchenbrust, gegart (ohne Haut)", "fleisch", 165, 31, 0, 3.57, 0],  // Chicken, broilers or fryers, breast, meat only, cooked, roasted
+[174516, "Putenbrust, gegart", "fleisch", 136, 29.5, 0, 1.97, 0],  // Turkey, retail parts, breast, meat only, cooked, roasted
+[171796, "Rinderhackfleisch (15 % Fett), roh", "fleisch", 215, 18.6, 0, 15, 0],  // Beef, ground, 85% lean meat / 15% fat, raw (Includes foods for USDA's Food Distribution Program)
+[174034, "Rinderhackfleisch (15 % Fett), angebraten", "fleisch", 256, 27.7, 0, 15.3, 0],  // Beef, ground, 85% lean meat / 15% fat, crumbles, cooked, pan-browned
+[174054, "Rindersteak (Hüfte, mager), gegrillt", "fleisch", 178, 29.4, 0, 5.84, 0],  // Beef, top sirloin, steak, separable lean only, trimmed to 1/8" fat, all grades, cooked, broiled
+[168250, "Schweinefilet, gegart", "fleisch", 143, 26.2, 0, 3.51, 0],  // Pork, fresh, loin, tenderloin, separable lean only, cooked, roasted
+[173864, "Kochschinken, Aufschnitt (ca. 11 % Fett)", "fleisch", 164, 16.6, 3.63, 8.8, 1.3],  // Ham, sliced, regular (approximately 11% fat)
+[175167, "Lachs (Zucht), roh", "fleisch", 208, 20.4, 0, 13.4, 0],  // Fish, salmon, Atlantic, farmed, raw
+[175168, "Lachs (Zucht), gegart", "fleisch", 206, 22.1, 0, 12.4, 0],  // Fish, salmon, Atlantic, farmed, cooked, dry heat
+[173709, "Thunfisch in Wasser, abgetropft", "fleisch", 86, 19.4, 0, 0.96, 0],  // Fish, tuna, light, canned in water, drained solids (Includes foods for USDA's Food Distribution Program)
+[171956, "Kabeljau, gegart", "fleisch", 105, 22.8, 0, 0.86, 0],  // Fish, cod, Atlantic, cooked, dry heat
+[175120, "Makrele, gegart", "fleisch", 262, 23.8, 0, 17.8, 0],  // Fish, mackerel, Atlantic, cooked, dry heat
+[175180, "Garnelen, gegart", "fleisch", 99, 24, 0.2, 0.28, null],  // Crustaceans, shrimp, cooked
+[171287, "Ei, roh", "eiweiss", 143, 12.6, 0.72, 9.51, 0, ["1 Ei ohne Schale", 50.0]],  // Egg, whole, raw, fresh
+[173424, "Ei, hart gekocht", "eiweiss", 155, 12.6, 1.12, 10.6, 0, ["1 Ei ohne Schale", 50.0]],  // Egg, whole, cooked, hard-boiled
+[172183, "Eiklar, roh", "eiweiss", 52, 10.9, 0.73, 0.17, 0, ["1 Eiklar", 33.0]],  // Egg, white, raw, fresh
+[172475, "Tofu, fest", "eiweiss", 144, 17.3, 2.78, 8.72, 2.3],  // Tofu, raw, firm, prepared with calcium sulfate
+[172421, "Linsen, gekocht", "eiweiss", 116, 9.02, 20.1, 0.38, 7.9],  // Lentils, mature seeds, cooked, boiled, without salt
+[173757, "Kichererbsen, gekocht", "eiweiss", 164, 8.86, 27.4, 2.59, 7.6],  // Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt
+[175194, "Kidneybohnen, gekocht", "eiweiss", 127, 8.67, 22.8, 0.5, 7.4],  // Beans, kidney, red, mature seeds, cooked, boiled, without salt
+[174289, "Hummus (Fertigprodukt)", "eiweiss", 237, 7.78, 15, 17.8, 5.5],  // Hummus, commercial
+[171265, "Vollmilch (3,25 % Fett)", "milch", 61, 3.15, 4.8, 3.25, 0, ["1 US-Tasse (237 ml)", 244.0]],  // Milk, whole, 3.25% milkfat, with added vitamin D
+[171267, "Milch (2 % Fett)", "milch", 50, 3.3, 4.8, 1.98, 0, ["1 US-Tasse (237 ml)", 244.0]],  // Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D
+[170872, "Milch (1 % Fett)", "milch", 42, 3.37, 4.99, 0.97, 0, ["1 US-Tasse (237 ml)", 244.0]],  // Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D
+[171269, "Magermilch", "milch", 34, 3.37, 4.96, 0.08, 0, ["1 US-Tasse (237 ml)", 245.0]],  // Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)
+[171284, "Naturjoghurt (Vollmilch)", "milch", 61, 3.47, 4.66, 3.25, 0],  // Yogurt, plain, whole milk
+[170886, "Naturjoghurt, fettarm", "milch", 63, 5.25, 7.04, 1.55, 0],  // Yogurt, plain, low fat
+[170894, "Griechischer Joghurt, fettfrei", "milch", 59, 10.2, 3.6, 0.39, 0],  // Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)
+[171304, "Griechischer Joghurt (Vollmilch)", "milch", 97, 9, 3.98, 5, 0],  // Yogurt, Greek, plain, whole milk
+[173417, "Hüttenkäse (1 % Fett)", "milch", 72, 12.4, 2.72, 1.02, 0],  // Cheese, cottage, lowfat, 1% milkfat
+[172179, "Hüttenkäse (ca. 4 % Fett)", "milch", 98, 11.1, 3.38, 4.3, 0],  // Cheese, cottage, creamed, large or small curd
+[171241, "Gouda", "milch", 356, 24.9, 2.22, 27.4, 0],  // Cheese, gouda
+[170845, "Mozzarella (Vollmilch)", "milch", 299, 22.2, 2.4, 22.1, 0],  // Cheese, mozzarella, whole milk
+[173420, "Feta", "milch", 265, 14.2, 3.88, 21.5, 0],  // Cheese, feta
+[170848, "Parmesan", "milch", 392, 35.8, 3.22, 25, 0],  // Cheese, parmesan, hard
+[173414, "Cheddar", "milch", 403, 22.9, 3.37, 33.3, 0],  // Cheese, cheddar (Includes foods for USDA's Food Distribution Program)
+[173418, "Frischkäse (ca. 34 % Fett)", "milch", 350, 6.15, 5.52, 34.4, 0],  // Cheese, cream
+[173430, "Butter (ungesalzen)", "milch", 717, 0.85, 0.06, 81.1, 0, ["1 EL", 14.2]],  // Butter, without salt
+[171257, "Sauerrahm (ca. 19 % Fett)", "milch", 198, 2.44, 4.63, 19.4, 0],  // Cream, sour, cultured
+[171688, "Apfel (mit Schale)", "obst", 52, 0.26, 13.8, 0.17, 2.4, ["1 mittelgroßer Apfel", 182.0]],  // Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)
+[173944, "Banane", "obst", 89, 1.09, 22.8, 0.33, 2.6, ["1 mittelgroße Banane", 118.0]],  // Bananas, raw
+[169097, "Orange", "obst", 47, 0.94, 11.8, 0.12, 2.4, ["1 Orange", 131.0]],  // Oranges, raw, all commercial varieties
+[167762, "Erdbeeren", "obst", 32, 0.67, 7.68, 0.3, 2],  // Strawberries, raw
+[171711, "Heidelbeeren", "obst", 57, 0.74, 14.5, 0.33, 2.4],  // Blueberries, raw
+[174683, "Weintrauben", "obst", 69, 0.72, 18.1, 0.16, 0.9],  // Grapes, red or green (European type, such as Thompson seedless), raw
+[169118, "Birne", "obst", 57, 0.36, 15.2, 0.14, 3.1, ["1 mittelgroße Birne", 178.0]],  // Pears, raw
+[168153, "Kiwi", "obst", 61, 1.14, 14.7, 0.52, 3, ["1 Kiwi", 69.0]],  // Kiwifruit, green, raw
+[169910, "Mango", "obst", 60, 0.82, 15, 0.38, 1.6, ["1 Mango (essbarer Teil)", 336.0]],  // Mangos, raw
+[169124, "Ananas", "obst", 50, 0.54, 13.1, 0.12, 1.4],  // Pineapple, raw, all varieties
+[167765, "Wassermelone", "obst", 30, 0.61, 7.55, 0.15, 0.4],  // Watermelon, raw
+[167755, "Himbeeren", "obst", 52, 1.2, 11.9, 0.65, 6.5],  // Raspberries, raw
+[171705, "Avocado", "obst", 160, 2, 8.53, 14.7, 6.7, ["1 Avocado (essbarer Teil)", 201.0]],  // Avocados, raw, all commercial varieties
+[168191, "Datteln (Medjool)", "obst", 277, 1.81, 75, 0.15, 6.7, ["1 Dattel ohne Kern", 24.0]],  // Dates, medjool
+[170379, "Brokkoli, roh", "gemuese", 34, 2.82, 6.64, 0.37, 2.6],  // Broccoli, raw
+[169967, "Brokkoli, gekocht", "gemuese", 35, 2.38, 7.18, 0.41, 3.3],  // Broccoli, cooked, boiled, drained, without salt
+[170393, "Karotte, roh", "gemuese", 41, 0.93, 9.58, 0.24, 2.8, ["1 mittelgroße Karotte", 61.0]],  // Carrots, raw
+[170457, "Tomate", "gemuese", 18, 0.88, 3.89, 0.2, 1.2, ["1 mittelgroße Tomate", 123.0]],  // Tomatoes, red, ripe, raw, year round average
+[168409, "Gurke (mit Schale)", "gemuese", 15, 0.65, 3.63, 0.11, 0.5],  // Cucumber, with peel, raw
+[170108, "Paprika, rot", "gemuese", 26, 0.99, 6.03, 0.3, 2.1, ["1 mittelgroße Paprika", 119.0]],  // Peppers, sweet, red, raw
+[168462, "Spinat, roh", "gemuese", 23, 2.86, 3.63, 0.39, 2.2],  // Spinach, raw
+[169249, "Blattsalat (grün)", "gemuese", 15, 1.36, 2.87, 0.15, 1.3],  // Lettuce, green leaf, raw
+[169248, "Eisbergsalat", "gemuese", 14, 0.9, 2.97, 0.14, 1.2],  // Lettuce, iceberg (includes crisphead types), raw
+[169291, "Zucchini, roh", "gemuese", 17, 1.21, 3.11, 0.32, 1],  // Squash, summer, zucchini, includes skin, raw
+[169251, "Champignons, roh", "gemuese", 22, 3.09, 3.26, 0.34, 1],  // Mushrooms, white, raw
+[170000, "Zwiebel, roh", "gemuese", 40, 1.1, 9.34, 0.1, 1.7, ["1 mittelgroße Zwiebel", 110.0]],  // Onions, raw
+[169986, "Blumenkohl, roh", "gemuese", 25, 1.92, 4.97, 0.28, 2],  // Cauliflower, raw
+[170017, "Erbsen (TK), gekocht", "gemuese", 78, 5.15, 14.3, 0.27, 4.5],  // Peas, green, frozen, cooked, boiled, drained, without salt
+[169214, "Mais (Dose), abgetropft", "gemuese", 67, 2.29, 14.3, 1.22, 2],  // Corn, sweet, yellow, canned, whole kernel, drained solids
+[169141, "Grüne Bohnen, gekocht", "gemuese", 35, 1.89, 7.88, 0.28, 3.2],  // Beans, snap, green, cooked, boiled, drained, without salt
+[170567, "Mandeln", "nuss", 579, 21.2, 21.6, 49.9, 12.5],  // Nuts, almonds
+[170187, "Walnüsse", "nuss", 654, 15.2, 13.7, 65.2, 6.7],  // Nuts, walnuts, english
+[173806, "Erdnüsse, geröstet, ungesalzen", "nuss", 587, 24.4, 21.3, 49.7, 8.4],  // Peanuts, all types, dry-roasted, without salt
+[172470, "Erdnussbutter (ohne Salz)", "nuss", 598, 22.2, 22.3, 51.4, 5, ["2 EL", 32.0]],  // Peanut butter, smooth style, without salt
+[170162, "Cashewkerne", "nuss", 553, 18.2, 30.2, 43.8, 3.3],  // Nuts, cashew nuts, raw
+[170581, "Haselnüsse", "nuss", 628, 15, 16.7, 60.8, 9.7],  // Nuts, hazelnuts or filberts
+[170554, "Chiasamen", "nuss", 486, 16.5, 42.1, 30.7, 34.4],  // Seeds, chia seeds, dried
+[169414, "Leinsamen", "nuss", 534, 18.3, 28.9, 42.2, 27.3],  // Seeds, flaxseed
+[170562, "Sonnenblumenkerne", "nuss", 584, 20.8, 20, 51.5, 8.6],  // Seeds, sunflower seed kernels, dried
+[171413, "Olivenöl", "nuss", 884, 0, 0, 100, 0, ["1 EL", 13.5]],  // Oil, olive, salad or cooking
+[172336, "Rapsöl", "nuss", 884, 0, 0, 100, 0, ["1 EL", 14.0]],  // Oil, canola
+[169640, "Honig", "suess", 304, 0.3, 82.4, 0, 0.2, ["1 EL", 21.0]],  // Honey
+[169655, "Zucker", "suess", 387, 0, 100, 0, 0],  // Sugars, granulated
+[169641, "Konfitüre / Marmelade", "suess", 278, 0.37, 68.9, 0.07, 1.1],  // Jams and preserves
+[170273, "Zartbitterschokolade (70–85 % Kakao)", "suess", 598, 7.79, 45.9, 42.6, 10.9],  // Chocolate, dark, 70-85% cacao solids
+[167587, "Vollmilchschokolade", "suess", 535, 7.65, 59.4, 29.7, 3.4],  // Candies, milk chocolate
+[169100, "Orangensaft", "getraenke", 49, 0.68, 11.5, 0.12, 0.3],  // Orange juice, chilled, includes from concentrate
+[174852, "Cola", "getraenke", 42, 0, 10.4, 0.25, 0],  // Beverages, carbonated, cola, regular
+[168746, "Bier", "getraenke", 43, 0.46, 3.55, 0, 0],  // Alcoholic beverage, beer, regular, all
+[173190, "Rotwein", "getraenke", 85, 0.07, 2.61, 0, 0, ["1 Glas (≈ 150 ml)", 147.0]],  // Alcoholic beverage, wine, table, red
+[171890, "Kaffee, schwarz", "getraenke", 1, 0.12, 0, 0.02, 0],  // Beverages, coffee, brewed, prepared with tap water
+[171009, "Mayonnaise", "sonst", 680, 0.96, 0.57, 74.8, 0],  // Salad dressing, mayonnaise, regular
+[168556, "Ketchup", "sonst", 101, 1.04, 27.4, 0.1, 0.3],  // Catsup
+];
+const FOOD_CAT = { getreide: "Getreide & Beilagen", fleisch: "Fleisch & Fisch", eiweiss: "Eier, Hülsenfrüchte & Tofu", milch: "Milch & Käse",
+  obst: "Obst", gemuese: "Gemüse", nuss: "Nüsse, Samen & Öle", suess: "Süßes", getraenke: "Getränke", sonst: "Saucen" };
+const MEALS = [["f", "Frühstück", "Früh"], ["m", "Mittagessen", "Mittag"], ["a", "Abendessen", "Abend"], ["s", "Snacks", "Snack"]];
+// Aktivitätsfaktoren: Mitte der Bereiche aus FAO/WHO/UNU (1,40–1,69 · 1,70–1,99 · 2,00–2,40)
+const PAL_OPTS = [[1.55, "Wenig aktiv", "z. B. Bürojob mit wenig Bewegung"],
+  [1.85, "Mäßig aktiv", "z. B. körperliche Arbeit oder täglich etwa eine Stunde Sport"],
+  [2.2, "Sehr aktiv", "z. B. schwere körperliche Arbeit oder täglich etwa zwei Stunden Sport"]];
+// Startwerte der App; Zielraten: Helms 2014 (Abnehmen), Iraki 2019 (Aufbau)
+const NGOAL = { ab: { label: "Abnehmen", adj: -0.15, lo: -1, hi: -0.5, rate: "0,5–1 % weniger pro Woche" },
+  halten: { label: "Halten", adj: 0, lo: -0.25, hi: 0.25, rate: "etwa gleich" },
+  auf: { label: "Aufbauen", adj: 0.10, lo: 0.25, hi: 0.5, rate: "0,25–0,5 % mehr pro Woche" } };
+const dkey = (d = new Date()) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const r1 = v => Math.round(v * 10) / 10;
+const fmtN = v => r1(v).toLocaleString("de-DE");
+const fmtK = v => Math.round(v).toLocaleString("de-DE");
+const mealName = m => (MEALS.find(x => x[0] === m) || MEALS[3])[1];
+
+// Bereinigung beim Laden: nur Funktionsdeklarationen und Literale (läuft vor den Konstanten oben)
+function cleanNutr(n) {
+  if (!isObj(n)) return null;
+  return { sex: n.sex === "w" ? "w" : "m", age: clampInt(n.age, 18, 100, 30), cm: clampInt(n.cm, 120, 230, 175),
+    pal: [1.55, 1.85, 2.2].includes(+n.pal) ? +n.pal : 1.55, goal: ["ab", "halten", "auf"].includes(n.goal) ? n.goal : "halten",
+    kcal: +n.kcal >= 1000 && +n.kcal <= 6000 ? Math.round(+n.kcal) : null };
+}
+function cleanMacro(o, max) {
+  if (!isObj(o)) return null;
+  const v = {};
+  for (const k of ["k", "p", "c", "f"]) { const x = +o[k]; if (!Number.isFinite(x) || x < 0 || x > (k === "k" ? max * 10 : max)) return null; v[k] = Math.round(x * 100) / 100; }
+  if (o.fib != null && Number.isFinite(+o.fib) && +o.fib >= 0 && +o.fib <= max) v.fib = Math.round(+o.fib * 100) / 100;
+  return v;
+}
+function cleanFood(f) {
+  const out = {};
+  if (!isObj(f)) return out;
+  for (const [d, list] of Object.entries(f)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Array.isArray(list)) continue;
+    const L = list.filter(isObj).map(e => {
+      const base = { id: String(e.id || uid()), m: /^[fmas]$/.test(e.m) ? e.m : "s", n: String(e.n || "Eintrag").slice(0, 80), src: String(e.src || "").slice(0, 40) };
+      if (e.g !== null && e.g !== undefined) {
+        const g = +e.g, per = cleanMacro(e.per, 100);
+        return per && g > 0 && g <= 5000 ? Object.assign(base, { g: Math.round(g * 10) / 10, per }) : null;
+      }
+      const abs = cleanMacro(e.abs, 1000);
+      return abs ? Object.assign(base, { g: null, abs }) : null;
+    }).filter(Boolean);
+    if (L.length) out[d] = L;
+  }
+  return out;
+}
+function cleanMyFoods(a) {
+  return Array.isArray(a) ? a.filter(isObj).map(x => {
+    const per = cleanMacro(x, 100); if (!per || !String(x.n || "").trim()) return null;
+    const o = Object.assign({ id: String(x.id || uid()), n: String(x.n).trim().slice(0, 80) }, per);
+    if (Array.isArray(x.por) && String(x.por[0] || "").trim() && +x.por[1] > 0 && +x.por[1] <= 2000) o.por = [String(x.por[0]).trim().slice(0, 40), Math.round(+x.por[1] * 10) / 10];
+    return o;
+  }).filter(Boolean) : [];
+}
+
+// Berechnung
+function lastWeight() { const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)); return W[W.length - 1] || null; }
+const bmrOf = (n, kg) => 10 * kg + 6.25 * n.cm - 5 * n.age + (n.sex === "w" ? -161 : 5);   // Mifflin-St Jeor 1990
+function calcGoals(n, kg) {
+  if (!n || !(kg >= 30 && kg <= 300) || !(n.age >= 18 && n.age <= 100) || !(n.cm >= 120 && n.cm <= 230)) return null;
+  const bmr = bmrOf(n, kg), tdee = bmr * n.pal, auto = Math.round(tdee * (1 + NGOAL[n.goal].adj) / 10) * 10;
+  return { kg, bmr: Math.round(bmr), tdee: Math.round(tdee), auto, kcal: n.kcal || auto, prot: Math.round(kg * 1.6), protHi: Math.round(kg * 2.2) };
+}
+function nutrGoals() { const w = lastWeight(); return w ? calcGoals(state.nutr, w.kg) : null; }
+function entryVals(e) {
+  if (e.g === null) return Object.assign({ fib: 0 }, e.abs);
+  const f = e.g / 100;
+  return { k: e.per.k * f, p: e.per.p * f, c: e.per.c * f, f: e.per.f * f, fib: (e.per.fib || 0) * f };
+}
+function dayTotals(d) {
+  const t = { k: 0, p: 0, c: 0, f: 0, fib: 0 };
+  (state.food[d] || []).forEach(e => { const v = entryVals(e); for (const k in t) t[k] += v[k] || 0; });
+  return t;
+}
+// Gewichtstrend: Ausgleichsgerade über die letzten 28 Tage, mind. 3 Einträge über mind. 14 Tage
+function weightTrend() {
+  const since = new Date(Date.now() - 28 * 864e5).toISOString().slice(0, 10);
+  const pts = (state.weights || []).filter(w => w.d >= since).sort((a, b) => a.d.localeCompare(b.d));
+  if (pts.length < 3) return null;
+  const xs = pts.map(w => (new Date(w.d) - new Date(pts[0].d)) / 864e5), ys = pts.map(w => w.kg);
+  const span = xs[xs.length - 1]; if (span < 14) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0), sxy = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0);
+  return { pct: sxy / sxx * 7 / my * 100, days: Math.round(span), n: pts.length };
+}
+function trendHtml(G) {
+  const tr = weightTrend(), g = state.nutr && NGOAL[state.nutr.goal];
+  if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Verlauf → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
+  const ok = tr.pct >= g.lo && tr.pct <= g.hi;
+  const msg = ok ? "Das passt zu deinem Ziel." : tr.pct < g.lo
+    ? ({ ab: "Du nimmst schneller ab als geplant.", halten: "Dein Gewicht sinkt.", auf: "Du nimmst langsamer zu als geplant." })[state.nutr.goal]
+    : ({ ab: "Du nimmst langsamer ab als geplant.", halten: "Dein Gewicht steigt.", auf: "Du nimmst schneller zu als geplant." })[state.nutr.goal];
+  return `<div class="note ${ok ? "" : "warn"}" id="trendNote"><div class="cap">Gewichtstrend · ${tr.days} Tage, ${tr.n} Einträge</div>
+    <p class="small"><b>${tr.pct > 0 ? "+" : tr.pct < 0 ? "−" : ""}${fmtN(Math.abs(tr.pct))} % pro Woche</b> · Ziel: ${g.rate}. ${msg}${ok ? "" : " Bleibt es so, passe dein Kalorienziel an."}</p></div>`;
+}
+
+// Lebensmittel-Pool: Schlüssel → Werte je 100 g
+const foodPool = new Map();
+FOOD_DB.forEach(([id, n, cat, k, p, c, f, fib, por]) => foodPool.set("u:" + id,
+  { key: "u:" + id, n, k, p, c, f, fib, por: por || null, src: "usda:" + id, sub: "USDA FoodData Central · " + FOOD_CAT[cat] }));
+function poolOwn(x) { const key = "m:" + x.id; foodPool.set(key, { key, n: x.n, k: x.k, p: x.p, c: x.c, f: x.f, fib: x.fib ?? null, por: x.por || null, src: "own:" + x.id, sub: "Eigenes Lebensmittel" }); return key; }
+function offFood(p) {
+  const nu = isObj(p.nutriments) ? p.nutriments : {};
+  const nv = v => typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? +v : NaN;
+  let k = nv(nu["energy-kcal_100g"]);
+  if (!Number.isFinite(k)) { const kj = nv(nu["energy-kj_100g"]); if (Number.isFinite(kj)) k = kj / 4.184; }
+  const pr = nv(nu.proteins_100g), c = nv(nu.carbohydrates_100g), f = nv(nu.fat_100g), fib = nv(nu.fiber_100g), sq = nv(p.serving_quantity);
+  const name = String(p.product_name_de || p.product_name || "").trim(), code = String(p.code || "").replace(/\D/g, "");
+  if (!name || !code || ![k, pr, c, f].every(x => Number.isFinite(x) && x >= 0) || k > 1000 || pr + c + f > 105) return null;
+  const brand = (Array.isArray(p.brands) ? p.brands.join(",") : String(p.brands || "")).split(",").map(s => s.trim()).filter(Boolean).slice(0, 2).join(", ");
+  const key = "o:" + code;
+  foodPool.set(key, { key, n: name.slice(0, 80), brand, k: r1(k), p: r1(pr), c: r1(c), f: r1(f), fib: Number.isFinite(fib) ? r1(fib) : null,
+    por: Number.isFinite(sq) && sq > 0 && sq <= 2000 ? ["1 Portion laut Packung", r1(sq)] : null, src: "off:" + code, sub: "Open Food Facts (Packungsangabe)" + (brand ? " · " + brand : "") });
+  return key;
+}
+// Zuletzt verwendet: neueste Einträge, je Lebensmittel einmal
+function recentKeys() {
+  const seen = new Set(), keys = [];
+  Object.keys(state.food).sort().reverse().forEach(d => [...state.food[d]].reverse().forEach(e => {
+    if (e.g === null || keys.length >= 8) return;
+    const id = e.src || e.n; if (seen.has(id)) return; seen.add(id);
+    let key = e.src.startsWith("usda:") ? "u:" + e.src.slice(5) : e.src.startsWith("own:") ? "m:" + e.src.slice(4) : e.src.startsWith("off:") ? "o:" + e.src.slice(4) : "r:" + e.id;
+    if (!foodPool.has(key) || key.startsWith("o:") || key.startsWith("r:")) {
+      const old = foodPool.get(key);
+      foodPool.set(key, { key, n: e.n, k: e.per.k, p: e.per.p, c: e.per.c, f: e.per.f, fib: e.per.fib ?? null, por: old ? old.por : null, src: e.src,
+        sub: e.src.startsWith("off:") ? "Open Food Facts (Packungsangabe)" : e.src.startsWith("own:") ? "Eigenes Lebensmittel" : "Zuletzt verwendet" });
+    }
+    keys.push(key);
+  }));
+  return keys;
+}
+
+let foodDay = null, foodCtx = { m: "f", d: null, q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }, nutrDraft = null;
+function foodRows(keys) {
+  return keys.map(k => { const x = foodPool.get(k); return `<button class="li" data-a="foodPick" data-k="${esc(k)}">
+    <div class="grow"><div class="t">${esc(x.n)}</div><div class="s">${fmtK(x.k)} kcal · ${fmtN(x.p)} g Eiweiß je 100 g${x.brand ? " · " + esc(x.brand) : ""}</div></div><span class="chev">›</span></button>`; }).join("");
+}
+function foodResults() {
+  const q = foodCtx.q.trim().toLowerCase();
+  if (!q) {
+    const rec = recentKeys(), own = state.myFoods.map(poolOwn);
+    return (rec.length ? `<section class="section"><h2>Zuletzt verwendet</h2><div class="group">${foodRows(rec)}</div></section>` : "")
+      + (own.length ? `<section class="section"><h2>Eigene Lebensmittel</h2><div class="group">${foodRows(own)}</div></section>` : "")
+      + `<p class="small faint">${FOOD_DB.length} Grundnahrungsmittel mit Werten aus der USDA-Datenbank. Für Markenprodukte die Online-Suche oder den Barcode nutzen.</p>`;
+  }
+  const keys = [...state.myFoods.filter(x => x.n.toLowerCase().includes(q)).map(poolOwn), ...FOOD_DB.filter(r => r[1].toLowerCase().includes(q)).map(r => "u:" + r[0])].slice(0, 40);
+  return keys.length ? `<div class="group">${foodRows(keys)}</div>` : `<p class="small muted">Kein Grundnahrungsmittel gefunden. Probier die Online-Suche.</p>`;
+}
+function offHtml() {
+  if (foodCtx.off === null) return foodCtx.offMsg ? `<p class="small muted" id="offMsg">${esc(foodCtx.offMsg)}</p>` : "";
+  return foodCtx.off.length ? `<section class="section"><h2>Online · Packungsangaben</h2><div class="group">${foodRows(foodCtx.off)}</div>
+    <p class="small faint">Quelle: Open Food Facts. Die Angaben haben Nutzer von Packungen übernommen – vergleiche sie im Zweifel mit deiner Packung.</p></section>`
+    : `<p class="small muted" id="offMsg">Online nichts mit vollständigen Nährwerten gefunden.</p>`;
+}
+function offBtnHtml() { const q = foodCtx.q.trim(); return `<button class="btn block" data-a="offSearch" id="offBtn" ${q.length >= 2 ? "" : "disabled"}>${q.length >= 2 ? `Online nach „${esc(q)}“ suchen` : "Online-Suche: Suchbegriff eingeben"}</button>`; }
+function foodAddSheet() {
+  return `${sheetHead("Hinzufügen · " + mealName(foodCtx.m))}
+    <input id="foodQ" data-i="foodQ" type="search" placeholder="Suchen, z. B. Haferflocken" value="${esc(foodCtx.q)}" autocomplete="off" enterkeyhint="search">
+    <div id="foodRes" class="stack">${foodResults()}</div>
+    <div id="offBox">${offBtnHtml()}</div>
+    <div id="offRes">${offHtml()}</div>
+    <div class="row" style="gap:var(--s2)"><button class="btn sm grow" data-a="barcodeOpen">Barcode</button><button class="btn sm grow" data-a="ownFoodOpen">Eigenes</button><button class="btn sm grow" data-a="quickOpen">Nur kcal</button></div>`;
+}
+function amtOut() {
+  const x = foodCtx.food, f = (foodCtx.g || 0) / 100;
+  return `<div class="nutgrid">${[["kcal", fmtK(x.k * f)], ["Eiweiß", fmtN(x.p * f) + " g"], ["Kohlenh.", fmtN(x.c * f) + " g"], ["Fett", fmtN(x.f * f) + " g"]]
+    .map(([l, t]) => `<div class="stat"><div class="cap">${l}</div><div class="num">${t}</div></div>`).join("")}</div>`;
+}
+function amountSheet() {
+  const x = foodCtx.food, ed = foodCtx.edit, chips = [[100, "100 g"], ...(x.por ? [[x.por[1], `${x.por[0]} (${fmtN(x.por[1])} g)`]] : [])];
+  const fdc = x.src && x.src.startsWith("usda:") ? x.src.slice(5) : null;
+  return `${sheetHead(esc(x.n), ed ? "Abbrechen" : "Zurück", ed ? "closeSheet" : "foodAddBack")}
+    <p class="small muted">${esc(x.sub)} · je 100 g: ${fmtK(x.k)} kcal, ${fmtN(x.p)} g Eiweiß, ${fmtN(x.c)} g Kohlenhydrate, ${fmtN(x.f)} g Fett${x.fib != null ? `, ${fmtN(x.fib)} g Ballaststoffe` : ""}</p>
+    <div class="field"><label for="amtG">Menge in Gramm</label><input id="amtG" data-i="amtG" inputmode="decimal" value="${String(foodCtx.g).replace(".", ",")}" autocomplete="off" enterkeyhint="done"></div>
+    <div class="chips">${chips.map(([g, l]) => `<button class="chip" data-a="amtSet" data-g="${g}">${esc(l)}</button>`).join("")}</div>
+    <div id="amtOut">${amtOut()}</div>
+    <div class="seg" id="mealSeg">${MEALS.map(([k, , s]) => `<button data-a="mealSet" data-m="${k}" class="${foodCtx.m === k ? "on" : ""}">${s}</button>`).join("")}</div>
+    <p class="error" id="amtErr" hidden>Bitte eine Menge zwischen 1 und 5000 g eingeben.</p>
+    <button class="btn primary block" data-a="foodSave">${ed ? "Speichern" : "Hinzufügen"}</button>
+    ${ed ? `<button class="btn block danger" data-a="foodDel">Löschen</button>` : ""}
+    ${fdc ? `<p class="small faint">Quelle: <a href="https://fdc.nal.usda.gov/food-details/${fdc}/nutrients" target="_blank" rel="noopener" style="color:inherit">USDA FoodData Central, FDC-ID ${fdc}</a>. Durchschnittswerte – tatsächliche Gehalte schwanken.</p>` : ""}`;
+}
+function quickSheet(e) {
+  const v = e ? e.abs : {};
+  const f = (id, l, val, ph) => `<div class="field"><label for="${id}">${l}</label><input id="${id}" inputmode="decimal" value="${val != null ? String(val).replace(".", ",") : ""}" placeholder="${ph}" autocomplete="off"></div>`;
+  return `${sheetHead(e ? "Eintrag bearbeiten" : "Nur Kalorien eintragen", e ? "Abbrechen" : "Zurück", e ? "closeSheet" : "foodAddBack")}
+    <div class="field"><label for="qkN">Bezeichnung (optional)</label><input id="qkN" maxlength="60" value="${e ? esc(e.n) : ""}" placeholder="z. B. Kantinenessen" autocomplete="off"></div>
+    <div class="form2">${f("qkK", "Kalorien (kcal)", v.k, "Pflicht")}${f("qkP", "Eiweiß (g)", v.p, "optional")}${f("qkC", "Kohlenhydrate (g)", v.c, "optional")}${f("qkF", "Fett (g)", v.f, "optional")}</div>
+    ${e ? `<div class="seg" id="mealSeg">${MEALS.map(([k, , s]) => `<button data-a="mealSet" data-m="${k}" class="${foodCtx.m === k ? "on" : ""}">${s}</button>`).join("")}</div>` : ""}
+    <p class="error" id="qkErr" hidden>Bitte Kalorien zwischen 1 und 10.000 eingeben; Eiweiß, Kohlenhydrate und Fett jeweils 0–1000 g.</p>
+    <button class="btn primary block" data-a="quickSave">${e ? "Speichern" : "Hinzufügen"}</button>
+    ${e ? `<button class="btn block danger" data-a="foodDel">Löschen</button>` : ""}`;
+}
+function ownFoodSheet() {
+  const f = (id, l) => `<div class="field"><label for="${id}">${l}</label><input id="${id}" data-i="ownIn" inputmode="decimal" autocomplete="off"></div>`;
+  return `${sheetHead("Eigenes Lebensmittel", "Zurück", "foodAddBack")}
+    <div class="field"><label for="ownN">Name</label><input id="ownN" maxlength="60" placeholder="z. B. Mein Proteinriegel" autocomplete="off"></div>
+    <p class="cap" style="margin:0">Nährwerte je 100 g (von der Packung)</p>
+    <div class="form2">${f("ownK", "Kalorien (kcal)")}${f("ownP", "Eiweiß (g)")}${f("ownC", "Kohlenhydrate (g)")}${f("ownF", "Fett (g)")}</div>
+    <p class="small" id="ownHint" hidden></p>
+    <div class="form2"><div class="field"><label for="ownPl">Portion (optional)</label><input id="ownPl" maxlength="30" placeholder="z. B. 1 Riegel" autocomplete="off"></div>
+      <div class="field"><label for="ownPg">Portion in g</label><input id="ownPg" inputmode="decimal" autocomplete="off"></div></div>
+    <p class="error" id="ownErr" hidden></p>
+    <button class="btn primary block" data-a="ownSave">Speichern und weiter</button>`;
+}
+function ownHint() {
+  const v = ["ownK", "ownP", "ownC", "ownF"].map(id => num(byId(id)?.value)), el = byId("ownHint"); if (!el) return;
+  const [k, p, c, f] = v, est = 4 * (p || 0) + 4 * (c || 0) + 9 * (f || 0);
+  const off = k > 0 && v.slice(1).every(x => x !== null) && Math.abs(k - est) > Math.max(15, k * 0.2);
+  el.hidden = !off;
+  if (off) el.textContent = `Hinweis: Aus Eiweiß, Kohlenhydraten und Fett ergeben sich etwa ${fmtK(est)} kcal (4 / 4 / 9 kcal je g). Bitte die Packung prüfen – Ballaststoffe, Alkohol oder Zuckeralkohole können Abweichungen erklären.`;
+}
+function barcodeSheet(msg) {
+  return `${sheetHead("Barcode", "Zurück", "foodAddBack")}
+    <p class="small muted">Gib die Zahl unter dem Strichcode ein (8 bis 14 Ziffern). Die Nährwerte kommen aus Open Food Facts.</p>
+    <input id="bcIn" inputmode="numeric" maxlength="20" placeholder="z. B. 4012345678901" autocomplete="off" enterkeyhint="search">
+    <p class="small" id="bcMsg" ${msg ? "" : "hidden"}>${msg ? esc(msg) : ""}</p>
+    <button class="btn primary block" data-a="barcodeGo">Suchen</button>`;
+}
+async function fetchJSON(url, ms = 12000) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  try { const r = await fetch(url, { signal: ctl.signal }); if (!r.ok && r.status !== 404) throw new Error("HTTP " + r.status); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+const OFF_FIELDS = "code,product_name,product_name_de,brands,nutriments,serving_quantity";
+const offSearchUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
+const offProductUrl = code => `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${OFF_FIELDS}`;
+const offErr = search => navigator.onLine === false ? "Keine Internetverbindung. Grundnahrungsmittel und eigene Lebensmittel funktionieren auch offline."
+  : "Open Food Facts ist gerade nicht erreichbar oder ausgelastet. Bitte in einer Minute erneut versuchen." + (search ? " Die Barcode-Abfrage nutzt eine andere Schnittstelle und funktioniert oft trotzdem." : "");
+
+function nutrOutHtml() {
+  const d = nutrDraft, G = calcGoals(d, d.kg);
+  if (!G) return `<p class="small muted">Gib Alter (ab 18), Größe und Gewicht ein, dann erscheint hier dein geschätzter Bedarf.</p>`;
+  const g = NGOAL[d.goal], adj = g.adj ? ` (${g.adj > 0 ? "+" : "−"}${Math.abs(g.adj * 100)} %)` : "";
+  return `<div class="note" style="gap:6px">
+    <div class="row between small"><span>Grundumsatz (Mifflin-St Jeor)</span><b>≈ ${fmtK(G.bmr)} kcal</b></div>
+    <div class="row between small"><span>Erhaltungsbedarf (× ${String(d.pal).replace(".", ",")})</span><b>≈ ${fmtK(G.tdee)} kcal</b></div>
+    <div class="row between small"><span>Startwert für „${g.label}“${adj}</span><b>${fmtK(G.auto)} kcal</b></div>
+    <div class="row between small"><span>Eiweiß (1,6 g je kg)</span><b>${G.prot} g</b></div>
+    <p class="small faint" style="margin:0">Bis ${G.protHi} g (2,2 g je kg) für alle, die sichergehen wollen. Zielrate: ${g.rate}.</p>
+    ${d.kcal && d.kcal < G.bmr ? `<p class="small" style="color:var(--warn);margin:0">Dein eigenes Ziel liegt unter dem geschätzten Grundumsatz. So wenig nur mit fachlicher Begleitung.</p>` : ""}</div>`;
+}
+function nutrSheet() {
+  const d = nutrDraft, segBtn = (k, v, l) => `<button data-a="nSet" data-k="${k}" data-v="${v}" class="${String(d[k]) === String(v) ? "on" : ""}">${l}</button>`;
+  const inp = (id, l, v) => `<div class="field"><label for="${id}">${l}</label><input id="${id}" data-i="nutrIn" inputmode="decimal" value="${v ?? ""}" autocomplete="off"></div>`;
+  return `${sheetHead("Ziele & Berechnung", "Abbrechen")}
+    <div class="field"><label>Formel für</label><div class="seg" id="nSex">${segBtn("sex", "m", "Männer")}${segBtn("sex", "w", "Frauen")}</div></div>
+    <div class="form3">${inp("nAge", "Alter", d.age)}${inp("nCm", "Größe (cm)", d.cm)}${inp("nKg", "Gewicht (kg)", d.kg != null ? String(d.kg).replace(".", ",") : "")}</div>
+    <p class="small faint" style="margin:0">Das Gewicht kommt aus „Verlauf → Körpergewicht“. Ein geänderter Wert wird dort für heute eingetragen.</p>
+    <div class="field"><label>Aktivität im Alltag</label><div class="group" id="nPal">${PAL_OPTS.map(([v, l, s]) => `<button class="li" data-a="nSet" data-k="pal" data-v="${v}" style="align-items:flex-start">
+      <div class="grow"><div class="t">${l}</div><div class="s">${s}</div></div><span class="check ${d.pal === v ? "on" : ""}" aria-hidden="true"></span></button>`).join("")}</div></div>
+    <div class="field"><label>Ziel</label><div class="seg" id="nGoal">${Object.entries(NGOAL).map(([k, g]) => segBtn("goal", k, g.label)).join("")}</div></div>
+    <div id="nutrOut">${nutrOutHtml()}</div>
+    ${inp("nKcal", "Eigenes Kalorienziel (optional)", d.kcal || "")}
+    <p class="error" id="nErr" hidden></p>
+    <button class="btn primary block" data-a="nutrSave">Speichern</button>
+    <details class="disc"><summary><div class="grow"><h3>So wird gerechnet</h3><div class="small muted">Formeln, Grenzen und Quellen</div></div><span class="chev">›</span></summary><div class="body">
+      <ul class="glist small">
+        <li>Grundumsatz nach Mifflin-St Jeor: 10 × Gewicht (kg) + 6,25 × Größe (cm) − 5 × Alter + 5 bei Männern bzw. − 161 bei Frauen. Entwickelt an 498 gesunden Erwachsenen von 19 bis 78 Jahren.</li>
+        <li>Erhaltungsbedarf = Grundumsatz × Aktivitätsfaktor. Die Faktoren sind die Mitten der Bereiche aus dem Bericht von FAO, WHO und UNU (1,40–1,69 · 1,70–1,99 · 2,00–2,40).</li>
+        <li>Abnehmen: Startwert 15 % unter dem Erhaltungsbedarf. Für Kraftsportler empfehlen Helms et al. etwa 0,5–1 % Körpergewicht pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Die 15 % sind ein Startwert dieser App.</li>
+        <li>Aufbauen: Startwert 10 % über dem Erhaltungsbedarf. Iraki et al. nennen für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.</li>
+        <li>Eiweiß: In einer Meta-Analyse von 49 Studien brachte mehr als etwa 1,6 g pro kg und Tag im Mittel keinen weiteren Zuwachs an fettfreier Masse; die obere Grenze des Vertrauensbereichs lag bei 2,2 g.</li>
+        <li>Grenzen: Formeln schätzen. Mifflin-St Jeor lag in einer Übersichtsarbeit häufiger als andere Formeln innerhalb von 10 % des gemessenen Werts – bei Einzelnen kann die Abweichung größer sein. Dein Gewichtsverlauf zeigt nach zwei bis drei Wochen, ob das Ziel passt.</li>
+        <li>Nicht gedacht für Schwangerschaft, Stillzeit, Jugendliche, Krankheiten mit besonderer Ernährung oder Essstörungen – dann bitte ärztlich oder ernährungsfachlich beraten lassen.</li>
+      </ul>
+      <div class="cap">Quellen</div>${srcList(["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019", "morton2018"])}
+    </div></details>`;
+}
+function readNutrInputs() {
+  const d = nutrDraft; if (!d) return;
+  const v = id => num(byId(id)?.value);
+  d.age = v("nAge"); d.cm = v("nCm"); d.kg = v("nKg"); d.kcal = v("nKcal");
+}
+
+function vFood() {
+  const today = dkey(), d = foodDay && foodDay < today ? foodDay : today, G = nutrGoals(), t = dayTotals(d), list = state.food[d] || [];
+  const dl = d === today ? "Heute" : d === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : new Date(d + "T12:00").toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+  const bar = (v, goal, col) => `<div class="mtrack" style="height:10px"><div class="mfill" style="width:${Math.min(100, goal ? v / goal * 100 : 0)}%;background:${col}"></div></div>`;
+  const macro = `<div class="nutgrid${G ? " n3" : ""}">${(G ? [["Kohlenhydrate", t.c], ["Fett", t.f], ["Ballaststoffe", t.fib]] : [["Eiweiß", t.p], ["Kohlenh.", t.c], ["Fett", t.f], ["Ballastst.", t.fib]]).map(([l, v]) =>
+    `<div class="stat"><div class="cap">${l}</div><div class="num">${fmtN(v)}<span class="small muted"> g</span></div></div>`).join("")}</div>`;
+  const left = G ? G.kcal - t.k : 0;
+  const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
+  const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
+  $app.innerHTML = `<div class="page">
+    <div class="head"><div class="cap">Ernährung</div>
+      <div class="row between"><div class="title">${dl}</div>
+        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= today ? "disabled" : ""}>›</button></div></div></div>
+    ${G ? `<section class="stack-sm" id="foodSum">
+      <div class="kpi"><span class="num" style="font-size:48px">${fmtK(Math.abs(left))}</span><span class="sub">kcal ${left >= 0 ? "übrig" : "über dem Ziel"}</span></div>
+      ${bar(t.k, G.kcal, left >= 0 ? "var(--accent)" : "var(--warn)")}
+      <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal gegessen</p>
+      <div class="row between small" style="margin-top:var(--s3)"><span>Eiweiß</span><span><b>${fmtK(t.p)}</b> von ${G.prot} g</span></div>
+      ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--accent)")}
+      ${macro}</section>`
+    : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
+        <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
+      ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
+    ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
+      return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
+        <div class="group">${es.map(e => { const v = entryVals(e); return `<button class="li" data-a="foodEdit" data-id="${e.id}">
+          <div class="grow"><div class="t">${esc(e.n)}</div><div class="s">${e.g !== null ? fmtN(e.g) + " g · " : ""}${fmtN(v.p)} g Eiweiß</div></div>
+          <span class="small" style="font-weight:600;white-space:nowrap">${fmtK(v.k)} kcal</span></button>`; }).join("")}
+          <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button></div></section>`; }).join("")}
+    ${G ? `<section class="section"><h2>Letzte 7 Tage</h2>
+      ${days.length ? `<p class="small" style="margin:0">Ø <b>${fmtK(avg("k"))}</b> kcal und Ø <b>${fmtK(avg("p"))}</b> g Eiweiß an ${days.length} ${days.length === 1 ? "Tag" : "Tagen"} mit Einträgen · Ziel ${fmtK(G.kcal)} kcal und ${G.prot} g</p>` : ""}
+      ${trendHtml(G)}</section>` : ""}
+    <section class="section"><div class="group">
+      <button class="li" data-a="openNutr"><div class="grow"><div class="t">Ziele & Berechnung</div><div class="s">${G ? `${fmtK(G.kcal)} kcal · ${G.prot} g Eiweiß · ${NGOAL[state.nutr.goal].label}` : "Noch nicht festgelegt"}</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="openArt" data-id="eiweiss" data-ret="food"><div class="grow"><div class="t">Wie viel Eiweiß brauchst du?</div><div class="s">Trainingswissen mit Quelle</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="openArt" data-id="kalorien" data-ret="food"><div class="grow"><div class="t">Kalorienbedarf: Schätzung und Wirklichkeit</div><div class="s">Trainingswissen mit Quellen</div></div><span class="chev">›</span></button>
+    </div></section>
+    <p class="small faint">Nährwerte: USDA FoodData Central (Grundnahrungsmittel) und Open Food Facts (Packungsangaben). Das sind Durchschnitts- bzw. Herstellerangaben; tatsächliche Gehalte schwanken.</p>
+  </div>`;
+}
+
+/* ================= Apple Watch (parallel aufzeichnen) ================= */
+// Web-Apps laufen nicht auf der Watch. Sie zeichnet das Training in ihrer App „Training“ auf;
+// diese App erinnert daran und verhindert doppelte Workouts in Health.
+function watchSheet() {
+  return `${sheetHead("Apple Watch")}
+    <p>Die Apple Watch kann keine Web-Apps ausführen. Sie kann dein Training aber gleichzeitig aufzeichnen. Dann stehen Puls, Kalorien und Dauer von der Watch in Health. Sätze und Gewichte bleiben hier in der App.</p>
+    <div class="field"><label>Ich zeichne mit der Watch auf</label><div class="seg" id="watchSeg">
+      <button data-a="setWatch" data-v="0" class="${state.watch ? "" : "on"}">Aus</button><button data-a="setWatch" data-v="1" class="${state.watch ? "on" : ""}">An</button></div></div>
+    <section class="gsec"><h2>So geht’s</h2><ol class="glist">
+      <li>Vor „Training starten“: Auf der Watch die App <b>Training</b> öffnen und <b>Traditionelles Krafttraining</b> antippen.</li>
+      <li>Wie gewohnt mit dieser App trainieren. Die Pausen zwischen den Sätzen gehören zum Training – die Aufzeichnung auf der Watch einfach weiterlaufen lassen.</li>
+      <li>Nach dem Training: Auf der Watch nach rechts wischen und <b>Beenden</b> tippen.</li></ol></section>
+    <section class="gsec"><h2>Was sich in der App ändert</h2><ul class="glist">
+      <li>Auf „Heute“ erinnert dich die App vor dem Start an die Watch, nach dem Training ans Beenden.</li>
+      <li>Die Trainings-Übergabe an Health per Kurzbefehl entfällt, damit kein Training doppelt in Health steht. Das Körpergewicht lässt sich weiter übergeben.</li></ul></section>
+    <p class="small faint">Übung, Satz und Gewicht direkt auf der Watch anzuzeigen ist mit einer Web-App nicht möglich. Die Bezeichnungen können je nach watchOS-Version leicht abweichen.</p>`;
 }
 
 function vSummary() {
@@ -2300,7 +2807,8 @@ function vSummary() {
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
       <div class="stat"><div class="cap">Volumen</div><div class="num">${fmtVol(sm.volume)}</div></div>
     </div>
-    ${state.health ? `<section class="section" id="hkBox"><button class="btn block" data-a="sendHealth" data-id="${r.id}">In Apple Health eintragen</button>
+    ${state.watch ? `<div class="note" id="watchEnd"><div class="cap">Apple Watch</div><p class="small">Training auf der Watch beenden: nach rechts wischen und „Beenden“ tippen. Puls, Kalorien und Dauer speichert die Watch in Health.</p></div>` : ""}
+    ${state.health && !state.watch ? `<section class="section" id="hkBox"><button class="btn block" data-a="sendHealth" data-id="${r.id}">In Apple Health eintragen</button>
       <p class="small faint">Übergibt an den Kurzbefehl „${HK_NAME}“: ${healthTxt(r)}</p></section>` : ""}
     ${prs.length ? `<section class="section"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
       `<div class="li"><div class="grow t">${esc(p.name)}</div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div></section>` : ""}
@@ -2374,7 +2882,7 @@ function vHistory() {
           ${spark(sr)}<span class="delta ${dlt > 0 ? "" : "zero"}">${dlt > 0 ? "+" + kgTxt(dlt) : "±0"}</span></button>`; }).join("")}</div>
     </section>` : `<p class="muted">Noch keine Trainings. Nach deinem ersten Training siehst du hier Häufigkeit, Kraftentwicklung und Bestwerte.</p>`}
     <div>
-      ${disc("discWeight", "Körpergewicht", lastW ? `${kgTxt(lastW.kg)} kg` : "Noch nicht eingetragen", weightCard(), false)}
+      ${disc("discWeight", "Körpergewicht", lastW ? `${kgTxt(lastW.kg)} kg` : "Noch nicht eingetragen", weightCard(), bwOpen)}
       ${disc("discVol", "Trainingsvolumen", `max. ${max >= 1000 ? (max / 1000).toFixed(1).replace(".", ",") + " t" : Math.round(max) + " kg"} pro Woche`,
         `<div class="bars">${weeks.map(w => `<div class="b ${w.vol ? "" : "zero"}" style="height:${w.vol ? Math.max(4, w.vol / max * 100) : 4}%" title="${Math.round(w.vol)} kg"></div>`).join("")}</div>
          <div class="bars-x">${weeks.map((w, i) => `<span>${i === 7 ? "Jetzt" : w.s.getDate() + "." + (w.s.getMonth() + 1) + "."}</span>`).join("")}</div>
@@ -2385,16 +2893,16 @@ function vHistory() {
         `<div class="row between"><button class="icon-btn" data-a="calMonth" data-d="-1" aria-label="Voriger Monat">‹</button>
           <h3>${cm.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h3>
           <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button></div>${cal}`, calOffset !== 0)}
-      ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} Einträge`,
+      ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
           <div class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></div>
           <div class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</div>
-          ${state.health ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>`, false) : ""}
+          ${state.health && !state.watch ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>`, false) : ""}
     </div>
   </div>`;
 }
 
-let calOffset = 0;
+let calOffset = 0, bwOpen = false;
 function weightCard() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
   const today = new Date().toISOString().slice(0, 10);
@@ -2430,6 +2938,8 @@ function weightCard() {
     <div class="row"><input id="bwIn" class="grow" inputmode="decimal" enterkeyhint="done" placeholder="${todayEntry ? "Heute: " + kgTxt(todayEntry.kg) + " kg" : "Gewicht heute in kg"}" aria-label="Körpergewicht in kg" autocomplete="off">
       <button class="btn primary" data-a="addWeight">${todayEntry ? "Ändern" : "Eintragen"}</button></div>
     <p class="error" id="bwErr" hidden>Bitte eine Zahl zwischen 30 und 300 eingeben.</p>
+    ${state.health && todayEntry ? `<div id="bwHk"><button class="btn block" data-a="sendWeight">${todayEntry.hk ? HK_SENT : "In Apple Health eintragen"}</button>
+      <p class="small faint">Übergibt ${kgTxt(todayEntry.kg)} kg an den Kurzbefehl „${HK_WEIGHT}“.</p></div>` : ""}
   </div>`;
 }
 
@@ -2533,13 +3043,110 @@ const A = {
     if (v === null || v < 30 || v > 300) { byId("bwErr").hidden = false; byId("bwIn").focus(); return; }
     const d = new Date().toISOString().slice(0, 10);
     state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
-    save(); vHistory();
+    save(); bwOpen = true; vHistory(); bwOpen = false;
   },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => go("setup"),
   selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
+  foodDay: el => { const today = dkey(), cur = foodDay && foodDay < today ? foodDay : today, dt = new Date(cur + "T12:00");
+    dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n >= today ? null : n; vFood(); },
+  foodAdd: el => { foodCtx = { m: el.dataset.m, d: foodDay && foodDay < dkey() ? foodDay : dkey(), q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }; openSheet(foodAddSheet()); },
+  foodAddBack: () => openSheet(foodAddSheet()),
+  foodPick: el => { const x = foodPool.get(el.dataset.k); if (!x) return; foodCtx.food = x; foodCtx.edit = null; foodCtx.g = x.por ? x.por[1] : 100; openSheet(amountSheet()); },
+  amtSet: el => { foodCtx.g = +el.dataset.g; byId("amtG").value = String(foodCtx.g).replace(".", ","); byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); },
+  mealSet: el => { foodCtx.m = el.dataset.m; byId("mealSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el)); },
+  foodSave: () => {
+    const g = num(byId("amtG").value);
+    if (g === null || g < 1 || g > 5000) { byId("amtErr").hidden = false; return; }
+    const x = foodCtx.food, list = state.food[foodCtx.d] || (state.food[foodCtx.d] = []);
+    if (foodCtx.edit) { const e = list.find(e => e.id === foodCtx.edit); if (e) { e.g = r1(g); e.m = foodCtx.m; } }
+    else { const per = { k: x.k, p: x.p, c: x.c, f: x.f }; if (x.fib != null) per.fib = x.fib; list.push({ id: uid(), m: foodCtx.m, n: x.n, src: x.src || "", g: r1(g), per }); }
+    save(); closeSheet(); vFood();
+  },
+  foodEdit: el => {
+    const d = foodDay && foodDay < dkey() ? foodDay : dkey(), e = (state.food[d] || []).find(x => x.id === el.dataset.id); if (!e) return;
+    foodCtx = { m: e.m, d, q: "", off: null, offMsg: "", edit: e.id, g: e.g ?? 100, food: null };
+    if (e.g === null) return openSheet(quickSheet(e));
+    state.myFoods.forEach(poolOwn);
+    const pk = e.src.startsWith("usda:") ? "u:" + e.src.slice(5) : e.src.startsWith("own:") ? "m:" + e.src.slice(4) : e.src.startsWith("off:") ? "o:" + e.src.slice(4) : "", pool = foodPool.get(pk);
+    foodCtx.food = { n: e.n, k: e.per.k, p: e.per.p, c: e.per.c, f: e.per.f, fib: e.per.fib ?? null, por: pool ? pool.por : null, src: e.src, sub: pool ? pool.sub : "Eintrag" };
+    openSheet(amountSheet());
+  },
+  foodDel: () => {
+    const d = foodCtx.d; state.food[d] = (state.food[d] || []).filter(e => e.id !== foodCtx.edit); if (!state.food[d].length) delete state.food[d];
+    save(); closeSheet(); vFood();
+  },
+  quickOpen: () => openSheet(quickSheet()),
+  quickSave: () => {
+    const k = num(byId("qkK").value), mac = ["qkP", "qkC", "qkF"].map(id => num(byId(id).value) ?? 0);
+    if (k === null || k < 1 || k > 10000 || mac.some(x => x < 0 || x > 1000)) { byId("qkErr").hidden = false; return; }
+    const abs = { k: Math.round(k), p: r1(mac[0]), c: r1(mac[1]), f: r1(mac[2]) }, n = byId("qkN").value.trim().slice(0, 60) || "Schnell eingetragen";
+    const list = state.food[foodCtx.d] || (state.food[foodCtx.d] = []);
+    if (foodCtx.edit) { const e = list.find(e => e.id === foodCtx.edit); if (e) Object.assign(e, { n, abs, m: foodCtx.m }); }
+    else list.push({ id: uid(), m: foodCtx.m, n, src: "", g: null, abs });
+    save(); closeSheet(); vFood();
+  },
+  ownFoodOpen: () => openSheet(ownFoodSheet()),
+  ownSave: () => {
+    const n = byId("ownN").value.trim(), [k, p, c, f] = ["ownK", "ownP", "ownC", "ownF"].map(id => num(byId(id).value));
+    const pl = byId("ownPl").value.trim(), pg = num(byId("ownPg").value), err = byId("ownErr"), fail = m => { err.textContent = m; err.hidden = false; };
+    if (!n) return fail("Bitte einen Namen eingeben.");
+    if ([k, p, c, f].some(x => x === null)) return fail("Bitte alle vier Nährwerte je 100 g eingeben (0 ist erlaubt).");
+    if (k < 0 || k > 1000 || [p, c, f].some(x => x < 0 || x > 100)) return fail("Bitte die Werte prüfen: höchstens 1000 kcal und je Nährstoff höchstens 100 g.");
+    if (p + c + f > 100) return fail("Eiweiß, Kohlenhydrate und Fett zusammen können je 100 g nicht mehr als 100 g sein.");
+    if ((pl && !(pg > 0 && pg <= 2000)) || (!pl && pg !== null)) return fail("Für eine Portion bitte Bezeichnung und Gramm angeben.");
+    const x = { id: uid(), n: n.slice(0, 60), k: r1(k), p: r1(p), c: r1(c), f: r1(f) }; if (pl) x.por = [pl.slice(0, 30), r1(pg)];
+    state.myFoods.push(x); save();
+    foodCtx.food = foodPool.get(poolOwn(x)); foodCtx.edit = null; foodCtx.g = x.por ? x.por[1] : 100; openSheet(amountSheet());
+  },
+  barcodeOpen: () => openSheet(barcodeSheet()),
+  barcodeGo: async () => {
+    const code = byId("bcIn").value.replace(/\D/g, ""), msg = byId("bcMsg"), show = t => { msg.textContent = t; msg.hidden = false; };
+    if (code.length < 8 || code.length > 14) return show("Ein Barcode hat 8 bis 14 Ziffern.");
+    show("Suche läuft …");
+    try {
+      const r = await fetchJSON(offProductUrl(code));
+      const key = r && r.status === 1 && isObj(r.product) ? offFood(Object.assign({ code }, r.product)) : null;
+      if (!key) return show(r && r.status === 1 ? "Produkt gefunden, aber ohne vollständige Nährwerte. Lege es als eigenes Lebensmittel an." : "Kein Produkt mit diesem Barcode gefunden. Lege es als eigenes Lebensmittel an.");
+      const x = foodPool.get(key); foodCtx.food = x; foodCtx.edit = null; foodCtx.g = x.por ? x.por[1] : 100; openSheet(amountSheet());
+    } catch (e) { if (byId("bcMsg")) show(offErr()); }
+  },
+  offSearch: async () => {
+    const q = foodCtx.q.trim(); if (q.length < 2) return;
+    const box = () => byId("offRes");
+    foodCtx.off = null; foodCtx.offMsg = "Suche läuft …"; if (box()) box().innerHTML = offHtml();
+    try {
+      const r = await fetchJSON(offSearchUrl(q), 20000), seen = new Set();
+      // Doppelte Produkte (gleicher Barcode) nur einmal; der erste Treffer zählt
+      const uniq = (Array.isArray(r.products) ? r.products : []).filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
+      foodCtx.off = uniq.map(offFood).filter(Boolean).slice(0, 20); foodCtx.offMsg = "";
+    }
+    catch (e) { foodCtx.off = null; foodCtx.offMsg = offErr(true); }
+    if (foodCtx.q.trim() === q && box()) box().innerHTML = offHtml();
+  },
+  openNutr: () => { const w = lastWeight(); nutrDraft = Object.assign({ sex: "m", age: null, cm: null, pal: 1.55, goal: "halten", kcal: null }, state.nutr || {}, { kg: w ? w.kg : null }); openSheet(nutrSheet()); },
+  nSet: el => {
+    readNutrInputs(); const k = el.dataset.k; nutrDraft[k] = k === "pal" ? +el.dataset.v : el.dataset.v;
+    if (k === "pal") byId("nPal").querySelectorAll("[data-k=pal]").forEach(b => b.querySelector(".check").classList.toggle("on", b === el));
+    else el.parentElement.querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el));
+    byId("nutrOut").innerHTML = nutrOutHtml();
+  },
+  nutrSave: () => {
+    readNutrInputs(); const d = nutrDraft, err = byId("nErr"), fail = m => { err.textContent = m; err.hidden = false; };
+    if (!(d.age >= 18 && d.age <= 100)) return fail("Bitte ein Alter zwischen 18 und 100 eingeben. Die Formel wurde für Erwachsene entwickelt.");
+    if (!(d.cm >= 120 && d.cm <= 230)) return fail("Bitte eine Größe zwischen 120 und 230 cm eingeben.");
+    if (!(d.kg >= 30 && d.kg <= 300)) return fail("Bitte ein Gewicht zwischen 30 und 300 kg eingeben.");
+    if (d.kcal !== null && !(d.kcal >= 1000 && d.kcal <= 6000)) return fail("Ein eigenes Kalorienziel muss zwischen 1.000 und 6.000 kcal liegen – oder leer bleiben.");
+    state.nutr = cleanNutr(Object.assign({}, d, { age: Math.round(d.age), cm: Math.round(d.cm) }));
+    const kg = Math.round(d.kg * 10) / 10, w = lastWeight();
+    if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
+    save(); closeSheet(); render();
+  },
   openHealth: () => openSheet(healthSheet()),
+  openWatch: () => openSheet(watchSheet()),
+  setWatch: el => { state.watch = el.dataset.v === "1"; save(); render();
+    byId("watchSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === el.dataset.v)); },
   setHealth: el => { state.health = el.dataset.v === "1"; save(); render();
     byId("hkSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === el.dataset.v)); },
   sendHealth: el => {
@@ -2551,10 +3158,19 @@ const A = {
     document.querySelectorAll(`[data-a=sendHealth][data-id="${h.id}"]`).forEach(b => { b.textContent = HK_SENT; });
     openExternal(healthUrl(h));
   },
+  sendWeight: el => {
+    const w = (state.weights || []).find(x => x.d === todayKey()); if (!w) return;
+    if (w.hk && !el.dataset.force) return openSheet(`${sheetHead("Schon übergeben", "Abbrechen")}
+      <p>Dieses Gewicht wurde heute bereits an den Kurzbefehl übergeben. Ist es in Health angekommen, entsteht beim erneuten Senden ein zweiter Messwert.</p>
+      <button class="btn block" data-a="sendWeight" data-force="1">Trotzdem erneut senden</button>`);
+    w.hk = true; save(); closeSheet();
+    const b = document.querySelector("#bwHk [data-a=sendWeight]"); if (b) b.textContent = HK_SENT;
+    openExternal(weightUrl(w.kg));
+  },
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
   exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
-  artBack: () => go(artBack === "home" ? "home" : "wissen"),
+  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : "wissen"),
   openGuideSheet: el => { guideRet = el.dataset.ret || null; openSheet(guideSheet(el.dataset.id, guideRet)); },
   guideBack: () => { if (guideRet === "pick") openSheet(pickerHtml()); else if (guideRet === "train") openSheet(devInfoSheet()); else if (guideRet === "item") openSheet(itemSheet()); else closeSheet(); },
   openTime: () => { const tp = activeTimeplan(nextDay()); timeSel = tp ? tp.minutes : null; openSheet(timeSheet()); },
@@ -2710,6 +3326,10 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
+  else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
+  else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }
+  else if (k === "nutrIn") { readNutrInputs(); byId("nutrOut").innerHTML = nutrOutHtml(); }
+  else if (k === "ownIn") ownHint();
   else if (k === "libQ") { libQuery = el.value; const pos = el.selectionStart; vLib(); const i = byId("libQ"); i.focus(); i.setSelectionRange(pos, pos); }
   else if (k === "devName") devDraft.name = el.value;
   else if (k === "devMuscle") devDraft.muscle = el.value;
@@ -2728,6 +3348,8 @@ document.addEventListener("input", ev => {
 });
 document.addEventListener("keydown", ev => {
   if (ev.key === "Escape") closeSheet();
+  if (ev.key === "Enter" && ev.target.id === "foodQ") { ev.preventDefault(); A.offSearch(); return; }
+  if (ev.key === "Enter" && ev.target.id === "bcIn") { ev.preventDefault(); A.barcodeGo(); return; }
   if (ev.key === "Enter" && ev.target.matches("input:not([type=search])")) ev.target.blur();
 });
 // Bei offener Tastatur (iOS) die feste Aktionsleiste über die Tastatur schieben
@@ -2738,7 +3360,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { healthPayload, healthUrl, HK_NAME, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
