@@ -324,9 +324,10 @@
 <div id="app"></div>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
-  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Plan</button>
+  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Training</button>
+  <button data-a="tab" data-v="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5C5 4.2 8.5 4.2 12 6.2c3.5-2 7-2 9.5-.7V19c-2.5-1.3-6-1.3-9.5.7-3.5-2-7-2-9.5-.7z"/><path d="M12 6.2v13.5"/></svg>Wissen</button>
   <button data-a="tab" data-v="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 0-3.5 2.6-3.5 6.5S15 14 17 14"/></svg>Essen</button>
-  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Verlauf</button>
+  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Fortschritt</button>
 </div></nav>
 <div id="sheet-root"></div>
 
@@ -444,7 +445,7 @@ const ARTICLES = [
     body: [
       "Eine Meta-Analyse von 15 Studien fand einen Zusammenhang zwischen der Zahl wöchentlicher Sätze und dem Muskelzuwachs. Die Gruppe mit 10 oder mehr Sätzen pro Muskel und Woche lag im Mittel vorn; der Vergleich der drei Gruppen (unter 5, 5–9, 10+) war statistisch aber nur ein Trend.",
       "Für sehr hohe Satzzahlen reichen die Daten nicht für klare Aussagen. Neuere Studien mit Trainierten zeigen gemischte Ergebnisse.",
-      "Praktisch heißt das: 10 bis 20 harte Sätze pro Muskel und Woche sind ein gut begründeter Richtwert für Muskelaufbau. Unter „Verlauf → Muskelbelastung“ siehst du, wo du stehst."
+      "Praktisch heißt das: 10 bis 20 harte Sätze pro Muskel und Woche sind ein gut begründeter Richtwert für Muskelaufbau. Unter „Fortschritt → Muskelbelastung“ siehst du, wo du stehst."
     ], src: ["vol2017"] },
   { id: "frequenz", title: "Wie oft pro Woche einen Muskel trainieren?",
     lead: "Wichtiger als die Häufigkeit ist die Menge pro Woche. Mehrere Einheiten machen es leichter, diese Menge gut zu verteilen.",
@@ -900,7 +901,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16 }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false } }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1011,6 +1012,10 @@ function normalize(raw) {
   s.health = raw.health === true;
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
+  // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
+  const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
+  s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
+    fast: typeof no.fast === "boolean" ? no.fast : !!raw.fast || (Array.isArray(raw.fasts) && raw.fasts.length > 0) };
   return s;
 }
 function load() {
@@ -1410,6 +1415,7 @@ function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
 const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
   `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
 const ICON = {
+  gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
   play: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
   close: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
   list: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>`,
@@ -1494,8 +1500,9 @@ function vLib() {
   const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Übungen</div>
+    <div class="head"><div class="cap">Wissen</div><div class="title">Übungen</div>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
+    ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
@@ -1530,12 +1537,15 @@ function exAltHtml(id) {
   return `<div class="group">${list.map(a => `<button class="li" data-a="openEx" data-id="${a.e.id}" data-ret="${exBack}" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.e.name)}</div><div class="s">${esc(a.why)}</div></div><span class="chev">›</span></button>`).join("")}</div>`;
 }
+const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Trainingswissen</div>
-      <p class="sub">Die Grundlagen hinter deinem Plan – kurz erklärt und mit Quellen belegt.</p></div>
-    <div class="group">${ARTICLES.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
-      <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div>
+    <div class="head"><div class="cap">Wissen</div><div class="title">Artikel</div>
+      <p class="sub">Die Grundlagen hinter Training und Ernährung – kurz erklärt und mit Quellen belegt.</p></div>
+    ${wissenSeg("wissen")}
+    ${[["Training", ["progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
+      .map(([h, ids]) => { const L = ARTICLES.filter(a => ids.includes(a.id)); return L.length ? `<section class="section"><h2>${h}</h2><div class="group">${L.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
+      <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div></section>` : ""; }).join("")}
   </div>`;
 }
 function vArt() {
@@ -1555,18 +1565,26 @@ function guideSheet(id, ret) {
 }
 
 /* ================= Navigation ================= */
+// Welcher Tab gehört zu welcher Ansicht
+function tabOf(v) {
+  if (["day", "settings", "plan"].includes(v)) return "plan";
+  if (["lib", "wissen"].includes(v)) return "lib";
+  if (v === "ex") return exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
+  if (v === "art") return artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
+  if (v === "week") return weekBack === "history" ? "history" : "home";
+  return v;
+}
 function go(v) {
   view = v;
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
-  $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on",
-    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "plan")) || (v === "week" && b.dataset.v === (weekBack === "history" ? "history" : "home"))));
+  $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === tabOf(v)));
   render(); window.scrollTo(0, 0);
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek, settings: vSettings })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1576,7 +1594,7 @@ function vSetup() {
     `<button data-a="setup" data-k="${key}" data-val="${v}" class="${String(setup[key]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
   const all = allEx(), av = all.filter(e => !e.off).length, fav = all.filter(e => e.fav).length;
   $app.innerHTML = `<div class="page">
-    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Plan</button>` : `<div class="cap">Neuer Plan</div>`}
+    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Training</button>` : `<div class="cap">Neuer Plan</div>`}
       <div class="title">Dein Training</div>
       <p class="sub">Vier Angaben, dann steht dein Plan. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
@@ -1618,7 +1636,6 @@ function vHome() {
   if (day && ago !== null && ago >= 10) why += " Nach längerer Pause lieber etwas leichter einsteigen.";
   const ses = state.session;
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
-  const recTxt = tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt";
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
@@ -1655,16 +1672,16 @@ function vHome() {
       </div>
     </section>` : ""}
     <section class="section">
-      <div class="section-head"><h2>Diese Woche</h2><span class="small muted"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
+      <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
       ${streak ? `<p class="small muted">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge das Wochenziel geschafft.</p>` : ""}
+      ${state.history.length ? `<button class="link small" data-a="openWeek" data-ret="home" id="homeWeek" style="justify-self:start">Wochenrückblick ansehen ›</button>` : ""}
     </section>
     <div class="plain-list">
-      ${lastH ? `<div class="li"><div class="grow"><div class="s">Zuletzt</div><div class="t">${esc(lastH.day)} <span class="muted" style="font-weight:400">· ${agoTxt} · ${Math.max(1, Math.round((lastH.durationSec || 0) / 60))} Min.</span></div></div></div>` : ""}
-      <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
+      ${(() => { const b = lastPR(); return b ? `<button class="li" data-a="openEx" data-id="${b.exId}" data-ret="home" id="homeBest"><div class="grow"><div class="s">Zuletzt verbessert · ${fmtWhenDay(b.date)}</div>
+        <div class="t">${esc(b.name)}: ${kgTxt(b.from)} → ${kgTxt(b.kg)} ${UNIT[b.u]}</div></div><span class="chev">›</span></button>` : ""; })()}
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!G && !tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
-      ${state.history.length ? `<button class="li" data-a="openWeek" data-ret="home" id="homeWeek"><div class="grow"><div class="s">Wochenrückblick</div><div class="t">${thisWeek} von ${goal} ${goal === 1 ? "Training" : "Trainings"} diese Woche</div></div><span class="chev">›</span></button>` : ""}
       ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
         return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
     </div>
@@ -1767,12 +1784,29 @@ function weekStreak(monday, goal) {
   return n;
 }
 
+// Letzte Steigerung des Höchstgewichts an einem Gerät (gleiche Gewichtsangabe)
+function lastPR() {
+  const best = {}; let last = null;
+  for (const h of [...state.history].sort((a, b) => new Date(a.date) - new Date(b.date))) for (const x of h.exercises) {
+    const v = x.sets.filter(validSet); if (!v.length) continue;
+    const k = x.exId + "|" + x.u, m = Math.max(...v.map(s => s.kg));
+    if (best[k] !== undefined && m > best[k]) last = { exId: x.exId, name: x.name, from: best[k], kg: m, u: x.u, date: h.date };
+    if (best[k] === undefined || m > best[k]) best[k] = m;
+  }
+  return last;
+}
+function fmtWhenDay(iso) {
+  const d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5);
+  return d <= 0 ? "heute" : d === 1 ? "gestern" : `vor ${d} Tagen`;
+}
+
 /* ================= Plan ================= */
 function vPlan() {
   if (!state.plan) return go("setup");
   const p = state.plan;
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div><div class="title">Plan</div></div>
+    <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
+      <div class="row between"><div class="title">Training</div><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="group">${p.days.map((d, i) => `
@@ -1784,23 +1818,28 @@ function vPlan() {
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
     </div>
-    <section class="section"><h2>Übungen & Wissen</h2>
-      <div class="group">
-        <button class="li" data-a="tab" data-v="lib"><div class="grow"><div class="t">Übungsbibliothek</div><div class="s">${allEx().length} Geräte: Muskeln, Einstellung, Ausführung, Fehler</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="tab" data-v="wissen"><div class="grow"><div class="t">Trainingswissen</div><div class="s">${ARTICLES.length} Grundlagen mit Quellen</div></div><span class="chev">›</span></button>
-      </div>
-    </section>
-    <section class="section"><h2>Einstellungen</h2>
-      <div class="group">
-        <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button>
-      </div>
-      <p class="small faint">Plan und Verlauf liegen nur auf diesem Gerät. Kopiere ab und zu eine Sicherung, z. B. in deine Notizen.</p>
-    </section>
+    ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]);
+      return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
+  </div>`;
+}
+/* ================= Einstellungen ================= */
+function vSettings() {
+  const seg = (k, on) => `<div class="seg" style="min-width:140px"><button data-a="nOpt" data-k="${k}" data-v="0" class="${on ? "" : "on"}">Aus</button><button data-a="nOpt" data-k="${k}" data-v="1" class="${on ? "on" : ""}">An</button></div>`;
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><div class="title">Einstellungen</div></div>
+    <section class="section"><h2>Studio</h2><div class="group">
+      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
+    <section class="section"><h2>Ernährung</h2><div class="group">
+      <div class="li" id="optWater"><div class="grow"><div class="t">Wasser zählen</div><div class="s">Gläser und Trinkziel im Tab „Essen“</div></div>${seg("water", state.nutrOpt.water)}</div>
+      <div class="li" id="optFast"><div class="grow"><div class="t">Intervallfasten</div><div class="s">Fasten-Timer im Tab „Essen“</div></div>${seg("fast", state.nutrOpt.fast)}</div></div></section>
+    <section class="section"><h2>Apple</h2><div class="group">
+      <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button></div></section>
+    <section class="section"><h2>Plan und Daten</h2><div class="group">
+      <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button></div>
+      <p class="small faint">Plan und Verlauf liegen nur auf diesem Gerät. Kopiere ab und zu eine Sicherung, z. B. in deine Notizen.</p></section>
   </div>`;
 }
 function gapList(gaps) {
@@ -1813,7 +1852,7 @@ function vDay() {
   const d = curDay(); if (!d) return go("plan");
   $app.innerHTML = `<div class="page">
     <div class="head">
-      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
+      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Training</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
       <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${nEx(d.items.length)} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
@@ -2331,7 +2370,7 @@ function healthSheet() {
       <button data-a="setHealth" data-v="0" class="${state.health ? "" : "on"}">Aus</button><button data-a="setHealth" data-v="1" class="${state.health ? "on" : ""}">An</button></div></div>
     <section class="gsec"><h2>Was übertragen wird</h2><ul class="glist">
       <li>Art „Krafttraining“, Startzeit und Dauer des Trainings – nach dem Training oder später aus dem Verlauf.</li>
-      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Verlauf → Körpergewicht).</li>
+      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Fortschritt → Körpergewicht).</li>
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
       <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul>
@@ -2703,7 +2742,7 @@ function weightTrend() {
 }
 function trendHtml(G) {
   const tr = weightTrend(), g = state.nutr && NGOAL[state.nutr.goal];
-  if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Verlauf → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
+  if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Fortschritt → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
   const ok = tr.pct >= g.lo && tr.pct <= g.hi;
   const msg = ok ? "Das passt zu deinem Ziel." : tr.pct < g.lo
     ? ({ ab: "Du nimmst schneller ab als geplant.", halten: "Dein Gewicht sinkt.", auf: "Du nimmst langsamer zu als geplant." })[state.nutr.goal]
@@ -2873,7 +2912,7 @@ function nutrSheet() {
   return `${sheetHead("Ziele & Berechnung", "Abbrechen")}
     <div class="field"><label>Formel für</label><div class="seg" id="nSex">${segBtn("sex", "m", "Männer")}${segBtn("sex", "w", "Frauen")}</div></div>
     <div class="form3">${inp("nAge", "Alter", d.age)}${inp("nCm", "Größe (cm)", d.cm)}${inp("nKg", "Gewicht (kg)", d.kg != null ? String(d.kg).replace(".", ",") : "")}</div>
-    <p class="small faint" style="margin:0">Das Gewicht kommt aus „Verlauf → Körpergewicht“. Ein geänderter Wert wird dort für heute eingetragen.</p>
+    <p class="small faint" style="margin:0">Das Gewicht kommt aus „Fortschritt → Körpergewicht“. Ein geänderter Wert wird dort für heute eingetragen.</p>
     <div class="field"><label>Aktivität im Alltag</label><div class="group" id="nPal">${PAL_OPTS.map(([v, l, s]) => `<button class="li" data-a="nSet" data-k="pal" data-v="${v}" style="align-items:flex-start">
       <div class="grow"><div class="t">${l}</div><div class="s">${s}</div></div><span class="check ${d.pal === v ? "on" : ""}" aria-hidden="true"></span></button>`).join("")}</div></div>
     <div class="field"><label>Ziel</label><div class="seg" id="nGoal">${Object.entries(NGOAL).map(([k, g]) => segBtn("goal", k, g.label)).join("")}</div></div>
@@ -2910,8 +2949,8 @@ function vFood() {
   const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Ernährung</div>
-      <div class="row between"><div class="title">${dl}</div>
+    <div class="head"><div class="cap">${dl}</div>
+      <div class="row between"><div class="title">Essen</div>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= today ? "disabled" : ""}>›</button></div></div></div>
     ${G ? `<section class="stack-sm" id="foodSum">
       <div class="kpi"><span class="num" style="font-size:48px">${fmtK(Math.abs(left))}</span><span class="sub">kcal ${left >= 0 ? "übrig" : "über dem Ziel"}</span></div>
@@ -2923,13 +2962,13 @@ function vFood() {
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
-    ${(() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
+    ${!state.nutrOpt.water ? "" : (() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
       return `<section class="stack-sm" id="waterBox"><div class="row between"><h2 style="margin:0">Wasser</h2><span class="small"><b>${fmtL(ml)} L</b> von ${wg ? fmtL(wg) + " L" : "1,6–2,0 L"}</span></div>
         ${bar(ml, goal, ml >= goal ? "var(--ok)" : "var(--accent)")}
         <div class="row" style="gap:var(--s2)"><button class="btn sm" data-a="water" data-ml="-250" ${ml ? "" : "disabled"} aria-label="250 ml weniger">−</button>
           <button class="btn sm grow" data-a="water" data-ml="250">+ 1 Glas (250 ml)</button><button class="btn sm grow" data-a="water" data-ml="500">+ 500 ml</button></div>
         <button class="link small" data-a="waterInfo" style="justify-self:start">Wie viel solltest du trinken?</button></section>`; })()}
-    ${fastHtml()}
+    ${state.nutrOpt.fast || state.fast ? fastHtml() : ""}
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
@@ -2947,6 +2986,7 @@ function vFood() {
       <button class="li" data-a="openArt" data-id="eiweiss" data-ret="food"><div class="grow"><div class="t">Wie viel Eiweiß brauchst du?</div><div class="s">Trainingswissen mit Quelle</div></div><span class="chev">›</span></button>
       <button class="li" data-a="openArt" data-id="kalorien" data-ret="food"><div class="grow"><div class="t">Kalorienbedarf: Schätzung und Wirklichkeit</div><div class="s">Trainingswissen mit Quellen</div></div><span class="chev">›</span></button>
     </div></section>
+    ${!state.nutrOpt.water || !state.nutrOpt.fast ? `<p class="small faint" id="optHint">${[!state.nutrOpt.water && "Wasser zählen", !state.nutrOpt.fast && "Intervallfasten"].filter(Boolean).join(" und ")} kannst du in den <button class="link small" data-a="openSettings" style="display:inline">Einstellungen</button> einschalten.</p>` : ""}
     <p class="small faint">Nährwerte: USDA FoodData Central (Grundnahrungsmittel) und Open Food Facts (Packungsangaben). Das sind Durchschnitts- bzw. Herstellerangaben; tatsächliche Gehalte schwanken.</p>
   </div>`;
   fastLive();
@@ -3309,7 +3349,7 @@ function vHistory() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)), lastW = W[W.length - 1];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Verlauf</div></div>
+    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
     <section class="section">
@@ -3650,6 +3690,8 @@ const A = {
     if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
     save(); closeSheet(); render();
   },
+  openSettings: () => go("settings"),
+  nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
   openHealth: () => openSheet(healthSheet()),
   openWatch: () => openSheet(watchSheet()),
   setWatch: el => { state.watch = el.dataset.v === "1"; save(); render();
@@ -3675,7 +3717,7 @@ const A = {
     openExternal(weightUrl(w.kg));
   },
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
-  exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
+  exBack: () => go(["history", "day", "plan", "home"].includes(exBack) ? exBack : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
   artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : "wissen"),
   openWeek: el => { weekOff = 0; weekBack = el.dataset.ret === "history" ? "history" : "home"; go("week"); },

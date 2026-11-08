@@ -6,6 +6,16 @@ Trainings-App als Web-App (PWA) für Hammer-Strength-Geräte. Läuft unter https
 
 Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet dann im Vollbild und funktioniert auch offline.
 
+## Aufbau
+
+Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, verstehen**. Fünf Bereiche mit je einer Aufgabe:
+
+- **Heute:** nächstes Training mit Start-Knopf, die Woche (mit Wochenrückblick), letzte Steigerung, Essen heute, Wissen des Tages
+- **Training:** Trainingstage und Erholung; Zahnrad → Einstellungen (Geräte, Wasser/Fasten an/aus, Apple Health/Watch, neuer Plan, Sicherung)
+- **Wissen:** Übungsbibliothek und Artikel (Training, Ernährung, Gesundheit)
+- **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
+- **Fortschritt:** Wochenrückblick, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
+
 ## Funktionen
 
 - **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training, Erfahrung und die Geräte deines Studios ergeben einen fertigen Plan
