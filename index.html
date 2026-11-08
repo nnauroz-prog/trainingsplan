@@ -231,6 +231,14 @@
   .stepper .ctl button:active{background:var(--raise-3)}
   .stepper input{text-align:center;font-family:var(--display);font-weight:800;font-size:68px;line-height:1;min-height:76px;padding:0;border:0;background:transparent;border-radius:var(--r);font-variant-numeric:tabular-nums}
   .stepper input:focus{background:var(--raise)}
+  @media (max-height:700px){
+    .training .page{gap:var(--s3) !important}
+    .stepper .ctl{grid-template-columns:56px 1fr 56px}
+    .stepper .ctl button{width:56px;height:56px;font-size:26px}
+    .stepper input{font-size:54px;min-height:60px}
+    .set-pill{height:34px}
+    .ex-head h1{font-size:30px}
+  }
   .unit b{font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0}
   .actions3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
@@ -339,6 +347,9 @@
   .sh-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
   .sh-head h2{font-size:26px}
   .sh-head .btn{flex:0 0 auto}
+  .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
+  .warm .t{font-weight:700;font-size:15px}
+  .warm .s{font-size:13px;color:var(--text-2)}
   .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--accent-tint);color:var(--text);font-size:15px;text-align:left}
   .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
   .trick .tt{flex:1;min-width:0}
@@ -2492,6 +2503,7 @@ function vTrain() {
   const note = state.notes[e.id];
   const firstOfSession = s.list.every(l => l.sets.every(t => !t.done));
   const warm = firstOfSession && set.kg ? Math.max(e.step, Math.round(set.kg * .5 / e.step) * e.step) : null;
+  const warmPending = !!warm && !s.warmDone && si === 0;
   const pg = progShort(x, e, si);
   const lastTxt = lastSet ? `Letztes Mal ${lastSet.kg !== null ? kgTxt(lastSet.kg) : "–"} × ${lastSet.reps}` : "Noch keine Werte an diesem Gerät";
   $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
@@ -2501,8 +2513,11 @@ function vTrain() {
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
       ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
       ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
-        return pl ? `<p class="reason" id="plateauHint">${esc(plateauTxt(pl))}${pl.reserve ? "" : ` <button class="link" data-a="openSwap">Gerät tauschen</button>`}</p>` : ""; })()}
+        return pl ? `<p class="reason" id="plateauHint" style="color:var(--warn)">Seit ${pl.weeks} Wochen kein Fortschritt${pl.reserve ? " – zuletzt mit Reserve: näher ans Limit gehen" : ""}. ${pl.reserve ? "" : `<button class="link" data-a="openSwap">Gerät tauschen</button>`}<button class="link small" data-a="showWhy" data-why="${esc(plateauTxt(pl))}" style="color:var(--text-3);margin-left:10px">Warum?</button></p>` : ""; })()}
     </div>
+    ${warmPending ? (() => { const w2 = Math.min(set.kg - e.step, Math.round(set.kg * .75 / e.step) * e.step);
+      return `<div class="warm" id="warmup"><div class="grow"><div class="t">Erst aufwärmen</div><div class="s">${kgTxt(warm)} × 10${w2 > warm ? `, dann ${kgTxt(w2)} × 5` : ""} – locker, nicht eintragen. Danach ${kgTxt(set.kg)} ${unitTxt(e)}.</div></div>
+        <button class="btn sm" data-a="warmDone">Erledigt</button></div>`; })() : ""}
     <div class="sets" aria-label="Satzfortschritt">${x.sets.map((t, i) => t.done
       ? `<button class="set-pill done" data-a="editSet" data-key="${x.key}" data-i2="${i}" aria-label="Satz ${i + 1} ändern">${t.kg !== null ? kgTxt(t.kg) : "–"}×${t.reps}</button>`
       : `<span class="set-pill ${i === si ? "cur" : ""}">${i === si ? "Satz " + (i + 1) : i + 1}</span>`).join("")}</div>
@@ -2520,10 +2535,8 @@ function vTrain() {
     </div>
     <p class="error" id="setErr" role="alert" hidden></p>
     <p class="lastline">${lastTxt}</p>
-    ${warm && !s.warmDone && si === 0 ? (() => { const w2 = Math.min(set.kg - e.step, Math.round(set.kg * .75 / e.step) * e.step);
-      return `<div class="ins" id="warmup"><div class="t">Erst aufwärmen</div><p class="small" style="margin:0">${kgTxt(warm)} × 10${w2 > warm ? `, dann ${kgTxt(w2)} × 5` : ""} – locker, nicht eintragen. Danach dein erster Arbeitssatz mit ${kgTxt(set.kg)} ${unitTxt(e)}.</p>
-        <button class="btn sm" data-a="warmDone">Aufgewärmt</button></div>`; })() : ""}
-    ${(() => { const tr = trickNow(x, si); return tr ? `<button class="trick" data-a="openTricks" data-id="${tr.id}" id="trickNow"><span class="tk">Trick</span><span class="tt">${esc(tr.short)}</span><span class="chev">›</span></button>` : ""; })()}
+
+    ${(() => { const tr = warmPending ? null : trickNow(x, si); return tr ? `<button class="trick" data-a="openTricks" data-id="${tr.id}" id="trickNow"><span class="tk">Trick</span><span class="tt">${esc(tr.short)}</span><span class="chev">›</span></button>` : ""; })()}
     <div class="actions3">
       <button class="tool" data-a="openDevInfo">${ICON.gear}Gerät & Technik</button>
       <button class="tool" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>${ICON.swap}Gerät tauschen</button>

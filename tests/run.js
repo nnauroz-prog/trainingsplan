@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v31)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v31")));
+      ok("Service Worker aktiv (Cache trainingsplan-v32)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v32")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -829,7 +829,7 @@ async function finishAllSets(page, kg, reps) {
         exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 2, sets: S3(40, [10, 10]) }] }));
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: histP });
       await page.click("[data-a=start]");
-      ok("12. Training zeigt Stillstandshinweis mit Zeitraum und Optionen", (await page.textContent("#plateauHint")).includes("Wochen") && (await page.textContent("#plateauHint")).includes("Möglich"));
+      ok("12. Training zeigt Stillstandshinweis mit Zeitraum und Optionen", (await page.textContent("#plateauHint")).includes("Wochen kein Fortschritt") && (await page.getAttribute("#plateauHint [data-a=showWhy]", "data-why")).includes("Möglich"));
       await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
       await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=showEx] >> nth=0");
       ok("1RM als Näherung gekennzeichnet", (await page.textContent(".sheet")).includes("1RM geschätzt") && (await page.textContent(".sheet")).includes("Näherung"));
@@ -2394,7 +2394,7 @@ async function finishAllSets(page, kg, reps) {
       const rm = await tp(page, () => [document.getElementById("remain").textContent, window.__tp.remainMin(window.__tp.state.session)]);
       ok("Kopfzeile zeigt die geschätzte Restzeit unter der Uhr", rm[0] === `≈ ${rm[1]} Min.` && rm[1] >= 20, JSON.stringify(rm));
       const wu = await page.textContent("#warmup");
-      ok("Vor dem ersten Satz: zwei Aufwärmsätze (50 % und 75 % von 42,5 kg, auf Schritte gerundet)", wu.includes("Erst aufwärmen") && wu.includes("22,5 × 10") && wu.includes("32,5 × 5") && wu.includes("nicht eintragen") && wu.includes("42,5 kg pro Seite"), wu.replace(/\s+/g, " "));
+      ok("Vor dem ersten Satz: zwei Aufwärmsätze (50 % und 75 % von 42,5 kg, auf Schritte gerundet)", wu.includes("Erst aufwärmen") && wu.includes("22,5 × 10") && wu.includes("32,5 × 5") && wu.includes("nicht eintragen") && wu.includes("Danach 42,5 kg pro Seite"), wu.replace(/\s+/g, " "));
       await page.click("[data-a=warmDone]");
       ok("„Aufgewärmt“ blendet den Schritt aus und merkt es in der Sitzung", !(await page.$("#warmup")) && (await stored(page)).session.warmDone === true);
       await page.fill("#kgIn", "42,5"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
@@ -2569,7 +2569,26 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("43. Konsole");
+    section("43. Trainingsbildschirm auf kleinen iPhones");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 45, days: [{ id: "d1", name: "Ziehen", items: [{ id: "i1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-pulldown", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const H = n => ({ id: "h" + n, dayId: "d1", day: "Ziehen", date: new Date(Date.now() - n * 864e5).toISOString(), durationSec: 2700, exercises: [{ exId: "hs-row", name: "Rudern", u: "s", planned: 3, rmin: 8, rmax: 12, sets: [0, 1, 2].map(() => ({ kg: 50, reps: 9 })) }] });
+      const ctx = await browser.newContext({ viewport: { width: 375, height: 667 }, serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan, hints: { units: true }, history: [28, 21, 14, 7, 2].map(H) })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+      await page.click("[data-a=start]");
+      const pos = await page.evaluate(() => { const r = id => document.getElementById(id) && document.getElementById(id).getBoundingClientRect(); const bar = document.querySelector(".actionbar").getBoundingClientRect();
+        return { warm: r("warmup") && r("warmup").top, kg: r("kgIn").top, reps: r("repsIn").bottom, bar: bar.top, trick: !!document.getElementById("trickNow") }; });
+      ok("375 × 667: Aufwärmen steht vor den Eingabefeldern, Gewicht und Wiederholungen ohne Scrollen über „Satz fertig“", pos.warm < pos.kg && pos.reps <= pos.bar, JSON.stringify(pos));
+      ok("Solange das Aufwärmen offen ist, kein zusätzlicher Trick", !pos.trick);
+      ok("Stillstand als eine Zeile mit „Gerät tauschen“, Einzelheiten unter „Warum?“", (await page.textContent("#plateauHint")).replace(/\s+/g, " ").trim().length < 90 && await page.isVisible("#plateauHint [data-a=openSwap]"));
+      await page.click("[data-a=warmDone]");
+      ok("Nach dem Aufwärmen erscheint der Trick des Geräts", await page.isVisible("#trickNow") && !(await page.$("#warmup")));
+      ok("375 px: ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("44. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
