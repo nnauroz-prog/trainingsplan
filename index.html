@@ -445,6 +445,7 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  teixeira2012: { t: "Teixeira PJ, Carraça EV, Markland D, Silva MN, Ryan RM: Exercise, physical activity, and self-determination theory: a systematic review", j: "Int J Behav Nutr Phys Act 2012;9:78", url: "https://doi.org/10.1186/1479-5868-9-78" },
   gollwitzer2006: { t: "Gollwitzer PM, Sheeran P: Implementation intentions and goal achievement: a meta-analysis of effects and processes", j: "Adv Exp Soc Psychol 2006;38:69–119", url: "https://doi.org/10.1016/S0065-2601(06)38002-1" },
   belanger2013: { t: "Bélanger-Gravel A, Godin G, Amireault S: A meta-analytic review of the effect of implementation intentions on physical activity", j: "Health Psychol Rev 2013;7(1):23–54", url: "https://doi.org/10.1080/17437199.2011.560095" },
   sheeran2025: { t: "Sheeran P, Listrom O, Gollwitzer PM: The when and how of planning: meta-analysis of the scope and components of implementation intentions in 642 tests", j: "Eur Rev Soc Psychol 2025;36(1):162–194", url: "https://doi.org/10.1080/10463283.2024.2334563" },
@@ -933,7 +934,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "" }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1045,6 +1046,7 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
+  s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
   // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
   const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
   s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
@@ -1649,6 +1651,7 @@ function vSetup() {
 /* ================= Heute ================= */
 function vHome() {
   if (!state.plan) return go("setup");
+  checkGoals();
   const day = nextDay();
   const now = new Date(); const dow = (now.getDay() + 6) % 7;
   const monday = new Date(now); monday.setHours(0, 0, 0, 0); monday.setDate(now.getDate() - dow);
@@ -2202,9 +2205,9 @@ function finish(saveIt) {
       const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date().toISOString(), durationSec: Math.round((Date.now() - s.start) / 1000), exercises: exs };
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       state.history.push(rec);
-      summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0) };
+      summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]);
-      say(prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
+      say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
   }
   state.session = null; save(); closeSheet();
@@ -3308,6 +3311,109 @@ function vWeek() {
   </div>`;
 }
 
+/* ================= Ziele und „Dein Warum“ ================= */
+// Fortschritt aus den eigenen Daten; Schätzungen gehen vom bisherigen Tempo aus (laut ACSM hängt der Zuwachs vom Trainingsstand ab).
+function cleanGoals(a) {
+  return Array.isArray(a) ? a.filter(isObj).map(g => {
+    const base = { id: String(g.id || uid()), target: Math.round(+g.target * 100) / 100, start: Math.round(+g.start * 100) / 100,
+      startDate: isNaN(new Date(g.startDate)) ? new Date().toISOString() : new Date(g.startDate).toISOString(),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(g.date || "") ? g.date : null, done: g.done && !isNaN(new Date(g.done)) ? new Date(g.done).toISOString() : null };
+    if (!(base.target > 0 && base.target <= 1000) || !(base.start >= 0 && base.start <= 1000)) return null;
+    if (g.kind === "gewicht") return base.target >= 30 && base.target <= 300 ? Object.assign({ kind: "gewicht" }, base) : null;
+    if (g.kind === "kraft" && g.exId) return Object.assign({ kind: "kraft", exId: String(g.exId), u: ["s", "t", "b"].includes(g.u) ? g.u : "t" }, base);
+    return null;
+  }).filter(Boolean).slice(0, 10) : [];
+}
+function lsSlope(pts) {   // Steigung pro Tag aus [[ms, wert], …]
+  const xs = pts.map(p => (p[0] - pts[0][0]) / 864e5), ys = pts.map(p => p[1]);
+  const mx = xs.reduce((a, b) => a + b, 0) / xs.length, my = ys.reduce((a, b) => a + b, 0) / ys.length;
+  const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
+  return { slope: sxx ? xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / sxx : 0, span: xs[xs.length - 1] };
+}
+function goalStatus(g) {
+  if (g.kind === "kraft") {
+    const cur = bestKg(g.exId, g.u) ?? g.start, span = g.target - g.start;
+    const pct = span > 0 ? Math.max(0, Math.min(1, (cur - g.start) / span)) : 1;
+    const since = Date.now() - 56 * 864e5;
+    const pts = state.history.filter(h => new Date(h.date) >= since).flatMap(h => h.exercises.filter(x => x.exId === g.exId && x.u === g.u)
+      .map(x => { const v = x.sets.filter(validSet); return v.length ? [new Date(h.date).getTime(), Math.max(...v.map(t => t.kg))] : null; })).filter(Boolean).sort((a, b) => a[0] - b[0]);
+    let eta = null;
+    if (cur < g.target && pts.length >= 3) { const r = lsSlope(pts); if (r.span >= 14 && r.slope > 0) eta = new Date(Date.now() + (g.target - cur) / r.slope * 864e5); }
+    return { cur, pct, left: Math.max(0, g.target - cur), eta, reached: cur >= g.target, unit: UNIT[g.u], name: ex(g.exId).name };
+  }
+  const w = lastWeight(), cur = w ? w.kg : g.start, dir = Math.sign(g.target - g.start);
+  const pct = dir === 0 ? 1 : Math.max(0, Math.min(1, (cur - g.start) / (g.target - g.start)));
+  const reached = dir < 0 ? cur <= g.target : cur >= g.target, tr = weightTrend();
+  let eta = null;
+  if (!reached && tr) { const perDay = tr.pct / 100 * cur / 7; if (perDay && Math.sign(perDay) === Math.sign(g.target - cur)) eta = new Date(Date.now() + (g.target - cur) / perDay * 864e5); }
+  return { cur, pct, left: Math.abs(g.target - cur), eta, reached, unit: "kg", name: "Körpergewicht" };
+}
+// Erreichte Ziele festhalten; gibt neu erreichte zurück
+function checkGoals() {
+  const fresh = [];
+  (state.goals || []).forEach(g => { if (!g.done && goalStatus(g).reached) { g.done = new Date().toISOString(); fresh.push(g); } });
+  if (fresh.length) save();
+  return fresh;
+}
+const fmtDay = iso => new Date(iso).toLocaleDateString("de-DE", { day: "numeric", month: "long" });
+function goalRow(g) {
+  const st = goalStatus(g), done = !!g.done;
+  const late = !done && g.date && st.eta && st.eta > new Date(g.date + "T23:59");
+  const sub = done ? `Erreicht am ${fmtDay(g.done)}`
+    : `Noch ${kgTxt(Math.round(st.left * 10) / 10)} kg · ${st.eta ? `bei deinem Tempo etwa ${fmtDay(st.eta.toISOString())}` : "für eine Schätzung fehlen noch Daten"}${g.date ? ` · Zieldatum ${fmtDay(g.date + "T12:00")}${st.eta ? (late ? " (später als geplant)" : " (auf Kurs)") : ""}` : ""}`;
+  return `<button class="li" data-a="goalEdit" data-id="${g.id}" style="align-items:flex-start"><div class="grow">
+      <div class="row between"><span class="t">${esc(st.name)}</span><span class="small">${kgTxt(st.cur)} → <b>${kgTxt(g.target)}</b> ${st.unit}</span></div>
+      <div class="mtrack" style="height:8px;margin:6px 0"><div class="mfill" style="width:${Math.round(st.pct * 100)}%;background:${done ? "var(--ok)" : "var(--accent)"}"></div></div>
+      <div class="s">${sub}</div></div></button>`;
+}
+function goalsHtml() {
+  const G = state.goals || [];
+  return `<section class="section" id="goals"><div class="section-head"><h2>Deine Ziele</h2><button class="link small" data-a="goalAdd">+ Ziel</button></div>
+    ${state.why ? `<p class="small" style="margin:0" id="whyLine">Dein Warum: <b>„${esc(state.why)}“</b> <button class="link small" data-a="whyEdit" style="display:inline">Ändern</button></p>`
+      : `<button class="link small" data-a="whyEdit" style="justify-self:start" id="whyAdd">Dein Warum festhalten</button>`}
+    ${G.length ? `<div class="group">${[...G].sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0)).map(goalRow).join("")}</div>
+      <p class="small faint" style="margin:0">Schätzungen gehen von deinem Tempo der letzten Wochen aus. Wie stark die Kraft zunimmt, hängt vom Trainingsstand ab – mit mehr Erfahrung geht es in der Regel langsamer.</p>`
+      : `<p class="small muted" style="margin:0">Noch keine Ziele. Ein konkretes Ziel – zum Beispiel ein Gewicht an einem Gerät – macht deinen Fortschritt sichtbar.</p>`}</section>`;
+}
+let goalDraft = null;
+function goalRefresh() { const sh = document.querySelector(".sheet"); if (sh) sh.innerHTML = `<div class="grab"></div>${goalSheet()}`; }
+function goalSheet() {
+  const d = goalDraft, edit = !!d.id;
+  const used = [...new Set([...state.history].reverse().flatMap(h => h.exercises.map(x => x.exId)))];
+  const opts = [...used.map(id => ex(id)), ...allEx().filter(e => !used.includes(e.id) && !e.off)].filter(e => e && e.name);
+  const e = d.exId ? ex(d.exId) : null, best = e ? bestKg(e.id, unitOf(e)) : null, w = lastWeight();
+  return `${sheetHead(edit ? "Ziel bearbeiten" : "Neues Ziel", "Abbrechen")}
+    ${edit ? "" : `<div class="seg" id="gKind"><button data-a="gKind" data-v="kraft" class="${d.kind === "kraft" ? "on" : ""}">Kraft</button><button data-a="gKind" data-v="gewicht" class="${d.kind === "gewicht" ? "on" : ""}">Körpergewicht</button></div>`}
+    ${d.kind === "kraft" ? `<div class="field"><label for="gEx">Gerät</label><select id="gEx" data-i="gEx" ${edit ? "disabled" : ""}>${opts.map(o => `<option value="${o.id}" ${o.id === d.exId ? "selected" : ""}>${esc(o.name)}</option>`).join("")}</select></div>
+      <p class="small muted" style="margin:0" id="gBest">${best !== null ? `Dein Bestwert: ${kgTxt(best)} ${UNIT[unitOf(e)]}` : "Noch kein Eintrag an diesem Gerät."}</p>
+      <div class="field"><label for="gTarget">Zielgewicht (${e ? UNIT[unitOf(e)] : "kg"})</label><input id="gTarget" inputmode="decimal" value="${d.target != null ? String(d.target).replace(".", ",") : ""}" autocomplete="off"></div>`
+    : `<p class="small muted" style="margin:0">${w ? `Aktuell: ${kgTxt(w.kg)} kg (Fortschritt → Körpergewicht)` : "Trag zuerst dein Gewicht unter Fortschritt → Körpergewicht ein."}</p>
+      <div class="field"><label for="gTarget">Zielgewicht (kg)</label><input id="gTarget" inputmode="decimal" value="${d.target != null ? String(d.target).replace(".", ",") : ""}" autocomplete="off"></div>`}
+    <div class="field"><label for="gDate">Zieldatum (optional)</label><input id="gDate" type="date" value="${d.date || ""}"></div>
+    <p class="error" id="gErr" hidden></p>
+    <button class="btn primary block" data-a="goalSave">Speichern</button>
+    ${edit ? `<button class="btn block danger" data-a="goalDel">Ziel löschen</button>` : ""}
+    ${d.kind === "kraft" ? `<p class="small faint" style="margin:0">Wie schnell die Kraft zunimmt, hängt vom Trainingsstand ab: Einsteiger legen in der Regel schneller zu als Fortgeschrittene. Ein realistisches Ziel orientiert sich an deinem bisherigen Tempo.</p>${srcList(["acsm2009"])}` : ""}`;
+}
+function whySheet() {
+  return `${sheetHead("Dein Warum", "Abbrechen")}
+    <p class="small" style="margin:0">Warum trainierst du? Ein Satz genügt – der Buddy erinnert dich daran, wenn es mal schwerfällt.</p>
+    <textarea id="whyIn" maxlength="160" rows="3" style="font-family:inherit;font-size:16px;word-break:normal;min-height:72px" placeholder="z. B. Stark und fit bleiben, um im Alltag alles mitmachen zu können">${esc(state.why || "")}</textarea>
+    <p class="small faint" style="margin:0">Eine Übersichtsarbeit fand: Wer aus eigenen, persönlich wichtigen Gründen trainiert, bleibt eher dabei. Die meisten Studien waren Beobachtungsstudien.</p>
+    ${srcList(["teixeira2012"])}
+    <button class="btn primary block" data-a="whySave">Speichern</button>`;
+}
+// Hinweise für den Buddy
+function goalHint(day) {
+  const recent = (state.goals || []).find(g => g.done && (Date.now() - new Date(g.done)) / 864e5 <= 3);
+  if (recent) { const st = goalStatus(recent); return ` Ziel erreicht: ${kgTxt(recent.target)} ${st.unit} – ${st.name}.`; }
+  if (!day) return "";
+  const g = (state.goals || []).find(x => !x.done && x.kind === "kraft" && day.items.some(i => i.exId === x.exId));
+  if (!g) return "";
+  const st = goalStatus(g);
+  return ` Heute ist die ${st.name} dran – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
+}
+
 /* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
 // Grundlage: Wenn-dann-Pläne (wann/wo trainiere ich, was tue ich bei Hindernissen) erhöhen im Mittel die Umsetzung
 // (Gollwitzer & Sheeran 2006; für Bewegung Bélanger-Gravel 2013, Effekt größer mit Plan für Hindernisse).
@@ -3368,8 +3474,10 @@ function buddySays(day, thisWeek, goal, streak) {
     act.push(["openSched", "Termine festlegen"]);
   } else { title = "Heute ist trainingsfrei"; text = `${nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""}${goalTxt}`; }
   if (streak >= 2) text += ` ${streak} Wochen in Folge geschafft.`;
-  const pr = lastPR();
-  if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
+  const gh = goalHint(trainedOn(now) ? null : day), pr = lastPR();
+  if (gh) text += gh;
+  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
+  if (state.why && last && !trainedOn(now) && (now - new Date(last.date)) / 864e5 >= 4) text += ` Dein Warum: „${state.why}“.`;
   return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
     ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}
       ${s ? `<button class="link small" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
@@ -3479,6 +3587,8 @@ function vSummary() {
     ${state.watch ? `<div class="note" id="watchEnd"><div class="cap">Apple Watch</div><p class="small">Training auf der Watch beenden: nach rechts wischen und „Beenden“ tippen. Puls, Kalorien und Dauer speichert die Watch in Health.</p></div>` : ""}
     ${state.health && !state.watch ? `<section class="section" id="hkBox"><button class="btn block" data-a="sendHealth" data-id="${r.id}">In Apple Health eintragen</button>
       <p class="small faint">Übergibt an den Kurzbefehl „${HK_NAME}“: ${healthTxt(r)}</p></section>` : ""}
+    ${sm.goals && sm.goals.length ? `<section class="section" id="goalDone"><h2>Ziel erreicht</h2><div class="group">${sm.goals.map(g => { const st = goalStatus(g);
+      return `<div class="li"><div class="grow"><div class="t">${esc(st.name)}</div><div class="s">${kgTxt(g.start)} → ${kgTxt(g.target)} ${st.unit} seit ${fmtDay(g.startDate)}</div></div><span class="badge up">Geschafft</span></div>`; }).join("")}</div></section>` : ""}
     ${prs.length ? `<section class="section"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
       `<div class="li"><div class="grow t">${esc(p.name)}</div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div></section>` : ""}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
@@ -3490,6 +3600,7 @@ function vSummary() {
 
 /* ================= Verlauf ================= */
 function vHistory() {
+  checkGoals();
   const H = state.history;
   const now = new Date(); const dow = (now.getDay() + 6) % 7;
   const mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - dow);
@@ -3537,6 +3648,7 @@ function vHistory() {
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
+    ${goalsHtml()}
     ${H.length ? `
     <section class="section">
       <div class="section-head"><h2>Häufigkeit</h2><span class="small muted">${monthCount} ${monthCount === 1 ? "Tag" : "Tage"} im ${cm.toLocaleDateString("de-DE", { month: "long" })}</span></div>
@@ -3878,6 +3990,29 @@ const A = {
     save(); closeSheet(); render();
   },
   openSettings: () => go("settings"),
+  goalAdd: () => { const used = [...state.history].reverse().flatMap(h => h.exercises.map(x => x.exId)); goalDraft = { kind: "kraft", exId: used[0] || allEx()[0].id, target: null, date: null }; openSheet(goalSheet()); },
+  goalEdit: el => { const g = state.goals.find(x => x.id === el.dataset.id); if (!g) return; goalDraft = JSON.parse(JSON.stringify(g)); openSheet(goalSheet()); },
+  gKind: el => { goalDraft.kind = el.dataset.v; goalDraft.target = null; goalRefresh(); },
+  goalSave: () => {
+    const d = goalDraft, target = num(byId("gTarget").value), date = byId("gDate").value || null, err = byId("gErr"), fail = m => { err.textContent = m; err.hidden = false; };
+    if (d.kind === "kraft") {
+      const exId = d.id ? d.exId : byId("gEx").value, e = ex(exId), u = d.id ? d.u : unitOf(e), best = bestKg(exId, u);
+      if (!(target > 0 && target <= 1000)) return fail("Bitte ein Zielgewicht eingeben.");
+      if (!d.id && best !== null && target <= best) return fail(`Das Ziel sollte über deinem Bestwert von ${kgTxt(best)} kg liegen.`);
+      if (d.id) Object.assign(state.goals.find(x => x.id === d.id), { target, date, done: null });
+      else state.goals.push({ id: uid(), kind: "kraft", exId, u, target, start: best ?? 0, startDate: new Date().toISOString(), date, done: null });
+    } else {
+      const w = lastWeight(); if (!w) return fail("Trag zuerst dein Gewicht unter Fortschritt → Körpergewicht ein.");
+      if (!(target >= 30 && target <= 300)) return fail("Bitte ein Zielgewicht zwischen 30 und 300 kg eingeben.");
+      if (!d.id && Math.abs(target - w.kg) < 0.1) return fail("Das Ziel entspricht deinem aktuellen Gewicht.");
+      if (d.id) Object.assign(state.goals.find(x => x.id === d.id), { target, date, done: null });
+      else state.goals.push({ id: uid(), kind: "gewicht", target, start: w.kg, startDate: new Date().toISOString(), date, done: null });
+    }
+    state.goals = cleanGoals(state.goals); save(); closeSheet(); render();
+  },
+  goalDel: () => { state.goals = state.goals.filter(x => x.id !== goalDraft.id); save(); closeSheet(); render(); },
+  whyEdit: () => openSheet(whySheet()),
+  whySave: () => { state.why = byId("whyIn").value.trim().slice(0, 160); save(); closeSheet(); render(); },
   openSched: () => { const n = state.plan ? state.plan.days.length : 3;
     const def = [[0], [0], [0, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 3, 4], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5, 6]][Math.min(7, n)];
     schedDraft = state.sched ? JSON.parse(JSON.stringify(state.sched)) : { days: def, time: "18:00", planB: "next" }; openSheet(schedSheet()); },
@@ -4019,6 +4154,7 @@ const A = {
   devRelabelBack: () => openSheet(devSheetHtml()),
   devRelabel: () => { const d = devDraft, tu = draftUnit(d);
     state.history.forEach(h => h.exercises.forEach(x => { if (x.exId === d.id) x.u = tu; }));
+    (state.goals || []).forEach(g => { if (g.kind === "kraft" && g.exId === d.id) g.u = tu; });
     const base = state.dev[d.id] || {};
     state.dev[d.id] = Object.assign({}, base, { type: d.type, load: d.type === "stack" ? "total" : d.load });
     save(); openSheet(devSheetHtml()); },
@@ -4094,6 +4230,7 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
+  else if (k === "gEx") { goalDraft.exId = el.value; goalDraft.target = null; goalRefresh(); }
   else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
   else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }
   else if (k === "nutrIn") { readNutrInputs(); byId("nutrOut").innerHTML = nutrOutHtml(); }
@@ -4128,7 +4265,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

@@ -11,9 +11,11 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bringt und dabei begleitet:
 
 - **Feste Termine mit Plan B:** Tage und Uhrzeit festlegen, dazu ein Plan B für Hindernisse (am nächsten Tag nachholen oder 30-Minuten-Version). Grundlage: Wenn-dann-Pläne verbessern im Mittel die Umsetzung (Gollwitzer & Sheeran 2006; Sheeran et al. 2025), für Bewegung kleiner bis mittlerer Effekt, stärker mit Plan für Hindernisse (Bélanger-Gravel et al. 2013). Als wöchentliche Serie mit Erinnerung 30 Minuten vorher in den iPhone-Kalender (.ics)
-- **Buddy auf „Heute“:** persönliche Nachricht aus deinen Daten – heutiger Termin, verpasster Termin mit Plan B, lange Pause mit Kurzversion, erledigt mit Sätzen und nächstem Termin, Wochenziel, Serie, frische Bestwerte
+- **Buddy auf „Heute“:** persönliche Nachricht aus deinen Daten – heutiger Termin, verpasster Termin mit Plan B, lange Pause mit Kurzversion, erledigt mit Sätzen und nächstem Termin, Wochenziel, Serie, frische Bestwerte, Ziel-Hinweise („Heute ist die Chest Press dran – noch 5 kg bis 50 kg pro Seite“), nach 4 Tagen ohne Training dein „Warum“
+- **Deine Ziele (Fortschritt):** Kraftziel an einem Gerät (in dessen Gewichtsangabe) oder Körpergewichts-Ziel, optional mit Zieldatum. Fortschrittsbalken, Rest und Schätzung aus deinem bisherigen Tempo: Ausgleichsgerade über die besten Satzgewichte der letzten 8 Wochen (mind. 3 Einheiten über 14 Tage) bzw. über den Gewichtsverlauf; ohne genug Daten keine Schätzung. Hinweis, dass der Zuwachs vom Trainingsstand abhängt (ACSM 2009). Erreichte Ziele werden in der Zusammenfassung nach dem Training und vom Buddy gefeiert
+- **Dein Warum:** ein Satz, warum du trainierst; Grundlage: autonome Motivation hängt mit mehr Bewegung zusammen, überwiegend Beobachtungsstudien (Teixeira et al. 2012)
 - **Buddy-Check im Training:** Sätze pro Muskel und Woche gegen den Richtwert (wie Muskelbelastung; mit der Zahl der Termine), fehlende Muskelgruppen mit „+ Übung“ (öffnet die passende Übungsauswahl), Tage über dem Zeitbudget
-- **Sprachbegleitung im Training** (optional, im Gerät, ohne Internet): Übung, Satz, Gewicht, Wiederholungsziel, Pause, „Noch zehn Sekunden“, neue Bestwerte, Trainingsende
+- **Sprachbegleitung im Training** (optional, im Gerät, ohne Internet): Übung, Satz, Gewicht, Wiederholungsziel, Pause, „Noch zehn Sekunden“, neue Bestwerte, Trainingsende, erreichte Ziele
 - **Artikel „Warum feste Termine helfen“** mit Quellen, inklusive Gewohnheitsbildung (Lally et al. 2010: 18–254 Tage, ein ausgelassener Tag wirft nicht zurück)
 
 ## Aufbau
@@ -24,7 +26,7 @@ Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, ver
 - **Training:** Trainingstage und Erholung; Zahnrad → Einstellungen (Geräte, Wasser/Fasten an/aus, Apple Health/Watch, neuer Plan, Sicherung)
 - **Wissen:** Übungsbibliothek und Artikel (Training, Ernährung, Gesundheit)
 - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
-- **Fortschritt:** Wochenrückblick, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
+- **Fortschritt:** Wochenrückblick, deine Ziele und dein Warum, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
 
 ## Funktionen
 

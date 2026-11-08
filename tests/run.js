@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v23)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v23")));
+      ok("Service Worker aktiv (Cache trainingsplan-v24)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v24")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1902,7 +1902,105 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("33. Konsole");
+    section("33. Ziele und „Dein Warum“");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const cg = await tp(page, () => { const c = window.__tp.cleanGoals; const ok1 = { kind: "kraft", exId: "hs-chest", target: 50, start: 40, startDate: "2026-01-01T10:00:00Z" };
+        return [c([ok1, { kind: "x", target: 50, start: 0 }, { kind: "kraft", exId: "hs-chest", target: 0, start: 0 }, { kind: "gewicht", target: 20, start: 80 }, { kind: "gewicht", target: 75, start: 80, date: "kein Datum" }, null]),
+          c(Array.from({ length: 14 }, () => ok1)).length, c("x")]; });
+      ok("Ziele bereinigt (ungültige Art, Ziel 0 und Gewicht unter 30 kg entfernt, ungültiges Datum geleert)", cg[0].length === 2 && cg[0][0].u === "t" && cg[0][1].kind === "gewicht" && cg[0][1].date === null && cg[1] === 10 && Array.isArray(cg[2]) && cg[2].length === 0, JSON.stringify(cg[0]));
+      await ctx.close();
+    }
+    {
+      // Kraftziel mit Tempo aus den letzten Wochen: 40 → 42,5 → 45 kg pro Seite in drei Wochen
+      const { ctx, page } = await open({ plan: PLAN_SMALL, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 20, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 13, "s"), hist("hs-chest", [{ kg: 45, reps: 9 }, { kg: 45, reps: 8 }], 6, "s")] });
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Fortschritt: Bereich „Deine Ziele“ mit Einladung", await page.isVisible("#goals") && (await page.textContent("#goals")).includes("Noch keine Ziele") && await page.isVisible("#whyAdd"));
+      await page.click("#goals [data-a=goalAdd]");
+      ok("Neues Ziel: zuletzt trainiertes Gerät vorgewählt, Bestwert angezeigt", (await page.$eval("#gEx", s => s.value)) === "hs-chest" && (await page.textContent("#gBest")).includes("Dein Bestwert: 45 kg pro Seite"));
+      await page.selectOption("#gEx", "hs-legpress");
+      ok("Gerät gewechselt: ohne Eintrag kein Bestwert, Einheit passt", (await page.textContent("#gBest")).includes("Noch kein Eintrag") && (await page.textContent("label[for=gTarget]")).includes("kg insgesamt"));
+      await page.selectOption("#gEx", "hs-chest");
+      await page.fill("#gTarget", "40"); await page.click("[data-a=goalSave]");
+      ok("Ziel unter dem Bestwert wird abgelehnt", await page.isVisible("#gErr") && (await page.textContent("#gErr")).includes("über deinem Bestwert von 45 kg"));
+      await page.fill("#gTarget", "50"); await page.click("[data-a=goalSave]");
+      let st = await stored(page);
+      ok("Kraftziel gespeichert (Start 45, Ziel 50 kg pro Seite)", st.goals.length === 1 && st.goals[0].kind === "kraft" && st.goals[0].exId === "hs-chest" && st.goals[0].u === "s" && st.goals[0].start === 45 && st.goals[0].target === 50 && !st.goals[0].done && !await page.$(".sheet"));
+      const gs = await tp(page, () => { const s = window.__tp.goalStatus(window.__tp.state.goals[0]); return { cur: s.cur, pct: s.pct, left: s.left, days: s.eta ? (s.eta - Date.now()) / 864e5 : null }; });
+      ok("Schätzung aus dem Tempo: 2,5 kg pro Woche → 5 kg in etwa 14 Tagen", gs.cur === 45 && gs.pct === 0 && gs.left === 5 && gs.days !== null && Math.abs(gs.days - 14) < 0.5, JSON.stringify(gs));
+      const gt = await page.textContent("#goals");
+      ok("Zielzeile: Stand, Rest und Schätzung mit Hinweis auf den Trainingsstand", gt.includes("Iso-Lateral Chest Press") && gt.includes("45 → 50 kg pro Seite") && gt.includes("Noch 5 kg") && gt.includes("bei deinem Tempo etwa") && gt.includes("hängt vom Trainingsstand ab"));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Buddy: „Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite.“", (await page.textContent("#buddy")).includes("Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite."));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#whyAdd");
+      ok("Warum: Hinweis mit Quelle (Teixeira 2012)", (await page.textContent(".sheet")).includes("Teixeira PJ") && (await page.textContent(".sheet")).includes("Beobachtungsstudien"));
+      await page.fill("#whyIn", "  Fit bleiben für meine Familie  "); await page.click("[data-a=whySave]");
+      ok("Warum gespeichert und angezeigt", (await stored(page)).why === "Fit bleiben für meine Familie" && (await page.textContent("#whyLine")).includes("„Fit bleiben für meine Familie“"));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Buddy erinnert nach 6 Tagen Pause an das Warum", (await page.textContent("#buddy")).includes("Dein Warum: „Fit bleiben für meine Familie“."));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#goals [data-a=goalEdit]");
+      ok("Bearbeiten: Gerät fest, Zielgewicht vorausgefüllt", (await page.textContent(".sheet")).includes("Ziel bearbeiten") && await page.$eval("#gEx", s => s.disabled) && (await page.$eval("#gTarget", i => i.value)) === "50");
+      await page.fill("#gTarget", "47,5"); await page.fill("#gDate", "2099-12-31"); await page.click("[data-a=goalSave]");
+      st = await stored(page);
+      ok("Ziel geändert (47,5 kg, Zieldatum)", st.goals.length === 1 && st.goals[0].target === 47.5 && st.goals[0].date === "2099-12-31" && st.goals[0].start === 45);
+      ok("Zieldatum mit Einordnung („auf Kurs“)", (await page.textContent("#goals")).includes("Zieldatum 31. Dezember") && (await page.textContent("#goals")).includes("(auf Kurs)"));
+      for (const light of [false, true]) {
+        await page.emulateMedia({ colorScheme: light ? "light" : "dark" });
+        const a = await noOverflow(page); await page.click("#goals [data-a=goalAdd]"); const b = await noOverflow(page); await page.keyboard.press("Escape");
+        ok(`360 px ${light ? "hell" : "dunkel"}: Ziele und Zielformular ohne seitliches Scrollen`, a && b);
+      }
+      // Ziel im Training erreichen
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      await page.fill("#kgIn", "47,5"); await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      st = await stored(page);
+      const said = await tp(page, () => window.__tp.said);
+      ok("Zusammenfassung: „Ziel erreicht“ mit Start und Ziel", await page.isVisible("#goalDone") && (await page.textContent("#goalDone")).includes("45 → 47,5 kg pro Seite") && (await page.textContent("#goalDone")).includes("Geschafft"));
+      ok("Ziel als erreicht gespeichert, Ansage „Training geschafft. Ziel erreicht!“", !!st.goals[0].done && said[said.length - 1] === "Training geschafft. Ziel erreicht!", said.slice(-2).join(" | "));
+      await page.click(".actionbar [data-a=tab][data-v=home]");
+      ok("Buddy feiert das Ziel", (await page.textContent("#buddy")).includes("Ziel erreicht: 47,5 kg pro Seite – Iso-Lateral Chest Press."));
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Erreichtes Ziel in der Liste („Erreicht am …“)", (await page.textContent("#goals")).includes("Erreicht am"));
+      await page.reload();
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Nach Neuladen: Ziel und Warum bleiben erhalten, kein zweites „erreicht“", (await stored(page)).goals[0].done === st.goals[0].done && (await page.textContent("#whyLine")).includes("Fit bleiben"));
+      await page.click("#goals [data-a=goalEdit]"); await page.click("[data-a=goalDel]");
+      ok("Ziel gelöscht", (await stored(page)).goals.length === 0 && (await page.textContent("#goals")).includes("Noch keine Ziele"));
+      await ctx.close();
+    }
+    {
+      // Körpergewicht: −1,7 kg in drei Wochen, Ziel 78 kg
+      const pad = n => String(n).padStart(2, "0"), dd = n => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#goals [data-a=goalAdd]"); await page.click("#gKind [data-v=gewicht]");
+      ok("Körpergewicht ohne Einträge: Hinweis auf Fortschritt → Körpergewicht", (await page.textContent(".sheet")).includes("Trag zuerst dein Gewicht"));
+      await page.fill("#gTarget", "78"); await page.click("[data-a=goalSave]");
+      ok("… und Speichern wird abgelehnt", await page.isVisible("#gErr") && ((await stored(page)).goals || []).length === 0);
+      await page.keyboard.press("Escape");
+      await tp(page, w => { window.__tp.state.weights = w; }, [[21, 82], [14, 81.4], [7, 80.9], [1, 80.3]].map(([n, kg]) => ({ d: dd(n), kg })));
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]");
+      await page.click("#goals [data-a=goalAdd]"); await page.click("#gKind [data-v=gewicht]");
+      ok("Aktuelles Gewicht angezeigt", (await page.textContent(".sheet")).includes("Aktuell: 80,3 kg"));
+      await page.fill("#gTarget", "78"); await page.click("[data-a=goalSave]");
+      const st = await stored(page);
+      const gs = await tp(page, () => { const s = window.__tp.goalStatus(window.__tp.state.goals[0]); return { pct: s.pct, left: s.left, days: s.eta ? (s.eta - Date.now()) / 864e5 : null, reached: s.reached }; });
+      ok("Gewichtsziel gespeichert (Start 80,3, Ziel 78) mit Schätzung aus dem Gewichtsverlauf", st.goals[0].kind === "gewicht" && st.goals[0].start === 80.3 && st.goals[0].target === 78 && !gs.reached && Math.abs(gs.left - 2.3) < 1e-9 && gs.days > 14 && gs.days < 60, JSON.stringify(gs));
+      ok("Zielzeile Körpergewicht", (await page.textContent("#goals")).includes("Körpergewicht") && (await page.textContent("#goals")).includes("80,3 → 78 kg"));
+      await tp(page, d => { window.__tp.state.weights.push({ d, kg: 77.9 }); }, dd(0));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Gewicht erreicht: Buddy meldet es", (await page.textContent("#buddy")).includes("Ziel erreicht: 78 kg – Körpergewicht.") && !!(await stored(page)).goals[0].done);
+      await ctx.close();
+    }
+    {
+      // Gerät auf „insgesamt“ umgestellt: Ziel zieht mit
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s")], goals: [{ id: "g1", kind: "kraft", exId: "hs-chest", u: "s", target: 50, start: 40, startDate: new Date().toISOString() }] });
+      const r = await tp(page, () => { const T = window.__tp; T.state.history.forEach(h => h.exercises.forEach(x => { x.u = "t"; })); return T.goalStatus(T.state.goals[0]).cur; });
+      ok("Ziel ohne passende Einträge fällt auf den Startwert zurück", r === 40);
+      await ctx.close();
+    }
+
+    section("34. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
