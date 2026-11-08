@@ -2688,8 +2688,8 @@ async function fetchJSON(url, ms = 12000) {
 const OFF_FIELDS = "code,product_name,product_name_de,brands,nutriments,serving_quantity";
 const offSearchUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
 const offProductUrl = code => `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${OFF_FIELDS}`;
-const offErr = () => navigator.onLine === false ? "Keine Internetverbindung. Grundnahrungsmittel und eigene Lebensmittel funktionieren auch offline."
-  : "Open Food Facts ist gerade nicht erreichbar oder ausgelastet. Bitte in einer Minute erneut versuchen.";
+const offErr = search => navigator.onLine === false ? "Keine Internetverbindung. Grundnahrungsmittel und eigene Lebensmittel funktionieren auch offline."
+  : "Open Food Facts ist gerade nicht erreichbar oder ausgelastet. Bitte in einer Minute erneut versuchen." + (search ? " Die Barcode-Abfrage nutzt eine andere Schnittstelle und funktioniert oft trotzdem." : "");
 
 function nutrOutHtml() {
   const d = nutrDraft, G = calcGoals(d, d.kg);
@@ -3122,7 +3122,7 @@ const A = {
       const uniq = (Array.isArray(r.products) ? r.products : []).filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
       foodCtx.off = uniq.map(offFood).filter(Boolean).slice(0, 20); foodCtx.offMsg = "";
     }
-    catch (e) { foodCtx.off = null; foodCtx.offMsg = offErr(); }
+    catch (e) { foodCtx.off = null; foodCtx.offMsg = offErr(true); }
     if (foodCtx.q.trim() === q && box()) box().innerHTML = offHtml();
   },
   openNutr: () => { const w = lastWeight(); nutrDraft = Object.assign({ sex: "m", age: null, cm: null, pal: 1.55, goal: "halten", kcal: null }, state.nutr || {}, { kg: w ? w.kg : null }); openSheet(nutrSheet()); },

@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v14)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v14")));
+      ok("Service Worker aktiv (Cache trainingsplan-v15)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v15")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1326,7 +1326,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Online-Produkt gespeichert mit Quelle", (await stored(page)).food[today].some(e => e.src === "off:4061458014151" && e.g === 250));
       mode = "down"; await page.click("[data-a=foodAdd][data-m=f]"); await page.fill("#foodQ", "skyr"); await page.click("#offBtn");
       await page.waitForFunction(() => (document.querySelector("#offRes")?.textContent || "").includes("erneut"));
-      ok("Server ausgelastet: verständliche Meldung statt Fehler", (await page.textContent("#offRes")).includes("nicht erreichbar"));
+      ok("Server ausgelastet: verständliche Meldung mit Hinweis auf den Barcode", (await page.textContent("#offRes")).includes("nicht erreichbar") && (await page.textContent("#offRes")).includes("Barcode"));
       mode = "ok"; await page.keyboard.press("Escape");
       // Barcode
       await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]");
