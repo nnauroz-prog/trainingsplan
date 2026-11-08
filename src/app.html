@@ -371,35 +371,35 @@ const MUSCLES = {
 };
 // [id, Name, Hauptmuskel, Nebenmuskeln, Gerätetyp] – Hammer Strength
 const LIB = [
-  ["hs-chest","Iso-Lateral Chest Press","brust",["trizeps","schultern"],"plate"],
-  ["hs-incline","Iso-Lateral Incline Press","brust",["schultern","trizeps"],"plate"],
-  ["hs-decline","Iso-Lateral Decline Press","brust",["trizeps"],"plate"],
-  ["hs-widechest","Iso-Lateral Wide Chest","brust",["schultern"],"plate"],
-  ["hs-fly","Pec Fly","brust",["schultern"],"stack"],
-  ["hs-row","Iso-Lateral Row","ruecken",["bizeps","schultern"],"plate"],
-  ["hs-lowrow","Iso-Lateral Low Row","ruecken",["bizeps"],"plate"],
-  ["hs-highrow","Iso-Lateral High Row","ruecken",["bizeps","schultern"],"plate"],
-  ["hs-pulldown","Iso-Lateral Front Lat Pulldown","ruecken",["bizeps"],"plate"],
-  ["hs-dyrow","Iso-Lateral D.Y. Row","ruecken",["bizeps"],"plate"],
-  ["hs-lat","Lat Pulldown","ruecken",["bizeps"],"stack"],
-  ["hs-shoulder","Iso-Lateral Shoulder Press","schultern",["trizeps"],"plate"],
-  ["hs-lateral","Lateral Raise","schultern",[],"plate"],
-  ["hs-reardelt","Rear Delt","schultern",["ruecken"],"stack"],
-  ["hs-curl","Biceps Curl","bizeps",[],"plate"],
-  ["hs-dip","Seated Dip","trizeps",["brust","schultern"],"plate"],
-  ["hs-triext","Triceps Extension","trizeps",[],"stack"],
-  ["hs-legpress","Linear Leg Press","beinev",["po","beineh"],"plate"],
-  ["hs-isolegpress","Iso-Lateral Leg Press","beinev",["po"],"plate"],
-  ["hs-vsquat","V-Squat","beinev",["po"],"plate"],
-  ["hs-hack","Hack Squat","beinev",["po"],"plate"],
-  ["hs-legext","Iso-Lateral Leg Extension","beinev",[],"plate"],
-  ["hs-kneelcurl","Iso-Lateral Kneeling Leg Curl","beineh",[],"plate"],
-  ["hs-seatcurl","Seated Leg Curl","beineh",[],"stack"],
-  ["hs-hipthrust","Hip Thrust","po",["beineh"],"plate"],
-  ["hs-calf","Standing Calf Raise","waden",[],"plate"],
-  ["hs-seatcalf","Seated Calf Raise","waden",[],"plate"],
-  ["hs-ab","Ab Crunch","bauch",[],"stack"]
-].map(([id,name,muscle,sec,type]) => ({ id, name, muscle, sec, type }));
+  ["hs-chest","Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Chest Press"],
+  ["hs-incline","Schräge Brustpresse","brust",["schultern","trizeps"],"plate","Iso-Lateral Incline Press"],
+  ["hs-decline","Negativ-Brustpresse","brust",["trizeps"],"plate","Iso-Lateral Decline Press"],
+  ["hs-widechest","Brustpresse breit","brust",["schultern"],"plate","Iso-Lateral Wide Chest"],
+  ["hs-fly","Butterfly","brust",["schultern"],"stack","Pec Fly"],
+  ["hs-row","Rudern","ruecken",["bizeps","schultern"],"plate","Iso-Lateral Row"],
+  ["hs-lowrow","Rudern tief","ruecken",["bizeps"],"plate","Iso-Lateral Low Row"],
+  ["hs-highrow","Rudern von oben","ruecken",["bizeps","schultern"],"plate","Iso-Lateral High Row"],
+  ["hs-pulldown","Latziehen zur Brust","ruecken",["bizeps"],"plate","Iso-Lateral Front Lat Pulldown"],
+  ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps"],"plate","Iso-Lateral D.Y. Row"],
+  ["hs-lat","Latzug","ruecken",["bizeps"],"stack","Lat Pulldown"],
+  ["hs-shoulder","Schulterpresse","schultern",["trizeps"],"plate","Iso-Lateral Shoulder Press"],
+  ["hs-lateral","Seitheben","schultern",[],"plate","Lateral Raise"],
+  ["hs-reardelt","Hintere Schulter","schultern",["ruecken"],"stack","Rear Delt"],
+  ["hs-curl","Armbeuger","bizeps",[],"plate","Biceps Curl"],
+  ["hs-dip","Trizepsdrücken","trizeps",["brust","schultern"],"plate","Seated Dip"],
+  ["hs-triext","Armstrecker","trizeps",[],"stack","Triceps Extension"],
+  ["hs-legpress","Beinpresse","beinev",["po","beineh"],"plate","Linear Leg Press"],
+  ["hs-isolegpress","Beinpresse getrennt","beinev",["po"],"plate","Iso-Lateral Leg Press"],
+  ["hs-vsquat","V-Kniebeuge","beinev",["po"],"plate","V-Squat"],
+  ["hs-hack","Hackenschmidt","beinev",["po"],"plate","Hack Squat"],
+  ["hs-legext","Beinstrecker","beinev",[],"plate","Iso-Lateral Leg Extension"],
+  ["hs-kneelcurl","Beinbeuger kniend","beineh",[],"plate","Iso-Lateral Kneeling Leg Curl"],
+  ["hs-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl"],
+  ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Hip Thrust"],
+  ["hs-calf","Wadenheben stehend","waden",[],"plate","Standing Calf Raise"],
+  ["hs-seatcalf","Wadenheben sitzend","waden",[],"plate","Seated Calf Raise"],
+  ["hs-ab","Bauchmaschine","bauch",[],"stack","Ab Crunch"]
+].map(([id,name,muscle,sec,type,label]) => ({ id, name, muscle, sec, type, label }));
 
 // Bewegungsmuster: Grundlage für fachlich passende Alternativen (nicht „identisch“, nur vergleichbar)
 // rel = verwandte Muster: gleicher Muskel, aber anderer Belastungsschwerpunkt
@@ -500,9 +500,9 @@ const ARTICLES = [
   { id: "rir", title: "Wie nah ans Limit? Wiederholungen in Reserve",
     lead: "Für Muskelaufbau lohnt es sich, Sätze nah an das Limit zu führen. Für Kraft scheint das weniger wichtig zu sein.",
     body: [
-      "RIR (Repetitions in Reserve) beschreibt, wie viele saubere Wiederholungen du noch geschafft hättest. RIR 0 heißt: keine weitere saubere Wiederholung möglich.",
-      "Eine Auswertung zahlreicher Studien von 2024 fand: Der Muskelzuwachs nahm zu, je näher die Sätze am Muskelversagen lagen. Die Kraftzuwächse waren über einen weiten Bereich ähnlich. Die Autoren betonen, dass die Analyse explorativ ist und RIR-Schätzungen ungenau sein können.",
-      "In der App kannst du RIR freiwillig pro Satz angeben. Viel Reserve (RIR 3 oder mehr) in allen Sätzen spricht für eine Steigerung, ein letzter Satz mit RIR 0 dagegen."
+      "Die Reserve beschreibt, wie viele saubere Wiederholungen du noch geschafft hättest (in Studien „RIR“, Repetitions in Reserve). Reserve 0 heißt: keine weitere saubere Wiederholung möglich.",
+      "Eine Auswertung zahlreicher Studien von 2024 fand: Der Muskelzuwachs nahm zu, je näher die Sätze am Muskelversagen lagen. Die Kraftzuwächse waren über einen weiten Bereich ähnlich. Die Autoren betonen, dass die Analyse explorativ ist und Schätzungen der Reserve ungenau sein können.",
+      "In der App kannst du die Reserve freiwillig pro Satz angeben. Viel Reserve (3 oder mehr) in allen Sätzen spricht für eine Steigerung, ein letzter Satz ohne Reserve dagegen."
     ], src: ["rir2024"] },
   { id: "pause", title: "Warum sich längere Pausen lohnen können",
     lead: "Wer zwischen den Sätzen genug pausiert, schafft im nächsten Satz meist mehr Wiederholungen oder Gewicht.",
@@ -592,7 +592,7 @@ const M = {
   rect: "Gerader Bauchmuskel (M. rectus abdominis)",
   obl: "Schräge Bauchmuskeln (Mm. obliqui externus und internus abdominis)"
 };
-const ISO = "Iso-Lateral: Beide Arme bewegen sich unabhängig voneinander. Du kannst beidseitig, einarmig oder abwechselnd trainieren. Weil keine Seite die andere mitzieht, werden Kraftunterschiede zwischen links und rechts sichtbar.";
+const ISO = "Getrennte Seiten (am Gerät „Iso-Lateral“): Beide Arme bewegen sich unabhängig voneinander. Du kannst beidseitig, einarmig oder abwechselnd trainieren. Weil keine Seite die andere mitzieht, werden Kraftunterschiede zwischen links und rechts sichtbar.";
 const ONEARM = "Einarmig trainieren: Den freien Arm in der Ausgangsposition lassen und den Rumpf ruhig halten.";
 const ROW1 = "Einarmig trainieren: Den Oberkörper nicht mitdrehen, die Brust bleibt gerade am Polster.";
 const BREATH_PUSH = "Beim Drücken ausatmen, beim kontrollierten Zurückführen einatmen. Die Luft nicht über mehrere Wiederholungen anhalten – besonders bei Bluthochdruck ist langes Pressatmen zu vermeiden.";
@@ -639,7 +639,7 @@ const GUIDE = {
     breath: BREATH_PUSH,
     mistakes: [["Zu weit nach hinten in eine unangenehme Schulterdehnung", "Nur so weit zurück, wie es schmerzfrei bleibt."], ["Handgelenke knicken ab", "Handgelenke in Verlängerung der Unterarme halten."], ["Schultern rollen nach vorn", "Schulterblätter leicht zurück und unten halten, die Brust bleibt aufgerichtet."], ["Gewicht fällt in die Dehnung", "Den Rückweg 2–3 Sekunden kontrollieren und am Umkehrpunkt nicht federn."]],
     safety: ["Breite Armführung belastet die Schulter in der Dehnung stärker. Bei Beschwerden lieber die klassische Brustpresse wählen."],
-    tips: [ISO, "Wide Chest und klassische Brustpresse gehören zum selben Bewegungsmuster (horizontales Drücken). Für Abwechslung kannst du sie über die Wochen tauschen.", ONEARM]
+    tips: [ISO, "Breite und klassische Brustpresse gehören zum selben Bewegungsmuster (horizontales Drücken). Für Abwechslung kannst du sie über die Wochen tauschen.", ONEARM]
   },
   "hs-fly": {
     main: [M.pec], sup: [M.dAnt],
@@ -932,8 +932,8 @@ const GOALS = {
 const TEMPLATES = {
   2:[["Ganzkörper A",["hs-chest","hs-row","hs-legpress","hs-shoulder","hs-seatcurl","hs-ab"]],
      ["Ganzkörper B",["hs-incline","hs-pulldown","hs-hack","hs-lateral","hs-dip","hs-calf"]]],
-  3:[["Push",["hs-chest","hs-incline","hs-shoulder","hs-lateral","hs-dip"]],
-     ["Pull",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl"]],
+  3:[["Drücken",["hs-chest","hs-incline","hs-shoulder","hs-lateral","hs-dip"]],
+     ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl"]],
      ["Beine",["hs-legpress","hs-hack","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]]],
   4:[["Oberkörper A",["hs-chest","hs-row","hs-shoulder","hs-pulldown","hs-curl","hs-dip"]],
      ["Unterkörper A",["hs-legpress","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]],
@@ -959,7 +959,7 @@ function devFrom(s, id) {
   const d = Object.assign({ sec: [] }, b, (s.dev || {})[id] || {});
   d.base = b;
   if (d.type === "stack") d.load = "total";
-  else if (d.load !== "side" && d.load !== "total") d.load = /Iso-Lateral/.test(b.name) ? "side" : "total";
+  else if (d.load !== "side" && d.load !== "total") d.load = /Iso-Lateral/.test(b.label || b.name) ? "side" : "total";
   if (!(d.step > 0)) d.step = d.type === "stack" ? 5 : d.load === "side" ? (SMALL.has(d.muscle) ? 1.25 : 2.5) : 5;
   d.sec = (d.sec || []).filter(m => MUSCLES[m] && m !== d.muscle);
   d.pattern = PATTERNS[d.pattern] ? d.pattern : null;
@@ -969,6 +969,7 @@ function devFrom(s, id) {
 // Einheit: s = Scheiben pro Seite, t = Scheiben insgesamt, b = Steckgewicht am Block
 const unitOf = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
 
+function dayDe(n) { return n === "Push" ? "Drücken" : n === "Pull" ? "Ziehen" : n; }
 function cleanPlan(pl) {
   if (!isObj(pl) || !Array.isArray(pl.days)) return null;
   return {
@@ -976,7 +977,7 @@ function cleanPlan(pl) {
     level: pl.level === "fortgeschritten" ? "fortgeschritten" : "einsteiger",
     minutes: clampInt(pl.minutes, 0, 300, 0) || null,
     days: pl.days.filter(d => isObj(d) && Array.isArray(d.items)).map(d => ({
-      id: String(d.id || uid()), name: String(d.name || "Trainingstag").slice(0, 60),
+      id: String(d.id || uid()), name: dayDe(String(d.name || "Trainingstag").slice(0, 60)),
       items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
         return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
           rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
@@ -1011,12 +1012,12 @@ function normalize(raw) {
     if (Number.isInteger(t.rir) && t.rir >= 0 && t.rir <= 4) o.rir = t.rir; return o; };
   // Verlauf: nichts verwerfen, nur Typen absichern; fehlende Einheit einmalig aus dem damaligen Gerät festschreiben
   s.history = Array.isArray(raw.history) ? raw.history.filter(h => isObj(h) && Array.isArray(h.exercises)).map(h => ({
-    id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: String(h.day || "Training"),
+    id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: dayDe(String(h.day || "Training")),
     date: isNaN(new Date(h.date)) ? new Date().toISOString() : new Date(h.date).toISOString(),
     durationSec: clampInt(h.durationSec, 0, 86400, 0), adj: +h.adj > 0 ? clampInt(h.adj, 1, 300, 30) : undefined,
     hk: h.hk === true ? true : undefined,
     exercises: h.exercises.filter(x => isObj(x) && x.exId).map(x => ({
-      exId: String(x.exId), name: String(x.name || devFrom(s, String(x.exId)).name),
+      exId: String(x.exId), name: LIB.some(e => e.id === String(x.exId)) ? devFrom(s, String(x.exId)).name : String(x.name || devFrom(s, String(x.exId)).name),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
@@ -1443,37 +1444,52 @@ async function awake(on) {
         else if (!on && wl) { await wl.release(); wl = null; } } catch (e) {}
 }
 
-/* ================= Figur ================= */
+/* ================= Figur (Muskelkarte vorn und hinten) ================= */
+// Linke Körperhälfte als Pfade; die rechte entsteht gespiegelt. Vorderansicht x 0–100, Rückansicht x 110–210.
 const FIG = (() => {
-  const E = (m, cx, cy, rx, ry) => ({ m, s:`<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>` });
-  const R = (m, x, y, w, h, r) => ({ m, s:`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}"/>` });
-  const C = (m, cx, cy, r) => ({ m, s:`<circle cx="${cx}" cy="${cy}" r="${r}"/>` });
-  const body = o => [
-    C(null, 50+o, 13, 9), R(null, 46+o, 20, 8, 8, 3), R(null, 34+o, 29, 32, 60, 12),
-    E(null, 24+o, 83, 4, 11), E(null, 76+o, 83, 4, 11), C(null, 23+o, 97, 3.6), C(null, 77+o, 97, 3.6),
-    R(null, 36+o, 84, 28, 16, 7), E(null, 43+o, 172, 5, 3), E(null, 57+o, 172, 5, 3)
-  ];
-  const front = [...body(0),
-    E("schultern",32,38,7,6.5), E("schultern",68,38,7,6.5),
-    E("brust",43,47,8.5,7), E("brust",57,47,8.5,7),
-    E("bizeps",27,60,4.8,10), E("bizeps",73,60,4.8,10),
-    R("bauch",43.5,57,13,27,5),
-    E("beinev",43,115,7,19), E("beinev",57,115,7,19),
-    E("waden",43,152,4.5,14), E("waden",57,152,4.5,14)];
-  const back = [...body(100),
-    E("ruecken",150,34,10,5), E("schultern",132,38,7,6.5), E("schultern",168,38,7,6.5),
-    E("ruecken",141,53,9.5,15), E("ruecken",159,53,9.5,15),
-    E("trizeps",127,60,4.8,10), E("trizeps",173,60,4.8,10),
-    E("po",143,94,8.5,8), E("po",157,94,8.5,8),
-    E("beineh",143,119,7,16), E("beineh",157,119,7,16),
-    E("waden",143,150,5.5,12), E("waden",157,150,5.5,12)];
-  return front.concat(back);
+  const P = (m, d) => ({ m, d }), E = (m, cx, cy, rx, ry) => ({ m, e: [cx, cy, rx, ry] });
+  const front = [
+    P(null, "M45.5,27 C41,29 36,31 31.5,33.2 C36.5,34.6 41.5,34.6 45.5,33.4 Z"),
+    P("schultern", "M31,33.8 C25,34.4 21,38.6 20.6,45.2 C20.4,50 21.2,54 22.6,57 C25.6,51.8 28.6,46.2 33,41.6 C35.2,39.4 35,36 31,33.8 Z"),
+    P("brust", "M49.2,35.2 L49.2,53.2 C44,55.6 37.4,55.2 33.6,51.6 C31.6,49 31.6,44 33.9,40.4 C36.6,36.8 42.2,34.9 49.2,35.2 Z"),
+    P("bizeps", "M22.6,59.6 C20.6,64.2 20.1,70 20.9,75 C21.7,77.6 25.6,77.9 27.1,75.5 C28.5,70 29,64 28.2,59.6 C27.2,56.6 23.9,56.6 22.6,59.6 Z"),
+    P(null, "M20.3,79.4 C18.7,86.4 17.5,94 17.3,101.4 L21.7,102.4 C23.7,95 25.7,87.6 26.9,79.8 C25.1,78.4 22.1,78.3 20.3,79.4 Z"),
+    E(null, 18.8, 109, 3.3, 5.6),
+    P("bauch", "M43.4,56.2 L49.2,56.2 L49.2,63.4 L43.4,63.4 Z"), P("bauch", "M43.4,64.6 L49.2,64.6 L49.2,71.8 L43.4,71.8 Z"),
+    P("bauch", "M43.4,73 L49.2,73 L49.2,80.4 L43.4,80.4 Z"), P("bauch", "M43.6,81.6 L49.2,81.6 L49.2,90 C46.8,89.8 45,88.6 43.6,86.8 Z"),
+    P("bauch", "M41.9,57.2 C38.3,60.2 36.3,66.2 36.1,73 C36,80 37.7,85.6 41.9,90.4 Z"),
+    P(null, "M36.6,91.4 C38.6,96.4 43,100.6 49.2,103.2 L49.2,92.4 C45.6,92.2 41.6,91.8 36.6,91.4 Z"),
+    P("beinev", "M34.9,98.2 C31.1,110 29.9,124 30.7,137 C31.3,143 34.5,147.5 39.9,148 C44.7,147.6 47.5,142.5 48.3,134 C49.1,121 48.3,108.6 45.7,101.6 C42.5,99.8 38.5,98.6 34.9,98.2 Z"),
+    E(null, 39.6, 151.6, 5, 3.1),
+    P("waden", "M33.7,156 C31.5,165 31.3,175 33.1,186 L37.9,186.5 C39.9,176 40.7,166 39.5,156.5 C37.7,155.1 35.5,155 33.7,156 Z"),
+    P(null, "M32.8,188.6 C31.2,193 31.8,197.6 36.2,198 C39.6,198 40.2,194 38.8,188.6 Z")];
+  const back = [
+    P("ruecken", "M49.2,25 L49.2,62 C46.4,56 43.4,49 39.8,42 C37.4,38 33.6,35.2 29.6,34 C35.6,30.5 42.4,27.2 49.2,25 Z"),
+    P("schultern", "M29.4,34.4 C24.8,35.2 21,39.2 20.6,45.6 C20.4,50.6 21.3,54.6 22.6,57 C25.4,51 28.8,45.2 33.6,40.6 C33.8,37.6 32.4,35.4 29.4,34.4 Z"),
+    P("ruecken", "M37.7,44.2 C34.5,49.6 33.3,56.6 34.1,64 C35.5,72 39.5,79.6 45.5,84.6 L49.2,82.6 L49.2,66 C45.4,59.6 41.6,52.2 37.7,44.2 Z"),
+    P("ruecken", "M45,86.6 L49.2,84.8 L49.2,94.6 L43.8,94.6 C44,92 44.4,89 45,86.6 Z"),
+    P("trizeps", "M22.6,59.6 C20.7,65 20.5,71 21.3,76 C22.5,78.4 26.3,78.2 27.5,75.6 C28.7,69.6 28.9,63.6 27.9,59 C26.7,56.6 23.7,56.8 22.6,59.6 Z"),
+    P(null, "M20.3,79.4 C18.7,86.4 17.5,94 17.3,101.4 L21.7,102.4 C23.7,95 25.7,87.6 26.9,79.8 C25.1,78.4 22.1,78.3 20.3,79.4 Z"),
+    E(null, 18.8, 109, 3.3, 5.6),
+    P("po", "M49.2,95.8 L49.2,113.6 C44.4,116 38.4,115.4 35,111.4 C32.8,106 33.6,99.8 37.6,96.8 C41.4,95 45.6,95 49.2,95.8 Z"),
+    P("beineh", "M34.7,115.6 C32.7,125 32.7,136 34.7,145 C37.5,148.2 43.1,148.4 46.1,145.4 C48.1,136 48.1,125.6 46.3,117.2 C42.3,118.2 38.3,117.8 34.7,115.6 Z"),
+    E(null, 40.2, 151, 5, 2.6),
+    P("waden", "M33.5,154.6 C30.5,162 30.7,171 33.7,179 C36.5,181.4 40.1,181 41.5,178 C42.7,170 42.5,161.6 39.9,154.6 C37.9,153.4 35.5,153.4 33.5,154.6 Z"),
+    P(null, "M34.6,181.8 C34.4,184.4 35,186.6 36,188.4 L38.4,188.4 C39.4,186.4 39.8,184 39.6,181.8 C37.8,182.6 36.2,182.6 34.6,181.8 Z"),
+    P(null, "M32.8,189.4 C31.2,193.4 31.8,197.6 36.2,198 C39.6,198 40.2,194 38.8,189.4 Z")];
+  return { front, back };
 })();
-function figure(colors, label) {
-  return `<svg class="fig" viewBox="10 0 180 180" role="img" aria-label="${esc(label || "Muskeln")}">` +
-    FIG.map(p => p.m
-      ? p.s.replace("/>", ` class="m" style="${colors[p.m] ? "fill:" + colors[p.m] : ""}"/>`)
-      : p.s.replace("/>", ` class="base"/>`)).join("") + `</svg>`;
+const BACK_M = ["ruecken", "trizeps", "po", "beineh"];
+// one = Hauptmuskel: nur die Ansicht, auf der er liegt (für kleine Vorschaubilder)
+function figure(colors, label, one) {
+  const draw = (p) => { const c = p.m ? ` class="m"${colors[p.m] ? ` style="fill:${colors[p.m]}"` : ""}` : ` class="base"`;
+    return p.e ? `<ellipse cx="${p.e[0]}" cy="${p.e[1]}" rx="${p.e[2]}" ry="${p.e[3]}"${c}/>` : `<path d="${p.d}"${c}/>`; };
+  const half = arr => arr.map(draw).join("");
+  const center = `<ellipse cx="50" cy="14" rx="8.6" ry="10.6" class="base"/><path d="M45.6,22.4 L54.4,22.4 L54.6,31 C51.6,32.4 48.4,32.4 45.4,31 Z" class="base"/>`;
+  const view = (arr, dx) => `<g transform="translate(${dx},0)">${center}${half(arr)}<g transform="translate(100,0) scale(-1,1)">${half(arr)}</g></g>`;
+  if (one) { const back = BACK_M.includes(one), low = ["beinev", "beineh", "po", "waden"].includes(one);
+    return `<svg class="fig" viewBox="${back ? 126 : 16} ${low ? 88 : 0} 68 ${low ? 114 : 120}" role="img" aria-label="${esc(label || "Muskeln")}">${back ? view(FIG.back, 110) : view(FIG.front, 0)}</svg>`; }
+  return `<svg class="fig" viewBox="12 0 186 202" role="img" aria-label="${esc(label || "Muskeln")}">${view(FIG.front, 0)}${view(FIG.back, 110)}</svg>`;
 }
 function workoutColors(items) {
   const c = {};
@@ -1631,7 +1647,7 @@ function srcList(keys) {
 }
 function vLib() {
   const q = libQuery.toLowerCase();
-  const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
+  const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || (e.label || "").toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">Wissen</div><div class="title">Übungen</div>
@@ -1640,7 +1656,7 @@ function vLib() {
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
-        <div style="width:36px;flex:0 0 36px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
+        <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
         <div class="grow"><div class="t">${esc(e.name)}</div><div class="s">${e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"}${e.off ? " · nicht im Studio" : ""}</div></div>
         ${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}<span class="chev">›</span></button>`).join("")}</div></section>`).join("") || `<p class="muted">Nichts gefunden.</p>`}</div>
   </div>`;
@@ -1651,6 +1667,7 @@ function vEx() {
     <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
       <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
       <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
+      ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(e.label)}</p>` : ""}
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
     <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
@@ -1820,7 +1837,7 @@ function vHome() {
     </section>
     ${state.hints.unitsOld && !state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
         <div class="cap">Neu: Gewicht pro Seite</div>
-        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
+        <p class="small">Geräte mit getrennten Seiten (am Gerät „Iso-Lateral“) zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
         <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
       </div>` : ""}
     <div class="plain-list">
@@ -1958,7 +1975,7 @@ function vPlan() {
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
         <div class="grow"><div class="t">${esc(d.name)}</div>
-          <div class="s ellipsis">${d.items.map(it => esc(ex(it.exId).name.replace("Iso-Lateral ", ""))).join(" · ") || "Noch keine Übungen"}</div></div>
+          <div class="s ellipsis">${d.items.map(it => esc(ex(it.exId).name)).join(" · ") || "Noch keine Übungen"}</div></div>
         <span class="min">${estMinutes(d)} Min.</span><span class="chev">›</span>
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
@@ -2049,7 +2066,7 @@ function devSheetHtml() {
     ${unitLocked(d.id) ? `<p class="note warn small">Gerätetyp und Gewichtsangabe sind gesperrt, solange im laufenden Training schon Sätze an diesem Gerät erledigt sind.</p>` : ""}
     <div class="field"><label>Gerätetyp</label>${seg("type", [["plate", "Scheiben"], ["stack", "Steckgewicht"]])}</div>
     ${d.type === "plate" ? `<div class="field"><label>Gewicht eintragen</label>${seg("load", [["side", "Pro Seite"], ["total", "Insgesamt"]])}
-      <p class="small faint">${d.load === "side" ? "Beispiel: Brustpresse 40 kg pro Seite. Typisch für Iso-Lateral-Geräte mit zwei getrennten Armen." : "Beispiel: Beinpresse 160 kg insgesamt. Alle aufgelegten Scheiben zusammen."}</p></div>`
+      <p class="small faint">${d.load === "side" ? "Beispiel: Brustpresse 40 kg pro Seite. Typisch für Geräte mit zwei getrennten Armen (am Gerät „Iso-Lateral“)." : "Beispiel: Beinpresse 160 kg insgesamt. Alle aufgelegten Scheiben zusammen."}</p></div>`
       : `<p class="small faint">Beispiel: 65 kg am Gewichtsblock.</p>`}
     ${!d._new && hasHistoryOtherUnit(d) ? (() => { const tu = draftUnit(d), n = otherUnitCount(d);
       return `<div class="note warn">
@@ -2089,15 +2106,15 @@ function devBack(savedId) {
 let pickFilter = "alle", pickQuery = "";
 function pickerHtml() {
   const q = pickQuery.toLowerCase();
-  const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && (!q || e.name.toLowerCase().includes(q)));
+  const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && (!q || e.name.toLowerCase().includes(q) || (e.label || "").toLowerCase().includes(q)));
   const list = match.filter(e => !e.off).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0)), hidden = match.length - list.length;
   return `${sheetHead("Übung hinzufügen")}
-    <input id="pickQ" data-i="pickQ" placeholder="Suchen, z. B. Row" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
+    <input id="pickQ" data-i="pickQ" placeholder="Suchen, z. B. Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
     <div class="chips">${[["alle", "Alle"], ...Object.entries(MUSCLES)].map(([k, l]) =>
       `<button class="chip ${pickFilter === k ? "on" : ""}" data-a="pickFilter" data-k="${k}">${l}</button>`).join("")}</div>
     ${list.length ? `<div class="group" id="pickList">${list.map(e => `
       <div class="li" style="padding-right:var(--s2)"><button class="row grow" data-a="pick" data-id="${e.id}" style="text-align:left;gap:var(--s3)">
-        <div style="width:40px;flex:0 0 40px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name)}</div>
+        <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
         <div class="grow"><div class="row wrap" style="gap:6px"><span class="t">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
           <div class="s">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""} · ${e.id.startsWith("c-") ? "eigenes Gerät" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "insgesamt"}</div></div>
         <span class="badge added" hidden></span></button>
@@ -2208,7 +2225,7 @@ function makeEntry(it, ctx) {
     const repsList = reps.join("/");
     const lastTxt = L.uniform ? `${w(L.kg)} × ${repsList}` : `${L.sets.map(t => `${kgTxt(t.kg)} × ${t.reps}`).join(", ")} (${unit})`;
     const lastHard = ls.f === "h" || ls.rir === 0;
-    const hardTxt = ls.rir === 0 ? "mit RIR 0 abgeschlossen" : "als schwer bewertet";
+    const hardTxt = ls.rir === 0 ? "ohne Reserve abgeschlossen (0)" : "als schwer bewertet";
     const rangeChanged = !!(L.rmin && L.rmax && (L.rmin !== it.rmin || L.rmax !== it.rmax));
     const ref = L.planned || n;                         // ohne gespeicherte Planung: mit dem heutigen Plan vergleichen
     const incomplete = done < ref;
@@ -2245,7 +2262,7 @@ function makeEntry(it, ctx) {
         mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · zweimal unter Ziel`;
         why = `Zwei Einheiten in Folge unter ${it.rmin} Wdh. bei ${w(L.kg)}, zuletzt ${hardTxt}. Heute ${w(L.kg - step)} (−${kgTxt(step)} kg).`;
       } else {
-        mode = "hold"; sets = fromLast(0); short = `Gewicht halten · letzter Satz ${ls.rir === 0 ? "RIR 0" : "schwer"}`;
+        mode = "hold"; sets = fromLast(0); short = `Gewicht halten · letzter Satz ${ls.rir === 0 ? "ohne Reserve" : "schwer"}`;
         why = `Letzter Satz ${hardTxt} (${w(ls.kg)} × ${ls.reps}). Gewicht beibehalten.${below ? " Bleibt es beim nächsten Mal unter dem Ziel, schlägt die App weniger Gewicht vor." : ""}`;
       }
     } else if (moreSets) {
@@ -2326,7 +2343,7 @@ function setAdvice(s) {
   if (!up && !down) return null;
   const kg = Math.round((up ? t.kg + step : t.kg - step) * 100) / 100, n = open.length, u = x.u || unitOf(ex(x.exId));
   const how = up ? (t.reps >= x.rmax + 2 ? `über deinem Ziel von ${x.rmin}–${x.rmax}` : `am oberen Ziel und ${t.f === "l" ? "„leicht“" : "mit 3+ Wdh. Reserve"}`)
-    : (t.reps <= x.rmin - 2 ? `unter deinem Ziel von ${x.rmin}–${x.rmax}` : `unter dem Ziel und ${t.f === "h" ? "„schwer“" : "mit RIR 0"}`);
+    : (t.reps <= x.rmin - 2 ? `unter deinem Ziel von ${x.rmin}–${x.rmax}` : `unter dem Ziel und ${t.f === "h" ? "„schwer“" : "ohne Reserve"}`);
   return { key: x.key, si: ld.si, kg, up, txt: `${t.reps} Wdh. bei ${kgTxt(t.kg)} kg – ${how}. Für ${n === 1 ? "den letzten Satz" : `die restlichen ${n} Sätze`}: ${kgTxt(kg)} ${UNIT[u]} (${up ? "+" : "−"}${kgTxt(step)} kg)?` };
 }
 function finish(saveIt) {
@@ -2387,7 +2404,7 @@ function vTrain() {
           ${(() => { const lp = lastPerf(lx.exId, lx.u || unitOf(ex(lx.exId))), ps = lp ? lp[ld.si] || null : null; if (!ps) return "";
             const cmp = lt.kg !== null && validSet(lt) ? (lt.kg > ps.kg || (lt.kg === ps.kg && lt.reps > ps.reps) ? " · heute mehr" : lt.kg === ps.kg && lt.reps === ps.reps ? " · gleich" : " · heute weniger") : "";
             return `<p class="small muted" id="vsLast" style="margin:0">Letztes Mal Satz ${ld.si + 1}: ${kgTxt(ps.kg)} × ${ps.reps}${cmp}</p>`; })()}
-          <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `RIR ${rirTxt(lt.rir)}` : "RIR angeben"}</button>
+          <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `Reserve ${rirTxt(lt.rir)}` : "Reserve angeben"}</button>
             <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}">Satz korrigieren</button></div></div>` : ""}
       ${(() => { const b = s.timeAdj ? s.timeAdj.minutes : state.plan && state.plan.minutes; if (!b || s.timeHintOff) return "";
         const need = (Date.now() - s.start) / 60000 + remainingSec(s) / 60, over = need - b; if (over < 5) return "";
@@ -2456,7 +2473,7 @@ function devInfoSheet() {
       <input id="noteT" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
     <div class="field" id="devTricks"><label>Tricks für mehr Wirkung</label>${tricksHtml(e, x)}</div>
-    <p class="small muted">${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
+    <p class="small muted">${e.label && e.label !== e.name ? `Am Gerät steht: ${esc(e.label)}<br>` : ""}${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="stack-sm">
       <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="train">Ausführliche Anleitung</button>
       <button class="btn block" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>Gerät tauschen</button>
@@ -2529,7 +2546,7 @@ let rirTarget = null;
 const RIR_OPTS = [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4+"]];
 function rirSheet() {
   const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i];
-  if (!t) return sheetHead("RIR");
+  if (!t) return sheetHead("Reserve");
   return `${sheetHead("Wiederholungen in Reserve")}
     <p class="small muted" style="margin-top:-8px">Satz ${rirTarget.i + 1} · ${t.kg !== null ? kgTxt(t.kg) + " kg × " : ""}${t.reps}. Wie viele saubere Wiederholungen wären noch möglich gewesen? Freiwillig.</p>
     <div class="seg" id="rirSeg">${RIR_OPTS.map(([v, l]) => `<button data-a="setRir" data-v="${v}" class="${t.rir === v ? "on" : ""}">${l}</button>`).join("")}</div>
@@ -2542,7 +2559,7 @@ function setSheet() {
   const e = ex(S().list.find(l => l.key === setEdit.key).exId);
   return `${sheetHead(`Satz ${setEdit.i + 1} ändern`, "")}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">${ms("kg", unitTxt(e), setEdit.kg !== null ? kgTxt(setEdit.kg) : "–")}${ms("reps", "Wiederholungen", setEdit.reps)}</div>
-    <div class="field"><label>RIR (freiwillig)</label><div class="seg">${RIR_OPTS.map(([v, l]) => `<button data-a="editRir" data-v="${v}" class="${setEdit.rir === v ? "on" : ""}">${l}</button>`).join("")}<button data-a="editRir" data-v="" class="${setEdit.rir == null ? "on" : ""}">–</button></div></div>
+    <div class="field"><label>Reserve (freiwillig)</label><div class="seg">${RIR_OPTS.map(([v, l]) => `<button data-a="editRir" data-v="${v}" class="${setEdit.rir === v ? "on" : ""}">${l}</button>`).join("")}<button data-a="editRir" data-v="" class="${setEdit.rir == null ? "on" : ""}">–</button></div></div>
     <p class="error" id="setEditErr" role="alert" hidden></p>
     <div class="stack-sm"><button class="btn primary block xl" data-a="setSave">Speichern</button><button class="btn quiet block" data-a="closeSheet">Abbrechen</button></div>`;
 }
@@ -3569,7 +3586,7 @@ function goalHint(day, today = true) {
   const g = (state.goals || []).find(x => !x.done && x.kind === "kraft" && day.items.some(i => i.exId === x.exId));
   if (!g) return "";
   const st = goalStatus(g);
-  return ` ${today ? `Heute ist die ${st.name} dran` : `Beim nächsten Mal: ${st.name}`} – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
+  return ` ${today ? `Heute dran: ${st.name}` : `Beim nächsten Mal: ${st.name}`} – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
 }
 
 /* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
@@ -3722,7 +3739,7 @@ function buddySays(day, thisWeek, goal, streak) {
   // Kurze Fakten in einer eigenen Zeile (höchstens drei): Ziel oder Bestwert, Warum, Wochenziel, Serie, letzter Ausfall
   const gh = goalHint(done || mToday || sick ? null : day, !s || s.days.includes(wdOf(now))), pr = lastPR();
   if (gh) facts.push(gh.trim().replace(/\.$/, ""));
-  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
+  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt verbessert: ${pr.name} ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
   if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
   if (thisWeek >= goal) facts.push(`Wochenziel geschafft: ${thisWeek} von ${goal}`);
   if (streak >= 2) facts.push(`${streak} Wochen in Folge geschafft`);
@@ -3982,7 +3999,7 @@ function insights() {
   if (prog.length >= 2 && up.length) {
     const t = up[0];
     add({ id: "good:" + up.length + "/" + prog.length, prio: 20, kind: "good", title: `Mehr Gewicht an ${up.length} von ${prog.length} Geräten`,
-      text: `Am meisten an der ${ex(t.exId).name}: ${kgTxt(t.from)} → ${kgTxt(t.to)} ${UNIT[t.u]} in ${t.weeks} Wochen (+${Math.round((t.to - t.from) / t.from * 100)} %). Verglichen wird mit deiner ersten Einheit der letzten 8 Wochen.`,
+      text: `Am meisten: ${ex(t.exId).name}, ${kgTxt(t.from)} → ${kgTxt(t.to)} ${UNIT[t.u]} in ${t.weeks} Wochen (+${Math.round((t.to - t.from) / t.from * 100)} %). Verglichen wird mit deiner ersten Einheit der letzten 8 Wochen.`,
       act: [{ a: "openEx", l: "Verlauf ansehen", d: { id: t.exId, ret: "coach" } }] });
   }
   return out.sort((a, b) => b.prio - a.prio);
@@ -4000,7 +4017,7 @@ const COACH_RULES = [
   ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt die App einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
   ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt die App zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet er in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
-  ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. RIR 0 – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
+  ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. ohne Reserve – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt die App ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, gibt es einen Hinweis."],
   ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],

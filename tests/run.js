@@ -24,17 +24,17 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // ---------- Testdaten ----------
 // Datenstand vor diesem Update: ohne v, dev, Einheit (u) in der Historie
 const OLD_V2 = {
-  plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Push", items: [
+  plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Drücken", items: [
     { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 },
     { id: "i2", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 },
     { id: "i3", exId: "hs-fly", sets: 3, rmin: 8, rmax: 12, rest: 60 },
     { id: "i4", exId: "c-abc", sets: 3, rmin: 8, rmax: 12, rest: 60 }] }] },
   custom: [{ id: "c-abc", name: "Alte Rudermaschine", muscle: "ruecken", sec: [], type: "plate" }],
   notes: { "hs-chest": "Sitz 4" },
-  history: [{ id: "h1", dayId: "d1", day: "Push", date: new Date(Date.now() - 5 * 864e5).toISOString(), durationSec: 2400, exercises: [
-    { exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12, f: "m" }] },
-    { exId: "hs-legpress", name: "Linear Leg Press", sets: [{ kg: 160, reps: 10 }, { kg: 160, reps: 9 }] },
-    { exId: "hs-fly", name: "Pec Fly", sets: [{ kg: 65, reps: 12 }, { kg: null, reps: 12 }, { kg: 65, reps: 0 }] },
+  history: [{ id: "h1", dayId: "d1", day: "Drücken", date: new Date(Date.now() - 5 * 864e5).toISOString(), durationSec: 2400, exercises: [
+    { exId: "hs-chest", name: "Brustpresse", sets: [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12, f: "m" }] },
+    { exId: "hs-legpress", name: "Beinpresse", sets: [{ kg: 160, reps: 10 }, { kg: 160, reps: 9 }] },
+    { exId: "hs-fly", name: "Butterfly", sets: [{ kg: 65, reps: 12 }, { kg: null, reps: 12 }, { kg: 65, reps: 0 }] },
     { exId: "c-abc", name: "Alte Rudermaschine", sets: [{ kg: 30, reps: 10 }] }] }],
   weights: [{ d: "2026-10-01", kg: 82.4 }],
   session: null, selDay: null
@@ -97,7 +97,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Satzwerte unverändert", JSON.stringify(s.history[0].exercises[0].sets) === JSON.stringify(OLD_V2.history[0].exercises[0].sets));
       ok("Einheit ergänzt: Brustpresse pro Seite (s)", s.history[0].exercises[0].u === "s");
       ok("Einheit ergänzt: Beinpresse insgesamt (t)", s.history[0].exercises[1].u === "t");
-      ok("Einheit ergänzt: Pec Fly Gewichtsblock (b)", s.history[0].exercises[2].u === "b");
+      ok("Einheit ergänzt: Butterfly Gewichtsblock (b)", s.history[0].exercises[2].u === "b");
       ok("Ungültige alte Sätze bleiben gespeichert (nicht gelöscht)", s.history[0].exercises[2].sets.length === 3);
       ok("Eigenes Gerät, Notiz, Körpergewicht, Plan erhalten",
         s.custom[0].name === "Alte Rudermaschine" && s.notes["hs-chest"] === "Sitz 4" && s.weights[0].kg === 82.4 && s.plan.days[0].items.length === 4);
@@ -111,7 +111,7 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
     {
-      const v1 = { days: [{ name: "Push", exercises: [{ name: "Iso-Lateral Chest Press", sets: 3, reps: 10, rest: 90 }, { name: "Mein Gerät", sets: 2, reps: 12, rest: 60 }] }] };
+      const v1 = { days: [{ name: "Drücken", exercises: [{ name: "Brustpresse", sets: 3, reps: 10, rest: 90 }, { name: "Mein Gerät", sets: 2, reps: 12, rest: 60 }] }] };
       const { ctx, page } = await open(null, { extra: { "trainingsplan-v1": JSON.stringify(v1) } });
       const s = await tp(page, () => window.__tp.state);
       ok("Version 1 wird übernommen (Bibliotheksgerät erkannt, eigenes Gerät angelegt)",
@@ -155,7 +155,7 @@ async function finishAllSets(page, kg, reps) {
       await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       ok("Beinpresse zeigt „kg insgesamt“", (await page.textContent(".unit b")) === "kg insgesamt");
       await page.fill("#kgIn", "160"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
-      ok("Pec Fly zeigt „kg am Gewichtsblock“", (await page.textContent(".unit b")) === "kg am Gewichtsblock");
+      ok("Butterfly zeigt „kg am Gewichtsblock“", (await page.textContent(".unit b")) === "kg am Gewichtsblock");
       await page.fill("#kgIn", "65"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       const st = await stored(page);
       const vol = await tp(page, () => { const h = window.__tp.state.history.at(-1); return h.exercises.reduce((a, x) => a + x.sets.reduce((b, t) => b + window.__tp.setVol(x, t), 0), 0); });
@@ -218,7 +218,7 @@ async function finishAllSets(page, kg, reps) {
       const alts = await page.$$eval(".sheet [data-a=swap]", a => a.map(x => x.dataset.id));
       ok("Tauschliste ohne nicht vorhandenes Gerät", !alts.includes("hs-decline") && alts.length > 0, alts.join(","));
       await page.click(".sheet [data-a=swap][data-id=hs-incline]");
-      ok("Nur heute: Übung im Training getauscht", (await page.textContent("h1")).includes("Incline"));
+      ok("Nur heute: Übung im Training getauscht", (await page.textContent("h1")).includes("Schräge Brustpresse"));
       ok("Nur heute: Plan unverändert", (await stored(page)).plan.days[0].items[0].exId === "hs-chest");
       await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       ok("Nach dem ersten Satz kein Tausch mehr möglich", await page.isDisabled(".actions3 [data-a=openSwap]").catch(() => true));
@@ -427,14 +427,14 @@ async function finishAllSets(page, kg, reps) {
       ok("Brustpresse: direkte Alternativen nur horizontales Drücken", r.direct.length > 0 && r.direct.every(id => ["hs-decline", "hs-widechest"].includes(id)), r.direct.join());
       ok("Bevorzugtes passendes Gerät steht oben", r.direct[0] === "hs-decline");
       ok("Incline Press = andere Übung mit anderem Schwerpunkt", r.other.includes("hs-incline") && r.why["hs-incline"].includes("anderer Belastungsschwerpunkt"), r.why["hs-incline"]);
-      ok("Pec Fly als ungeeignete direkte Alternative gekennzeichnet", r.other.includes("hs-fly") && r.why["hs-fly"].includes("Keine direkte Alternative"));
+      ok("Butterfly als ungeeignete direkte Alternative gekennzeichnet", r.other.includes("hs-fly") && r.why["hs-fly"].includes("Keine direkte Alternative"));
       ok("Erklärung behauptet keine Gleichheit", !Object.values(r.why).some(w => /identisch|gleichwertig|gleiche Belastung/i.test(w)));
       r = await rank("hs-lateral");
       ok("Schulterpresse ist kein direkter Ersatz für Seitheben", !r.direct.includes("hs-shoulder") && r.direct.length === 0);
       ok("Schulterpresse nur als andere Übung gekennzeichnet", r.other.includes("hs-shoulder") && r.why["hs-shoulder"].includes("Keine direkte Alternative"));
       r = await rank("hs-hack");
-      ok("Hack Squat: Leg Extension ist keine direkte Alternative", !r.direct.includes("hs-legext") && r.other.includes("hs-legext"));
-      ok("Hack Squat: direkte Alternativen sind kniebeugedominant", ["hs-legpress", "hs-isolegpress", "hs-vsquat"].every(id => r.direct.includes(id)));
+      ok("Hackenschmidt: Leg Extension ist keine direkte Alternative", !r.direct.includes("hs-legext") && r.other.includes("hs-legext"));
+      ok("Hackenschmidt: direkte Alternativen sind kniebeugedominant", ["hs-legpress", "hs-isolegpress", "hs-vsquat"].every(id => r.direct.includes(id)));
       r = await rank("hs-legext");
       ok("Leg Extension hat keine direkte Alternative im Studio", r.direct.length === 0);
       // UI: kein direkter Ersatz für Seitheben
@@ -485,7 +485,7 @@ async function finishAllSets(page, kg, reps) {
       let plan = await gen({ "hs-widechest": { fav: true }, "hs-lat": { fav: true } });
       const push = plan.days[0].items.map(i => i.exId), pull = plan.days[1].items.map(i => i.exId);
       ok("Bevorzugtes Gerät ersetzt Vorlage gleicher Bewegung (Wide Chest statt Chest Press)", push.includes("hs-widechest") && !push.includes("hs-chest"), push.join());
-      ok("Bevorzugter Lat Pulldown statt Front Lat Pulldown", pull.includes("hs-lat") && !pull.includes("hs-pulldown"), pull.join());
+      ok("Bevorzugter Latzug statt Front Latzug", pull.includes("hs-lat") && !pull.includes("hs-pulldown"), pull.join());
       const base = await gen({});
       const patList = async pl => tp(page, pl => pl.days.map(d => d.items.map(i => window.__tp.ex(i.exId).pattern).sort().join()), pl);
       ok("Mischung der Bewegungsmuster bleibt gleich", JSON.stringify(await patList(plan)) === JSON.stringify(await patList(base)));
@@ -497,10 +497,10 @@ async function finishAllSets(page, kg, reps) {
       plan = await gen({ "hs-lateral": { off: true } });
       const pushL = plan.days[0].items.map(i => i.exId);
       ok("Fehlendes Seitheben wird nicht durch Schulterpresse doppelt ersetzt", !pushL.includes("hs-lateral") && pushL.filter(id => id === "hs-shoulder").length === 1);
-      ok("Lücke wird gemeldet", plan.gaps.length === 1 && plan.gaps[0].name === "Lateral Raise");
+      ok("Lücke wird gemeldet", plan.gaps.length === 1 && plan.gaps[0].name === "Seitheben");
       await page.evaluate(() => { window.__tp.state.dev = { "hs-lateral": { off: true } }; });
       await page.click("[data-a=createPlan]");
-      ok("Hinweis nach dem Erstellen sichtbar", (await page.textContent(".sheet")).includes("Lateral Raise"));
+      ok("Hinweis nach dem Erstellen sichtbar", (await page.textContent(".sheet")).includes("Seitheben"));
       await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=plan]");
       ok("Hinweis bleibt im Plan sichtbar", await page.isVisible("#gapCard"));
       await page.click("[data-a=gapsDone]");
@@ -511,7 +511,7 @@ async function finishAllSets(page, kg, reps) {
     section("18. Kompatibilität (alte Daten, laufendes Training, Sicherung)");
     {
       const old = JSON.parse(JSON.stringify(OLD_V2)); old.v = 3; old.dev = { "hs-chest": { step: 1.25, load: "side" } }; old.hints = { units: true };
-      old.session = { dayId: "d1", dayName: "Push", start: Date.now() - 600000, idx: 0, phase: "set", restEnd: 0, restTotal: 0,
+      old.session = { dayId: "d1", dayName: "Drücken", start: Date.now() - 600000, idx: 0, phase: "set", restEnd: 0, restTotal: 0,
         list: [{ key: "k1", itemId: "i1", exId: "hs-chest", u: "s", rmin: 8, rmax: 12, rest: 90, mode: "keep", why: "x", sets: [{ kg: 40, reps: 10, done: true }, { kg: 40, reps: 10, done: false }] }] };
       const { ctx, page } = await open(old);
       const s = await tp(page, () => window.__tp.state);
@@ -521,7 +521,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=bizeps]");
       await page.click("[data-a=editDev][data-id=hs-curl]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
-      await page.evaluate(() => { const T = window.__tp; T.state.custom.push({ id: "c-x", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); T.state.plan.gaps = [{ day: "Push", name: "Lateral Raise", pattern: "lateral" }]; });
+      await page.evaluate(() => { const T = window.__tp; T.state.custom.push({ id: "c-x", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); T.state.plan.gaps = [{ day: "Drücken", name: "Seitheben", pattern: "lateral" }]; });
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       await page.evaluate(() => localStorage.clear()); await page.reload();
@@ -639,7 +639,7 @@ async function finishAllSets(page, kg, reps) {
       ok("4. Fehlendes Gerät durch gleiche Bewegung ersetzt", ["hs-decline", "hs-widechest"].includes(pv.rep.i0), JSON.stringify(pv));
       ok("4. Gerät ohne passenden Ersatz wird ausgelassen und genannt", pv.un.includes("hs-curl") && pv.fits);
       await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']");
-      ok("4. Vorschau nennt Ersatz und Auslassung", (await page.textContent("#timePrev")).includes("Ersetzt") && (await page.textContent("#timePrev")).includes("Biceps Curl"));
+      ok("4. Vorschau nennt Ersatz und Auslassung", (await page.textContent("#timePrev")).includes("Ersetzt") && (await page.textContent("#timePrev")).includes("Armbeuger"));
       await page.click("[data-a=timeApply]"); await page.click("[data-a=start]");
       const st = await stored(page);
       ok("4. Training nutzt Ersatzgerät, Plan bleibt beim Original", st.session.list[0].exId === pv.rep.i0 && st.plan.days[0].items[0].exId === "hs-chest" && !st.session.list.some(l => l.exId === "hs-curl"));
@@ -783,7 +783,7 @@ async function finishAllSets(page, kg, reps) {
       ok("4. Unterschiedliche Gewichte → satzweise übernommen, keine pauschale Steigerung", r.mode === "hold" && JSON.stringify(r.kg) === "[40,45,40]" && !r.kg.includes(47.5) && r.why.includes("unterschiedliche Gewichte"), JSON.stringify(r));
       ok("4. Ziel je 1 Wdh. mehr pro Satz (gedeckelt am oberen Ziel)", JSON.stringify(r.reps) === "[12,11,10]", JSON.stringify(r.reps));
       r = await run([{ sets: S3(40, [12, 12, 12], i => i === 2 ? { rir: 0 } : {}), planned: 3 }]);
-      ok("5. RIR 0 bei vollständiger Wiederholungszahl → Gewicht halten", r.mode === "hold" && r.kg[0] === 40 && r.why.includes("RIR 0"), r.why);
+      ok("5. RIR 0 bei vollständiger Wiederholungszahl → Gewicht halten", r.mode === "hold" && r.kg[0] === 40 && r.why.includes("ohne Reserve"), r.why);
       r = await run([{ sets: S3(40, [12, 12, 12], { rir: 3 }), planned: 3 }]);
       ok("6. RIR 3 bei vollständiger Wiederholungszahl → +1 Schritt", r.mode === "up" && r.kg[0] === 42.5);
       r = await run([{ sets: S3(40, [10, 10, 9], { rir: 3 }), planned: 3 }]);
@@ -845,7 +845,7 @@ async function finishAllSets(page, kg, reps) {
       ok("8. Manuelle Änderung hat Vorrang und wird gekennzeichnet", (await page.inputValue("#kgIn")) === "40" && (await page.textContent("#app .prog")).includes("Eigenes Gewicht"));
       await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]");
       await page.click("[data-a=openRir]"); await page.click("[data-a=setRir][data-v='2']");
-      ok("RIR-Angabe in der Pause gespeichert (am Satz)", (await stored(page)).session.list[0].sets[0].rir === 2 && (await page.textContent(".feel-q")).includes("RIR 2"));
+      ok("RIR-Angabe in der Pause gespeichert (am Satz)", (await stored(page)).session.list[0].sets[0].rir === 2 && (await page.textContent(".feel-q")).includes("Reserve 2"));
       ok("Leicht/Passt/Schwer bleibt unabhängig (keine Umrechnung)", (await stored(page)).session.list[0].sets[0].f === undefined);
       await page.reload();
       ok("15. Neustart: RIR, Sätze und Empfehlungsgrund bleiben erhalten", (await stored(page)).session.list[0].sets[0].rir === 2 && (await stored(page)).session.list[0].short.includes("+2,5"));
@@ -890,8 +890,8 @@ async function finishAllSets(page, kg, reps) {
       const s = await tp(page, () => window.__tp.state);
       ok("14. Alte Daten: keine erfundenen RIR-Werte", s.history.every(h => h.exercises.every(x => x.sets.every(t => t.rir === undefined))));
       ok("14. Alte Daten: keine erfundene Planung", s.history[0].exercises.every(x => x.planned === undefined && x.rmin === undefined));
-      await page.evaluate(() => { const T = window.__tp; T.state.history.push({ id: "n1", dayId: "d1", day: "Push", date: new Date().toISOString(), durationSec: 600,
-        exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 4, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 12, rir: 2 }, { kg: 40, reps: 11, f: "h", rir: 0 }] }] }); });
+      await page.evaluate(() => { const T = window.__tp; T.state.history.push({ id: "n1", dayId: "d1", day: "Drücken", date: new Date().toISOString(), durationSec: 600,
+        exercises: [{ exId: "hs-chest", name: "Brustpresse", u: "s", planned: 4, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 12, rir: 2 }, { kg: 40, reps: 11, f: "h", rir: 0 }] }] }); });
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       const before = await tp(page, () => JSON.parse(JSON.stringify(window.__tp.state.history)));
@@ -986,7 +986,7 @@ async function finishAllSets(page, kg, reps) {
       // Übungsauswahl
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]");
       await page.click(".sheet [data-a=openGuideSheet][data-id=hs-row]");
-      ok("Info in der Übungsauswahl öffnet die Anleitung", (await page.textContent(".sheet")).includes("Ausführung") && (await page.textContent(".sheet")).includes("Iso-Lateral Row"));
+      ok("Info in der Übungsauswahl öffnet die Anleitung", (await page.textContent(".sheet")).includes("Ausführung") && (await page.textContent(".sheet")).includes("Rudern"));
       await page.click(".sheet [data-a=guideBack]");
       ok("Zurück führt zur Übungsauswahl", await page.isVisible("#pickQ"));
       await page.click(".sheet [data-a=pick][data-id=hs-lowrow]");
@@ -1604,10 +1604,10 @@ async function finishAllSets(page, kg, reps) {
         { id: "d2", name: "Beine", items: [{ id: "i3", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 0 }] },
         { id: "d3", name: "Rücken", items: [{ id: "i4", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }] };
       const history = [
-        { id: "h0", dayId: "d1", day: "Brust", date: at(-21, 1), durationSec: 1800, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[40, 10], [40, 10]])] },
-        { id: "h1", dayId: "d1", day: "Brust", date: at(-7, 1), durationSec: 1800, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[42.5, 10], [42.5, 10]])] },
-        { id: "h2", dayId: "d1", day: "Brust", date: at(0, 1), durationSec: 2400, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[45, 8], [45, 8]]), X("hs-fly", "Pec Fly", "b", [[30, 12]])] },
-        { id: "h3", dayId: "d2", day: "Beine", date: at(0, 2), durationSec: 1200, exercises: [X("hs-legpress", "Linear Leg Press", "t", [[100, 10]])] }];
+        { id: "h0", dayId: "d1", day: "Brust", date: at(-21, 1), durationSec: 1800, exercises: [X("hs-chest", "Brustpresse", "s", [[40, 10], [40, 10]])] },
+        { id: "h1", dayId: "d1", day: "Brust", date: at(-7, 1), durationSec: 1800, exercises: [X("hs-chest", "Brustpresse", "s", [[42.5, 10], [42.5, 10]])] },
+        { id: "h2", dayId: "d1", day: "Brust", date: at(0, 1), durationSec: 2400, exercises: [X("hs-chest", "Brustpresse", "s", [[45, 8], [45, 8]]), X("hs-fly", "Butterfly", "b", [[30, 12]])] },
+        { id: "h3", dayId: "d2", day: "Beine", date: at(0, 2), durationSec: 1200, exercises: [X("hs-legpress", "Beinpresse", "t", [[100, 10]])] }];
       const food = { [dk(mon)]: [{ id: "f1", m: "f", n: "Haferflocken", src: "usda:173904", g: 100, per: { k: 379, p: 13.2, c: 67.7, f: 6.52 } }] };
       const tue = new Date(mon); tue.setDate(mon.getDate() + 1);
       const data = { plan, history, food, water: { [dk(mon)]: 1500 }, nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "halten" },
@@ -1616,7 +1616,7 @@ async function finishAllSets(page, kg, reps) {
       const ws = await tp(page, () => { const s = window.__tp.weekStats(0), p = window.__tp.weekStats(1); return { n: s.n, goal: s.goal, sets: s.sets, vol: s.vol, pvol: s.pvol, prs: s.prs, min: s.min, food: s.food, water: s.water, pprs: p.prs, pn: p.n }; });
       ok("Woche: 2 von 3 Trainings, 4 Sätze, 60 Min.", ws.n === 2 && ws.goal === 3 && ws.sets === 4 && ws.min === 60, JSON.stringify(ws));
       ok("Volumen nach derselben Regel wie im Verlauf (2 × 45 × 8 × 2 Seiten + 360 + 1.000 = 2.800 kg; Vorwoche 1.700 kg)", ws.vol === 2800 && ws.pvol === 1700);
-      ok("Neue Bestwerte nur bei Steigerung gegenüber allem davor (Brustpresse 42,5 → 45; erstes Mal Pec Fly zählt nicht)",
+      ok("Neue Bestwerte nur bei Steigerung gegenüber allem davor (Brustpresse 42,5 → 45; erstes Mal Butterfly zählt nicht)",
         ws.prs.length === 1 && ws.prs[0].kg === 45 && ws.prs[0].from === 42.5 && ws.pprs.length === 1 && ws.pprs[0].kg === 42.5 && ws.pprs[0].from === 40);
       ok("Ernährung und Wasser aus Tagen mit Einträgen", ws.food.n === 1 && Math.round(ws.food.k) === 379 && ws.food.hit === 0 && ws.water === 1500);
       ok("„Heute“ zeigt den Rückblick-Einstieg", (await page.textContent("#homeWeekSec")).includes("2 von 3") && await page.isVisible("#homeWeek"));
@@ -1723,7 +1723,7 @@ async function finishAllSets(page, kg, reps) {
       const home = await page.textContent("#app");
       ok("„Heute“ ohne Ballast: keine Erholung, kein Bestwert, kein Artikel, keine Übungsliste", !(await page.$("#app [data-a=showRec]")) && !(await page.$("#homeBest")) && !(await page.$("#homeArt")) && !(await page.$("#todayPlan")) && home.length > 0);
       await page.click("#exBtn");
-      ok("„2 Übungen ›“ öffnet die Übungen mit Gewichten (42,5 kg pro Seite)", (await page.textContent(".sheet #todayPlan")).includes("Iso-Lateral Chest Press") && (await page.textContent(".sheet #todayPlan")).includes("42,5 kg pro Seite"));
+      ok("„2 Übungen ›“ öffnet die Übungen mit Gewichten (42,5 kg pro Seite)", (await page.textContent(".sheet #todayPlan")).includes("Brustpresse") && (await page.textContent(".sheet #todayPlan")).includes("42,5 kg pro Seite"));
       await page.keyboard.press("Escape");
       ok("Wochenrückblick über „Diese Woche“ erreichbar", await page.isVisible("#homeWeek"));
       await page.click("[data-a=tab][data-v=plan]");
@@ -1845,8 +1845,8 @@ async function finishAllSets(page, kg, reps) {
     {
       // Buddy-Check: ausgewogen, zu viel, zu lang
       const bal = { goal: "aufbau", level: "einsteiger", minutes: null, days: [
-        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
-        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
         { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
       const { ctx, page } = await open({ plan: bal });
       await page.click("[data-a=tab][data-v=plan]");
@@ -1864,7 +1864,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 5, "s")] });
       await page.click("[data-a=start]");
       let said = await tp(page, () => window.__tp.said || []);
-      ok("Start: Ansage mit Übung, Satz, Gewicht und Wiederholungen", said.some(x => x.startsWith("Los geht's. Iso-Lateral Chest Press. Satz 1 von 2.") && x.includes("Kilo pro Seite") && x.includes("8 bis 12 Wiederholungen")), said.join(" | "));
+      ok("Start: Ansage mit Übung, Satz, Gewicht und Wiederholungen", said.some(x => x.startsWith("Los geht's. Brustpresse. Satz 1 von 2.") && x.includes("Kilo pro Seite") && x.includes("8 bis 12 Wiederholungen")), said.join(" | "));
       await page.fill("#kgIn", "45"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       said = await tp(page, () => window.__tp.said);
       ok("Neuer Bestwert wird angesagt (45 > 40)", said.includes("Neuer Bestwert: 45 Kilo."));
@@ -1927,9 +1927,9 @@ async function finishAllSets(page, kg, reps) {
       const gs = await tp(page, () => { const s = window.__tp.goalStatus(window.__tp.state.goals[0]); return { cur: s.cur, pct: s.pct, left: s.left, days: s.eta ? (s.eta - Date.now()) / 864e5 : null }; });
       ok("Schätzung aus dem Tempo: 2,5 kg pro Woche → 5 kg in etwa 14 Tagen", gs.cur === 45 && gs.pct === 0 && gs.left === 5 && gs.days !== null && Math.abs(gs.days - 14) < 0.5, JSON.stringify(gs));
       const gt = await page.textContent("#goals");
-      ok("Zielzeile: Stand, Rest und Schätzung mit Hinweis auf den Trainingsstand", gt.includes("Iso-Lateral Chest Press") && gt.includes("45 → 50 kg pro Seite") && gt.includes("Noch 5 kg") && gt.includes("bei deinem Tempo etwa") && gt.includes("hängt vom Trainingsstand ab"));
+      ok("Zielzeile: Stand, Rest und Schätzung mit Hinweis auf den Trainingsstand", gt.includes("Brustpresse") && gt.includes("45 → 50 kg pro Seite") && gt.includes("Noch 5 kg") && gt.includes("bei deinem Tempo etwa") && gt.includes("hängt vom Trainingsstand ab"));
       await page.click("[data-a=tab][data-v=home]");
-      ok("Buddy: „Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite.“", (await page.textContent("#buddy")).includes("Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite"));
+      ok("Buddy: „Heute dran: Brustpresse – noch 5 kg bis 50 kg pro Seite“", (await page.textContent("#buddy")).includes("Heute dran: Brustpresse – noch 5 kg bis 50 kg pro Seite"));
       await page.click("[data-a=tab][data-v=history]"); await page.click("#whyAdd");
       ok("Warum: Hinweis mit Quelle (Teixeira 2012)", (await page.textContent(".sheet")).includes("Teixeira PJ") && (await page.textContent(".sheet")).includes("Beobachtungsstudien"));
       await page.fill("#whyIn", "  Fit bleiben für meine Familie  "); await page.click("[data-a=whySave]");
@@ -1957,7 +1957,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Zusammenfassung: „Ziel erreicht“ mit Start und Ziel", await page.isVisible("#goalDone") && (await page.textContent("#goalDone")).includes("45 → 47,5 kg pro Seite") && (await page.textContent("#goalDone")).includes("Geschafft"));
       ok("Ziel als erreicht gespeichert, Ansage „Training geschafft. Ziel erreicht!“", !!st.goals[0].done && said[said.length - 1] === "Training geschafft. Ziel erreicht!", said.slice(-2).join(" | "));
       await page.click(".actionbar [data-a=tab][data-v=home]");
-      ok("Buddy feiert das Ziel", (await page.textContent("#buddy")).includes("Ziel erreicht: 47,5 kg pro Seite – Iso-Lateral Chest Press"));
+      ok("Buddy feiert das Ziel", (await page.textContent("#buddy")).includes("Ziel erreicht: 47,5 kg pro Seite – Brustpresse"));
       await page.click("[data-a=tab][data-v=history]");
       ok("Erreichtes Ziel in der Liste („Erreicht am …“)", (await page.textContent("#goals")).includes("Erreicht am"));
       await page.reload();
@@ -2004,18 +2004,18 @@ async function finishAllSets(page, kg, reps) {
     // Termin in Woche w vor der laufenden, Wochentag wd (0 = Mo), Ende um hh:mm
     const at = (w, wd, hh = 19, mm = 0) => { const d = new Date(cmon); d.setDate(cmon.getDate() - w * 7 + wd); d.setHours(hh, mm, 0, 0); return d.toISOString(); };
     const PPL = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
-      { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
-      { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "b2", exId: "hs-pulldown", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+      { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+      { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "b2", exId: "hs-pulldown", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
       { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
     const S3 = (kg, reps) => [0, 1, 2].map(() => ({ kg, reps }));
-    const H = (dayId, date, exs, dur = 3600) => ({ id: "h" + Math.random(), dayId, day: { a: "Push", b: "Pull", c: "Beine" }[dayId], date, durationSec: dur, exercises: exs.map(([exId, sets, u]) => ({ exId, name: exId, u, sets })) });
+    const H = (dayId, date, exs, dur = 3600) => ({ id: "h" + Math.random(), dayId, day: { a: "Drücken", b: "Ziehen", c: "Beine" }[dayId], date, durationSec: dur, exercises: exs.map(([exId, sets, u]) => ({ exId, name: exId, u, sets })) });
     {
       // Vorschau auf „Heute“ = dieselben Vorschläge wie beim Start
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s"), hist("hs-legpress", [{ kg: 100, reps: 10 }], 3, "t")] });
       ok("„Heute“ zeigt keine Übungsliste, sondern „3 Übungen ›“", !(await page.$("#todayPlan")) && (await page.textContent("#exBtn")).includes("3 Übungen"));
       await page.click("#exBtn");
       const rows = await page.$$eval("#todayPlan .li", els => els.map(e => e.textContent.replace(/\s+/g, " ").trim()));
-      ok("Heute: „Dein Training heute“ mit Gewicht, Wiederholungen und Begründung je Übung", rows.length === 3 && rows[0].includes("Iso-Lateral Chest Press") && rows[0].includes("2 × 42,5 kg pro Seite") && rows[0].includes("8–12 Wdh.") && rows[0].includes("+2,5 kg")
+      ok("Heute: „Dein Training heute“ mit Gewicht, Wiederholungen und Begründung je Übung", rows.length === 3 && rows[0].includes("Brustpresse") && rows[0].includes("2 × 42,5 kg pro Seite") && rows[0].includes("8–12 Wdh.") && rows[0].includes("+2,5 kg")
         && rows[1].includes("1 × 100 kg insgesamt · Ziel 11 Wdh.") && rows[1].includes("+1 Wdh.") && rows[2].includes("Gewicht wählen") && rows[2].includes("neu"), rows.join(" | "));
       await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
       ok("Antippen zeigt die Begründung, „Zurück“ zur Liste", (await page.textContent(".sheet")).includes("Letztes Mal alle 2 Sätze mit 12 Wdh.") && (await page.textContent(".sheet")).includes("So steigert die App"));
@@ -2026,7 +2026,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Training übernimmt genau die Vorschau (42,5 / 100 / leer)", kg[0] === 42.5 && kg[1] === 100 && kg[2] === null, JSON.stringify(kg));
       await finishAllSets(page, 45, 12);
       const nt = await page.textContent("#nextTime");
-      ok("Nach dem Training: „Nächstes Mal“ aus diesem Training (47,5 kg pro Seite, +2,5 kg)", nt.includes("Iso-Lateral Chest Press") && nt.includes("47,5 kg pro Seite") && nt.includes("+2,5 kg") && nt.includes("So entscheidet die App"), nt.replace(/\s+/g, " ").slice(0, 300));
+      ok("Nach dem Training: „Nächstes Mal“ aus diesem Training (47,5 kg pro Seite, +2,5 kg)", nt.includes("Brustpresse") && nt.includes("47,5 kg pro Seite") && nt.includes("+2,5 kg") && nt.includes("So entscheidet die App"), nt.replace(/\s+/g, " ").slice(0, 300));
       await ctx.close();
     }
     {
@@ -2058,7 +2058,7 @@ async function finishAllSets(page, kg, reps) {
       for (let w = 5; w >= 0; w--) for (const wd of [0, 3]) { if (new Date(at(w, wd)) > new Date()) continue; const d = ["a", "b", "c"][k++ % 3]; history.push(H(d, at(w, wd), [[{ a: "hs-chest", b: "hs-pulldown", c: "hs-legpress" }[d], S3(40 + k, 10), d === "a" ? "s" : "t"]])); }
       const { ctx, page } = await open({ plan: PPL, history });
       const ins = await tp(page, () => window.__tp.insights().map(x => x.id));
-      ok("Häufigkeit: „Im Schnitt 2 von 3 Trainings pro Woche“ mit Zählung je Tag", ins.includes("freq:3>2") && (await page.textContent("#coach")).includes("Im Schnitt 2 von 3 Trainings pro Woche") && /Push \d×, Pull \d× und Beine \d×/.test(await page.textContent("#coach")), ins.join(","));
+      ok("Häufigkeit: „Im Schnitt 2 von 3 Trainings pro Woche“ mit Zählung je Tag", ins.includes("freq:3>2") && (await page.textContent("#coach")).includes("Im Schnitt 2 von 3 Trainings pro Woche") && /Drücken \d×, Ziehen \d× und Beine \d×/.test(await page.textContent("#coach")), ins.join(","));
       ok("Buddy hat die Trainingszeiten gelernt: montags und donnerstags gegen 18:00", (await page.textContent("#buddy")).includes("Du trainierst meistens montags und donnerstags gegen 18:00"));
       await page.click("#buddy [data-a=schedLearned]");
       const on = await page.$$eval("#schedDays .chip.on", e => e.map(x => x.dataset.d));
@@ -2092,7 +2092,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=tab][data-v=wissen]"); await page.click("#wissenCoach");
       const card = await page.$("[data-ins='plateau:hs-row']");
       const txt = card ? (await card.textContent()).replace(/\s+/g, " ") : "";
-      ok("Stillstand erkannt: „Iso-Lateral Row: Stillstand seit 4 Wochen“, 5 Einheiten", txt.includes("Iso-Lateral Row: Stillstand seit 4 Wochen") && txt.includes("5 vollständige Einheiten"), txt.slice(0, 200));
+      ok("Stillstand erkannt: „Rudern: Stillstand seit 4 Wochen“, 5 Einheiten", txt.includes("Rudern: Stillstand seit 4 Wochen") && txt.includes("5 vollständige Einheiten"), txt.slice(0, 200));
       const to = await page.getAttribute("[data-ins='plateau:hs-row'] [data-a=coachSwap]", "data-to");
       await page.click("[data-ins='plateau:hs-row'] [data-a=coachSwap]");
       const st = await stored(page), ids = st.plan.days.flatMap(d => d.items.map(i => i.exId));
@@ -2137,7 +2137,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Dauer: „im Schnitt 80 Min.“ bei 60 Min. Zeitbudget", get("dur")[1] === "Deine Trainings dauern im Schnitt 80 Min." && get("dur")[2].includes("Geplant sind 60 Min."), JSON.stringify(get("dur")));
       ok("Ernährung: „Du nimmst langsamer zu als geplant“ (±0 % pro Woche, Ziel 0,25–0,5 %)", get("trend:auf")[1] === "Du nimmst langsamer zu als geplant" && get("trend:auf")[2].includes("±0 % pro Woche") && get("trend:auf")[2].includes("0,25–0,5 % mehr pro Woche"), JSON.stringify(get("trend")));
       ok("Eiweiß: „im Schnitt 60 g pro Tag“, Ziel 128 g, 5 erfasste Tage", get("prot")[1] === "Eiweiß: im Schnitt 60 g pro Tag" && get("prot")[2].includes("128 g") && get("prot")[2].includes("an 5 erfassten Tagen"), JSON.stringify(get("prot")));
-      ok("Ziel mit verstrichenem Datum", get("goal:g1")[1] === "Iso-Lateral Shoulder Press: Zieldatum verstrichen");
+      ok("Ziel mit verstrichenem Datum", get("goal:g1")[1] === "Schulterpresse: Zieldatum verstrichen");
       ok("Was gut läuft: „Mehr Gewicht an 1 von 2 Geräten“ (Chest Press 40 → 50, +25 %)", get("good")[1] === "Mehr Gewicht an 1 von 2 Geräten" && get("good")[2].includes("40 → 50 kg pro Seite") && get("good")[2].includes("+25 %"), JSON.stringify(get("good")));
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
       ok("Heute: ein Hinweis, Link zu allen", (await page.$$("#coach .ins")).length === 1 && (await page.textContent("#coach")).includes("Alle"));
@@ -2239,7 +2239,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Training: ein Trick für den aktuellen Satz", (await page.textContent("#trickNow")).includes("Sitzeinstellung notieren"));
       ok("360 px: Training mit Trick ohne seitliches Scrollen", await noOverflow(page));
       await page.click("#trickNow");
-      ok("Antippen: alle Tricks des Geräts, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Iso-Lateral Chest Press") && await page.isVisible(".sheet details[data-trick=setup][open]")
+      ok("Antippen: alle Tricks des Geräts, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Brustpresse") && await page.isVisible(".sheet details[data-trick=setup][open]")
         && (await page.$$(".sheet details[open]")).length === 1);
       await page.click(".sheet details[data-trick=limit] summary");
       ok("Trick aufklappen zeigt Begründung und Quelle", (await page.textContent(".sheet details[data-trick=limit]")).includes("Robinson") && await page.isVisible(".sheet details[data-trick=limit] .srcs"));
@@ -2347,7 +2347,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, sched, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 2, "s")], misses: [{ d: mday(1), r: "zeit" }],
         goals: [{ id: "g1", kind: "kraft", exId: "hs-chest", u: "s", target: 50, start: 40, startDate: mday(2) + "T10:00:00.000Z" }] });
       const b = await page.textContent("#buddy");
-      ok("Trainingsfrei: „Beim nächsten Mal: Iso-Lateral Chest Press – noch 10 kg bis 50 kg pro Seite“, kein „Heute ist … dran“", b.includes("Heute ist trainingsfrei") && b.includes("Beim nächsten Mal: Iso-Lateral Chest Press – noch 10 kg bis 50 kg pro Seite") && !b.includes("Heute ist die"), b.replace(/\s+/g, " "));
+      ok("Trainingsfrei: „Beim nächsten Mal: Brustpresse – noch 10 kg bis 50 kg pro Seite“, kein „Heute ist … dran“", b.includes("Heute ist trainingsfrei") && b.includes("Beim nächsten Mal: Brustpresse – noch 10 kg bis 50 kg pro Seite") && !b.includes("Heute ist die"), b.replace(/\s+/g, " "));
       ok("Gestriger Ausfall als Fakt: „… ausgefallen – keine Zeit“", b.includes(`${WDL[mwd(1)]} ausgefallen – keine Zeit`));
       ok("Wochenleiste: ausgefallener Tag markiert", mwd(1) > mwd(0) ? true : (await page.$$(".week .dot.miss")).length === 1);
       ok("Übungen hinter „N Übungen ›“, nicht als Liste auf „Heute“", !(await page.$("#todayPlan")) && await page.isVisible("#exBtn"));
@@ -2361,7 +2361,7 @@ async function finishAllSets(page, kg, reps) {
 
     section("38. Vorausdenken im Training");
     {
-      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Drücken", items: [
         { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
       const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] });
       await page.click("[data-a=start]");
@@ -2383,7 +2383,7 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
     {
-      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Drücken", items: [
         { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
       const { ctx, page } = await open({ plan });
       await page.click("[data-a=start]");
@@ -2416,35 +2416,35 @@ async function finishAllSets(page, kg, reps) {
     section("39. Wochenplan voraus");
     {
       const PPL3 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
-        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
-        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
         { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
       const w0 = mwd(0), schedDays = [w0, w0 + 1, w0 + 2].filter(d => d <= 6);           // heute und die nächsten Tage dieser Woche
       const sched = { id: "s", days: schedDays, time: "23:59", planB: "next", since: mday(20) + "T00:00:00.000Z" };
       const { ctx, page } = await open({ plan: PPL3, sched, history: [] });
       const labels = await page.$$eval(".week .wp", els => els.map(e => e.textContent));
-      const expect = Array(7).fill(""); ["Push", "Pull", "Beine"].forEach((n, i) => { if (schedDays[i] !== undefined) expect[schedDays[i]] = n; });
-      ok("Wochenleiste: kommende Termine mit dem Trainingstag laut Ablauf (Push, Pull, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
+      const expect = Array(7).fill(""); ["Drücken", "Ziehen", "Beine"].forEach((n, i) => { if (schedDays[i] !== undefined) expect[schedDays[i]] = n; });
+      ok("Wochenleiste: kommende Termine mit dem Trainingstag laut Ablauf (Drücken, Ziehen, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
       const wl = await page.textContent("#weekLeft");
-      ok("„Noch diese Woche: Push, Pull, Beine“", wl.includes("Noch diese Woche: Push, Pull, Beine"), wl);
+      ok("„Noch diese Woche: Drücken, Ziehen, Beine“", wl.includes("Noch diese Woche: Drücken, Ziehen, Beine"), wl);
       ok("Countdown bis zum Termin heute", /In (\d+ Std\.|\d+ Min\.)/.test(await page.textContent("#buddy")) && (await page.textContent("#buddy")).includes("· ca. "), await page.textContent("#buddy"));
       ok("360 px: Wochenleiste mit Namen ohne seitliches Scrollen", await noOverflow(page));
       await ctx.close();
     }
     {
-      // Push heute erledigt: Name unter dem heutigen Tag, Rest der Woche rückt weiter
+      // Drücken heute erledigt: Name unter dem heutigen Tag, Rest der Woche rückt weiter
       const PPL3 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
-        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
-        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
         { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
       const w0 = mwd(0), later = [w0 + 1, w0 + 2].filter(d => d <= 6);
       const sched = { id: "s", days: [w0, ...later], time: "23:59", planB: "next", since: mday(20) + "T00:00:00.000Z" };
-      const h = { id: "h1", dayId: "a", day: "Push", date: new Date().toISOString(), durationSec: 1800, exercises: [{ exId: "hs-chest", name: "x", u: "s", sets: [{ kg: 40, reps: 10 }] }] };
+      const h = { id: "h1", dayId: "a", day: "Drücken", date: new Date().toISOString(), durationSec: 1800, exercises: [{ exId: "hs-chest", name: "x", u: "s", sets: [{ kg: 40, reps: 10 }] }] };
       const { ctx, page } = await open({ plan: PPL3, sched, history: [h] });
       const labels = await page.$$eval(".week .wp", els => els.map(e => e.textContent + (e.classList.contains("done") ? "*" : "")));
-      const expect = Array(7).fill(""); expect[w0] = "Push*"; ["Pull", "Beine"].forEach((n, i) => { if (later[i] !== undefined) expect[later[i]] = n; });
-      ok("Erledigter Tag markiert, kommende Termine rücken im Ablauf weiter (Pull, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
-      ok("„Noch diese Woche: Pull, Beine“", (await page.textContent("#weekLeft")).includes("Noch diese Woche: Pull, Beine"));
+      const expect = Array(7).fill(""); expect[w0] = "Drücken*"; ["Ziehen", "Beine"].forEach((n, i) => { if (later[i] !== undefined) expect[later[i]] = n; });
+      ok("Erledigter Tag markiert, kommende Termine rücken im Ablauf weiter (Ziehen, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
+      ok("„Noch diese Woche: Ziehen, Beine“", (await page.textContent("#weekLeft")).includes("Noch diese Woche: Ziehen, Beine"));
       await ctx.close();
     }
     {
@@ -2461,7 +2461,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open(null);
       const on = async () => page.$$eval("#setupDays .chip.on", e => e.map(x => x.dataset.d).join(","));
-      ok("Einrichtung fragt die Trainingstage (Vorschlag Mo, Mi, Fr) und die Uhrzeit", (await on()) === "0,2,4" && (await page.textContent("#setupDaysTxt")).includes("3 Tage · Push · Pull · Beine") && await page.isVisible("#setupTime"));
+      ok("Einrichtung fragt die Trainingstage (Vorschlag Mo, Mi, Fr) und die Uhrzeit", (await on()) === "0,2,4" && (await page.textContent("#setupDaysTxt")).includes("3 Tage · Drücken · Ziehen · Beine") && await page.isVisible("#setupTime"));
       await page.click("#setupDays [data-d='1']");
       ok("Vierter Tag → 4-Tage-Plan", (await on()) === "0,1,2,4" && (await page.textContent("#setupDaysTxt")).includes("4 Tage · Oberkörper A"));
       for (const d of ["1", "2", "4"]) await page.click(`#setupDays [data-d='${d}']`);
@@ -2497,7 +2497,31 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("41. Konsole");
+    section("41. Alles auf Deutsch, neue Muskelkarte");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [{ id: "h", dayId: "d1", day: "Push", date: new Date(Date.now() - 2 * 864e5).toISOString(), durationSec: 1800,
+        exercises: [{ exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 10 }] }] }] });
+      const L = await tp(page, () => window.__tp.allEx().filter(e => e.id.startsWith("hs-")).map(e => [e.id, e.name, e.label]));
+      ok("Alle 28 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 28 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
+      ok("Gewicht pro Seite bleibt an der Gerätebezeichnung (Brustpresse: pro Seite, Beinpresse: insgesamt)", await tp(page, () => window.__tp.unitOf(window.__tp.ex("hs-chest")) === "s" && window.__tp.unitOf(window.__tp.ex("hs-legpress")) === "t" && window.__tp.unitOf(window.__tp.ex("hs-legext")) === "s"));
+      const st = await tp(page, () => window.__tp.state);
+      ok("Gespeicherte Einträge auf Deutsch umgestellt (Gerät und Trainingstag „Push“ → „Drücken“)", st.history[0].exercises[0].name === "Brustpresse" && st.history[0].day === "Drücken");
+      await page.click("[data-a=tab][data-v=lib]"); await page.fill("#libQ", "chest press");
+      ok("Suche findet auch die Bezeichnung am Gerät (chest press → Brustpresse)", (await page.textContent("#app")).includes("Brustpresse"));
+      await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=hs-row]");
+      ok("Geräteseite: deutscher Name, darunter „Am Gerät steht: Iso-Lateral Row“", (await page.textContent(".head .title")) === "Rudern" && (await page.textContent("#exLabel")) === "Am Gerät steht: Iso-Lateral Row");
+      const fig = await page.$$eval(".gfig .fig path.m, .gfig .fig ellipse.m", e => e.length);
+      ok("Muskelkarte: Vorder- und Rückansicht mit einzelnen Muskelflächen", fig >= 30, String(fig));
+      const lit = await page.$$eval(".gfig .fig .m", e => e.filter(x => x.getAttribute("style")).length);
+      ok("Rudern: Rücken und mittrainierte Muskeln hervorgehoben", lit >= 6, String(lit));
+      await page.click("[data-a=exBack]");
+      const thumbs = await page.$$eval("#app .li .fig", e => e.map(x => x.getAttribute("viewBox")));
+      ok("Vorschaubilder zeigen die passende Körperhälfte (Brust vorn oben, Rücken hinten oben, Beinbeuger hinten unten)", thumbs.includes("16 0 68 120") && thumbs.includes("126 0 68 120") && thumbs.includes("126 88 68 114"), thumbs.slice(0, 4).join(" | "));
+      for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Übungsliste mit Vorschaubildern ohne seitliches Scrollen`, await noOverflow(page)); }
+      await ctx.close();
+    }
+
+    section("42. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
