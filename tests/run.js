@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v15)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v15")));
+      ok("Service Worker aktiv (Cache trainingsplan-v17)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v17")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1308,7 +1308,7 @@ async function finishAllSets(page, kg, reps) {
           { code: "4000000000099", product_name: "Ohne Werte", nutriments: {} },
           { code: "4061458014151", product_name: "Doppelt", nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 } }] }) });
         if (u.includes("/api/v2/product/4061458014151")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ status: 1, product: { code: "4061458014151", product_name: "Bio-Magerquark", brands: "Gut Bio", nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 } } }) });
-        if (u.includes("/api/v2/product/4000000000111")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ status: 1, product: { code: "4000000000111", product_name: "Halb", nutriments: { "energy-kcal_100g": 66 } } }) });
+        if (u.includes("/api/v2/product/4000000000112")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ status: 1, product: { code: "4000000000112", product_name: "Halb", nutriments: { "energy-kcal_100g": 66 } } }) });
         return route.fulfill({ status: 404, headers: h, body: JSON.stringify({ status: 0, status_verbose: "product not found" }) });
       });
       await page.click("[data-a=foodAdd][data-m=f]");
@@ -1331,11 +1331,13 @@ async function finishAllSets(page, kg, reps) {
       // Barcode
       await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]");
       await page.fill("#bcIn", "123"); await page.click("[data-a=barcodeGo]");
-      ok("Barcode: zu kurz abgelehnt", (await page.textContent("#bcMsg")).includes("8 bis 14"));
-      await page.fill("#bcIn", "4000000000000"); await page.click("[data-a=barcodeGo]");
+      ok("Barcode: falsche Länge abgelehnt", (await page.textContent("#bcMsg")).includes("8, 12, 13 oder 14"));
+      await page.fill("#bcIn", "4061458014152"); await page.click("[data-a=barcodeGo]");
+      ok("Barcode: Tippfehler über die Prüfziffer erkannt, ohne Anfrage", (await page.textContent("#bcMsg")).includes("Prüfziffer"));
+      await page.fill("#bcIn", "4000000000006"); await page.click("[data-a=barcodeGo]");
       await page.waitForFunction(() => (document.querySelector("#bcMsg")?.textContent || "").includes("Kein Produkt"));
       ok("Barcode: nicht gefunden → Hinweis auf eigenes Lebensmittel", true);
-      await page.fill("#bcIn", "4000000000111"); await page.click("[data-a=barcodeGo]");
+      await page.fill("#bcIn", "4000000000112"); await page.click("[data-a=barcodeGo]");
       await page.waitForFunction(() => (document.querySelector("#bcMsg")?.textContent || "").includes("ohne vollständige"));
       ok("Barcode: unvollständige Nährwerte werden nicht übernommen", true);
       await page.fill("#bcIn", "4061458014151"); await page.click("[data-a=barcodeGo]");
@@ -1397,7 +1399,155 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("26. Konsole");
+    section("26. Barcode-Scan mit der Kamera");
+    // Unabhängiger Test-Encoder nach den Bitmustern der Norm: L-Code, R = Komplement von L, G = R rückwärts
+    const L_BITS = ["0001101", "0011001", "0010011", "0111101", "0100011", "0110001", "0101111", "0111011", "0110111", "0001011"];
+    const R_BITS = L_BITS.map(b => [...b].map(c => c === "1" ? "0" : "1").join("")), G_BITS = R_BITS.map(b => [...b].reverse().join(""));
+    const PAR13 = ["LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG", "LGGLLG", "LGGGLG", "LGLGLL", "LGLGGL", "LGGLGL"];
+    const eanBits = code => {
+      let s = "101";
+      if (code.length === 13) { for (let i = 0; i < 6; i++) s += (PAR13[+code[0]][i] === "L" ? L_BITS : G_BITS)[+code[i + 1]]; s += "01010"; for (let i = 7; i < 13; i++) s += R_BITS[+code[i]]; }
+      else { for (let i = 0; i < 4; i++) s += L_BITS[+code[i]]; s += "01010"; for (let i = 4; i < 8; i++) s += R_BITS[+code[i]]; }
+      return s + "101";
+    };
+    const scanLine = (bits, px, { noise = 0, spread = 0, quiet = 12 } = {}) => {
+      const mods = "0".repeat(quiet) + bits + "0".repeat(quiet), out = new Array(mods.length * px).fill(215);
+      for (let i = 0; i < mods.length; i++) if (mods[i] === "1") for (let k = -spread; k < px + spread; k++) { const x = i * px + k; if (x >= 0 && x < out.length) out[x] = 40; }
+      let s = 12345;
+      return out.map(v => { s = (s * 1103515245 + 12345) % 2147483648; return Math.max(0, Math.min(255, Math.round(v + (s / 2147483648 - 0.5) * 2 * noise))); });
+    };
+    const writeY4m = (file, bits, { w = 640, h = 480, px = 4, flip = false, blur = false, spread = 0, tilt = 0, noise = 0 } = {}) => {
+      let Y = new Uint8Array(w * h).fill(230);
+      if (bits) {
+        const bw = bits.length * px, cx = w / 2, cy = h / 2, a = tilt * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), bh = h * 0.28;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          const u = (x - cx) * ca + (y - cy) * sa + bw / 2, v = -(x - cx) * sa + (y - cy) * ca;     // gedrehte Koordinaten
+          if (Math.abs(v) > bh / 2 || u < -spread || u >= bw + spread) continue;
+          const i = Math.floor(u / px), f = u - i * px;
+          const dark = (i >= 0 && i < bits.length && bits[i] === "1") || (spread && ((f < spread && bits[i - 1] === "1") || (f >= px - spread && bits[i + 1] === "1")));
+          if (dark) Y[y * w + x] = 30;
+        }
+      }
+      if (noise) { let s = 99; for (let i = 0; i < Y.length; i++) { s = (s * 1103515245 + 12345) % 2147483648; Y[i] = Math.max(0, Math.min(255, Math.round(Y[i] + (s / 2147483648 - 0.5) * 2 * noise))); } }
+      if (blur) { const B = new Uint8Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let s = 0, n = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && yy < h && xx >= 0 && xx < w) { s += Y[yy * w + xx]; n++; } }
+        B[y * w + x] = Math.round(s / n); } Y = B; }
+      if (flip) Y = Y.reverse();
+      const head = Buffer.from(`YUV4MPEG2 W${w} H${h} F10:1 Ip A1:1 C420jpeg\n`);
+      const frame = Buffer.concat([Buffer.from("FRAME\n"), Buffer.from(Y), Buffer.alloc(w * h / 4, 128), Buffer.alloc(w * h / 4, 128)]);
+      require("fs").writeFileSync(file, Buffer.concat([head, frame, frame, frame, frame, frame]));
+    };
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const gv = await tp(page, () => ["4006381333931", "3017620422003", "036000291452", "73513537", "4006381333932", "12345", "4061458014151"].map(c => window.__tp.gtinValid(c)));
+      ok("Prüfziffer nach GS1: gültige EAN-13, UPC-A und EAN-8 erkannt, falsche abgelehnt", JSON.stringify(gv) === "[true,true,true,true,false,false,true]", JSON.stringify(gv));
+      const cases = [["4006381333931", 3, {}], ["3017620422003", 2, { noise: 25 }], ["0036000291452", 4, { spread: 1 }], ["73513537", 3, {}], ["5000112637922", 5, { noise: 15, spread: 1 }]];
+      const res = [];
+      for (const [c, px, o] of cases) { const g = scanLine(eanBits(c), px, o); res.push(await tp(page, a => window.__tp.eanDecodeLine(a), g)); res.push(await tp(page, a => window.__tp.eanDecodeLine(a), [...g].reverse())); }
+      ok("Decoder liest EAN-13, UPC-A und EAN-8 – auch verrauscht, mit verbreiterten Balken und auf dem Kopf", JSON.stringify(res) === JSON.stringify(cases.flatMap(([c]) => [c, c])), JSON.stringify(res));
+      ok("Strichcode mit falscher Prüfziffer wird nicht gelesen", (await tp(page, a => window.__tp.eanDecodeLine(a), scanLine(eanBits("4006381333932"), 3))) === null);
+      ok("Abgeschnittener Strichcode (ohne Ruhezone) wird nicht gelesen", (await tp(page, a => window.__tp.eanDecodeLine(a), scanLine(eanBits("4006381333931"), 3, { quiet: 1 }))) === null);
+      const rnd = []; let s = 7; for (let i = 0; i < 1200; i++) { s = (s * 1103515245 + 12345) % 2147483648; rnd.push(s % 256); }
+      ok("Zufälliges Bildrauschen ergibt keine Lesung", (await tp(page, a => window.__tp.eanDecodeLine(a), rnd)) === null);
+      await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]");
+      ok("Barcode-Sheet: Kamera-Scan als Hauptaktion", await page.isVisible(".sheet .btn.primary[data-a=scanStart]"));
+      await page.click("[data-a=scanStart]");
+      await page.waitForFunction(() => /Nummer/.test(document.querySelector("#scanMsg")?.textContent || ""), null, { timeout: 15000 });
+      ok("Ohne Kamera(zugriff): verständliche Meldung statt Fehler", !(await tp(page, () => window.__tp.scanActive())));
+      ok("Scanner-Ansicht bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click(".sh-head [data-a=scanCancel]");
+      ok("„Abbrechen“ führt zur Barcode-Eingabe", await page.isVisible("#bcIn"));
+      await ctx.close();
+    }
+    // Kamera-Simulation: Chromium liefert ein Video mit Strichcode als Kamerabild
+    const camRun = async (file, fn) => {
+      const cam = await chromium.launch({ args: ["--no-sandbox", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${file}`] });
+      const ctx = await cam.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: "block", permissions: ["camera"] });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message));
+      try { await fn(page); } finally { await ctx.close(); await cam.close(); }
+    };
+    for (const [code, opt, label] of [["4006381333931", {}, "scharf"], ["3017620422003", { flip: true, blur: true, spread: 1 }, "unscharf, auf dem Kopf, verbreiterte Balken"],
+      ["4061458014151", { px: 3, tilt: 8, noise: 20 }, "8° schräg, klein, verrauscht"], ["73513537", {}, "EAN-8"]]) {
+      const file = path.join(require("os").tmpdir(), `tp-scan-${code}.y4m`); writeY4m(file, eanBits(code), opt);
+      await camRun(file, async page => {
+        const asked = [];
+        await page.route("https://world.openfoodfacts.org/**", route => { asked.push(route.request().url());
+          route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*", "content-type": "application/json" }, body: JSON.stringify({ status: 1, product: { code, product_name: "Testprodukt " + code, nutriments: { "energy-kcal_100g": 100, proteins_100g: 10, carbohydrates_100g: 10, fat_100g: 2 } } }) }); });
+        await page.goto(URL);
+        await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]"); await page.click("[data-a=scanStart]");
+        const found = await page.waitForSelector("#amtG", { timeout: 20000 }).then(() => true).catch(() => false);
+        ok(`Kamera-Scan (${label}): ${code} erkannt und nachgeschlagen`, found && asked.some(u => u.includes(`/product/${code}.json`)) && (await page.textContent(".sheet")).includes("Testprodukt " + code),
+          found ? asked.join(" ") : await page.textContent("#scanMsg").catch(() => "kein Sheet"));
+        ok(`Kamera nach dem Scan ausgeschaltet (${label})`, !(await tp(page, () => window.__tp.scanActive())) && !(await page.$("video")));
+      });
+    }
+    {
+      const file = path.join(require("os").tmpdir(), "tp-scan-leer.y4m"); writeY4m(file, null);
+      await camRun(file, async page => {
+        await page.goto(URL);
+        await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]"); await page.click("[data-a=scanStart]");
+        await page.waitForFunction(() => window.__tp.scanActive(), null, { timeout: 10000 });
+        await page.waitForTimeout(1500);
+        ok("Leeres Kamerabild: keine Falschlesung, Scanner läuft weiter", await tp(page, () => window.__tp.scanActive()) && !(await page.$("#amtG")));
+        await page.keyboard.press("Escape");
+        ok("Sheet schließen schaltet die Kamera aus", !(await tp(page, () => window.__tp.scanActive())));
+      });
+    }
+
+    section("27. Wasser und „Wie am Vortag“");
+    {
+      const pad = n => String(n).padStart(2, "0"), dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const today = dk(new Date()), yest = dk(new Date(Date.now() - 864e5)), before = dk(new Date(Date.now() - 2 * 864e5));
+      const E = (id, m, n, g, k, p) => ({ id, m, n, src: "usda:1", g, per: { k, p, c: 10, f: 1 } });
+      const food = { [yest]: [E("y1", "f", "Haferflocken", 80, 379, 13.2), E("y2", "f", "Banane", 118, 89, 1.09), E("y3", "m", "Reis", 250, 130, 2.69)],
+        [before]: [E("b1", "a", "Lachs", 150, 206, 22.1)] };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, food, water: { [yest]: 1500, "kaputt": 5, [before]: -3 } });
+      const w = await tp(page, () => { const T = window.__tp; return { clean: T.state.water, none: T.waterGoal() }; });
+      ok("Wasser-Daten bereinigt", JSON.stringify(Object.keys(w.clean)) === JSON.stringify([yest]) && w.clean[yest] === 1500);
+      ok("Ohne Profil kein persönliches Trinkziel", w.none === null);
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Ohne Profil: Spanne 1,6–2,0 L (EFSA)", (await page.textContent("#waterBox")).includes("0,0 L") && (await page.textContent("#waterBox")).includes("1,6–2,0 L") && await page.isDisabled("[data-a=water][data-ml='-250']"));
+      await page.click("[data-a=water][data-ml='250']"); await page.click("[data-a=water][data-ml='250']"); await page.click("[data-a=water][data-ml='500']");
+      ok("Gläser zählen: 2 × 250 ml + 500 ml = 1,0 L", (await page.textContent("#waterBox")).includes("1,0 L") && (await stored(page)).water[today] === 1000);
+      await page.click("[data-a=water][data-ml='-250']");
+      ok("Korrektur: − 250 ml → 0,75 L", (await page.textContent("#waterBox")).includes("0,75 L") && (await stored(page)).water[today] === 750);
+      await page.click("[data-a=waterInfo]");
+      const info = await page.textContent(".sheet");
+      ok("Erklärung mit EFSA-Werten, Geltungsbereich und Quellen", info.includes("2,0 Liter") && info.includes("2,5 Liter") && info.includes("20–30 %") && info.includes("Hitze")
+        && (await page.$$eval(".sheet .srcs a", a => a.map(x => x.href))).some(h => h.includes("10.2903/j.efsa.2010.1459")));
+      await page.keyboard.press("Escape");
+      // „Wie am Vortag“
+      ok("„Wie am Vortag“ nur bei leeren Mahlzeiten mit Einträgen am Vortag", (await page.$$("[data-a=copyMeal]")).length === 2
+        && (await page.textContent("[data-a=copyMeal][data-m=f]")).includes("2 Einträge, 408 kcal"));
+      await page.click("[data-a=copyMeal][data-m=f]");
+      let st = await stored(page);
+      ok("Frühstück übernommen: gleiche Werte, neue Einträge", st.food[today].length === 2 && st.food[today].every(e => e.m === "f" && !["y1", "y2"].includes(e.id))
+        && st.food[today][0].g === 80 && st.food[today][0].per.k === 379 && st.food[yest].length === 3);
+      ok("Nach dem Übernehmen kein doppeltes Angebot", !(await page.$("[data-a=copyMeal][data-m=f]")) && (await page.textContent("#app")).includes("Haferflocken"));
+      // Vergangener Tag: Wasser und Vortag beziehen sich auf den angezeigten Tag
+      await page.click("[data-a=foodDay][data-d='-1']");
+      ok("Gestern: eigener Wasserstand (1,5 L)", (await page.textContent("#waterBox")).includes("1,5 L"));
+      ok("Gestern: „Wie am Vortag“ bezieht sich auf vorgestern", (await page.$$("[data-a=copyMeal]")).length === 1 && !!(await page.$("[data-a=copyMeal][data-m=a]")));
+      await page.click("[data-a=foodDay][data-d='1']");
+      // Mit Profil: persönliches Ziel
+      await tp(page, () => { window.__tp.state.nutr = window.__tp.cleanNutr({ sex: "w", age: 30, cm: 165, pal: 1.55, goal: "halten" }); });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
+      ok("Frauen: Trinkziel 1,6 L", (await page.textContent("#waterBox")).includes("von 1,6 L") && (await tp(page, () => window.__tp.waterGoal())) === 1600);
+      await tp(page, () => { window.__tp.state.nutr.sex = "m"; });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
+      ok("Männer: Trinkziel 2,0 L", (await page.textContent("#waterBox")).includes("von 2,0 L"));
+      ok("Wasser und Vortag bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, water: {} }, { light });
+      await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=water][data-ml='500']");
+      ok(`360 px ${light ? "hell" : "dunkel"}: Wasserbereich ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#waterBox"));
+      await ctx.close();
+    }
+
+    section("28. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
