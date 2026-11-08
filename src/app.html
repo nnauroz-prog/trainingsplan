@@ -189,7 +189,7 @@
   .t-bar{display:flex;align-items:center;gap:var(--s3)}
   .t-bar .grow{display:grid}
   .t-bar .day{font-weight:600;font-size:15px}
-  .t-bar .cnt{font-size:13px;color:var(--text-3)}
+  .t-bar .cnt{font-size:13px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right}
   .bar{height:3px;background:var(--raise-2);border-radius:3px;overflow:hidden}
   .bar>div{height:100%;background:var(--accent);transition:width .35s}
@@ -1045,7 +1045,7 @@ function normalize(raw) {
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
       paused: +r.paused || null, advDone: typeof r.advDone === "string" ? r.advDone.slice(0, 80) : null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
-      timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null };
+      timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null, timeHintOff: r.timeHintOff === true, warmDone: r.warmDone === true };
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
   // Zeitanpassung nur für das nächste Training (der Plan selbst bleibt unverändert)
@@ -1246,6 +1246,7 @@ function remainingSec(s, list = s.list, idx = s.idx) {
   return sec;
 }
 
+const remainMin = s => Math.max(1, Math.round(remainingSec(s) / 60));
 // Priorisierung für die Zeitanpassung (nicht blind vom Ende streichen)
 const COMPOUND = new Set(["push_h", "push_i", "push_v", "pull_h", "pull_v", "squat", "hinge", "dip"]);
 // cands: [{key, exId, rmin, rmax, rest, done, open, planned, order, isCurrent}]
@@ -2180,7 +2181,7 @@ const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
 // 7. Alle Sätze „leicht“ oder RIR ≥ 3 und mindestens am unteren Ziel → +1 Schritt
 // 8. Alle Sätze unter dem Ziel → halten; erst beim zweiten Mal in Folge −1 Schritt
 // 9. Sonst Gewicht halten, Ziel je 1 Wiederholung mehr
-// Danach: Steigerung, aber letzte Einheit an diesem Gerät 21 Tage oder länger her → halten (Regel der App)
+// Danach: Steigerung, aber letzte Einheit an diesem Gerät 21 Tage oder länger her → halten; 28 Tage oder länger → ein Schritt leichter (Regeln der App)
 function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step, n = it.sets;
   const planned = it.planned || it.sets;
@@ -2265,7 +2266,10 @@ function makeEntry(it, ctx) {
       why = `Letztes Mal ${lastTxt}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
     }
     const gap = Math.floor((Date.now() - L.date) / 864e5);
-    if (mode === "up" && gap >= 21) {
+    if (gap >= 28 && L.uniform && L.kg - step > 0) {
+      mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · ${gap} Tage Pause`;
+      why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
+    } else if (mode === "up" && gap >= 21) {
       mode = "hold"; sets = fromLast(0); short = `Gewicht halten · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
     }
@@ -2354,7 +2358,7 @@ function vTrain() {
   const top = `<div class="t-top">
     <div class="t-bar">
       <button class="icon-btn" data-a="askStop" aria-label="Training pausieren oder beenden">${ICON.close}</button>
-      <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">${done} von ${total} Sätzen</span></div>
+      <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">Satz ${Math.min(done + 1, total)}/${total} · <span id="remain">noch ≈ ${remainMin(s)} Min.</span></span></div>
       <span class="t-clock" id="elapsed">${fmtTime((Date.now() - s.start) / 1000)}</span>
       <button class="icon-btn ${state.voice ? "on" : ""}" data-a="voiceToggle" aria-label="Sprachbegleitung ${state.voice ? "aus" : "an"}schalten" aria-pressed="${state.voice}">${state.voice ? ICON.voiceOn : ICON.voiceOff}</button>
       <button class="icon-btn" data-a="openJump" aria-label="Übungen">${ICON.list}</button>
@@ -2376,8 +2380,16 @@ function vTrain() {
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
           <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
+          ${(() => { const lp = lastPerf(lx.exId, lx.u || unitOf(ex(lx.exId))), ps = lp ? lp[ld.si] || null : null; if (!ps) return "";
+            const cmp = lt.kg !== null && validSet(lt) ? (lt.kg > ps.kg || (lt.kg === ps.kg && lt.reps > ps.reps) ? " · heute mehr" : lt.kg === ps.kg && lt.reps === ps.reps ? " · gleich" : " · heute weniger") : "";
+            return `<p class="small muted" id="vsLast" style="margin:0">Letztes Mal Satz ${ld.si + 1}: ${kgTxt(ps.kg)} × ${ps.reps}${cmp}</p>`; })()}
           <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `RIR ${rirTxt(lt.rir)}` : "RIR angeben"}</button>
             <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}">Satz korrigieren</button></div></div>` : ""}
+      ${(() => { const b = s.timeAdj ? s.timeAdj.minutes : state.plan && state.plan.minutes; if (!b || s.timeHintOff) return "";
+        const need = (Date.now() - s.start) / 60000 + remainingSec(s) / 60, over = need - b; if (over < 5) return "";
+        return `<div class="ins warn" id="timeHint"><div class="t">≈ ${Math.round(over)} Min. über deinem Zeitbudget</div>
+          <p class="small" style="margin:0">Geplant ${b} Min., bei diesem Tempo ≈ ${Math.round(need)} Min. Ich kann den Rest kürzen: zuerst Sätze am Ende, Grundübungen bleiben, Pausen bleiben gleich.</p>
+          <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="timeFit" data-m="${b}">Auf ${b} Min. kürzen</button><button class="btn sm" data-a="timeHintOff">Egal, weiter</button></div></div>`; })()}
       ${(() => { const a = setAdvice(s); return a ? `<div class="ins ${a.up ? "good" : "warn"}" id="setAdv"><div class="t">${a.up ? "Mehr Gewicht?" : "Weniger Gewicht?"}</div><p class="small" style="margin:0">${esc(a.txt)}</p>
         <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="advApply">${kgTxt(a.kg)} kg übernehmen</button><button class="btn sm" data-a="advSkip">So lassen</button></div></div>` : ""; })()}
       <div class="next"><div class="cap">${sameEx ? "Nächster Satz" : "Nächste Übung"}</div>
@@ -2419,7 +2431,10 @@ function vTrain() {
         <button data-a="adj" data-k="reps" data-d="1" aria-label="Mehr Wiederholungen">+</button></div>
     </div>
     <p class="error" id="setErr" role="alert" hidden></p>
-    <p class="lastline">${lastTxt}${warm ? ` · Aufwärmen ca. ${kgTxt(warm)} × 10` : ""}</p>
+    <p class="lastline">${lastTxt}</p>
+    ${warm && !s.warmDone && si === 0 ? (() => { const w2 = Math.min(set.kg - e.step, Math.round(set.kg * .75 / e.step) * e.step);
+      return `<div class="ins" id="warmup"><div class="t">Erst aufwärmen</div><p class="small" style="margin:0">${kgTxt(warm)} × 10${w2 > warm ? `, dann ${kgTxt(w2)} × 5` : ""} – locker, nicht eintragen. Danach dein erster Arbeitssatz mit ${kgTxt(set.kg)} ${unitTxt(e)}.</p>
+        <button class="btn sm" data-a="warmDone">Aufgewärmt</button></div>`; })() : ""}
     ${(() => { const tr = trickNow(x, si); return tr ? `<button class="trick" data-a="openTricks" data-id="${tr.id}" id="trickNow"><span class="tk">Trick</span><span class="tt">${esc(tr.short)}</span><span class="chev">›</span></button>` : ""; })()}
     <div class="actions3">
       <button class="tool" data-a="openDevInfo">${ICON.gear}Gerät & Technik</button>
@@ -3955,7 +3970,8 @@ function insightCard(x, ret) {
 let coachBack = "home", coachDraft = null;
 const COACH_RULES = [
   ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt der Buddy einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
-  ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung (Regel der App)."],
+  ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
+  ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt der Buddy zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet er in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
   ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt der Buddy für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. RIR 0 – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt der Buddy ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, meldet sich der Buddy."],
@@ -4254,6 +4270,7 @@ let timer = null;
 function tick() {
   const s = S(); if (!s) return stopTick();
   const el = byId("elapsed"); if (el) el.textContent = fmtTime((Date.now() - s.start) / 1000);
+  const rm = byId("remain"); if (rm) rm.textContent = `noch ≈ ${remainMin(s)} Min.`;
   if (s.phase !== "rest") return;
   const left = (s.restEnd - Date.now()) / 1000;
   const t = byId("timer"); if (t) t.textContent = fmtTime(left);
@@ -4718,6 +4735,10 @@ const A = {
   setRir: el => { const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i]; if (!t) return closeSheet();
     if (el.dataset.v === "") delete t.rir; else t.rir = +el.dataset.v; save(); closeSheet(); render(); },
   openTricks: el => { const s = S(), x = s.list[s.idx], e = ex(x.exId); openSheet(`${sheetHead("Tricks: " + esc(e.name))}${tricksHtml(e, x, el.dataset.id)}`); },
+  timeFit: el => { const s = S(), m = +el.dataset.m, res = previewLive(s, m);
+    if (res.fits) { applyKeep(s, res.keep); s.timeAdj = { minutes: m }; s.timeHintOff = true; save(); render(); } else { timeSel = m; openSheet(liveTimeSheet()); } },
+  timeHintOff: () => { S().timeHintOff = true; save(); render(); },
+  warmDone: () => { S().warmDone = true; save(); render(); },
   advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
     x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
   advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
@@ -4772,7 +4793,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

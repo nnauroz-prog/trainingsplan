@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v26)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v26")));
+      ok("Service Worker aktiv (Cache trainingsplan-v27)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v27")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2358,7 +2358,59 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("38. Konsole");
+    section("38. Vorausdenken im Training");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      const rm = await tp(page, () => [document.getElementById("remain").textContent, window.__tp.remainMin(window.__tp.state.session)]);
+      ok("Kopfzeile zeigt die geschätzte Restzeit", rm[0] === `noch ≈ ${rm[1]} Min.` && rm[1] >= 20, JSON.stringify(rm));
+      const wu = await page.textContent("#warmup");
+      ok("Vor dem ersten Satz: zwei Aufwärmsätze (50 % und 75 % von 42,5 kg, auf Schritte gerundet)", wu.includes("Erst aufwärmen") && wu.includes("22,5 × 10") && wu.includes("32,5 × 5") && wu.includes("nicht eintragen") && wu.includes("42,5 kg pro Seite"), wu.replace(/\s+/g, " "));
+      await page.click("[data-a=warmDone]");
+      ok("„Aufgewärmt“ blendet den Schritt aus und merkt es in der Sitzung", !(await page.$("#warmup")) && (await stored(page)).session.warmDone === true);
+      await page.fill("#kgIn", "42,5"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      ok("Pause: derselbe Satz vom letzten Mal zum Vergleich (40 × 12 · heute mehr)", (await page.textContent("#vsLast")) === "Letztes Mal Satz 1: 40 × 12 · heute mehr");
+      const th = await page.textContent("#timeHint");
+      ok("Zeitbudget 15 Min. deutlich überschritten: Angebot zu kürzen, mit Zahlen", th.includes("über deinem Zeitbudget") && th.includes("Geplant 15 Min.") && th.includes("Auf 15 Min. kürzen"), th.replace(/\s+/g, " "));
+      ok("360 px: Pause mit Vergleich und Zeit-Hinweis ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=timeHintOff]");
+      ok("„Egal, weiter“: Hinweis weg und bleibt weg", !(await page.$("#timeHint")) && (await stored(page)).session.timeHintOff === true);
+      await page.click("[data-a=skipRest]"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      ok("… auch nach dem nächsten Satz", !(await page.$("#timeHint")) && !(await page.$("#warmup")));
+      await ctx.close();
+    }
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
+      const { ctx, page } = await open({ plan });
+      await page.click("[data-a=start]");
+      ok("Ohne bekanntes Gewicht kein Aufwärm-Vorschlag", !(await page.$("#warmup")));
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("#timeHint [data-a=timeFit]");
+      const st = await stored(page), sets = st.session.list.reduce((a, l) => a + l.sets.length, 0);
+      ok("„Auf 15 Min. kürzen“: Rest gekürzt, erledigter Satz bleibt, Anpassung vermerkt", st.session.timeAdj && st.session.timeAdj.minutes === 15 && sets < 9 && st.session.list[0].sets.filter(s => s.done).length === 1 && !(await page.$("#timeHint")), `${sets} Sätze`);
+      ok("Restzeit passt jetzt ins Budget", (await tp(page, () => (Date.now() - window.__tp.state.session.start) / 60000 + window.__tp.remainingSec(window.__tp.state.session) / 60)) <= 15.5);
+      await ctx.close();
+    }
+    {
+      // Vier Wochen Pause an einem Gerät: ein Schritt leichter
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 30, "s")] });
+      const row = (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ");
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Nach 30 Tagen: 37,5 statt 40 kg, als Regel der App begründet", row.includes("2 × 37,5 kg pro Seite") && row.includes("−2,5 kg") && (await page.textContent(".sheet")).includes("Nach vier Wochen Pause ein Schritt leichter") && (await page.textContent(".sheet")).includes("Regel der App"), row);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 25, "s")] });
+      ok("Bei 25 Tagen weiterhin nur halten", (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ").includes("2 × 40 kg pro Seite"));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      ok("So denkt der Buddy: Regel „Vorausdenken im Training“ und Wiedereinstieg", (await page.textContent("#coachRules")).includes("Vorausdenken im Training") && (await page.textContent("#coachRules")).includes("ab 4 Wochen ein Schritt leichter"));
+      await ctx.close();
+    }
+
+    section("39. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
