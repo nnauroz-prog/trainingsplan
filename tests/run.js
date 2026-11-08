@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v24)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v24")));
+      ok("Service Worker aktiv (Cache trainingsplan-v25)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v25")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1819,7 +1819,7 @@ async function finishAllSets(page, kg, reps) {
       const pc = await tp(page, () => window.__tp.planCheck());
       const pcTxt = await page.textContent("#planCheck");
       ok("Buddy-Check findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Unter dem Richtwert von 10–20") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
-      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("bei 2 Terminen pro Woche"));
+      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("2 Termine pro Woche"));
       await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
       ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
       await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
@@ -2160,7 +2160,100 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("35. Konsole");
+    section("35. Satz-Coach im Training");
+    {
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].sets = 3; plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      ok("Satz im Ziel (10 bei 8–12): kein Vorschlag", !(await page.$("#setAdv")));
+      await page.click("[data-a=feel][data-f=l]");
+      ok("„Leicht“ unter dem oberen Ziel: weiterhin kein Vorschlag", !(await page.$("#setAdv")));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "15"); await page.click("[data-a=doneSet]");
+      const t = await page.textContent("#setAdv");
+      ok("15 Wdh. (Ziel 8–12): „Mehr Gewicht?“ mit 42,5 kg für den letzten Satz", t.includes("Mehr Gewicht?") && t.includes("15 Wdh. bei 40 kg – über deinem Ziel von 8–12") && t.includes("Für den letzten Satz: 42,5 kg pro Seite (+2,5 kg)"), t.replace(/\s+/g, " "));
+      const said = await tp(page, () => window.__tp.said);
+      ok("Sprachbegleitung nennt den Vorschlag", said[said.length - 1] === "Pause, 60 Sekunden. Vorschlag: mehr Gewicht, 42,5 Kilo.", said[said.length - 1]);
+      ok("360 px: Pause mit Vorschlag ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=advApply]");
+      let sets = await tp(page, () => window.__tp.state.session.list[0].sets.map(x => x.kg));
+      ok("Übernommen: restlicher Satz 42,5 kg, Vorschlag verschwindet", JSON.stringify(sets) === "[40,40,42.5]" && !(await page.$("#setAdv")) && (await page.textContent(".next")).includes("42,5"));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await finishAllSets(page, 100, 10);
+      const h = (await stored(page)).history.pop(), cx = h.exercises.find(x => x.exId === "hs-chest");
+      ok("Im Verlauf gekennzeichnet: im Training angepasst", cx.adv === true && JSON.stringify(cx.sets.map(x => x.kg)) === "[40,40,42.5]");
+      ok("Nächstes Mal: alle Sätze mit 42,5 kg statt wieder 40", (await page.textContent("#nextTime")).includes("42,5 kg pro Seite") && (await page.textContent("#nextTime")).includes("im Training angepasst"));
+      await page.click(".actionbar [data-a=tab][data-v=home]");
+      const row = (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ");
+      ok("Vorschau: 3 × 42,5 kg, Kennzeichen +2,5 kg", row.includes("3 × 42,5 kg pro Seite") && row.includes("+2,5 kg"), row);
+      await ctx.close();
+    }
+    {
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].sets = 3; plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "5"); await page.click("[data-a=doneSet]");
+      ok("5 Wdh. (Ziel 8–12): „Weniger Gewicht?“ mit 37,5 kg für die restlichen 2 Sätze", (await page.textContent("#setAdv")).includes("Weniger Gewicht?") && (await page.textContent("#setAdv")).includes("die restlichen 2 Sätze: 37,5 kg"));
+      await page.click("[data-a=advSkip]");
+      ok("„So lassen“: Vorschlag weg, Gewicht unverändert", !(await page.$("#setAdv")) && JSON.stringify(await tp(page, () => window.__tp.state.session.list[0].sets.map(x => x.kg))) === "[40,40,40]");
+      await page.click("[data-a=feel][data-f=h]");
+      ok("… und bleibt weg, auch nach einer Bewertung", !(await page.$("#setAdv")));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]"); await page.click("[data-a=feel][data-f=l]");
+      ok("Am oberen Ziel und „leicht“: Vorschlag +2,5 kg", (await page.textContent("#setAdv")).includes("am oberen Ziel und „leicht“"));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "20"); await page.click("[data-a=doneSet]");
+      ok("Letzter Satz einer Übung: kein Vorschlag mehr", !(await page.$("#setAdv")));
+      await ctx.close();
+    }
+    {
+      // Pyramide ohne Satz-Coach bleibt satzweise (keine pauschale Steigerung)
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 45, reps: 10 }], 3, "s")] });
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Unterschiedliche Gewichte ohne Anpassung im Training: weiter satzweise", (await page.textContent(".sheet")).includes("Gewichte satzweise übernommen"));
+      await ctx.close();
+    }
+
+    section("36. Tricks und kürzere Anleitung");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Mix", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-curl", sets: 3, rmin: 8, rmax: 12, rest: 60 },
+        { id: "i3", exId: "hs-seatcurl", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const { ctx, page } = await open({ plan, hints: { units: true } });
+      const tr = await tp(page, () => { const T = window.__tp, ids = id => T.tricksFor(T.ex(id), null).map(k => k.id);
+        const it = (exId, rest = 60, sets = 3) => ({ exId, rest, sets: Array.from({ length: sets }, () => ({})) });
+        return { chest: ids("hs-chest"), curl: ids("hs-curl"), legext: ids("hs-legext"), seat: T.tricksFor(T.ex("hs-seatcurl"), null).find(k => k.id === "stretch").s,
+          now: [T.trickNow(it("hs-chest", 90), 0).id, T.trickNow(it("hs-curl"), 1).id, T.trickNow(it("hs-curl"), 2).id, T.trickNow(it("hs-seatcurl", 60, 2), 1).id],
+          restLong: T.tricksFor(T.ex("hs-chest"), { rest: 180 }).some(k => k.id === "rest"), src: !!(T.SOURCES.schoenfeld2018 && T.SOURCES.sodal2023) }; });
+      ok("Tricks passen zum Gerät: Grundübung mit Pausen-Trick, Isolation am Oberkörper mit Fokus, Steckgewicht mit Drop-Satz", tr.chest.includes("rest") && !tr.chest.includes("focus") && !tr.chest.includes("drop")
+        && tr.curl.includes("focus") && !tr.curl.includes("rest") && tr.legext.every(id => id !== "focus") && tr.src, JSON.stringify(tr));
+      ok("Beinbeuger sitzend: Dehnungs-Trick mit Studienergebnis (+14 % statt +9 %)", tr.seat.includes("+14 % statt +9 %"));
+      ok("Kein Pausen-Trick, wenn die Pause schon 3 Minuten ist", !tr.restLong);
+      ok("Trick je Satz: 1. Satz ohne Notiz → Einstellung merken; Mitte → Fokus; letzter Satz → Limit; letzter Satz am Steckgewicht → Drop-Satz",
+        JSON.stringify(tr.now) === JSON.stringify(["setup", "focus", "limit", "drop"]), JSON.stringify(tr.now));
+      await page.click("[data-a=start]");
+      ok("Training: ein Trick für den aktuellen Satz", (await page.textContent("#trickNow")).includes("Sitzeinstellung notieren"));
+      ok("360 px: Training mit Trick ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("#trickNow");
+      ok("Antippen: alle Tricks des Geräts, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Iso-Lateral Chest Press") && await page.isVisible(".sheet details[data-trick=setup][open]")
+        && (await page.$$(".sheet details[open]")).length === 1);
+      await page.click(".sheet details[data-trick=limit] summary");
+      ok("Trick aufklappen zeigt Begründung und Quelle", (await page.textContent(".sheet details[data-trick=limit]")).includes("Robinson") && await page.isVisible(".sheet details[data-trick=limit] .srcs"));
+      await page.keyboard.press("Escape");
+      await page.click(".tool[data-a=openDevInfo]");
+      ok("Gerät & Technik: So geht's und Tricks", (await page.textContent(".sheet")).includes("So geht's") && await page.isVisible("#devTricks") && (await page.$$("#devTricks details")).length >= 3);
+      await page.click("text=Ausführliche Anleitung");
+      ok("Anleitung kurz: So geht's und Tricks sichtbar, Details eingeklappt", await page.isVisible("text=Tricks für mehr Wirkung") && !(await page.$(".sheet .gdet[open]")) && !(await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist.")));
+      await page.click(".sheet .gdet summary >> text=Häufige Fehler");
+      ok("„Häufige Fehler“ aufklappen zeigt Fehler mit Korrektur", await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."));
+      for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Anleitung ohne seitliches Scrollen`, await noOverflow(page)); }
+      await ctx.close();
+    }
+
+    section("37. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
