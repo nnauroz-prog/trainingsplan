@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v18)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v18")));
+      ok("Service Worker aktiv (Cache trainingsplan-v19)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v19")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1591,7 +1591,65 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("29. Konsole");
+    section("29. Wochenrückblick");
+    {
+      const pad = n => String(n).padStart(2, "0"), dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - (now.getDay() + 6) % 7);
+      const at = (days, h) => { const d = new Date(mon); d.setDate(mon.getDate() + days); d.setHours(h, 0, 0, 0); return d.toISOString(); };
+      const X = (exId, name, u, sets) => ({ exId, name, u, planned: sets.length, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) });
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "d1", name: "Brust", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 0 }, { id: "i2", exId: "hs-fly", sets: 1, rmin: 8, rmax: 12, rest: 0 }] },
+        { id: "d2", name: "Beine", items: [{ id: "i3", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 0 }] },
+        { id: "d3", name: "Rücken", items: [{ id: "i4", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }] };
+      const history = [
+        { id: "h0", dayId: "d1", day: "Brust", date: at(-21, 1), durationSec: 1800, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[40, 10], [40, 10]])] },
+        { id: "h1", dayId: "d1", day: "Brust", date: at(-7, 1), durationSec: 1800, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[42.5, 10], [42.5, 10]])] },
+        { id: "h2", dayId: "d1", day: "Brust", date: at(0, 1), durationSec: 2400, exercises: [X("hs-chest", "Iso-Lateral Chest Press", "s", [[45, 8], [45, 8]]), X("hs-fly", "Pec Fly", "b", [[30, 12]])] },
+        { id: "h3", dayId: "d2", day: "Beine", date: at(0, 2), durationSec: 1200, exercises: [X("hs-legpress", "Linear Leg Press", "t", [[100, 10]])] }];
+      const food = { [dk(mon)]: [{ id: "f1", m: "f", n: "Haferflocken", src: "usda:173904", g: 100, per: { k: 379, p: 13.2, c: 67.7, f: 6.52 } }] };
+      const tue = new Date(mon); tue.setDate(mon.getDate() + 1);
+      const data = { plan, history, food, water: { [dk(mon)]: 1500 }, nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "halten" },
+        weights: [{ d: dk(mon), kg: 80.4 }, { d: dk(tue), kg: 80 }] };
+      const { ctx, page } = await open(data);
+      const ws = await tp(page, () => { const s = window.__tp.weekStats(0), p = window.__tp.weekStats(1); return { n: s.n, goal: s.goal, sets: s.sets, vol: s.vol, pvol: s.pvol, prs: s.prs, min: s.min, food: s.food, water: s.water, pprs: p.prs, pn: p.n }; });
+      ok("Woche: 2 von 3 Trainings, 4 Sätze, 60 Min.", ws.n === 2 && ws.goal === 3 && ws.sets === 4 && ws.min === 60, JSON.stringify(ws));
+      ok("Volumen nach derselben Regel wie im Verlauf (2 × 45 × 8 × 2 Seiten + 360 + 1.000 = 2.800 kg; Vorwoche 1.700 kg)", ws.vol === 2800 && ws.pvol === 1700);
+      ok("Neue Bestwerte nur bei Steigerung gegenüber allem davor (Brustpresse 42,5 → 45; erstes Mal Pec Fly zählt nicht)",
+        ws.prs.length === 1 && ws.prs[0].kg === 45 && ws.prs[0].from === 42.5 && ws.pprs.length === 1 && ws.pprs[0].kg === 42.5 && ws.pprs[0].from === 40);
+      ok("Ernährung und Wasser aus Tagen mit Einträgen", ws.food.n === 1 && Math.round(ws.food.k) === 379 && ws.food.hit === 0 && ws.water === 1500);
+      ok("„Heute“ zeigt den Rückblick-Einstieg", (await page.textContent("#homeWeek")).includes("2 von 3 Trainings diese Woche"));
+      await page.click("#homeWeek");
+      const txt = await page.textContent("#app");
+      ok("Rückblick: Trainings, Sätze, Volumen mit Vergleich zur Vorwoche (+65 %)", (await page.textContent("#weekTrain")).includes("2") && (await page.textContent("#weekTrain")).includes("+65 % zur Vorwoche"));
+      ok("Bestwert mit vorherigem Wert", (await page.textContent("#weekTrain")).includes("vorher 42,5 kg") && (await page.textContent("#weekTrain")).includes("45 kg pro Seite"));
+      ok("Hinweise ergeben sich aus den Zahlen", txt.includes("Noch 1 Training bis zum Wochenziel") && txt.includes("1 neuer Bestwert")
+        && txt.includes("Unter dem Zielbereich von 10–20 Sätzen: Brust (3)") && txt.includes("obwohl im Plan: Rücken") && txt.includes("Eiweiß lag im Schnitt 115 g unter deinem Ziel von 128 g"));
+      ok("Ernährung: Ø kcal mit Ziel, Eiweißziel an 0 von 1 Tagen, Ø Wasser 1,5 L", (await page.textContent("#weekFood")).includes("379") && (await page.textContent("#weekFood")).includes("an 0 von 1 Tagen") && (await page.textContent("#weekFood")).includes("1,5"));
+      ok("Gewicht: Veränderung der Woche mit ehrlichem Hinweis auf Schwankungen", (await page.textContent("#weekWeight")).includes("80,4 → 80 kg") && (await page.textContent("#weekWeight")).includes("−0,4 kg") && (await page.textContent("#weekWeight")).includes("Trend über mehrere Wochen"));
+      ok("Links zum passenden Trainingswissen", !!(await page.$("#weekHints [data-a=openArt][data-id=volumen]")) && !!(await page.$("#weekHints [data-a=openArt][data-id=eiweiss]")));
+      ok("Rückblick bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      ok("Keine Zukunft: nächste Woche gesperrt", await page.isDisabled("[data-a=weekNav][data-d='-1']"));
+      await page.click("[data-a=weekNav][data-d='1']");
+      ok("Letzte Woche: 1 Training, Bestwert 40 → 42,5", (await page.textContent(".head")).includes("Letzte Woche") && (await page.textContent("#weekTrain")).includes("vorher 40 kg"));
+      await page.click("[data-a=weekNav][data-d='-1']");
+      await page.click("#weekHints [data-a=openArt][data-id=eiweiss]"); await page.click("[data-a=artBack]");
+      ok("Artikel → zurück zum Rückblick", (await page.textContent(".head")).includes("Wochenrückblick"));
+      await page.click("[data-a=weekBack]");
+      ok("Zurück führt zu „Heute“", await page.isVisible("#homeWeek"));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histWeek");
+      ok("Auch aus dem Verlauf erreichbar; zurück zum Verlauf", (await page.textContent(".head")).includes("Wochenrückblick"));
+      await page.click("[data-a=weekBack]");
+      ok("Zurück führt zum Verlauf", await page.isVisible("#histWeek"));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 1)] }, { light });
+      await page.click("#homeWeek");
+      ok(`360 px ${light ? "hell" : "dunkel"}: Rückblick ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#weekTrain"));
+      await ctx.close();
+    }
+
+    section("30. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
