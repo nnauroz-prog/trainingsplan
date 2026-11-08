@@ -47,6 +47,9 @@ Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, dra
 
 ## Funktionen
 
+- **Alles auf Deutsch:** Geräte heißen wie in deutschen Studios üblich (Brustpresse, Schräge Brustpresse, Rudern, Latziehen zur Brust, Latzug, Schulterpresse, Seitheben, Armbeuger, Armstrecker, Trizepsdrücken, Beinpresse, Hackenschmidt, Beinstrecker, Beinbeuger sitzend/kniend, Hüftheben, Wadenheben, Bauchmaschine …). Die Bezeichnung am Gerät (z. B. „Iso-Lateral Row“) steht klein auf der Geräteseite und unter „Gerät & Technik“, damit du die Maschine im Studio findest; die Suche findet beide. Trainingstage „Drücken“ und „Ziehen“ statt „Push“ und „Pull“, „Reserve“ statt „RIR“. Gespeicherte Einträge werden beim Laden umgestellt
+- **Muskelkarte:** Vorder- und Rückansicht mit einzelnen Muskelflächen (Brust, Schultern, Bizeps, Trizeps, Bauch mit seitlichen Bauchmuskeln, Nacken und breiter Rückenmuskel, unterer Rücken, Gesäß, Oberschenkel vorn und hinten, Waden), Hauptmuskel kräftig, mittrainierte Muskeln heller. In der Übungsliste nur die passende Körperhälfte
+
 - **Plan-Assistent:** Ziel, die Wochentage und die Uhrzeit, Zeit pro Training, Erfahrung und die Geräte deines Studios ergeben in einem Schritt einen fertigen Plan mit festen Terminen (2–4 Tage, Plan B: nächster Tag)
 - **Heute:** „Das trainierst du heute“ mit Begründung (Ablauf, Erholung, letzte Einheit), großer Start-Button, Wochenziel, Muskel-Erholung; pausiertes Training fortsetzen
 - **Training:** nur Übung, Satz, kg, Wiederholungen und „Satz fertig“; Werte vom letzten Mal übernommen; Pause mit Countdown und „Leicht / Passt / Schwer“; Sätze korrigieren, Übung später machen oder beenden, Gerät tauschen, pausieren
