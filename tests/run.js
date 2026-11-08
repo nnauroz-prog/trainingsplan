@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v27)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v27")));
+      ok("Service Worker aktiv (Cache trainingsplan-v28)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v28")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2410,7 +2410,51 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("39. Konsole");
+    section("39. Wochenplan voraus");
+    {
+      const PPL3 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const w0 = mwd(0), schedDays = [w0, w0 + 1, w0 + 2].filter(d => d <= 6);           // heute und die nächsten Tage dieser Woche
+      const sched = { id: "s", days: schedDays, time: "23:59", planB: "next", since: mday(20) + "T00:00:00.000Z" };
+      const { ctx, page } = await open({ plan: PPL3, sched, history: [] });
+      const labels = await page.$$eval(".week .wp", els => els.map(e => e.textContent));
+      const expect = Array(7).fill(""); ["Push", "Pull", "Beine"].forEach((n, i) => { if (schedDays[i] !== undefined) expect[schedDays[i]] = n; });
+      ok("Wochenleiste: kommende Termine mit dem Trainingstag laut Ablauf (Push, Pull, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
+      const wl = await page.textContent("#weekLeft");
+      ok("„Noch diese Woche: Push, Pull, Beine“", wl.includes("Noch diese Woche: Push, Pull, Beine"), wl);
+      ok("Countdown bis zum Termin heute", /In (\d+ Std\.|\d+ Min\.)/.test(await page.textContent("#buddy")) && (await page.textContent("#buddy")).includes("· ca. "), await page.textContent("#buddy"));
+      ok("360 px: Wochenleiste mit Namen ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Push heute erledigt: Name unter dem heutigen Tag, Rest der Woche rückt weiter
+      const PPL3 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const w0 = mwd(0), later = [w0 + 1, w0 + 2].filter(d => d <= 6);
+      const sched = { id: "s", days: [w0, ...later], time: "23:59", planB: "next", since: mday(20) + "T00:00:00.000Z" };
+      const h = { id: "h1", dayId: "a", day: "Push", date: new Date().toISOString(), durationSec: 1800, exercises: [{ exId: "hs-chest", name: "x", u: "s", sets: [{ kg: 40, reps: 10 }] }] };
+      const { ctx, page } = await open({ plan: PPL3, sched, history: [h] });
+      const labels = await page.$$eval(".week .wp", els => els.map(e => e.textContent + (e.classList.contains("done") ? "*" : "")));
+      const expect = Array(7).fill(""); expect[w0] = "Push*"; ["Pull", "Beine"].forEach((n, i) => { if (later[i] !== undefined) expect[later[i]] = n; });
+      ok("Erledigter Tag markiert, kommende Termine rücken im Ablauf weiter (Pull, Beine)", JSON.stringify(labels) === JSON.stringify(expect), JSON.stringify([labels, expect]));
+      ok("„Noch diese Woche: Pull, Beine“", (await page.textContent("#weekLeft")).includes("Noch diese Woche: Pull, Beine"));
+      await ctx.close();
+    }
+    {
+      // Ohne Termine: keine Tageszuordnung, aber „Noch diese Woche“ mit Hinweis; Wochenziel erreicht → keine Zeile
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [] });
+      ok("Ohne Termine keine Namen unter den Tagen, aber „Noch diese Woche: Test – ohne feste Termine …“", (await page.$$eval(".week .wp", els => els.every(e => !e.textContent))) && (await page.textContent("#weekLeft")).includes("Noch diese Woche: Test – ohne feste Termine"));
+      await tp(page, () => { window.__tp.state.history.push({ id: "h", dayId: "d1", day: "Test", date: new Date().toISOString(), durationSec: 600, exercises: [{ exId: "hs-chest", name: "x", u: "s", sets: [{ kg: 40, reps: 10 }] }] }); });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
+      ok("Wochenziel erreicht: keine „Noch diese Woche“-Zeile, erledigter Tag trägt seinen Namen", !(await page.$("#weekLeft")) && (await page.$$eval(".week .wp.done", els => els.map(e => e.textContent))).join() === "Test");
+      await ctx.close();
+    }
+
+    section("40. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

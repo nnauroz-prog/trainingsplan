@@ -177,6 +177,8 @@
   .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
   .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
+  .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
+  .week .wp.done{color:var(--accent)}
   .week .dot.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--raise-3);color:var(--text-3);text-decoration:line-through}
   .week .dot.today{box-shadow:inset 0 0 0 2px var(--text);color:var(--text)}
   .week .dot.done.today{box-shadow:inset 0 0 0 2px var(--on-accent)}
@@ -1752,10 +1754,11 @@ function vHome() {
   const monday = new Date(now); monday.setHours(0, 0, 0, 0); monday.setDate(now.getDate() - dow);
   const doneDays = new Set(state.history.map(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); return d.getTime(); }));
   const missDays = new Set((state.misses || []).map(m => dateOf(m.d).setHours(0, 0, 0, 0)));
+  const wp = weekPlan(monday);
   const week = ["M", "D", "M", "D", "F", "S", "S"].map((n, i) => {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     const k = d.getTime(), cls = doneDays.has(k) ? "done" : missDays.has(k) ? "miss" : "";
-    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div></div>`;
+    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div><span class="wp ${wp[i] && wp[i].done ? "done" : ""}">${wp[i] ? esc(wp[i].name) : ""}</span></div>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
   const goal = Math.max(1, state.plan.days.length);
@@ -1806,6 +1809,7 @@ function vHome() {
     <section class="section">
       <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
+      ${(() => { const L = weekLeft(monday, thisWeek, goal); return L.length ? `<p class="small muted" id="weekLeft">Noch diese Woche: ${L.map(esc).join(", ")}${state.sched ? "" : " – ohne feste Termine, sobald du Zeit hast"}.</p>` : ""; })()}
       ${streak ? `<p class="small muted">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge das Wochenziel geschafft.</p>` : ""}
       ${state.history.length ? `<button class="link small" data-a="openWeek" data-ret="home" id="homeWeek" style="justify-self:start">Wochenrückblick ansehen ›</button>` : ""}
     </section>
@@ -3646,6 +3650,26 @@ function missSheet() {
     <p class="small muted" style="margin:0">Sag dem Buddy kurz, warum. Er plant dann passend weiter.</p>
     <div class="group">${Object.entries(MISS_R).map(([k, l]) => `<button class="li" data-a="missSet" data-d="${dkey()}" data-r="${k}"><div class="grow t">${l}</div><span class="chev">›</span></button>`).join("")}</div>`;
 }
+// Wochenplan voraus: erledigte Tage mit ihrem Namen, kommende Termine dieser Woche mit dem Trainingstag, der laut Ablauf dran ist
+function weekPlan(monday) {
+  const now = new Date(), out = Array(7).fill(null), days = state.plan ? state.plan.days.filter(d => d.items.length) : [];
+  if (!days.length) return out;
+  state.history.filter(h => new Date(h.date) >= monday).forEach(h => { out[wdOf(new Date(h.date))] = { name: h.day, done: true }; });
+  const nd = nextDay(); let k = Math.max(0, days.findIndex(d => nd && d.id === nd.id));
+  const s = state.sched, today = wdOf(now);
+  if (s) for (let i = today; i < 7; i++) {
+    if (out[i] || !s.days.includes(i) || (i === today && trainedOn(now))) continue;
+    out[i] = { name: days[k % days.length].name, done: false }; k++;
+  }
+  return out;
+}
+// Was diese Woche noch fehlt: Trainingstage laut Ablauf, bis das Wochenziel erreicht ist
+function weekLeft(monday, thisWeek, goal) {
+  const days = state.plan ? state.plan.days.filter(d => d.items.length) : [], nd = nextDay();
+  if (!days.length || thisWeek >= goal) return [];
+  let k = Math.max(0, days.findIndex(d => nd && d.id === nd.id));
+  return Array.from({ length: Math.min(goal - thisWeek, days.length) }, (_, i) => days[(k + i) % days.length].name);
+}
 function buddySays(day, thisWeek, goal, streak) {
   const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [], facts = [];
   const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
@@ -3672,7 +3696,12 @@ function buddySays(day, thisWeek, goal, streak) {
     title = "Erst mal gesund werden";
     text = `Du warst krank oder verletzt (${WD_LONG[wdOf(dateOf(sick.d))]}). Trainiere erst wieder, wenn du dich fit fühlst – und steig dann etwas leichter ein.`;
   } else if (s && s.days.includes(wdOf(now))) {
-    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min.`; act.push(["missToday", "Heute fällt aus", "link small"]); }
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) {
+      const diff = Math.round((schedAt(now) - now) / 60000);
+      title = `Heute um ${s.time}: ${dn}`;
+      text = diff > 0 ? `${diff >= 60 ? `In ${Math.floor(diff / 60)} Std.${diff % 60 ? ` ${diff % 60} Min.` : ""}` : `In ${diff} Min.`} · ca. ${min} Min.` : `Dein Termin läuft – los geht's. Ca. ${min} Min.`;
+      act.push(["missToday", "Heute fällt aus", "link small"]);
+    }
     else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
     else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
   } else if (missed !== null) {
@@ -4794,7 +4823,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
