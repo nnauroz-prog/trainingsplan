@@ -3567,7 +3567,7 @@ function goalHint(day, today = true) {
   const g = (state.goals || []).find(x => !x.done && x.kind === "kraft" && day.items.some(i => i.exId === x.exId));
   if (!g) return "";
   const st = goalStatus(g);
-  return ` ${today ? `Heute ist die ${st.name} dran` : `Nächstes Training: ${st.name}`} – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
+  return ` ${today ? `Heute ist die ${st.name} dran` : `Beim nächsten Mal: ${st.name}`} – noch ${kgTxt(Math.round(st.left * 10) / 10)} kg bis ${kgTxt(g.target)} ${st.unit}.`;
 }
 
 /* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
