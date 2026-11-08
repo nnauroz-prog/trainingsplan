@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v16)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v16")));
+      ok("Service Worker aktiv (Cache trainingsplan-v17)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v17")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1495,7 +1495,59 @@ async function finishAllSets(page, kg, reps) {
       });
     }
 
-    section("27. Konsole");
+    section("27. Wasser und „Wie am Vortag“");
+    {
+      const pad = n => String(n).padStart(2, "0"), dk = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const today = dk(new Date()), yest = dk(new Date(Date.now() - 864e5)), before = dk(new Date(Date.now() - 2 * 864e5));
+      const E = (id, m, n, g, k, p) => ({ id, m, n, src: "usda:1", g, per: { k, p, c: 10, f: 1 } });
+      const food = { [yest]: [E("y1", "f", "Haferflocken", 80, 379, 13.2), E("y2", "f", "Banane", 118, 89, 1.09), E("y3", "m", "Reis", 250, 130, 2.69)],
+        [before]: [E("b1", "a", "Lachs", 150, 206, 22.1)] };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, food, water: { [yest]: 1500, "kaputt": 5, [before]: -3 } });
+      const w = await tp(page, () => { const T = window.__tp; return { clean: T.state.water, none: T.waterGoal() }; });
+      ok("Wasser-Daten bereinigt", JSON.stringify(Object.keys(w.clean)) === JSON.stringify([yest]) && w.clean[yest] === 1500);
+      ok("Ohne Profil kein persönliches Trinkziel", w.none === null);
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Ohne Profil: Spanne 1,6–2,0 L (EFSA)", (await page.textContent("#waterBox")).includes("0,0 L") && (await page.textContent("#waterBox")).includes("1,6–2,0 L") && await page.isDisabled("[data-a=water][data-ml='-250']"));
+      await page.click("[data-a=water][data-ml='250']"); await page.click("[data-a=water][data-ml='250']"); await page.click("[data-a=water][data-ml='500']");
+      ok("Gläser zählen: 2 × 250 ml + 500 ml = 1,0 L", (await page.textContent("#waterBox")).includes("1,0 L") && (await stored(page)).water[today] === 1000);
+      await page.click("[data-a=water][data-ml='-250']");
+      ok("Korrektur: − 250 ml → 0,75 L", (await page.textContent("#waterBox")).includes("0,75 L") && (await stored(page)).water[today] === 750);
+      await page.click("[data-a=waterInfo]");
+      const info = await page.textContent(".sheet");
+      ok("Erklärung mit EFSA-Werten, Geltungsbereich und Quellen", info.includes("2,0 Liter") && info.includes("2,5 Liter") && info.includes("20–30 %") && info.includes("Hitze")
+        && (await page.$$eval(".sheet .srcs a", a => a.map(x => x.href))).some(h => h.includes("10.2903/j.efsa.2010.1459")));
+      await page.keyboard.press("Escape");
+      // „Wie am Vortag“
+      ok("„Wie am Vortag“ nur bei leeren Mahlzeiten mit Einträgen am Vortag", (await page.$$("[data-a=copyMeal]")).length === 2
+        && (await page.textContent("[data-a=copyMeal][data-m=f]")).includes("2 Einträge, 408 kcal"));
+      await page.click("[data-a=copyMeal][data-m=f]");
+      let st = await stored(page);
+      ok("Frühstück übernommen: gleiche Werte, neue Einträge", st.food[today].length === 2 && st.food[today].every(e => e.m === "f" && !["y1", "y2"].includes(e.id))
+        && st.food[today][0].g === 80 && st.food[today][0].per.k === 379 && st.food[yest].length === 3);
+      ok("Nach dem Übernehmen kein doppeltes Angebot", !(await page.$("[data-a=copyMeal][data-m=f]")) && (await page.textContent("#app")).includes("Haferflocken"));
+      // Vergangener Tag: Wasser und Vortag beziehen sich auf den angezeigten Tag
+      await page.click("[data-a=foodDay][data-d='-1']");
+      ok("Gestern: eigener Wasserstand (1,5 L)", (await page.textContent("#waterBox")).includes("1,5 L"));
+      ok("Gestern: „Wie am Vortag“ bezieht sich auf vorgestern", (await page.$$("[data-a=copyMeal]")).length === 1 && !!(await page.$("[data-a=copyMeal][data-m=a]")));
+      await page.click("[data-a=foodDay][data-d='1']");
+      // Mit Profil: persönliches Ziel
+      await tp(page, () => { window.__tp.state.nutr = window.__tp.cleanNutr({ sex: "w", age: 30, cm: 165, pal: 1.55, goal: "halten" }); });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
+      ok("Frauen: Trinkziel 1,6 L", (await page.textContent("#waterBox")).includes("von 1,6 L") && (await tp(page, () => window.__tp.waterGoal())) === 1600);
+      await tp(page, () => { window.__tp.state.nutr.sex = "m"; });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
+      ok("Männer: Trinkziel 2,0 L", (await page.textContent("#waterBox")).includes("von 2,0 L"));
+      ok("Wasser und Vortag bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, water: {} }, { light });
+      await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=water][data-ml='500']");
+      ok(`360 px ${light ? "hell" : "dunkel"}: Wasserbereich ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#waterBox"));
+      await ctx.close();
+    }
+
+    section("28. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
