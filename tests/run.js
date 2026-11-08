@@ -65,7 +65,8 @@ async function open(data, opts = {}) {
   }
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
-  page.on("console", m => { if (m.type() === "error") allErrors.push(m.text()); });
+  // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
+  page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && (m.location().url || "").includes("openfoodfacts.org"))) allErrors.push(m.text()); });
   await page.goto(URL);
   return { ctx, page };
 }
@@ -359,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v13)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v13")));
+      ok("Service Worker aktiv (Cache trainingsplan-v14)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v14")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1183,7 +1184,220 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("25. Konsole");
+    section("25. Ernährung");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      // Daten aus USDA: Vollständigkeit und Stichproben gegen die Originalwerte
+      const db = await tp(page, () => { const T = window.__tp, bad = [], ids = new Set();
+        T.FOOD_DB.forEach(r => { const [id, n, cat, k, p, c, f] = r;
+          if (!Number.isInteger(id) || ids.has(id)) bad.push("ID " + id); ids.add(id);
+          if (!n || !T.FOOD_CAT[cat]) bad.push(id + " Name/Kategorie");
+          if (![k, p, c, f].every(v => typeof v === "number" && v >= 0)) bad.push(id + " Werte");
+          if (p + c + f > 100.5) bad.push(id + " Summe > 100 g"); });
+        const g = id => T.FOOD_DB.find(r => r[0] === id);
+        return { n: T.FOOD_DB.length, bad, oats: g(173904).slice(3, 7), chick: g(171077).slice(3, 7), banana: g(173944).slice(3, 7), egg: g(171287), oil: g(171413).slice(3, 7) }; });
+      ok(`${db.n} Grundnahrungsmittel, alle vollständig und plausibel`, db.n === 110 && !db.bad.length, db.bad.join("; "));
+      ok("Stichproben entsprechen USDA SR Legacy (Haferflocken, Hähnchenbrust, Banane, Olivenöl)",
+        JSON.stringify(db.oats) === "[379,13.2,67.7,6.52]" && JSON.stringify(db.chick) === "[120,22.5,0,2.62]" && JSON.stringify(db.banana) === "[89,1.09,22.8,0.33]" && JSON.stringify(db.oil) === "[884,0,0,100]");
+      ok("Portionen aus USDA (1 Ei ohne Schale = 50 g)", db.egg[8][0] === "1 Ei ohne Schale" && db.egg[8][1] === 50);
+      // Berechnung
+      const cg = await tp(page, () => { const T = window.__tp, n = { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "halten", kcal: null };
+        return { m: T.calcGoals(n, 80), w: T.calcGoals(Object.assign({}, n, { sex: "w", goal: "auf" }), 80), ab: T.calcGoals(Object.assign({}, n, { goal: "ab" }), 80),
+          own: T.calcGoals(Object.assign({}, n, { kcal: 2500 }), 80), young: T.calcGoals(Object.assign({}, n, { age: 16 }), 80),
+          clean: [T.cleanNutr({ kcal: 500 }).kcal, T.cleanNutr({ pal: 3 }).pal, T.cleanNutr("x")] }; });
+      ok("Mifflin-St Jeor: Mann, 30 J., 180 cm, 80 kg → 1.780 kcal Grundumsatz, × 1,55 = 2.759 kcal", cg.m.bmr === 1780 && cg.m.tdee === 2759 && cg.m.auto === 2760);
+      ok("Frauen: − 161 statt + 5 (1.614 kcal); Aufbau + 10 % → 2.750 kcal", cg.w.bmr === 1614 && cg.w.auto === 2750);
+      ok("Abnehmen − 15 % → 2.350 kcal; eigenes Ziel hat Vorrang", cg.ab.auto === 2350 && cg.own.kcal === 2500 && cg.own.auto === 2760);
+      ok("Eiweiß 1,6 g/kg (128 g), obere Grenze 2,2 g/kg (176 g)", cg.m.prot === 128 && cg.m.protHi === 176);
+      ok("Unter 18 Jahren keine Berechnung (Formel für Erwachsene); ungültige Werte werden verworfen", cg.young === null && cg.clean[0] === null && cg.clean[1] === 1.55 && cg.clean[2] === null);
+      // Tagebuch-Daten
+      const cf = await tp(page, () => window.__tp.cleanFood({ "2026-01-02": [
+        { id: "a", m: "f", n: "Hafer", src: "usda:173904", g: 50, per: { k: 379, p: 13.2, c: 67.7, f: 6.52 } },
+        { id: "b", m: "x", n: "Schnell", g: null, abs: { k: 500, p: 20, c: 50, f: 20 } },
+        { id: "c", m: "f", n: "kaputt", g: -5, per: { k: 100, p: 1, c: 1, f: 1 } },
+        { id: "d", m: "f", n: "zu viel", g: 100, per: { k: 2000, p: 1, c: 1, f: 1 } }], "kein-datum": [{ id: "e", g: 1, per: {} }] }));
+      ok("Tagebuch-Daten bereinigt: gültige Einträge bleiben, ungültige fallen weg", Object.keys(cf).length === 1 && cf["2026-01-02"].length === 2 && cf["2026-01-02"][1].m === "s");
+      // Open Food Facts: Umrechnung und Plausibilität
+      const of = await tp(page, () => { const T = window.__tp, base = { code: "4000000000001", product_name: "Test", brands: "A,B,C" };
+        const get = p => { const k = T.offFood(p); return k; };
+        return { kcal: get(Object.assign({}, base, { nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 }, serving_quantity: 250 })),
+          kj: T.offFood(Object.assign({}, base, { code: "4000000000002", nutriments: { "energy-kj_100g": 418.4, proteins_100g: 5, carbohydrates_100g: 10, fat_100g: 1 } })),
+          noP: T.offFood(Object.assign({}, base, { code: "4000000000003", nutriments: { "energy-kcal_100g": 66, carbohydrates_100g: 4, fat_100g: 0 } })),
+          sum: T.offFood(Object.assign({}, base, { code: "4000000000004", nutriments: { "energy-kcal_100g": 500, proteins_100g: 60, carbohydrates_100g: 60, fat_100g: 1 } })) }; });
+      ok("Packungsangaben: kcal übernommen, kJ ÷ 4,184, unvollständige oder unmögliche Werte verworfen", of.kcal === "o:4000000000001" && of.kj === "o:4000000000002" && of.noP === null && of.sum === null);
+      // Ansicht ohne Ziele
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Tab „Essen“ öffnet die Ernährung, ohne Ziele mit Einladung zum Festlegen", await page.isVisible("#foodSetup") && (await page.textContent(".head")).includes("Heute"));
+      ok("Vier Mahlzeiten", (await page.$$("[data-a=foodAdd]")).length === 4);
+      ok("Ernährung bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Ziele festlegen
+      await page.click("#foodSetup [data-a=openNutr]");
+      await page.click("[data-a=nutrSave]");
+      ok("Speichern ohne Angaben: verständlicher Hinweis", (await page.textContent("#nErr")).includes("Alter"));
+      await page.fill("#nAge", "30"); await page.fill("#nCm", "180"); await page.fill("#nKg", "80");
+      ok("Live-Berechnung im Formular", (await page.textContent("#nutrOut")).includes("1.780") && (await page.textContent("#nutrOut")).includes("2.760"));
+      await page.click("[data-a=nSet][data-k=pal][data-v='1.85']");
+      ok("Aktivität ändert den Bedarf (× 1,85 → 3.293 kcal)", (await page.textContent("#nutrOut")).includes("3.293") && await page.$eval("[data-a=nSet][data-k=pal][data-v='1.85'] .check", e => e.classList.contains("on")));
+      await page.click("[data-a=nSet][data-k=pal][data-v='1.55']"); await page.click("[data-a=nSet][data-k=goal][data-v=auf]");
+      const sh = await page.textContent(".sheet");
+      ok("Rechenweg und Grenzen offen erklärt, mit Quellen", sh.includes("Mifflin-St Jeor") && sh.includes("498") && sh.includes("FAO") && sh.includes("Schwangerschaft") && (await page.$$(".sheet .srcs a")).length === 6);
+      ok("Ziele-Formular bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=nutrSave]");
+      let st = await stored(page);
+      ok("Ziele gespeichert; Gewicht im Verlauf eingetragen", st.nutr.age === 30 && st.nutr.goal === "auf" && st.weights.length === 1 && st.weights[0].kg === 80);
+      ok("Übersicht: 3.030 kcal übrig, Eiweißziel 128 g", (await page.textContent("#foodSum")).includes("3.030") && (await page.textContent("#foodSum")).includes("128 g"));
+      // Grundnahrungsmittel hinzufügen
+      await page.click("[data-a=foodAdd][data-m=f]");
+      ok("Hinzufügen-Sheet ohne Suche: Hinweis auf Datenbank", (await page.textContent("#foodRes")).includes("110 Grundnahrungsmittel"));
+      await page.fill("#foodQ", "hafer");
+      ok("Suche findet Haferflocken", (await page.$$("#foodRes [data-a=foodPick]")).length >= 1 && (await page.textContent("#foodRes")).includes("379 kcal"));
+      await page.click("[data-a=foodPick][data-k='u:173904']");
+      ok("Mengen-Sheet zeigt Quelle mit FDC-ID", (await page.$eval(".sheet a[href*='fdc.nal.usda.gov']", a => a.href)).includes("173904"));
+      await page.fill("#amtG", "80");
+      ok("Live-Werte für 80 g: 303 kcal, 10,6 g Eiweiß, 54,2 g Kohlenhydrate, 5,2 g Fett", (await page.textContent("#amtOut")).replace(/\s+/g, "").includes("kcal303Eiweiß10,6gKohlenh.54,2gFett5,2g"));
+      ok("Mengen-Sheet bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.fill("#amtG", "0"); await page.click("[data-a=foodSave]");
+      ok("Menge 0 wird abgelehnt", await page.isVisible("#amtErr"));
+      await page.fill("#amtG", "80"); await page.click("[data-a=foodSave]");
+      st = await stored(page);
+      const today = await tp(page, () => window.__tp.dkey());
+      ok("Eintrag gespeichert (Werte je 100 g + Menge, Quelle)", st.food[today].length === 1 && st.food[today][0].g === 80 && st.food[today][0].per.k === 379 && st.food[today][0].src === "usda:173904");
+      ok("Übersicht aktualisiert: 2.727 kcal übrig", (await page.textContent("#foodSum")).includes("2.727") && (await page.textContent("#app")).includes("Haferflocken"));
+      // Portion
+      await page.click("[data-a=foodAdd][data-m=s]"); await page.fill("#foodQ", "banane"); await page.click("[data-a=foodPick][data-k='u:173944']");
+      ok("Portion vorausgewählt (1 mittelgroße Banane = 118 g → 105 kcal)", (await page.inputValue("#amtG")) === "118" && (await page.textContent("#amtOut")).includes("105"));
+      await page.click("[data-a=amtSet][data-g='100']");
+      ok("Schnellauswahl 100 g", (await page.inputValue("#amtG")) === "100" && (await page.textContent("#amtOut")).includes("89"));
+      await page.click("[data-a=mealSet][data-m=f]"); await page.click("[data-a=foodSave]");
+      ok("Mahlzeit im Mengen-Sheet änderbar (Banane beim Frühstück)", (await stored(page)).food[today][1].m === "f");
+      // Bearbeiten und löschen
+      const banId = (await stored(page)).food[today][1].id;
+      await page.click(`[data-a=foodEdit][data-id="${banId}"]`);
+      ok("Bearbeiten öffnet mit gespeicherter Menge", (await page.inputValue("#amtG")) === "100" && await page.isVisible("[data-a=foodDel]"));
+      await page.fill("#amtG", "150"); await page.click("[data-a=foodSave]");
+      ok("Menge geändert", (await stored(page)).food[today][1].g === 150);
+      await page.click(`[data-a=foodEdit][data-id="${banId}"]`); await page.click("[data-a=foodDel]");
+      ok("Eintrag gelöscht", (await stored(page)).food[today].length === 1);
+      // Zuletzt verwendet
+      await page.click("[data-a=foodAdd][data-m=m]");
+      ok("Zuletzt verwendet zeigt Haferflocken", (await page.textContent("#foodRes")).includes("Zuletzt verwendet") && (await page.textContent("#foodRes")).includes("Haferflocken"));
+      // Nur kcal
+      await page.click("[data-a=quickOpen]"); await page.click("[data-a=quickSave]");
+      ok("Nur kcal: ohne Kalorien Hinweis", await page.isVisible("#qkErr"));
+      await page.fill("#qkN", "Kantine"); await page.fill("#qkK", "650"); await page.fill("#qkP", "35"); await page.click("[data-a=quickSave]");
+      st = await stored(page);
+      ok("Schnelleintrag gespeichert", st.food[today].some(e => e.n === "Kantine" && e.g === null && e.abs.k === 650 && e.abs.p === 35 && e.m === "m"));
+      // Eigenes Lebensmittel mit Plausibilitätshinweis
+      await page.click("[data-a=foodAdd][data-m=s]"); await page.click("[data-a=ownFoodOpen]");
+      await page.fill("#ownN", "Riegel"); await page.fill("#ownK", "200"); await page.fill("#ownP", "30"); await page.fill("#ownC", "40"); await page.fill("#ownF", "20");
+      ok("Hinweis, wenn kcal nicht zu Eiweiß/KH/Fett passen (4/4/9 → 460 kcal)", await page.isVisible("#ownHint") && (await page.textContent("#ownHint")).includes("460"));
+      await page.fill("#ownK", "460");
+      ok("Hinweis verschwindet bei stimmigen Werten", !(await page.isVisible("#ownHint")));
+      await page.fill("#ownP", "70"); await page.click("[data-a=ownSave]");
+      ok("Mehr als 100 g Nährstoffe je 100 g abgelehnt", (await page.textContent("#ownErr")).includes("100 g"));
+      await page.fill("#ownP", "30"); await page.fill("#ownPl", "1 Riegel"); await page.fill("#ownPg", "50"); await page.click("[data-a=ownSave]");
+      ok("Eigenes Lebensmittel gespeichert, Portion vorausgewählt", (await stored(page)).myFoods[0].n === "Riegel" && (await page.inputValue("#amtG")) === "50" && (await page.textContent("#amtOut")).includes("230"));
+      await page.click("[data-a=foodSave]");
+      // Online-Suche (Open Food Facts, simuliert)
+      let mode = "ok";
+      await page.route("https://world.openfoodfacts.org/**", route => {
+        const u = route.request().url(), h = { "access-control-allow-origin": "*", "content-type": "application/json" };
+        if (mode === "down") return route.fulfill({ status: 503, headers: { "access-control-allow-origin": "*", "content-type": "text/html" }, body: "<html>Page temporarily unavailable</html>" });
+        if (u.includes("/cgi/search.pl")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ count: 3, products: [
+          { code: "4061458014151", product_name: "Bio-Magerquark", brands: "Gut Bio,Aldi", nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 }, serving_quantity: 250 },
+          { code: "4000000000099", product_name: "Ohne Werte", nutriments: {} },
+          { code: "4061458014151", product_name: "Doppelt", nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 } }] }) });
+        if (u.includes("/api/v2/product/4061458014151")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ status: 1, product: { code: "4061458014151", product_name: "Bio-Magerquark", brands: "Gut Bio", nutriments: { "energy-kcal_100g": 66, proteins_100g: 12, carbohydrates_100g: 4.1, fat_100g: 0.2 } } }) });
+        if (u.includes("/api/v2/product/4000000000111")) return route.fulfill({ status: 200, headers: h, body: JSON.stringify({ status: 1, product: { code: "4000000000111", product_name: "Halb", nutriments: { "energy-kcal_100g": 66 } } }) });
+        return route.fulfill({ status: 404, headers: h, body: JSON.stringify({ status: 0, status_verbose: "product not found" }) });
+      });
+      await page.click("[data-a=foodAdd][data-m=f]");
+      ok("Online-Suche erst mit Suchbegriff", await page.isDisabled("#offBtn"));
+      await page.fill("#foodQ", "magerquark");
+      ok("Lokal nicht gefunden: Hinweis auf Online-Suche", (await page.textContent("#foodRes")).includes("Online-Suche"));
+      const reqs = []; page.on("request", r => { if (r.url().includes("openfoodfacts")) reqs.push(r.url()); });
+      await page.click("#offBtn"); await page.waitForSelector("#offRes [data-a=foodPick]");
+      ok("Online-Suche: nur vollständige Produkte, ohne Doppelte, mit Marke und Quellenhinweis",
+        (await page.$$("#offRes [data-a=foodPick]")).length === 1 && (await page.textContent("#offRes")).includes("Gut Bio, Aldi") && (await page.textContent("#offRes")).includes("Open Food Facts"));
+      ok("Suche auf in Deutschland verkaufte Produkte beschränkt", reqs.some(u => u.includes("cc=de") && u.includes("search_terms=magerquark")));
+      await page.click("#offRes [data-a=foodPick]");
+      ok("Packungs-Portion vorausgewählt (250 g → 165 kcal, 30 g Eiweiß)", (await page.inputValue("#amtG")) === "250" && (await page.textContent("#amtOut")).replace(/\s+/g, "").includes("kcal165Eiweiß30g"));
+      await page.click("[data-a=foodSave]");
+      ok("Online-Produkt gespeichert mit Quelle", (await stored(page)).food[today].some(e => e.src === "off:4061458014151" && e.g === 250));
+      mode = "down"; await page.click("[data-a=foodAdd][data-m=f]"); await page.fill("#foodQ", "skyr"); await page.click("#offBtn");
+      await page.waitForFunction(() => (document.querySelector("#offRes")?.textContent || "").includes("erneut"));
+      ok("Server ausgelastet: verständliche Meldung statt Fehler", (await page.textContent("#offRes")).includes("nicht erreichbar"));
+      mode = "ok"; await page.keyboard.press("Escape");
+      // Barcode
+      await page.click("[data-a=foodAdd][data-m=f]"); await page.click("[data-a=barcodeOpen]");
+      await page.fill("#bcIn", "123"); await page.click("[data-a=barcodeGo]");
+      ok("Barcode: zu kurz abgelehnt", (await page.textContent("#bcMsg")).includes("8 bis 14"));
+      await page.fill("#bcIn", "4000000000000"); await page.click("[data-a=barcodeGo]");
+      await page.waitForFunction(() => (document.querySelector("#bcMsg")?.textContent || "").includes("Kein Produkt"));
+      ok("Barcode: nicht gefunden → Hinweis auf eigenes Lebensmittel", true);
+      await page.fill("#bcIn", "4000000000111"); await page.click("[data-a=barcodeGo]");
+      await page.waitForFunction(() => (document.querySelector("#bcMsg")?.textContent || "").includes("ohne vollständige"));
+      ok("Barcode: unvollständige Nährwerte werden nicht übernommen", true);
+      await page.fill("#bcIn", "4061458014151"); await page.click("[data-a=barcodeGo]");
+      await page.waitForSelector("#amtG");
+      ok("Barcode: gefunden → Mengen-Sheet", (await page.textContent(".sheet")).includes("Bio-Magerquark"));
+      await page.keyboard.press("Escape");
+      // Tage
+      ok("Kein Blättern in die Zukunft", await page.isDisabled("[data-a=foodDay][data-d='1']"));
+      await page.click("[data-a=foodDay][data-d='-1']");
+      ok("Gestern: eigener, leerer Tag", (await page.textContent(".head")).includes("Gestern") && (await page.textContent("#foodSum")).includes("3.030"));
+      await page.click("[data-a=foodAdd][data-m=a]"); await page.click("[data-a=quickOpen]"); await page.fill("#qkK", "700"); await page.click("[data-a=quickSave]");
+      const yest = await tp(page, () => window.__tp.dkey(new Date(Date.now() - 864e5)));
+      ok("Nachtragen für gestern", (await stored(page)).food[yest][0].abs.k === 700);
+      await page.click("[data-a=foodDay][data-d='1']");
+      ok("Zurück zu heute", (await page.textContent(".head")).includes("Heute"));
+      ok("Letzte 7 Tage: Durchschnitt über Tage mit Einträgen", (await page.textContent("#app")).includes("an 2 Tagen mit Einträgen"));
+      // Heute-Ansicht und Wissen
+      await page.click("[data-a=tab][data-v=home]");
+      const tt = await tp(page, () => window.__tp.dayTotals(window.__tp.dkey()));
+      ok("„Heute“ zeigt Essen des Tages", (await page.textContent("#homeFood")).includes(`${Math.round(tt.k).toLocaleString("de-DE")} von 3.030 kcal`));
+      await page.click("#homeFood");
+      ok("Antippen öffnet die Ernährung", await page.isVisible("#foodSum"));
+      await page.click("[data-a=openArt][data-id=eiweiss]");
+      ok("Artikel „Eiweiß“ mit Quelle (Morton 2018)", (await page.textContent("#app")).includes("1,6 g") && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("28698222")));
+      await page.click("[data-a=artBack]");
+      ok("Zurück zur Ernährung", await page.isVisible("#foodSum"));
+      await page.click("[data-a=openArt][data-id=kalorien]");
+      ok("Artikel „Kalorienbedarf“ mit 5 Quellen", (await page.$$(".srcs a")).length === 5);
+      await page.click("[data-a=artBack]");
+      ok("Ernährung mit Einträgen bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Gewichtstrend
+      const iso = d => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
+      const nutr = { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, nutr, weights: [{ d: iso(21), kg: 80 }, { d: iso(14), kg: 79.6 }, { d: iso(7), kg: 79.2 }, { d: iso(0), kg: 78.8 }] });
+      const tr = await tp(page, () => window.__tp.weightTrend());
+      ok("Gewichtstrend als Ausgleichsgerade (−0,4 kg/Woche ≈ −0,5 % pro Woche)", Math.abs(tr.pct - (-0.4 / 79.4 * 100)) < 0.01 && tr.days === 21 && tr.n === 4, JSON.stringify(tr));
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Trend passt zum Ziel „Abnehmen“ (0,5–1 %)", (await page.textContent("#trendNote")).includes("passt") && (await page.textContent("#trendNote")).includes("−0,5 % pro Woche"));
+      await tp(page, () => { const s = window.__tp.state; s.nutr.goal = "auf"; });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
+      ok("Gleicher Trend bei „Aufbauen“: Hinweis zum Anpassen", (await page.textContent("#trendNote")).includes("langsamer zu") && (await page.textContent("#trendNote")).includes("passe dein Kalorienziel an"));
+      await ctx.close();
+      const p2 = await open({ plan: PLAN_SMALL, nutr, weights: [{ d: iso(5), kg: 80 }, { d: iso(0), kg: 79 }] });
+      ok("Zu wenige Daten: kein Trend, sondern Erklärung", (await tp(p2.page, () => window.__tp.weightTrend())) === null);
+      await p2.page.click("[data-a=tab][data-v=food]");
+      ok("Erklärung, ab wann der Trend erscheint", (await p2.page.textContent("#app")).includes("Ab drei Einträgen über zwei Wochen"));
+      await p2.ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, nutr: { sex: "w", age: 40, cm: 165, pal: 1.85, goal: "ab" }, weights: [{ d: new Date().toISOString().slice(0, 10), kg: 70 }] }, { light });
+      await page.click("[data-a=tab][data-v=food]"); const a = await noOverflow(page);
+      await page.click("[data-a=foodAdd][data-m=f]"); const b = await noOverflow(page);
+      await page.click("[data-a=quickOpen]"); const c = await noOverflow(page);
+      await page.keyboard.press("Escape"); await page.click("[data-a=openNutr]"); const d = await noOverflow(page);
+      ok(`360 px ${light ? "hell" : "dunkel"}: Ernährung, Hinzufügen, Schnelleintrag und Ziele ohne seitliches Scrollen`, a && b && c && d);
+      await ctx.close();
+    }
+
+    section("26. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
