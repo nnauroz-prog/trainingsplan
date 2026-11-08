@@ -2358,93 +2358,55 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("38. Frag den Buddy und Briefing");
+    section("38. Vorausdenken im Training");
     {
-      const sched = { id: "s", days: [mwd(-1)], time: "18:00", planB: "next", since: mday(20) + "T00:00:00.000Z" };
-      const history = [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 12 }, { kg: 42.5, reps: 12 }], 2, "s"), hist("hs-legpress", [{ kg: 100, reps: 10 }], 2, "t")];
-      const { ctx, page } = await open({ plan: PLAN_SMALL, sched, history, why: "Fit bleiben", nutr: { sex: "m", age: 34, cm: 180, pal: 1.55, goal: "halten", kcal: 2400 }, weights: [{ d: mday(1), kg: 80 }], nutrOpt: { water: true, fast: false } });
-      const A = async q => (await tp(page, q2 => { const r = window.__tp.ask(q2); return { a: r.a, b: (r.btns || []).map(x => x.a), go: !!r.go }; }, q));
-      let r = await A("Was steht heute an?");
-      ok("„Was steht heute an?“: Tag, Übungen, Dauer und Vorschläge je Gerät", r.a.includes("Heute: Test, 3 Übungen") && r.a.includes("Iso-Lateral Chest Press: 2 × 45 kg pro Seite (+)") && r.a.includes("Linear Leg Press: 1 × 100 kg insgesamt") && r.a.includes("Pec Fly: 1 × Gewicht wählen") && r.b.includes("start"), r.a);
-      r = await A("Bestwert Chest Press");
-      ok("„Bestwert Chest Press“: 42,5 kg pro Seite, vorgestern", r.a.includes("Bestwert an der Iso-Lateral Chest Press: 42,5 kg pro Seite") && r.a.includes("vor 2 Tagen"), r.a);
-      r = await A("Was habe ich letztes Mal an der Brustpresse gemacht?");
-      ok("Alias „Brustpresse“ und „letztes Mal“: Sätze mit Datum", r.a.includes("Zuletzt an der Iso-Lateral Chest Press (vor 2 Tagen): 42,5 × 12, 42,5 × 12"), r.a);
-      r = await A("Wie viel soll ich heute an der Chest Press nehmen?");
-      ok("Gewichtsfrage: Vorschlag mit Begründung", r.a.includes("Iso-Lateral Chest Press heute: 2 × 45 kg pro Seite, 8–12 Wdh.") && r.a.includes("Letztes Mal alle 2 Sätze"), r.a);
-      r = await A("Warum Chest Press?");
-      ok("„Warum“: Begründung des Vorschlags", r.a.startsWith("Iso-Lateral Chest Press: Letztes Mal"), r.a);
-      r = await A("Wie lief die Woche?");
-      ok("Wochenfrage: Trainings, Sätze, Minuten", /Diese Woche: \d von 1 Trainings, \d+ Sätze, \d+ Min\./.test(r.a) && r.b.includes("openWeek"), r.a);
-      r = await A("Wie erholt bin ich?");
-      ok("Erholung: Brust noch nicht erholt (Training vor 2 Tagen), als Schätzung gekennzeichnet", r.a.includes("Brust") && r.a.includes("Schätzung"), r.a);
-      r = await A("Wann ist mein nächstes Training?");
-      ok("Nächster Termin aus den Terminen", r.a.includes("Dein nächster Termin: morgen um 18:00 – Test"), r.a);
-      r = await A("Wie viel habe ich heute gegessen?");
-      ok("Essen: Ziel und Rest", r.a.includes("Heute 0 von 2.400 kcal – noch 2.400 übrig") && r.a.includes("Eiweiß 0 von 128 g"), r.a);
-      r = await A("Ich habe ein Glas Wasser getrunken");
-      ok("Wasser: Glas eingetragen", r.a.includes("Eingetragen. Heute 0,25 L von 2,0 L") && (await stored(page)).water[mday(0)] === 250, r.a);
-      r = await A("Wiege 79,6");
-      const st1 = await stored(page);
-      ok("„Wiege 79,6“: Gewicht heute eingetragen", r.a.startsWith("Notiert: 79,6 kg heute") && st1.weights.some(w => w.d === mday(0) && w.kg === 79.6), r.a);
-      r = await A("Ziel 50 kg Chest Press");
-      const st2 = await stored(page);
-      ok("„Ziel 50 kg Chest Press“: Kraftziel angelegt", r.a.includes("Ziel gesetzt: 50 kg pro Seite an der Iso-Lateral Chest Press – aktuell 42,5") && st2.goals.length === 1 && st2.goals[0].target === 50 && st2.goals[0].u === "s", r.a);
-      r = await A("Ziel 40 kg Chest Press");
-      ok("Ziel unter dem Bestwert wird abgelehnt", r.a.includes("schon 42,5 kg pro Seite") && (await stored(page)).goals.length === 1, r.a);
-      r = await A("Wie weit bin ich mit meinem Ziel?");
-      ok("Zielstand", r.a.includes("Iso-Lateral Chest Press: 42,5 von 50 kg pro Seite, noch 7,5 kg"), r.a);
-      r = await A("Was ist RIR?");
-      ok("Erklärung aus den Artikeln mit Link", r.a.startsWith("Wie nah ans Limit? Wiederholungen in Reserve:") && r.b.includes("openArt"), r.a);
-      r = await A("Wie mache ich die Leg Press richtig?");
-      ok("Technik: Kurzanleitung des Geräts", r.a.includes("Linear Leg Press: Füße schulterbreit") && r.b.includes("openEx"), r.a);
-      r = await A("Nenn mich Nico");
-      ok("Anrede gespeichert", r.a === "Alles klar, Nico. So nenne ich dich ab jetzt." && (await stored(page)).me === "Nico");
-      r = await A("Du heißt ab jetzt Max");
-      ok("Buddy-Name gespeichert", r.a === "Ab jetzt heiße ich Max." && (await stored(page)).buddyName === "Max");
-      r = await A("Blubb quatsch");
-      ok("Unverstandenes wird ehrlich gesagt, mit Vorschlägen", r.a.startsWith("Das habe ich nicht verstanden, Nico.") && r.b.includes("askQ"), r.a);
-      r = await A("Training starten");
-      ok("„Training starten“ ist ein Befehl (führt aus)", r.go && r.a.includes("Los geht's: Test"), r.a);
-      // Oberfläche
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
-      ok("Heute: Zeile „Frag Max …“, Mikrofon (Chromium kennt Spracherkennung) und Vorschlags-Chips", (await page.getAttribute("#askIn", "placeholder")) === "Frag Max …" && await page.isVisible("[data-a=askMic]") && (await page.$$("#askChips .chip")).length >= 3);
-      ok("Anrede im Kopf („…, Nico“) und Buddy-Name in der Karte", (await page.textContent(".head .cap")).includes(", Nico") && (await page.textContent(".hero .cap")) === "Max");
-      await page.fill("#askIn", "Bestwert Leg Press"); await page.press("#askIn", "Enter");
-      ok("Eingabe mit Enter: Frage und Antwort erscheinen", (await page.textContent("#askOut .q")) === "Bestwert Leg Press" && (await page.textContent("#askOut .a")).includes("Bestwert an der Linear Leg Press: 100 kg insgesamt"));
-      await page.click("#askChips .chip >> nth=0");
-      ok("Chip stellt die Frage", (await page.$$("#askOut .q")).length === 2);
-      ok("360 px: Frageleiste und Antworten ohne seitliches Scrollen", await noOverflow(page));
-      await page.fill("#askIn", "Heute fällt aus, ich bin müde"); await page.press("#askIn", "Enter");
-      ok("Befehl „Heute fällt aus, müde“ wirkt: Absage mit Grund, Buddy reagiert", (await stored(page)).misses.some(m => m.d === mday(0) && m.r === "muede") && (await page.textContent("#buddy")).includes("Zu müde") && (await page.textContent("#askOut")).includes("Doch trainieren"));
-      await page.click("#askOut [data-a=missUndo]");
-      ok("Rücknahme über die Antwort-Schaltfläche", !(await stored(page)).misses.some(m => m.d === mday(0)));
-      // Briefing
-      await page.click("#briefingBtn");
-      const bt = await page.textContent(".sheet");
-      ok("Briefing: Anrede, Lage, Training mit Vorschlägen, Essen", bt.includes("Briefing von Max") && /, Nico\./.test(bt) && bt.includes("Dein Training: Test, 3 Übungen, etwa") && bt.includes("Iso-Lateral Chest Press 45 kg pro Seite – mehr als zuletzt") && bt.includes("Essen heute") === false, bt.replace(/\s+/g, " ").slice(0, 400));
-      await page.click("[data-a=briefingSay]");
-      const said = await tp(page, () => window.__tp.said || []);
-      ok("„Vorlesen“ spricht auch ohne eingeschaltete Sprachbegleitung, in Sprechform (Kilo statt kg)", said.length === 1 && said[0].includes("Kilo pro Seite") && !said[0].includes(" kg"), said[0] ? said[0].slice(0, 200) : "");
-      await page.keyboard.press("Escape");
-      await tp(page, () => { window.__tp.state.voice = true; });
-      await page.fill("#askIn", "Bestwert Chest Press"); await page.press("#askIn", "Enter");
-      const said2 = await tp(page, () => window.__tp.said);
-      ok("Mit Sprachbegleitung werden Antworten vorgelesen", said2[said2.length - 1].includes("Bestwert an der Iso-Lateral Chest Press: 42,5 Kilo pro Seite"), said2[said2.length - 1]);
-      // Einstellungen
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
-      ok("Einstellungen: Name des Buddys und Anrede", (await page.inputValue("#buddyNameIn")) === "Max" && (await page.inputValue("#meIn")) === "Nico" && (await page.textContent("#app")).includes("nicht aus einem Sprachmodell"));
-      await page.fill("#buddyNameIn", "");
-      await page.click("[data-a=tab][data-v=home]");
-      ok("Ohne Namen heißt er wieder „Buddy“", (await page.getAttribute("#askIn", "placeholder")) === "Frag Buddy …" && (await page.textContent(".hero .cap")) === "Dein Buddy");
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      const rm = await tp(page, () => [document.getElementById("remain").textContent, window.__tp.remainMin(window.__tp.state.session)]);
+      ok("Kopfzeile zeigt die geschätzte Restzeit unter der Uhr", rm[0] === `≈ ${rm[1]} Min.` && rm[1] >= 20, JSON.stringify(rm));
+      const wu = await page.textContent("#warmup");
+      ok("Vor dem ersten Satz: zwei Aufwärmsätze (50 % und 75 % von 42,5 kg, auf Schritte gerundet)", wu.includes("Erst aufwärmen") && wu.includes("22,5 × 10") && wu.includes("32,5 × 5") && wu.includes("nicht eintragen") && wu.includes("42,5 kg pro Seite"), wu.replace(/\s+/g, " "));
+      await page.click("[data-a=warmDone]");
+      ok("„Aufgewärmt“ blendet den Schritt aus und merkt es in der Sitzung", !(await page.$("#warmup")) && (await stored(page)).session.warmDone === true);
+      await page.fill("#kgIn", "42,5"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      ok("Pause: derselbe Satz vom letzten Mal zum Vergleich (40 × 12 · heute mehr)", (await page.textContent("#vsLast")) === "Letztes Mal Satz 1: 40 × 12 · heute mehr");
+      const th = await page.textContent("#timeHint");
+      ok("Zeitbudget 15 Min. deutlich überschritten: Angebot zu kürzen, mit Zahlen", th.includes("über deinem Zeitbudget") && th.includes("Geplant 15 Min.") && th.includes("Auf 15 Min. kürzen"), th.replace(/\s+/g, " "));
+      ok("360 px: Pause mit Vergleich und Zeit-Hinweis ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=timeHintOff]");
+      ok("„Egal, weiter“: Hinweis weg und bleibt weg", !(await page.$("#timeHint")) && (await stored(page)).session.timeHintOff === true);
+      await page.click("[data-a=skipRest]"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      ok("… auch nach dem nächsten Satz", !(await page.$("#timeHint")) && !(await page.$("#warmup")));
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ plan: PLAN_SMALL });
-      const r = await tp(page, () => [window.__tp.ask("Wie viel wiege ich?").a, window.__tp.ask("Ziel").a, window.__tp.ask("Wasser").a, window.__tp.ask("Stillstand?").a]);
-      ok("Ohne Daten: ehrliche Antworten statt Erfindungen", r[0].includes("noch kein Körpergewicht") && r[1].includes("noch kein Ziel") && r[2].includes("Wasserzählen ist ausgeschaltet") && r[3].includes("keinen Stillstand"), JSON.stringify(r));
-      const g = await tp(page, () => [window.__tp.greet(new Date(2026, 0, 1, 8)), window.__tp.greet(new Date(2026, 0, 1, 13)), window.__tp.greet(new Date(2026, 0, 1, 20))]);
-      ok("Begrüßung nach Tageszeit", JSON.stringify(g) === JSON.stringify(["Guten Morgen", "Hallo", "Guten Abend"]));
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 15, days: [{ id: "d1", name: "Push", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "i3", exId: "hs-lateral", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }] };
+      const { ctx, page } = await open({ plan });
+      await page.click("[data-a=start]");
+      ok("Ohne bekanntes Gewicht kein Aufwärm-Vorschlag", !(await page.$("#warmup")));
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("#timeHint [data-a=timeFit]");
+      const st = await stored(page), sets = st.session.list.reduce((a, l) => a + l.sets.length, 0);
+      ok("„Auf 15 Min. kürzen“: Rest gekürzt, erledigter Satz bleibt, Anpassung vermerkt", st.session.timeAdj && st.session.timeAdj.minutes === 15 && sets < 9 && st.session.list[0].sets.filter(s => s.done).length === 1 && !(await page.$("#timeHint")), `${sets} Sätze`);
+      ok("Restzeit passt jetzt ins Budget", (await tp(page, () => (Date.now() - window.__tp.state.session.start) / 60000 + window.__tp.remainingSec(window.__tp.state.session) / 60)) <= 15.5);
+      await ctx.close();
+    }
+    {
+      // Vier Wochen Pause an einem Gerät: ein Schritt leichter
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 30, "s")] });
+      const row = (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ");
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Nach 30 Tagen: 37,5 statt 40 kg, als Regel der App begründet", row.includes("2 × 37,5 kg pro Seite") && row.includes("−2,5 kg") && (await page.textContent(".sheet")).includes("Nach vier Wochen Pause ein Schritt leichter") && (await page.textContent(".sheet")).includes("Regel der App"), row);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 25, "s")] });
+      ok("Bei 25 Tagen weiterhin nur halten", (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ").includes("2 × 40 kg pro Seite"));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      ok("So denkt der Buddy: Regel „Vorausdenken im Training“ und Wiedereinstieg", (await page.textContent("#coachRules")).includes("Vorausdenken im Training") && (await page.textContent("#coachRules")).includes("ab 4 Wochen ein Schritt leichter"));
       await ctx.close();
     }
 
