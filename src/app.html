@@ -1551,12 +1551,12 @@ function go(v) {
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on",
-    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : artBack === "food" ? "food" : "plan"))));
+    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "plan")) || (v === "week" && b.dataset.v === (weekBack === "history" ? "history" : "home"))));
   render(); window.scrollTo(0, 0);
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1654,6 +1654,7 @@ function vHome() {
       <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!G && !tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
+      ${state.history.length ? `<button class="li" data-a="openWeek" data-ret="home" id="homeWeek"><div class="grow"><div class="s">Wochenrückblick</div><div class="t">${thisWeek} von ${goal} ${goal === 1 ? "Training" : "Trainings"} diese Woche</div></div><span class="chev">›</span></button>` : ""}
       ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
         return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
     </div>
@@ -3091,6 +3092,77 @@ async function lookupBarcode(code, scanned) {
   } catch (e) { show(offErr()); }
 }
 
+/* ================= Wochenrückblick ================= */
+// Nur aus den eigenen Daten berechnet; Hinweise ergeben sich direkt aus den Zahlen.
+let weekOff = 0, weekBack = "home";
+function weekStats(off) {
+  const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - (now.getDay() + 6) % 7 - 7 * off);
+  const end = new Date(mon); end.setDate(mon.getDate() + 7);
+  const pmon = new Date(mon); pmon.setDate(mon.getDate() - 7);
+  const inR = (h, a, b) => { const d = new Date(h.date); return d >= a && d < b; };
+  const H = state.history.filter(h => inR(h, mon, end)), P = state.history.filter(h => inR(h, pmon, mon));
+  const vol = L => L.reduce((a, h) => a + h.exercises.reduce((b, x) => b + x.sets.reduce((c, t) => c + setVol(x, t), 0), 0), 0);
+  const sets = L => L.reduce((a, h) => a + h.exercises.reduce((b, x) => b + x.sets.filter(validSet).length, 0), 0);
+  // Neue Bestwerte: höchstes Gewicht je Gerät und Gewichtsangabe im Vergleich zu allem davor
+  const prs = [], sorted = [...state.history].sort((a, b) => new Date(a.date) - new Date(b.date)), best = {};
+  for (const h of sorted) for (const x of h.exercises) {
+    const v = x.sets.filter(validSet); if (!v.length) continue;
+    const k = x.exId + "|" + x.u, m = Math.max(...v.map(t => t.kg));
+    if (inR(h, mon, end) && best[k] !== undefined && m > best[k]) prs.push({ name: x.name, kg: m, u: x.u, from: best[k] });
+    if (best[k] === undefined || m > best[k]) best[k] = m;
+  }
+  const goalKey = state.plan?.goal || "aufbau", [tmin, tmax] = goalKey === "aufbau" ? [10, 20] : [6, 12];
+  const ms = {}; for (const m in MUSCLES) ms[m] = 0;
+  H.forEach(h => h.exercises.forEach(x => { const e = ex(x.exId); ms[e.muscle] += x.sets.length; e.sec.forEach(m => ms[m] += x.sets.length / 2); }));
+  const planned = new Set((state.plan?.days || []).flatMap(d => d.items.map(i => ex(i.exId).muscle)));
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; }).filter(d => d <= now);
+  const fdays = days.map(d => dkey(d)).filter(k => (state.food[k] || []).length), wdays = days.map(d => dkey(d)).filter(k => state.water[k]);
+  const G = nutrGoals(), tot = fdays.map(k => dayTotals(k));
+  const W = (state.weights || []).filter(w => { const d = new Date(w.d + "T12:00"); return d >= mon && d < end; }).sort((a, b) => a.d.localeCompare(b.d));
+  return { mon, end, n: H.length, goal: Math.max(1, state.plan?.days.length || 1), sets: sets(H), vol: vol(H), pvol: vol(P), pn: P.length,
+    min: Math.round(H.reduce((a, h) => a + (h.durationSec || 0), 0) / 60), prs, ms, tmin, tmax, planned,
+    food: fdays.length ? { n: fdays.length, k: tot.reduce((a, t) => a + t.k, 0) / tot.length, p: tot.reduce((a, t) => a + t.p, 0) / tot.length, hit: G ? tot.filter(t => t.p >= G.prot).length : 0 } : null,
+    water: wdays.length ? wdays.reduce((a, k) => a + state.water[k], 0) / wdays.length : null, G,
+    wt: W.length >= 2 ? { a: W[0], b: W[W.length - 1] } : null, streak: off === 0 ? weekStreak(mon, Math.max(1, state.plan?.days.length || 1)) : null };
+}
+function vWeek() {
+  const s = weekStats(weekOff), fmtD = d => d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric" });
+  const last = new Date(s.end); last.setDate(last.getDate() - 1);
+  const label = weekOff === 0 ? "Diese Woche" : weekOff === 1 ? "Letzte Woche" : `${fmtD(s.mon)} – ${fmtD(last)}`;
+  const stat = (cap, num, sub) => `<div class="stat"><div class="cap">${cap}</div><div class="num">${num}</div>${sub ? `<div class="small faint">${sub}</div>` : ""}</div>`;
+  const dv = s.pvol ? Math.round((s.vol - s.pvol) / s.pvol * 100) : null;
+  const inRange = [], below = [], none = [];
+  for (const [m, l] of Object.entries(MUSCLES)) { const v = s.ms[m]; if (v >= s.tmin && v <= s.tmax) inRange.push(l); else if (v > 0 && v < s.tmin) below.push(`${l} (${String(Math.round(v * 2) / 2).replace(".", ",")})`); else if (v === 0 && s.planned.has(m)) none.push(l); }
+  const hints = [];
+  if (s.n >= s.goal) hints.push(`Wochenziel erreicht: ${s.n} von ${s.goal} ${s.goal === 1 ? "Training" : "Trainings"}.`);
+  else if (weekOff === 0) hints.push(`Noch ${s.goal - s.n} ${s.goal - s.n === 1 ? "Training" : "Trainings"} bis zum Wochenziel.`);
+  else hints.push(`${s.n} von ${s.goal} geplanten Trainings.`);
+  if (s.prs.length) hints.push(`${s.prs.length} ${s.prs.length === 1 ? "neuer Bestwert" : "neue Bestwerte"} – mehr Gewicht als je zuvor an diesen Geräten.`);
+  if (below.length) hints.push(`Unter dem Zielbereich von ${s.tmin}–${s.tmax} Sätzen: ${below.join(", ")}.`);
+  if (none.length) hints.push(`Ohne Satz in dieser Woche, obwohl im Plan: ${none.join(", ")}.`);
+  if (s.food && s.G && s.food.p < s.G.prot * 0.9) hints.push(`Eiweiß lag im Schnitt ${fmtK(s.G.prot - s.food.p)} g unter deinem Ziel von ${s.G.prot} g.`);
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="weekBack">‹ Zurück</button><div class="cap">Wochenrückblick · ${fmtD(s.mon)} – ${fmtD(last)}</div>
+      <div class="row between"><div class="title">${label}</div>
+        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="weekNav" data-d="1" aria-label="Vorherige Woche">‹</button><button class="icon-btn" data-a="weekNav" data-d="-1" aria-label="Nächste Woche" ${weekOff === 0 ? "disabled" : ""}>›</button></div></div></div>
+    <section class="stack-sm" id="weekTrain"><h2 style="margin:0">Training</h2>
+      <div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : "")}
+        ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
+      ${s.prs.length ? `<div class="group">${s.prs.map(p => `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">vorher ${kgTxt(p.from)} kg</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div>` : ""}
+      ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}</section>
+    ${s.food || s.water ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
+      <div class="grid3" style="align-items:start">${s.food ? stat("Ø kcal", fmtK(s.food.k), s.G ? `Ziel ${fmtK(s.G.kcal)}` : `${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"}`) + stat("Ø Eiweiß", fmtK(s.food.p) + '<span class="small muted"> g</span>', s.G ? `Ziel an ${s.food.hit} von ${s.food.n} Tagen` : "") : ""}
+        ${s.water ? stat("Ø Wasser", fmtL(s.water) + '<span class="small muted"> L</span>', "") : ""}</div>
+      ${s.food ? `<p class="small faint" style="margin:0">Durchschnitt über ${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"} mit Einträgen.</p>` : ""}</section>` : ""}
+    ${s.wt ? `<section class="stack-sm" id="weekWeight"><h2 style="margin:0">Gewicht</h2>
+      <p class="small" style="margin:0"><b>${kgTxt(s.wt.a.kg)} → ${kgTxt(s.wt.b.kg)} kg</b> (${s.wt.b.kg - s.wt.a.kg > 0 ? "+" : s.wt.b.kg - s.wt.a.kg < 0 ? "−" : "±"}${kgTxt(Math.abs(Math.round((s.wt.b.kg - s.wt.a.kg) * 10) / 10))} kg). Das Gewicht schwankt von Tag zu Tag, zum Beispiel durch Wasser und Mageninhalt – aussagekräftiger ist der Trend über mehrere Wochen.</p>
+      ${weekOff === 0 && state.nutr ? trendHtml(s.G) : ""}</section>` : ""}
+    <section class="section" id="weekHints"><h2>Auf einen Blick</h2><ul class="glist">${hints.map(h => `<li>${esc(h)}</li>`).join("")}</ul>
+      ${below.length || none.length ? `<button class="link small" data-a="openArt" data-id="volumen" data-ret="week">Wie viele Sätze pro Woche? (Trainingswissen)</button>` : ""}
+      ${s.food && s.G && s.food.p < s.G.prot * 0.9 ? `<button class="link small" data-a="openArt" data-id="eiweiss" data-ret="week">Wie viel Eiweiß brauchst du? (Trainingswissen)</button>` : ""}</section>
+  </div>`;
+}
+
 /* ================= Apple Watch (parallel aufzeichnen) ================= */
 // Web-Apps laufen nicht auf der Watch. Sie zeichnet das Training in ihrer App „Training“ auf;
 // diese App erinnert daran und verhindert doppelte Workouts in Health.
@@ -3181,6 +3253,7 @@ function vHistory() {
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Verlauf</div></div>
+    ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
     <section class="section">
       <div class="section-head"><h2>Häufigkeit</h2><span class="small muted">${monthCount} ${monthCount === 1 ? "Tag" : "Tage"} im ${cm.toLocaleDateString("de-DE", { month: "long" })}</span></div>
@@ -3526,7 +3599,10 @@ const A = {
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
   exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
-  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : "wissen"),
+  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : "wissen"),
+  openWeek: el => { weekOff = 0; weekBack = el.dataset.ret === "history" ? "history" : "home"; go("week"); },
+  weekNav: el => { weekOff = Math.max(0, weekOff + +el.dataset.d); vWeek(); window.scrollTo(0, 0); },
+  weekBack: () => go(weekBack),
   openGuideSheet: el => { guideRet = el.dataset.ret || null; openSheet(guideSheet(el.dataset.id, guideRet)); },
   guideBack: () => { if (guideRet === "pick") openSheet(pickerHtml()); else if (guideRet === "train") openSheet(devInfoSheet()); else if (guideRet === "item") openSheet(itemSheet()); else closeSheet(); },
   openTime: () => { const tp = activeTimeplan(nextDay()); timeSel = tp ? tp.minutes : null; openSheet(timeSheet()); },
@@ -3716,7 +3792,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
