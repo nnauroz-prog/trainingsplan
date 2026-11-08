@@ -31,7 +31,7 @@ const OLD_V2 = {
     { id: "i4", exId: "c-abc", sets: 3, rmin: 8, rmax: 12, rest: 60 }] }] },
   custom: [{ id: "c-abc", name: "Alte Rudermaschine", muscle: "ruecken", sec: [], type: "plate" }],
   notes: { "hs-chest": "Sitz 4" },
-  history: [{ id: "h1", dayId: "d1", day: "Push", date: "2026-10-01T10:00:00.000Z", durationSec: 2400, exercises: [
+  history: [{ id: "h1", dayId: "d1", day: "Push", date: new Date(Date.now() - 5 * 864e5).toISOString(), durationSec: 2400, exercises: [
     { exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12, f: "m" }] },
     { exId: "hs-legpress", name: "Linear Leg Press", sets: [{ kg: 160, reps: 10 }, { kg: 160, reps: 9 }] },
     { exId: "hs-fly", name: "Pec Fly", sets: [{ kg: 65, reps: 12 }, { kg: null, reps: 12 }, { kg: 65, reps: 0 }] },
@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v23)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v23")));
+      ok("Service Worker aktiv (Cache trainingsplan-v24)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v24")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1902,7 +1902,265 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("33. Konsole");
+    section("33. Ziele und „Dein Warum“");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const cg = await tp(page, () => { const c = window.__tp.cleanGoals; const ok1 = { kind: "kraft", exId: "hs-chest", target: 50, start: 40, startDate: "2026-01-01T10:00:00Z" };
+        return [c([ok1, { kind: "x", target: 50, start: 0 }, { kind: "kraft", exId: "hs-chest", target: 0, start: 0 }, { kind: "gewicht", target: 20, start: 80 }, { kind: "gewicht", target: 75, start: 80, date: "kein Datum" }, null]),
+          c(Array.from({ length: 14 }, () => ok1)).length, c("x")]; });
+      ok("Ziele bereinigt (ungültige Art, Ziel 0 und Gewicht unter 30 kg entfernt, ungültiges Datum geleert)", cg[0].length === 2 && cg[0][0].u === "t" && cg[0][1].kind === "gewicht" && cg[0][1].date === null && cg[1] === 10 && Array.isArray(cg[2]) && cg[2].length === 0, JSON.stringify(cg[0]));
+      await ctx.close();
+    }
+    {
+      // Kraftziel mit Tempo aus den letzten Wochen: 40 → 42,5 → 45 kg pro Seite in drei Wochen
+      const { ctx, page } = await open({ plan: PLAN_SMALL, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 20, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 13, "s"), hist("hs-chest", [{ kg: 45, reps: 9 }, { kg: 45, reps: 8 }], 6, "s")] });
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Fortschritt: Bereich „Deine Ziele“ mit Einladung", await page.isVisible("#goals") && (await page.textContent("#goals")).includes("Noch keine Ziele") && await page.isVisible("#whyAdd"));
+      await page.click("#goals [data-a=goalAdd]");
+      ok("Neues Ziel: zuletzt trainiertes Gerät vorgewählt, Bestwert angezeigt", (await page.$eval("#gEx", s => s.value)) === "hs-chest" && (await page.textContent("#gBest")).includes("Dein Bestwert: 45 kg pro Seite"));
+      await page.selectOption("#gEx", "hs-legpress");
+      ok("Gerät gewechselt: ohne Eintrag kein Bestwert, Einheit passt", (await page.textContent("#gBest")).includes("Noch kein Eintrag") && (await page.textContent("label[for=gTarget]")).includes("kg insgesamt"));
+      await page.selectOption("#gEx", "hs-chest");
+      await page.fill("#gTarget", "40"); await page.click("[data-a=goalSave]");
+      ok("Ziel unter dem Bestwert wird abgelehnt", await page.isVisible("#gErr") && (await page.textContent("#gErr")).includes("über deinem Bestwert von 45 kg"));
+      await page.fill("#gTarget", "50"); await page.click("[data-a=goalSave]");
+      let st = await stored(page);
+      ok("Kraftziel gespeichert (Start 45, Ziel 50 kg pro Seite)", st.goals.length === 1 && st.goals[0].kind === "kraft" && st.goals[0].exId === "hs-chest" && st.goals[0].u === "s" && st.goals[0].start === 45 && st.goals[0].target === 50 && !st.goals[0].done && !await page.$(".sheet"));
+      const gs = await tp(page, () => { const s = window.__tp.goalStatus(window.__tp.state.goals[0]); return { cur: s.cur, pct: s.pct, left: s.left, days: s.eta ? (s.eta - Date.now()) / 864e5 : null }; });
+      ok("Schätzung aus dem Tempo: 2,5 kg pro Woche → 5 kg in etwa 14 Tagen", gs.cur === 45 && gs.pct === 0 && gs.left === 5 && gs.days !== null && Math.abs(gs.days - 14) < 0.5, JSON.stringify(gs));
+      const gt = await page.textContent("#goals");
+      ok("Zielzeile: Stand, Rest und Schätzung mit Hinweis auf den Trainingsstand", gt.includes("Iso-Lateral Chest Press") && gt.includes("45 → 50 kg pro Seite") && gt.includes("Noch 5 kg") && gt.includes("bei deinem Tempo etwa") && gt.includes("hängt vom Trainingsstand ab"));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Buddy: „Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite.“", (await page.textContent("#buddy")).includes("Heute ist die Iso-Lateral Chest Press dran – noch 5 kg bis 50 kg pro Seite."));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#whyAdd");
+      ok("Warum: Hinweis mit Quelle (Teixeira 2012)", (await page.textContent(".sheet")).includes("Teixeira PJ") && (await page.textContent(".sheet")).includes("Beobachtungsstudien"));
+      await page.fill("#whyIn", "  Fit bleiben für meine Familie  "); await page.click("[data-a=whySave]");
+      ok("Warum gespeichert und angezeigt", (await stored(page)).why === "Fit bleiben für meine Familie" && (await page.textContent("#whyLine")).includes("„Fit bleiben für meine Familie“"));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Buddy erinnert nach 6 Tagen Pause an das Warum", (await page.textContent("#buddy")).includes("Dein Warum: „Fit bleiben für meine Familie“."));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#goals [data-a=goalEdit]");
+      ok("Bearbeiten: Gerät fest, Zielgewicht vorausgefüllt", (await page.textContent(".sheet")).includes("Ziel bearbeiten") && await page.$eval("#gEx", s => s.disabled) && (await page.$eval("#gTarget", i => i.value)) === "50");
+      await page.fill("#gTarget", "47,5"); await page.fill("#gDate", "2099-12-31"); await page.click("[data-a=goalSave]");
+      st = await stored(page);
+      ok("Ziel geändert (47,5 kg, Zieldatum)", st.goals.length === 1 && st.goals[0].target === 47.5 && st.goals[0].date === "2099-12-31" && st.goals[0].start === 45);
+      ok("Zieldatum mit Einordnung („auf Kurs“)", (await page.textContent("#goals")).includes("Zieldatum 31. Dezember") && (await page.textContent("#goals")).includes("(auf Kurs)"));
+      for (const light of [false, true]) {
+        await page.emulateMedia({ colorScheme: light ? "light" : "dark" });
+        const a = await noOverflow(page); await page.click("#goals [data-a=goalAdd]"); const b = await noOverflow(page); await page.keyboard.press("Escape");
+        ok(`360 px ${light ? "hell" : "dunkel"}: Ziele und Zielformular ohne seitliches Scrollen`, a && b);
+      }
+      // Ziel im Training erreichen
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      await page.fill("#kgIn", "47,5"); await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      st = await stored(page);
+      const said = await tp(page, () => window.__tp.said);
+      ok("Zusammenfassung: „Ziel erreicht“ mit Start und Ziel", await page.isVisible("#goalDone") && (await page.textContent("#goalDone")).includes("45 → 47,5 kg pro Seite") && (await page.textContent("#goalDone")).includes("Geschafft"));
+      ok("Ziel als erreicht gespeichert, Ansage „Training geschafft. Ziel erreicht!“", !!st.goals[0].done && said[said.length - 1] === "Training geschafft. Ziel erreicht!", said.slice(-2).join(" | "));
+      await page.click(".actionbar [data-a=tab][data-v=home]");
+      ok("Buddy feiert das Ziel", (await page.textContent("#buddy")).includes("Ziel erreicht: 47,5 kg pro Seite – Iso-Lateral Chest Press."));
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Erreichtes Ziel in der Liste („Erreicht am …“)", (await page.textContent("#goals")).includes("Erreicht am"));
+      await page.reload();
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Nach Neuladen: Ziel und Warum bleiben erhalten, kein zweites „erreicht“", (await stored(page)).goals[0].done === st.goals[0].done && (await page.textContent("#whyLine")).includes("Fit bleiben"));
+      await page.click("#goals [data-a=goalEdit]"); await page.click("[data-a=goalDel]");
+      ok("Ziel gelöscht", (await stored(page)).goals.length === 0 && (await page.textContent("#goals")).includes("Noch keine Ziele"));
+      await ctx.close();
+    }
+    {
+      // Körpergewicht: −1,7 kg in drei Wochen, Ziel 78 kg
+      const pad = n => String(n).padStart(2, "0"), dd = n => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#goals [data-a=goalAdd]"); await page.click("#gKind [data-v=gewicht]");
+      ok("Körpergewicht ohne Einträge: Hinweis auf Fortschritt → Körpergewicht", (await page.textContent(".sheet")).includes("Trag zuerst dein Gewicht"));
+      await page.fill("#gTarget", "78"); await page.click("[data-a=goalSave]");
+      ok("… und Speichern wird abgelehnt", await page.isVisible("#gErr") && ((await stored(page)).goals || []).length === 0);
+      await page.keyboard.press("Escape");
+      await tp(page, w => { window.__tp.state.weights = w; }, [[21, 82], [14, 81.4], [7, 80.9], [1, 80.3]].map(([n, kg]) => ({ d: dd(n), kg })));
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]");
+      await page.click("#goals [data-a=goalAdd]"); await page.click("#gKind [data-v=gewicht]");
+      ok("Aktuelles Gewicht angezeigt", (await page.textContent(".sheet")).includes("Aktuell: 80,3 kg"));
+      await page.fill("#gTarget", "78"); await page.click("[data-a=goalSave]");
+      const st = await stored(page);
+      const gs = await tp(page, () => { const s = window.__tp.goalStatus(window.__tp.state.goals[0]); return { pct: s.pct, left: s.left, days: s.eta ? (s.eta - Date.now()) / 864e5 : null, reached: s.reached }; });
+      ok("Gewichtsziel gespeichert (Start 80,3, Ziel 78) mit Schätzung aus dem Gewichtsverlauf", st.goals[0].kind === "gewicht" && st.goals[0].start === 80.3 && st.goals[0].target === 78 && !gs.reached && Math.abs(gs.left - 2.3) < 1e-9 && gs.days > 14 && gs.days < 60, JSON.stringify(gs));
+      ok("Zielzeile Körpergewicht", (await page.textContent("#goals")).includes("Körpergewicht") && (await page.textContent("#goals")).includes("80,3 → 78 kg"));
+      await tp(page, d => { window.__tp.state.weights.push({ d, kg: 77.9 }); }, dd(0));
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Gewicht erreicht: Buddy meldet es", (await page.textContent("#buddy")).includes("Ziel erreicht: 78 kg – Körpergewicht.") && !!(await stored(page)).goals[0].done);
+      await ctx.close();
+    }
+    {
+      // Gerät auf „insgesamt“ umgestellt: Ziel zieht mit
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s")], goals: [{ id: "g1", kind: "kraft", exId: "hs-chest", u: "s", target: 50, start: 40, startDate: new Date().toISOString() }] });
+      const r = await tp(page, () => { const T = window.__tp; T.state.history.forEach(h => h.exercises.forEach(x => { x.u = "t"; })); return T.goalStatus(T.state.goals[0]).cur; });
+      ok("Ziel ohne passende Einträge fällt auf den Startwert zurück", r === 40);
+      await ctx.close();
+    }
+
+    section("34. Der Buddy denkt mit");
+    const cpad = n => String(n).padStart(2, "0"), cday = n => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${cpad(d.getMonth() + 1)}-${cpad(d.getDate())}`; };
+    const cmon = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; })();
+    // Termin in Woche w vor der laufenden, Wochentag wd (0 = Mo), Ende um hh:mm
+    const at = (w, wd, hh = 19, mm = 0) => { const d = new Date(cmon); d.setDate(cmon.getDate() - w * 7 + wd); d.setHours(hh, mm, 0, 0); return d.toISOString(); };
+    const PPL = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+      { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+      { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "b2", exId: "hs-pulldown", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+      { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+    const S3 = (kg, reps) => [0, 1, 2].map(() => ({ kg, reps }));
+    const H = (dayId, date, exs, dur = 3600) => ({ id: "h" + Math.random(), dayId, day: { a: "Push", b: "Pull", c: "Beine" }[dayId], date, durationSec: dur, exercises: exs.map(([exId, sets, u]) => ({ exId, name: exId, u, sets })) });
+    {
+      // Vorschau auf „Heute“ = dieselben Vorschläge wie beim Start
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s"), hist("hs-legpress", [{ kg: 100, reps: 10 }], 3, "t")] });
+      const rows = await page.$$eval("#todayPlan .li", els => els.map(e => e.textContent.replace(/\s+/g, " ").trim()));
+      ok("Heute: „Dein Training heute“ mit Gewicht, Wiederholungen und Begründung je Übung", rows.length === 3 && rows[0].includes("Iso-Lateral Chest Press") && rows[0].includes("2 × 42,5 kg pro Seite") && rows[0].includes("8–12 Wdh.") && rows[0].includes("+2,5 kg")
+        && rows[1].includes("1 × 100 kg insgesamt · Ziel 11 Wdh.") && rows[1].includes("+1 Wdh.") && rows[2].includes("Gewicht wählen") && rows[2].includes("neu"), rows.join(" | "));
+      ok("Kopfzeile zählt Steigerungen („1× mehr Gewicht“)", (await page.textContent("#todayPlan .section-head")).includes("1× mehr Gewicht"));
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Antippen zeigt die Begründung", (await page.textContent(".sheet")).includes("Letztes Mal alle 2 Sätze mit 12 Wdh.") && (await page.textContent(".sheet")).includes("So steigert der Buddy"));
+      await page.keyboard.press("Escape"); await page.click("[data-a=start]");
+      const kg = await tp(page, () => window.__tp.state.session.list.map(l => l.sets[0].kg));
+      ok("Training übernimmt genau die Vorschau (42,5 / 100 / leer)", kg[0] === 42.5 && kg[1] === 100 && kg[2] === null, JSON.stringify(kg));
+      await finishAllSets(page, 45, 12);
+      const nt = await page.textContent("#nextTime");
+      ok("Nach dem Training: „Nächstes Mal“ aus diesem Training (47,5 kg pro Seite, +2,5 kg)", nt.includes("Iso-Lateral Chest Press") && nt.includes("47,5 kg pro Seite") && nt.includes("+2,5 kg") && nt.includes("So denkt der Buddy"), nt.replace(/\s+/g, " ").slice(0, 300));
+      await ctx.close();
+    }
+    {
+      // 3 Wochen Pause an einem Gerät: keine Steigerung (Regel der App)
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 25, "s")] });
+      const row = (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ");
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Nach 25 Tagen Pause an der Chest Press: halten statt steigern, mit Begründung", row.includes("2 × 40 kg pro Seite") && row.includes("halten") && (await page.textContent(".sheet")).includes("vor 25 Tagen") && (await page.textContent(".sheet")).includes("Regel der App"), row);
+      await ctx.close();
+    }
+    {
+      // Neuer, von der App erzeugter Plan: keine Widersprüche zwischen Plan und Buddy-Check
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, out = [];
+        for (const g of ["aufbau", "kraft", "fit"]) for (const n of [2, 3, 4]) for (const lv of ["einsteiger", "fortgeschritten"]) {
+          T.state.plan = T.generatePlan(g, n, lv, 60); const c = T.planCheck().out;
+          out.push({ k: `${g}/${n}/${lv}`, ins: T.insights().length, miss: c.filter(x => x.kind === "low" && x.v === 0).length, time: c.filter(x => x.kind === "time").length,
+            maxSets: Math.max(...T.state.plan.days.flatMap(d => d.items.map(i => i.sets))) }); }
+        return out; });
+      ok("App-Pläne: keine fehlende Muskelgruppe, kein Tag über dem Zeitbudget, keine Buddy-Hinweise", r.every(x => x.miss === 0 && x.time === 0 && x.ins === 0), JSON.stringify(r.filter(x => x.miss || x.time || x.ins)));
+      ok("App-Pläne: Einsteiger höchstens 3, Fortgeschrittene höchstens 5 Sätze pro Übung", r.every(x => x.maxSets <= (x.k.endsWith("einsteiger") ? 3 : 5)));
+      const ms = await tp(page, () => { const T = window.__tp; T.state.plan = T.generatePlan("aufbau", 4, "fortgeschritten", 60); return T.planCheck().out.length; });
+      ok("4 Tage, Fortgeschritten: alle Muskelgruppen im Richtwert", ms === 0);
+      await ctx.close();
+    }
+    {
+      // Seltener als geplant (2 statt 3 pro Woche, montags und donnerstags) → 2-Tage-Plan vorschlagen; gelernte Trainingszeiten
+      const history = []; let k = 0;
+      for (let w = 5; w >= 0; w--) for (const wd of [0, 3]) { if (new Date(at(w, wd)) > new Date()) continue; const d = ["a", "b", "c"][k++ % 3]; history.push(H(d, at(w, wd), [[{ a: "hs-chest", b: "hs-pulldown", c: "hs-legpress" }[d], S3(40 + k, 10), d === "a" ? "s" : "t"]])); }
+      const { ctx, page } = await open({ plan: PPL, history });
+      const ins = await tp(page, () => window.__tp.insights().map(x => x.id));
+      ok("Häufigkeit: „Im Schnitt 2 von 3 Trainings pro Woche“ mit Zählung je Tag", ins.includes("freq:3>2") && (await page.textContent("#coach")).includes("Im Schnitt 2 von 3 Trainings pro Woche") && /Push \d×, Pull \d× und Beine \d×/.test(await page.textContent("#coach")), ins.join(","));
+      ok("Buddy hat die Trainingszeiten gelernt: montags und donnerstags gegen 18:00", (await page.textContent("#buddy")).includes("Du trainierst meistens montags und donnerstags gegen 18:00"));
+      await page.click("#buddy [data-a=schedLearned]");
+      const on = await page.$$eval("#schedDays .chip.on", e => e.map(x => x.dataset.d));
+      ok("… „Als Termine übernehmen“ füllt Mo, Do und 18:00 vor", JSON.stringify(on) === '["0","3"]' && (await page.inputValue("#schedTime")) === "18:00");
+      await page.keyboard.press("Escape");
+      await page.click("#coach [data-a=coachPlan]");
+      ok("Vorschau des 2-Tage-Plans (Ganzkörper A/B)", (await page.textContent(".sheet")).includes("Plan mit 2 Tagen") && (await page.textContent(".sheet")).includes("Ganzkörper A") && (await page.textContent(".sheet")).includes("Ganzkörper B"));
+      await page.click("[data-a=coachPlanApply]");
+      let st = await stored(page);
+      ok("Übernommen: 2 Tage, vorheriger Plan gesichert", st.plan.days.length === 2 && st.prevPlan && st.prevPlan.plan.days.length === 3 && st.prevPlan.why.includes("3 → 2 Trainingstage"));
+      ok("Hinweis verschwindet nach dem Übernehmen", !(await tp(page, () => window.__tp.insights().map(x => x.id))).includes("freq:3>2"));
+      await page.reload();
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      ok("Buddy-Analyse (aus Fortschritt): Änderung mit „Rückgängig“", await page.isVisible("#undoPlan") && (await page.textContent("#undoPlan")).includes("3 → 2 Trainingstage"));
+      await page.click("[data-a=coachUndo]");
+      st = await stored(page);
+      ok("Rückgängig stellt den 3-Tage-Plan wieder her", st.plan.days.length === 3 && st.plan.days[0].id === "a" && !st.prevPlan);
+      ok("So denkt der Buddy: alle Regeln offen gelegt", (await page.textContent("#coachRules")).includes("72 Stunden") && (await page.textContent("#coachRules")).includes("3 Wochen oder länger") && (await page.textContent("#coachRules")).includes("ohne deine Bestätigung"));
+      for (const light of [false, true]) {
+        await page.emulateMedia({ colorScheme: light ? "light" : "dark" });
+        const a = await noOverflow(page); await page.click("[data-a=coachBack]"); const b = await noOverflow(page); await page.click("[data-a=tab][data-v=home]"); const c = await noOverflow(page);
+        ok(`360 px ${light ? "hell" : "dunkel"}: Analyse, Fortschritt und Heute mit Vorschau ohne seitliches Scrollen`, a && b && c);
+        await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      }
+      await ctx.close();
+    }
+    {
+      // Stillstand an der Row → Gerät mit gleichem Bewegungsmuster vorschlagen
+      const history = [28, 21, 14, 7, 2].map(n => H("b", new Date(Date.now() - n * 864e5).toISOString(), [["hs-row", S3(50, 9), "s"]]));
+      const { ctx, page } = await open({ plan: PPL, history });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      const card = await page.$("[data-ins='plateau:hs-row']");
+      const txt = card ? (await card.textContent()).replace(/\s+/g, " ") : "";
+      ok("Stillstand erkannt: „Iso-Lateral Row: Stillstand seit 4 Wochen“, 5 Einheiten", txt.includes("Iso-Lateral Row: Stillstand seit 4 Wochen") && txt.includes("5 vollständige Einheiten"), txt.slice(0, 200));
+      const to = await page.getAttribute("[data-ins='plateau:hs-row'] [data-a=coachSwap]", "data-to");
+      await page.click("[data-ins='plateau:hs-row'] [data-a=coachSwap]");
+      const st = await stored(page), ids = st.plan.days.flatMap(d => d.items.map(i => i.exId));
+      ok("Tausch mit einem Tipp: Row ersetzt, Sätze bleiben, Änderung gesichert", !!to && !ids.includes("hs-row") && ids.includes(to) && st.plan.days[1].items[0].sets === 3 && st.prevPlan.why.includes("wegen Stillstand"));
+      await page.click("[data-a=coachUndo]");
+      ok("… und rückgängig", (await stored(page)).plan.days[1].items[0].exId === "hs-row");
+      await ctx.close();
+    }
+    {
+      // Beine 15 Tage nicht dran, seitdem 3 andere Trainings
+      const history = [H("c", new Date(Date.now() - 15 * 864e5).toISOString(), [["hs-legpress", S3(100, 10), "t"]]),
+        H("a", new Date(Date.now() - 10 * 864e5).toISOString(), [["hs-chest", S3(40, 10), "s"]]), H("b", new Date(Date.now() - 7 * 864e5).toISOString(), [["hs-pulldown", S3(40, 10), "t"]]),
+        H("a", new Date(Date.now() - 3 * 864e5).toISOString(), [["hs-chest", S3(40, 10), "s"]])];
+      const { ctx, page } = await open({ plan: PPL, history });
+      ok("„Beine seit 15 Tagen nicht dran“ mit Begründung", (await page.textContent("#coach")).includes("Beine seit 15 Tagen nicht dran") && (await page.textContent("#coach")).includes("Seitdem 3 andere Trainings"));
+      await page.click("#coach [data-a=coachDay]");
+      ok("„Heute Beine“ wählt den Tag", (await page.textContent(".hero-name")).includes("Beine") && !(await page.textContent("#app")).includes("seit 15 Tagen nicht dran"));
+      await ctx.close();
+    }
+    {
+      // Termine: Mittwoch fällt immer aus, Mo und Fr klappen
+      const history = []; for (let w = 4; w >= 1; w--) for (const wd of [0, 4]) history.push(H(wd ? "b" : "a", at(w, wd), [[wd ? "hs-pulldown" : "hs-chest", S3(40, 10), wd ? "t" : "s"]]));
+      const { ctx, page } = await open({ plan: PPL, history, sched: { id: "s", days: [0, 2, 4], time: "18:00", planB: "next", since: new Date(Date.now() - 50 * 864e5).toISOString() } });
+      const hits = await tp(page, () => window.__tp.schedHits());
+      ok("Termin-Treffer je Wochentag (Mo 4/4, Mi 0/4, Fr 4/4)", JSON.stringify(hits) === JSON.stringify({ 0: [4, 4], 2: [0, 4], 4: [4, 4] }), JSON.stringify(hits));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      const t = (await page.textContent("[data-ins='wday:2']")).replace(/\s+/g, " ");
+      ok("„Mittwochs klappt es selten“: 0 von 4, an den anderen Tagen 8 von 8", t.includes("Mittwochs klappt es selten") && t.includes("0 von 4 Terminen am Mittwoch") && t.includes("8 von 8"), t.slice(0, 200));
+      await page.click("[data-ins='wday:2'] [data-a=openSched]");
+      ok("… „Termine ändern“ öffnet die Termine", (await page.textContent(".sheet")).includes("Trainingstermine"));
+      await ctx.close();
+    }
+    {
+      // Dauer, Ernährung, Eiweiß, Ziel, was gut läuft, Ausblenden
+      const history = [30, 24, 17, 10, 4].map((n, i) => H("a", new Date(Date.now() - n * 864e5).toISOString(), [["hs-chest", S3(40 + i * 2.5, 10), "s"], ["hs-shoulder", S3(30, 10), "s"]], 4800));
+      const { ctx, page } = await open({ plan: Object.assign({}, PLAN_SMALL, { minutes: 60 }), history, nutr: { sex: "m", age: 34, cm: 180, pal: 1.55, goal: "auf", kcal: null },
+        weights: [[25, 80.2], [18, 80.1], [11, 80.0], [4, 80.1]].map(([n, kg]) => ({ d: cday(n), kg })),
+        goals: [{ id: "g1", kind: "kraft", exId: "hs-shoulder", u: "s", target: 40, start: 30, startDate: new Date(Date.now() - 40 * 864e5).toISOString(), date: cday(2) }] });
+      await tp(page, days => { const s = window.__tp.state; days.forEach(d => { s.food[d] = [{ id: "f" + d, m: "m", n: "Test", src: "", g: null, abs: { k: 2200, p: 60, c: 280, f: 70 } }]; }); }, [1, 2, 3, 4, 5].map(cday));
+      const L = await tp(page, () => window.__tp.insights().map(x => [x.id, x.title, x.text]));
+      const get = id => L.find(x => x[0].startsWith(id)) || ["", "", ""];
+      ok("Dauer: „im Schnitt 80 Min.“ bei 60 Min. Zeitbudget", get("dur")[1] === "Deine Trainings dauern im Schnitt 80 Min." && get("dur")[2].includes("Geplant sind 60 Min."), JSON.stringify(get("dur")));
+      ok("Ernährung: „Du nimmst langsamer zu als geplant“ (±0 % pro Woche, Ziel 0,25–0,5 %)", get("trend:auf")[1] === "Du nimmst langsamer zu als geplant" && get("trend:auf")[2].includes("±0 % pro Woche") && get("trend:auf")[2].includes("0,25–0,5 % mehr pro Woche"), JSON.stringify(get("trend")));
+      ok("Eiweiß: „im Schnitt 60 g pro Tag“, Ziel 128 g, 5 erfasste Tage", get("prot")[1] === "Eiweiß: im Schnitt 60 g pro Tag" && get("prot")[2].includes("128 g") && get("prot")[2].includes("an 5 erfassten Tagen"), JSON.stringify(get("prot")));
+      ok("Ziel mit verstrichenem Datum", get("goal:g1")[1] === "Iso-Lateral Shoulder Press: Zieldatum verstrichen");
+      ok("Was gut läuft: „Mehr Gewicht an 1 von 2 Geräten“ (Chest Press 40 → 50, +25 %)", get("good")[1] === "Mehr Gewicht an 1 von 2 Geräten" && get("good")[2].includes("40 → 50 kg pro Seite") && get("good")[2].includes("+25 %"), JSON.stringify(get("good")));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
+      ok("Heute: zwei unterschiedliche Hinweise, Link zu allen", (await page.$$("#coach .ins")).length === 2 && (await page.textContent("#coach .section-head")).includes("Alle"));
+      const first = await page.getAttribute("#coach .ins", "data-ins");
+      await page.click("#coach .ins [data-a=coachHide]");
+      ok("Ausblenden: Hinweis weg und gespeichert", !(await page.$(`#coach [data-ins='${first}']`)) && !!(await stored(page)).coachOff[first]);
+      await page.click("#coach [data-a=openCoach]");
+      ok("Analyse: „1 ausgeblendet – wieder zeigen“", (await page.textContent("#app")).includes("1 ausgeblendet – wieder zeigen") && !!(await page.$("#coachGood")));
+      await page.click("[data-a=coachShowAll]");
+      ok("… wieder eingeblendet", !!(await page.$(`[data-ins='${first}']`)) && Object.keys((await stored(page)).coachOff).length === 0);
+      await page.click(`[data-ins='dur:60'] [data-a=coachMinutes]`);
+      ok("„Zeitbudget 90 Min.“ übernommen", (await stored(page)).plan.minutes === 90);
+      await page.click(`[data-ins='trend:auf'] [data-a=openNutr]`);
+      ok("„Kalorienziel anpassen“ öffnet das Ernährungsziel", await page.isVisible(".sheet"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, prevPlan: { at: "kaputt", plan: {} }, coachOff: { "x": "2000-01-01T00:00:00Z", "y": new Date().toISOString() } });
+      const st = await tp(page, () => ({ p: window.__tp.state.prevPlan, o: window.__tp.state.coachOff }));
+      ok("Ungültige Planänderung verworfen, alte Ausblendungen aufgeräumt", st.p === null && Object.keys(st.o).join() === "y");
+      await ctx.close();
+    }
+
+    section("35. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
