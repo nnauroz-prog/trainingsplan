@@ -2218,36 +2218,49 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("36. Tricks und kürzere Anleitung");
+    section("36. Tricks je Gerät und kürzere Anleitung");
     {
       const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Mix", items: [
         { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-curl", sets: 3, rmin: 8, rmax: 12, rest: 60 },
         { id: "i3", exId: "hs-seatcurl", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
       const { ctx, page } = await open({ plan, hints: { units: true } });
-      const tr = await tp(page, () => { const T = window.__tp, ids = id => T.tricksFor(T.ex(id), null).map(k => k.id);
-        const it = (exId, rest = 60, sets = 3) => ({ exId, rest, sets: Array.from({ length: sets }, () => ({})) });
-        return { chest: ids("hs-chest"), curl: ids("hs-curl"), legext: ids("hs-legext"), seat: T.tricksFor(T.ex("hs-seatcurl"), null).find(k => k.id === "stretch").s,
-          now: [T.trickNow(it("hs-chest", 90), 0).id, T.trickNow(it("hs-curl"), 1).id, T.trickNow(it("hs-curl"), 2).id, T.trickNow(it("hs-seatcurl", 60, 2), 1).id],
-          restLong: T.tricksFor(T.ex("hs-chest"), { rest: 180 }).some(k => k.id === "rest"), src: !!(T.SOURCES.schoenfeld2018 && T.SOURCES.sodal2023) }; });
-      ok("Tricks passen zum Gerät: Grundübung mit Pausen-Trick, Isolation am Oberkörper mit Fokus, Steckgewicht mit Drop-Satz", tr.chest.includes("rest") && !tr.chest.includes("focus") && !tr.chest.includes("drop")
-        && tr.curl.includes("focus") && !tr.curl.includes("rest") && tr.legext.every(id => id !== "focus") && tr.src, JSON.stringify(tr));
-      ok("Beinbeuger sitzend: Dehnungs-Trick mit Studienergebnis (+14 % statt +9 %)", tr.seat.includes("+14 % statt +9 %"));
-      ok("Kein Pausen-Trick, wenn die Pause schon 3 Minuten ist", !tr.restLong);
-      ok("Trick je Satz: 1. Satz ohne Notiz → Einstellung merken; Mitte → Fokus; letzter Satz → Limit; letzter Satz am Steckgewicht → Drop-Satz",
-        JSON.stringify(tr.now) === JSON.stringify(["setup", "focus", "limit", "drop"]), JSON.stringify(tr.now));
+      const tr = await tp(page, () => { const T = window.__tp, devs = T.allEx().filter(e => e.id.startsWith("hs-")), all = devs.flatMap(e => T.tricksFor(e).map(k => ({ id: e.id, t: k.t, short: k.short, s: k.s })));
+        const dup = f => Object.entries(all.reduce((a, k) => { (a[k[f]] = a[k[f]] || []).push(k.id); return a; }, {})).filter(([, v]) => v.length > 1).map(([k, v]) => `${k} (${v.join(", ")})`);
+        const it = (exId, sets = 3) => ({ exId, sets: Array.from({ length: sets }, () => ({})) });
+        return { n: devs.map(e => T.tricksFor(e).length), dupT: dup("t"), dupShort: dup("short"), dupS: dup("s"), gen: T.GEN_TRICKS.map(k => k.t),
+          generic: all.filter(k => ["Nah ans Limit", "Dehnung mitnehmen", "Pause nicht zu knapp", "Einstellung merken", "Drop-Satz spart Zeit"].includes(k.t)).length,
+          seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s,
+          now: [T.trickNow(it("hs-chest"), 0).t, T.trickNow(it("hs-chest"), 1).t, T.trickNow(it("hs-chest"), 2).t], custom: T.tricksFor({ id: "c-x" }).length }; });
+      ok("Jedes der 28 Geräte hat eigene Tricks (mindestens 2)", tr.n.length === 28 && tr.n.every(n => n >= 2), JSON.stringify(tr.n));
+      ok("Kein Trick steht bei zwei Geräten (Titel, Kurztext und Erklärung jeweils einmalig)", !tr.dupT.length && !tr.dupShort.length && !tr.dupS.length, [...tr.dupT, ...tr.dupShort, ...tr.dupS].join(" | "));
+      ok("Allgemeine Grundsätze nicht mehr bei den Geräten, sondern einmal gesammelt", tr.generic === 0 && tr.gen.includes("Nah ans Limit") && tr.gen.includes("Drop-Satz am Steckgewicht"));
+      ok("Studienbelege stehen beim passenden Gerät (Beinbeuger sitzend +14 %, Armbeuger +12,4 %, Schräge Brustpresse 45°)", tr.seat.includes("+14 % statt +9 %") && tr.curl.includes("+12,4 %") && tr.inc.includes("45°"));
+      ok("Im Training wechseln die Tricks des Geräts von Satz zu Satz", tr.now[0] !== tr.now[1] && tr.now[2] === tr.now[0], JSON.stringify(tr.now));
+      ok("Eigene Geräte ohne erfundene Tricks", tr.custom === 0);
+      const ab = await tp(page, () => Object.values(window.__tp.ABOUT_X));
+      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (28, keine doppelt)", ab.length === 28 && new Set(ab).size === 28);
+      await page.click("[data-a=tab][data-v=lib]");
+      const subs = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()));
+      ok("Übungsliste: keine Beschreibung doppelt", subs.length >= 28 && new Set(subs).size === subs.length, subs.slice(0, 6).join(" | "));
+      await page.click("[data-a=tab][data-v=home]");
       await page.click("[data-a=start]");
-      ok("Training: ein Trick für den aktuellen Satz", (await page.textContent("#trickNow")).includes("Sitzeinstellung notieren"));
+      ok("Training: Trick der Brustpresse für den ersten Satz", (await page.textContent("#trickNow")).includes("Ellbogen leicht unter Schulterhöhe führen"));
       ok("360 px: Training mit Trick ohne seitliches Scrollen", await noOverflow(page));
       await page.click("#trickNow");
-      ok("Antippen: alle Tricks des Geräts, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Brustpresse") && await page.isVisible(".sheet details[data-trick=setup][open]")
-        && (await page.$$(".sheet details[open]")).length === 1);
-      await page.click(".sheet details[data-trick=limit] summary");
-      ok("Trick aufklappen zeigt Begründung und Quelle", (await page.textContent(".sheet details[data-trick=limit]")).includes("Robinson") && await page.isVisible(".sheet details[data-trick=limit] .srcs"));
+      ok("Antippen: Tricks der Brustpresse, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Brustpresse") && await page.isVisible(".sheet details[data-trick=x0][open]") && (await page.$$(".sheet details.trk")).length === 2);
+      await page.click(".sheet [data-a=genTricks]");
+      ok("„Für alle Übungen“: Grundsätze mit Quelle, einmal gesammelt", (await page.textContent(".sheet")).includes("Nah ans Limit") && (await page.textContent(".sheet")).includes("Robinson"));
+      await page.click(".sheet [data-a=genTricksBack]");
+      ok("Zurück zu den Tricks des Geräts", (await page.textContent(".sheet")).includes("Tricks: Brustpresse"));
       await page.keyboard.press("Escape");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Zweiter Satz: der andere Trick der Brustpresse", (await page.textContent("#trickNow")).includes("Hinten eine Sekunde halten"));
       await page.click(".tool[data-a=openDevInfo]");
-      ok("Gerät & Technik: So geht's und Tricks", (await page.textContent(".sheet")).includes("So geht's") && await page.isVisible("#devTricks") && (await page.$$("#devTricks details")).length >= 3);
+      ok("Gerät & Technik: So geht's und die zwei Tricks des Geräts", (await page.textContent(".sheet")).includes("So geht's") && (await page.$$("#devTricks details.trk")).length === 2);
       await page.click("text=Ausführliche Anleitung");
-      ok("Anleitung kurz: So geht's und Tricks sichtbar, Details eingeklappt", await page.isVisible("text=Tricks für mehr Wirkung") && !(await page.$(".sheet .gdet[open]")) && !(await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist.")));
+      const g = await page.textContent(".sheet");
+      ok("Anleitung: „Tricks für dieses Gerät“, getrennte Seiten als Eigenschaft, Details eingeklappt", await page.isVisible("text=Tricks für dieses Gerät") && await page.isVisible("#isoNote") && !(await page.$(".sheet .gdet[open]")));
+      ok("„Weitere Tipps“ ohne die bei vielen Geräten gleichen Texte", !g.includes("Beide Arme bewegen sich unabhängig voneinander") && !g.includes("Einarmig trainieren: Den freien Arm"));
       await page.click(".sheet .gdet summary >> text=Häufige Fehler");
       ok("„Häufige Fehler“ aufklappen zeigt Fehler mit Korrektur", await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."));
       for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Anleitung ohne seitliches Scrollen`, await noOverflow(page)); }
