@@ -1,6 +1,6 @@
 // Offline-Unterstützung: App-Seite zuerst aus dem Netz (damit Updates sofort ankommen),
 // bei schlechtem Empfang nach 3 s aus dem Speicher. Schriften und Symbole aus dem Speicher.
-const CACHE = "trainingsplan-v15";
+const CACHE = "trainingsplan-v16";
 const CORE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

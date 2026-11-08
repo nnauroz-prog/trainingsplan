@@ -29,6 +29,7 @@ Die Übungstexte stehen in `src/app.html` (`GUIDE`, `SOURCES`, `ARTICLES`). Rege
   - **Gewichtstrend:** Ausgleichsgerade über die letzten 28 Tage (mind. 3 Einträge über 14 Tage) im Vergleich mit der Zielrate (Abnehmen 0,5–1 %/Woche nach Helms 2014, Aufbau 0,25–0,5 %/Woche nach Iraki 2019)
   - **Lebensmittel:** 110 Grundnahrungsmittel mit Werten je 100 g aus USDA FoodData Central (SR Legacy, per Skript übernommen, FDC-ID als Quelle, Portionen aus USDA); Markenprodukte online über Open Food Facts (Suche auf in Deutschland verkaufte Produkte, Barcode-Eingabe), nur mit vollständigen Nährwerten; eigene Lebensmittel mit Plausibilitätsprüfung (4/4/9 kcal je g); „Nur kcal“ für Schnelleinträge
   - Online-Suche: `world.openfoodfacts.org/cgi/search.pl` (CORS erlaubt); bei Ausfall oder Überlastung verständliche Meldung. Grundnahrungsmittel und eigene Lebensmittel funktionieren offline
+  - **Barcode-Scan mit der Kamera:** eigener Decoder ohne externe Bibliothek (Safari auf dem iPhone bietet keine eingebaute Barcode-Erkennung) für EAN-13, EAN-8 und UPC-A. Eine Lesung zählt nur mit Begrenzungszeichen, Ruhezonen, gültigem Paritätsmuster, Prüfziffer und zwei gleichen Treffern; Balkenverbreiterung wird aus den Begrenzungszeichen geschätzt und ausgeglichen. Das Kamerabild wird nur im Gerät ausgewertet; die Kamera stoppt beim Schließen und im Hintergrund. Eingetippte Nummern werden ebenfalls über die Prüfziffer geprüft
 - **Datensicherung** per Code (Plan → „Daten sichern“)
 
 Alle Daten liegen lokal im Browser des Geräts.
