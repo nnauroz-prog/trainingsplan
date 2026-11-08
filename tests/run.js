@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v36)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v36")));
+      ok("Service Worker aktiv (Cache trainingsplan-v37)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v37")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1790,7 +1790,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const cs = await tp(page, () => { const c = window.__tp.cleanSched; return [c({ days: [4, 0, 0, 9], time: "18:30" }), c({ days: [], time: "18:00" }), c({ days: [1], time: "25:00" })]; });
       ok("Termine bereinigt (Tage sortiert, doppelte und ungültige entfernt)", JSON.stringify(cs[0].days) === "[0,4]" && cs[0].planB === "next" && cs[1] === null && cs[2] === null);
-      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Lass uns feste Trainingstage ausmachen") && await page.isVisible("#buddy [data-a=openSched]"));
+      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Noch keine festen Trainingstage") && await page.isVisible("#buddy [data-a=openSched]"));
       await page.click("#buddy [data-a=openSched]");
       ok("Vorschlag passt zum Plan (1 Trainingstag)", (await page.$$("#schedDays .chip.on")).length === 1 && (await page.textContent(".sheet")).includes("1 Trainingstag pro Woche"));
       // heute und morgen auswählen, 23:59
@@ -2509,7 +2509,7 @@ async function finishAllSets(page, kg, reps) {
       const st = await stored(page);
       ok("Plan und Termine in einem Schritt (Mo, Mi, Fr um 07:30, Plan B: nächster Tag)", st.plan.days.length === 3 && JSON.stringify(st.sched.days) === "[0,2,4]" && st.sched.time === "07:30" && st.sched.planB === "next");
       const b = await page.textContent("#buddy");
-      ok("„Heute“ fragt nicht noch einmal nach Trainingstagen", !b.includes("Lass uns feste Trainingstage ausmachen") && (await page.textContent("#buddySched")).includes("Mo, Mi, Fr · 07:30"));
+      ok("„Heute“ fragt nicht noch einmal nach Trainingstagen", !b.includes("Noch keine festen Trainingstage") && (await page.textContent("#buddySched")).includes("Mo, Mi, Fr · 07:30"));
       ok("Neuer Nutzer: kein Hinweis „Gewicht pro Seite“, keine Erholung, keine Artikelzeile", !(await page.$("[data-a=hintUnitsOpen]")) && !(await page.$("[data-a=showRec]")) && !(await page.$("#homeArt")));
       await page.click("[data-a=tab][data-v=plan]");
       const pc = await page.textContent("#planCheck");
