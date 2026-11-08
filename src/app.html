@@ -177,6 +177,8 @@
   .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
   .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
+  .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
+  .week .wp.done{color:var(--accent)}
   .week .dot.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--raise-3);color:var(--text-3);text-decoration:line-through}
   .week .dot.today{box-shadow:inset 0 0 0 2px var(--text);color:var(--text)}
   .week .dot.done.today{box-shadow:inset 0 0 0 2px var(--on-accent)}
@@ -553,7 +555,7 @@ const ARTICLES = [
       "Eine Meta-Analyse von 94 Studien fand, dass solche Pläne das Erreichen von Zielen deutlich verbessern. Eine neuere, viel größere Auswertung bestätigt den Nutzen, schätzt den Effekt nach Korrektur für Verzerrungen aber kleiner.",
       "Speziell für Bewegung fand eine Meta-Analyse von 26 Studien einen kleinen bis mittleren Effekt. Am stärksten war er, wenn die Pläne auch den Umgang mit Hindernissen enthielten. Deshalb fragt dich die App nach einem Plan B: am nächsten Tag nachholen oder die 30-Minuten-Version.",
       "Gewohnheiten brauchen Zeit. In einer Studie dauerte es je nach Person 18 bis 254 Tage, bis sich ein neues Verhalten automatisch anfühlte. Ein einzelner ausgelassener Tag warf den Prozess dabei nicht nennenswert zurück – also einfach beim nächsten Termin weitermachen.",
-      "Der Buddy auf „Heute“ erinnert dich an deinen nächsten Termin und an deinen Plan B. Auf Wunsch kommen die Termine mit Erinnerung in den Kalender deines iPhones."
+      "„Heute“ erinnert dich an deinen nächsten Termin und an deinen Plan B. Auf Wunsch kommen die Termine mit Erinnerung in den Kalender deines iPhones."
     ], src: ["gollwitzer2006", "sheeran2025", "belanger2013", "lally2010"] }
 ];
 
@@ -1058,6 +1060,7 @@ function normalize(raw) {
       ex: clampInt(tp.ex, 0, 50, 0), sets: clampInt(tp.sets, 0, 200, 0), est: clampInt(tp.est, 0, 300, 0) };
   }
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
+  if (Array.isArray(raw.history) && raw.history.some(h => isObj(h) && Array.isArray(h.exercises) && h.exercises.some(x => isObj(x) && !["s", "t", "b"].includes(x.u)))) s.hints.unitsOld = true;
   s.health = raw.health === true;
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
@@ -1578,7 +1581,7 @@ function tricksFor(e, it) {
   if (comp && (!it || it.rest < 120)) T.push({ id: "rest", t: "Pause nicht zu knapp", short: "Bei dieser Grundübung lieber 2–3 Min. Pause",
     s: "Mit 3 statt 1 Minute Pause legten trainierte Männer in 8 Wochen mehr Kraft und Muskeldicke zu – vermutlich, weil sie mit längerer Pause mehr schafften.", src: ["rest2016"] });
   if (e.type === "stack") T.push({ id: "drop", t: "Drop-Satz spart Zeit", short: "Letzter Satz: danach leichter stecken, direkt weiter",
-    s: "Nach dem letzten Satz sofort leichter stecken und ohne Pause weitermachen, bis kurz vors Limit. In einer Meta-Analyse (5 Studien) wuchsen die Muskeln ähnlich wie mit normalen Sätzen, bei manchen Varianten in deutlich kürzerer Zeit. Die Datenlage ist klein. Den Drop-Teil nicht als eigenen Satz eintragen – sonst gilt die Einheit für den Buddy als uneinheitlich.", src: ["sodal2023"] });
+    s: "Nach dem letzten Satz sofort leichter stecken und ohne Pause weitermachen, bis kurz vors Limit. In einer Meta-Analyse (5 Studien) wuchsen die Muskeln ähnlich wie mit normalen Sätzen, bei manchen Varianten in deutlich kürzerer Zeit. Die Datenlage ist klein. Den Drop-Teil nicht als eigenen Satz eintragen – sonst gilt die Einheit für die App als uneinheitlich.", src: ["sodal2023"] });
   T.push({ id: "setup", t: "Einstellung merken", short: "Sitzeinstellung notieren – nächstes Mal sofort richtig",
     s: "Trag unter „Gerät & Technik“ ein, wie du das Gerät einstellst. Die Notiz steht dann oben in jeder Einheit.", src: [] });
   return T;
@@ -1674,6 +1677,7 @@ function vWissen() {
     <div class="head"><div class="cap">Wissen</div><div class="title">Artikel</div>
       <p class="sub">Die Grundlagen hinter Training und Ernährung – kurz erklärt und mit Quellen belegt.</p></div>
     ${wissenSeg("wissen")}
+    <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen – mit deinen aktuellen Hinweisen</div></div><span class="chev">›</span></button></div>
     ${[["Training", ["termine", "progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
       .map(([h, ids]) => { const L = ARTICLES.filter(a => ids.includes(a.id)); return L.length ? `<section class="section"><h2>${h}</h2><div class="group">${L.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div></section>` : ""; }).join("")}
@@ -1703,7 +1707,7 @@ function tabOf(v) {
   if (v === "ex") return exBack === "coach" ? tabOf("coach") : exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
   if (v === "art") return artBack === "coach" ? tabOf("coach") : artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
   if (v === "week") return weekBack === "history" ? "history" : "home";
-  if (v === "coach") return coachBack === "history" ? "history" : "home";
+  if (v === "coach") return coachBack === "history" ? "history" : coachBack === "wissen" ? "lib" : "home";
   return v;
 }
 function go(v) {
@@ -1720,7 +1724,7 @@ function render() {
 }
 
 /* ================= Einrichtung ================= */
-let setup = { goal: "aufbau", days: 3, level: "einsteiger", minutes: 60 };
+let setup = { goal: "aufbau", days: 3, level: "einsteiger", minutes: 60, wd: [0, 2, 4], time: "18:00" };
 function vSetup() {
   const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
     `<button data-a="setup" data-k="${key}" data-val="${v}" class="${String(setup[key]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
@@ -1728,11 +1732,13 @@ function vSetup() {
   $app.innerHTML = `<div class="page">
     <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Training</button>` : `<div class="cap">Neuer Plan</div>`}
       <div class="title">Dein Training</div>
-      <p class="sub">Vier Angaben, dann steht dein Plan. Alles bleibt später änderbar.</p></div>
+      <p class="sub">Ein paar Angaben, dann steht dein Plan – mit festen Tagen. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
       <p class="small faint">${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen · ${GOALS[setup.goal].rest} s Pause</p></div>
-    <div class="section"><h3>Tage pro Woche</h3>${seg("days", [[2, "2"], [3, "3"], [4, "4"]])}
-      <p class="small faint">${TEMPLATES[setup.days].map(t => t[0]).join(" · ")}</p></div>
+    <div class="section"><h3>An welchen Tagen trainierst du?</h3>
+      <div class="chips wrap" id="setupDays">${WD.map((w, i) => `<button class="chip ${setup.wd.includes(i) ? "on" : ""}" data-a="setupDay" data-d="${i}">${w}</button>`).join("")}</div>
+      <p class="small faint" id="setupDaysTxt">${TEMPLATES[setup.wd.length] ? `${setup.wd.length} Tage · ${TEMPLATES[setup.wd.length].map(t => t[0]).join(" · ")}` : "Wähle 2 bis 4 Tage."}</p>
+      <div class="field"><label for="setupTime">Uhrzeit</label><input id="setupTime" type="time" value="${setup.time}"></div></div>
     <div class="section"><h3>Zeit pro Training</h3>${seg("minutes", [[30, "30 min"], [45, "45 min"], [60, "60 min"], [90, "90 min"]])}</div>
     <div class="section"><h3>Erfahrung</h3>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="group"><button class="li" data-a="openDevs">
@@ -1752,10 +1758,11 @@ function vHome() {
   const monday = new Date(now); monday.setHours(0, 0, 0, 0); monday.setDate(now.getDate() - dow);
   const doneDays = new Set(state.history.map(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); return d.getTime(); }));
   const missDays = new Set((state.misses || []).map(m => dateOf(m.d).setHours(0, 0, 0, 0)));
+  const wp = weekPlan(monday);
   const week = ["M", "D", "M", "D", "F", "S", "S"].map((n, i) => {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     const k = d.getTime(), cls = doneDays.has(k) ? "done" : missDays.has(k) ? "miss" : "";
-    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div></div>`;
+    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div><span class="wp ${wp[i] && wp[i].done ? "done" : ""}">${wp[i] ? esc(wp[i].name) : ""}</span></div>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
   const goal = Math.max(1, state.plan.days.length);
@@ -1784,10 +1791,10 @@ function vHome() {
       </section>`; })() : ""}
     ${day && !ses ? `<section class="hero">
       <div class="hero-top">
-        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Dein Buddy"}</div>
+        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : trainedOn(now) ? "Als Nächstes" : "Nächstes Training"}</div>
           <div class="hero-name">${esc(day.name)}</div>
           ${(() => { const tp = activeTimeplan(day);
-            return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}</span>
+            return `<div class="metaline"><button class="timebtn" data-a="openPreview" id="exBtn" aria-label="Übungen und Gewichte für heute ansehen"><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}<span class="chev">›</span></button>
               <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
               ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
@@ -1801,29 +1808,25 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
-    ${day && !ses ? missAskHtml() : ""}
-    ${day && !ses ? previewHtml(day) : ""}
+    ${day && !ses ? (() => { const m = missAskHtml(); if (m) return m;
+      const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
+      return `<section class="section" id="coach">${insightCard(L[0], "home")}${L.length > 1 ? `<button class="link small" data-a="openCoach" data-ret="home" style="justify-self:start">Alle ${L.length} Hinweise ›</button>` : ""}</section>`; })() : ""}
     <section class="section">
       <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
+      ${(() => { const L = weekLeft(monday, thisWeek, goal); return L.length ? `<p class="small muted" id="weekLeft">Noch diese Woche: ${L.map(esc).join(", ")}${state.sched ? "" : " – ohne feste Termine, sobald du Zeit hast"}.</p>` : ""; })()}
       ${streak ? `<p class="small muted">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge das Wochenziel geschafft.</p>` : ""}
       ${state.history.length ? `<button class="link small" data-a="openWeek" data-ret="home" id="homeWeek" style="justify-self:start">Wochenrückblick ansehen ›</button>` : ""}
     </section>
-    ${(() => { const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
-      return `<section class="section" id="coach"><div class="section-head"><h2>Der Buddy hat bemerkt</h2><button class="link small" data-a="openCoach" data-ret="home">${L.length > 1 ? `Alle ${L.length}` : "Analyse"} ›</button></div>
-        ${insightCard(L[0], "home")}</section>`; })()}
-    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
+    ${state.hints.unitsOld && !state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
         <div class="cap">Neu: Gewicht pro Seite</div>
         <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
         <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
       </div>` : ""}
     <div class="plain-list">
-      ${(() => { const b = lastPR(); return b ? `<button class="li" data-a="openEx" data-id="${b.exId}" data-ret="home" id="homeBest"><div class="grow"><div class="s">Zuletzt verbessert · ${fmtWhenDay(b.date)}</div>
-        <div class="t">${esc(b.name)}: ${kgTxt(b.from)} → ${kgTxt(b.kg)} ${UNIT[b.u]}</div></div><span class="chev">›</span></button>` : ""; })()}
-      ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!G && !tt.k) return "";
+      ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
-      ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
-        return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
+
     </div>
   </div>`;
 }
@@ -1960,7 +1963,7 @@ function vPlan() {
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
     </div>
-    ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]);
+    ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
       return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
     ${planCheckHtml()}
   </div>`;
@@ -2311,7 +2314,7 @@ function doneSet() {
   render();
 }
 function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurrent(); }
-// Satz-Coach (Regel der App): Liegt der gerade beendete Satz deutlich über oder unter dem Wiederholungsziel, schlägt der Buddy
+// Satz-Coach (Regel der App): Liegt der gerade beendete Satz deutlich über oder unter dem Wiederholungsziel, schlägt die App
 // für die restlichen Sätze dieser Übung einen Gewichtsschritt mehr bzw. weniger vor. Geändert wird nur nach einem Tipp.
 // Mehr: 2+ Wdh. über dem Ziel, oder am oberen Ziel und „leicht“ bzw. RIR 3+. Weniger: 2+ Wdh. unter dem Ziel, oder darunter und „schwer“ bzw. RIR 0.
 function setAdvice(s) {
@@ -3552,7 +3555,7 @@ function goalSheet() {
 }
 function whySheet() {
   return `${sheetHead("Dein Warum", "Abbrechen")}
-    <p class="small" style="margin:0">Warum trainierst du? Ein Satz genügt – der Buddy erinnert dich daran, wenn es mal schwerfällt.</p>
+    <p class="small" style="margin:0">Warum trainierst du? Ein Satz genügt – die App erinnert dich daran, wenn es mal schwerfällt.</p>
     <textarea id="whyIn" maxlength="160" rows="3" style="font-family:inherit;font-size:16px;word-break:normal;min-height:72px" placeholder="z. B. Stark und fit bleiben, um im Alltag alles mitmachen zu können">${esc(state.why || "")}</textarea>
     <p class="small faint" style="margin:0">Eine Übersichtsarbeit fand: Wer aus eigenen, persönlich wichtigen Gründen trainiert, bleibt eher dabei. Die meisten Studien waren Beobachtungsstudien.</p>
     ${srcList(["teixeira2012"])}
@@ -3637,14 +3640,34 @@ function missAskHtml() {
   if (state.session || trainedOn(now) || missOn(dkey(now)) || (state.misses || []).some(m => m.r === "krank" && (now - dateOf(m.d)) / 864e5 <= 3)) return "";
   const q = missToAsk(); if (!q) return "";
   return `<div class="ins ask" id="missAsk"><div class="t">${q.kind === "sched" ? `Was war am ${WD_LONG[q.wd]} los?` : "Was hält dich gerade vom Training ab?"}</div>
-    <p class="small" style="margin:0">Ein Tipp genügt – der Buddy passt seinen Plan B daran an.</p>
+    <p class="small" style="margin:0">Ein Tipp genügt – die App passt Plan B daran an.</p>
     <div class="chips wrap">${Object.entries(MISS_R).map(([k, l]) => `<button class="chip" data-a="missSet" data-d="${q.d}" data-r="${k}">${l}</button>`).join("")}</div>
     <button class="link small faint" data-a="missSkip" data-d="${q.d}" style="justify-self:start">Nicht jetzt</button></div>`;
 }
 function missSheet() {
   return `${sheetHead("Heute fällt aus", "Abbrechen")}
-    <p class="small muted" style="margin:0">Sag dem Buddy kurz, warum. Er plant dann passend weiter.</p>
+    <p class="small muted" style="margin:0">Sag kurz, warum – die App plant dann passend weiter.</p>
     <div class="group">${Object.entries(MISS_R).map(([k, l]) => `<button class="li" data-a="missSet" data-d="${dkey()}" data-r="${k}"><div class="grow t">${l}</div><span class="chev">›</span></button>`).join("")}</div>`;
+}
+// Wochenplan voraus: erledigte Tage mit ihrem Namen, kommende Termine dieser Woche mit dem Trainingstag, der laut Ablauf dran ist
+function weekPlan(monday) {
+  const now = new Date(), out = Array(7).fill(null), days = state.plan ? state.plan.days.filter(d => d.items.length) : [];
+  if (!days.length) return out;
+  state.history.filter(h => new Date(h.date) >= monday).forEach(h => { out[wdOf(new Date(h.date))] = { name: h.day, done: true }; });
+  const nd = nextDay(); let k = Math.max(0, days.findIndex(d => nd && d.id === nd.id));
+  const s = state.sched, today = wdOf(now);
+  if (s) for (let i = today; i < 7; i++) {
+    if (out[i] || !s.days.includes(i) || (i === today && trainedOn(now))) continue;
+    out[i] = { name: days[k % days.length].name, done: false }; k++;
+  }
+  return out;
+}
+// Was diese Woche noch fehlt: Trainingstage laut Ablauf, bis das Wochenziel erreicht ist
+function weekLeft(monday, thisWeek, goal) {
+  const days = state.plan ? state.plan.days.filter(d => d.items.length) : [], nd = nextDay();
+  if (!days.length || thisWeek >= goal) return [];
+  let k = Math.max(0, days.findIndex(d => nd && d.id === nd.id));
+  return Array.from({ length: Math.min(goal - thisWeek, days.length) }, (_, i) => days[(k + i) % days.length].name);
 }
 function buddySays(day, thisWeek, goal, streak) {
   const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [], facts = [];
@@ -3672,7 +3695,12 @@ function buddySays(day, thisWeek, goal, streak) {
     title = "Erst mal gesund werden";
     text = `Du warst krank oder verletzt (${WD_LONG[wdOf(dateOf(sick.d))]}). Trainiere erst wieder, wenn du dich fit fühlst – und steig dann etwas leichter ein.`;
   } else if (s && s.days.includes(wdOf(now))) {
-    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min.`; act.push(["missToday", "Heute fällt aus", "link small"]); }
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) {
+      const diff = Math.round((schedAt(now) - now) / 60000);
+      title = `Heute um ${s.time}: ${dn}`;
+      text = diff > 0 ? `${diff >= 60 ? `In ${Math.floor(diff / 60)} Std.${diff % 60 ? ` ${diff % 60} Min.` : ""}` : `In ${diff} Min.`} · ca. ${min} Min.` : `Dein Termin läuft – los geht's. Ca. ${min} Min.`;
+      act.push(["missToday", "Heute fällt aus", "link small"]);
+    }
     else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
     else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
   } else if (missed !== null) {
@@ -3746,18 +3774,17 @@ function planCheck() {
   return { out, tmin, tmax, per };
 }
 function planCheckHtml() {
-  const c = planCheck(), f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
-  const grp = (title, rows) => rows.length ? `<p class="small muted" style="margin:0">${title}</p><div class="group">${rows.join("")}</div>` : "";
-  const low = K("low").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${x.v === 0 ? "fehlt im Plan" : `${f(x.v)} Sätze pro Woche${x.full ? ` · mehr passt nicht in ${state.plan.minutes} Min.` : ""}`}</div></div>
-      <button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`);
-  const high = K("high").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche</div></div></div>`);
-  const time = K("time").map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${state.plan.minutes} Min. Zeitbudget</div></div>
-      <button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`);
-  return `<section class="section" id="planCheck"><h2>Buddy-Check</h2>
-    ${K("low").length && state.plan.level !== "fortgeschritten" ? `<p class="small" style="margin:0" id="begNote">Einsteiger-Pläne: höchstens 3 Sätze pro Übung (Startwert der App). Mehr kannst du jederzeit ergänzen.</p>` : ""}
-    ${c.out.length ? grp(`Unter dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, low) + grp(`Über dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, high) + grp("Länger als dein Zeitbudget:", time)
-      : `<p class="small" style="margin:0">Alle großen Muskelgruppen liegen im Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche${state.plan.minutes ? ", und jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
-    <p class="small faint" style="margin:0">Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}.</p>
+  const c = planCheck(), p = state.plan, f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
+  const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
+  const rows = [
+    ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
+    ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
+    ...high.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche – über dem Richtwert von ${c.tmin}–${c.tmax}</div></div></div>`)];
+  const why = low.length ? (low.every(x => x.full) ? `Mehr passt nicht in dein Zeitbudget von ${p.minutes} Min.` : p.level !== "fortgeschritten" ? "Einsteiger-Pläne starten mit höchstens 3 Sätzen pro Übung (Startwert der App) – mehr kannst du jederzeit ergänzen." : "") : "";
+  return `<section class="section" id="planCheck"><h2>Plan-Check</h2>
+    ${rows.length ? `<div class="group">${rows.join("")}</div>` : `<p class="small" style="margin:0">Alle großen Muskelgruppen sind dabei${p.minutes ? ", jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
+    ${low.length ? `<p class="small muted" style="margin:0" id="lowNote">Noch unter ${c.tmin} Sätzen pro Woche: ${low.map(x => `${MUSCLES[x.m]} ${f(x.v)}`).join(", ")}. ${why}</p>` : ""}
+    <p class="small faint" style="margin:0">Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}. Richtwert für ${(GOALS[p.goal] || GOALS.aufbau).label}: ${c.tmin}–${c.tmax}.</p>
     <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
 }
 // Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
@@ -3898,7 +3925,7 @@ function insights() {
       text = `${base}${state.sched && state.sched.time >= "18:00" ? ` Dein Termin liegt um ${state.sched.time}. Ein früherer Termin oder ein freier Tag könnte besser passen.` : ""} Als Plan B bietet sich die Kurzversion an.`;
       act = [{ a: "openSched", l: "Termine ändern", d: {} }];
     } else if (r === "lust") {
-      text = `${base}${state.why ? ` Dein Warum: „${state.why}“.` : " Halte fest, warum du trainierst – der Buddy erinnert dich daran."}${(state.goals || []).some(g => !g.done) ? "" : " Ein konkretes Ziel macht den Fortschritt sichtbar."}`;
+      text = `${base}${state.why ? ` Dein Warum: „${state.why}“.` : " Halte fest, warum du trainierst – die App erinnert dich daran."}${(state.goals || []).some(g => !g.done) ? "" : " Ein konkretes Ziel macht den Fortschritt sichtbar."}`;
       act = state.why ? [{ a: "goalAdd", l: "Ziel festlegen", d: {} }] : [{ a: "whyEdit", l: "Dein Warum", d: {} }]; src = ["teixeira2012"];
     } else { text = `${base} Überleg, was dir an solchen Tagen helfen würde – und leg es als Plan B fest.`; act = [{ a: "openSched", l: "Plan B prüfen", d: {} }]; }
     add({ id: "barrier:" + r, prio: 68, kind: "warn", title: `Dein häufigstes Hindernis: ${MISS_R[r]}`, text, act, art: "termine", src });
@@ -3970,14 +3997,14 @@ function insightCard(x, ret) {
 }
 let coachBack = "home", coachDraft = null;
 const COACH_RULES = [
-  ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt der Buddy einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
+  ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt die App einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
-  ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt der Buddy zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet er in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
-  ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt der Buddy für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. RIR 0 – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
-  ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt der Buddy ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
-  ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, meldet sich der Buddy."],
+  ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt die App zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet er in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
+  ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. RIR 0 – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
+  ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt die App ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
+  ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, gibt es einen Hinweis."],
   ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],
-  ["Hindernisse", "Fällt ein Termin aus, fragt der Buddy einmal nach dem Grund. Krank, verletzt oder unterwegs zählt nicht als verpasst. Ab 2 Ausfällen in 6 Wochen nennt er dein häufigstes Hindernis und schlägt einen passenden Plan B vor – Pläne für Hindernisse wirkten in Studien stärker."],
+  ["Hindernisse", "Fällt ein Termin aus, fragt die App einmal nach dem Grund. Krank, verletzt oder unterwegs zählt nicht als verpasst. Ab 2 Ausfällen in 6 Wochen nennt sie dein häufigstes Hindernis und schlägt einen passenden Plan B vor – Pläne für Hindernisse wirkten in Studien stärker."],
   ["Trainingsdauer", "Durchschnitt deiner letzten 5 Trainings gegen dein Zeitbudget."],
   ["Ernährung", "Gewichtstrend der letzten 4 Wochen gegen die Zielrate deines Ernährungsziels; Eiweiß der letzten Woche (nur Tage mit Einträgen) gegen 1,6 g pro kg Körpergewicht."],
   ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."]];
@@ -3986,16 +4013,16 @@ function vCoach() {
   const warn = vis.filter(x => x.kind !== "good"), good = vis.filter(x => x.kind === "good");
   const pv = state.prevPlan;
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><div class="title">Buddy-Analyse</div></div>
+    <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><div class="title">Hinweise</div></div>
     ${pv ? `<div class="note" id="undoPlan"><div class="cap">Plan geändert · ${fmtDay(pv.at)}</div><p class="small">${esc(pv.why)}</p>
       <div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div></div>` : ""}
     <section class="section" id="coachTips"><h2>Vorschläge</h2>
-      ${warn.length ? warn.map(x => insightCard(x, "coach")).join("") : `<p class="small muted" style="margin:0">Gerade nichts zu verbessern. Je länger du trainierst und einträgst, desto mehr kann der Buddy auswerten: Häufigkeit ab 4 Wochen, Stillstand ab 4 Einheiten pro Gerät, Gewichtstrend ab 3 Einträgen in 2 Wochen.</p>`}</section>
+      ${warn.length ? warn.map(x => insightCard(x, "coach")).join("") : `<p class="small muted" style="margin:0">Gerade nichts zu verbessern. Je länger du trainierst und einträgst, desto mehr kann die App auswerten: Häufigkeit ab 4 Wochen, Stillstand ab 4 Einheiten pro Gerät, Gewichtstrend ab 3 Einträgen in 2 Wochen.</p>`}</section>
     ${good.length ? `<section class="section" id="coachGood"><h2>Läuft gut</h2>${good.map(x => insightCard(x, "coach")).join("")}</section>` : ""}
     ${hid ? `<button class="link small" data-a="coachShowAll" style="justify-self:start">${hid} ausgeblendet – wieder zeigen</button>` : ""}
-    <section class="section" id="coachRules"><h2>So denkt der Buddy</h2>
+    <section class="section" id="coachRules"><h2>So entscheidet die App</h2>
       <div class="group">${COACH_RULES.map(([t, s]) => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join("")}</div>
-      <p class="small faint" style="margin:0">Alles wird im Gerät aus deinen Einträgen berechnet. Der Buddy ändert deinen Plan nie ohne deine Bestätigung.</p>
+      <p class="small faint" style="margin:0">Alles wird im Gerät aus deinen Einträgen berechnet. Die App ändert deinen Plan nie ohne deine Bestätigung.</p>
       ${srcList(["acsm2009", "freq2019", "belanger2013", "helms2014", "iraki2019", "morton2018"])}</section>
   </div>`;
 }
@@ -4007,7 +4034,7 @@ function coachPlanSheet(n) {
     ${d.gaps && d.gaps.length ? `<p class="small" style="color:var(--warn);margin:0">Nicht in deinem Studio: ${d.gaps.map(g => esc(g.name)).join(", ")}</p>` : ""}
     ${state.sched && state.sched.days.length !== n ? `<p class="small muted" style="margin:0">Du hast ${state.sched.days.length} Termine pro Woche. Passe sie danach unter Training → Trainingstermine an.</p>` : ""}
     <button class="btn primary block" data-a="coachPlanApply">Übernehmen</button>
-    <p class="small faint" style="margin:0">Dein jetziger Plan lässt sich danach in der Buddy-Analyse wiederherstellen.</p>`;
+    <p class="small faint" style="margin:0">Dein jetziger Plan lässt sich danach unter „Hinweise“ wiederherstellen.</p>`;
 }
 // Vorschau „Dein Training heute“: dieselben Vorschläge, die das Training beim Start einträgt
 let prevList = [];
@@ -4030,14 +4057,20 @@ function previewHtml(day) {
   prevList = previewEntries(day);
   if (!prevList.length || prevList.every(e => e.recKg === null)) return "";
   const ups = prevList.filter(e => e.mode === "up").length;
-  return `<section class="section" id="todayPlan"><div class="section-head"><h2>Dein Training heute</h2><span class="small muted">${ups ? `${ups}× mehr Gewicht` : "Vorschläge vom Buddy"}</span></div>
+  return `<section class="section" id="todayPlan"><div class="section-head"><h2>Dein Training heute</h2><span class="small muted">${ups ? `${ups}× mehr Gewicht` : ""}</span></div>
     <div class="group">${prevList.map((e, i) => `<button class="li" data-a="prevWhy" data-n="${i}"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div><div class="s">${entryLine(e)}</div></div>${entryBadge(e)}</button>`).join("")}</div></section>`;
 }
+function previewSheet(day) {
+  prevList = previewEntries(day);
+  return `${sheetHead(`${esc(day.name)}: ${prevList.length} ${nEx(prevList.length)}`)}
+    <p class="small muted" style="margin:0">So startet dein Training – Gewicht und Wiederholungen aus deinen letzten Einheiten. Antippen zeigt die Begründung.</p>
+    <div class="group" id="todayPlan">${prevList.map((e, i) => `<button class="li" data-a="prevWhy" data-n="${i}"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div><div class="s">${entryLine(e)}</div></div>${entryBadge(e)}</button>`).join("")}</div>`;
+}
 function prevWhySheet(e) {
-  return `${sheetHead(esc(ex(e.exId).name))}
+  return `${sheetHead(esc(ex(e.exId).name), "Zurück", "openPreview")}
     <p class="small muted" style="margin:0">Vorschlag für heute: ${entryLine(e)}</p>
     <p style="margin:0">${esc(e.why)}</p>
-    <div class="row wrap" style="gap:var(--s4)"><button class="link small" data-a="openArt" data-id="progression" data-ret="home">So steigert der Buddy</button>
+    <div class="row wrap" style="gap:var(--s4)"><button class="link small" data-a="openArt" data-id="progression" data-ret="home">So steigert die App</button>
       <button class="link small" data-a="openEx" data-id="${e.exId}" data-ret="home">Gerät & Verlauf</button></div>`;
 }
 // Nach dem Training: was der Buddy daraus für das nächste Mal macht
@@ -4047,7 +4080,7 @@ function nextTimeHtml(r) {
   if (!rows.length) return "";
   return `<section class="section" id="nextTime"><h2>Nächstes Mal</h2><div class="group">${rows.map(e => `<div class="li"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div>
       <div class="s">${e.recKg !== null ? `${kgTxt(e.recKg)} ${UNIT[e.u]}` : "–"} · ${esc(e.short.split(" · ").slice(1).join(" · ") || e.short)}</div></div>${entryBadge(e)}</div>`).join("")}</div>
-    <p class="small faint" style="margin:0">Berechnet aus diesem Training nach den Regeln unter „So denkt der Buddy“.</p></section>`;
+    <p class="small faint" style="margin:0">Berechnet aus diesem Training nach den Regeln unter „So entscheidet die App“.</p></section>`;
 }
 
 /* ================= Apple Watch (parallel aufzeichnen) ================= */
@@ -4145,9 +4178,6 @@ function vHistory() {
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
-    ${(() => { const n = state.plan ? insights().filter(x => !coachHidden(x)).length : 0;
-      return state.plan ? `<div class="group"><button class="li" data-a="openCoach" data-ret="history" id="histCoach"><div class="grow"><div class="t">Buddy-Analyse</div><div class="s">${n ? `${n} ${n === 1 ? "Erkenntnis" : "Erkenntnisse"} aus deinen Daten` : "Was der Buddy aus deinen Daten liest"}</div></div><span class="chev">›</span></button></div>` : ""; })()}
-    ${goalsHtml()}
     ${H.length ? `
     <section class="section">
       <div class="section-head"><h2>Häufigkeit</h2><span class="small muted">${monthCount} ${monthCount === 1 ? "Tag" : "Tage"} im ${cm.toLocaleDateString("de-DE", { month: "long" })}</span></div>
@@ -4162,18 +4192,19 @@ function vHistory() {
           <div class="grow"><div class="t ellipsis">${esc(b.name)}</div><div class="s">${kgTxt(b.kg)} kg ${UNIT_SHORT[b.u]} × ${b.reps}</div></div>
           ${spark(sr)}<span class="delta ${dlt > 0 ? "" : "zero"}">${dlt > 0 ? "+" + kgTxt(dlt) : "±0"}</span></button>`; }).join("")}</div>
     </section>` : `<p class="muted">Noch keine Trainings. Nach deinem ersten Training siehst du hier Häufigkeit, Kraftentwicklung und Bestwerte.</p>`}
+    ${goalsHtml()}
     <div>
       ${disc("discWeight", "Körpergewicht", lastW ? `${kgTxt(lastW.kg)} kg` : "Noch nicht eingetragen", weightCard(), bwOpen)}
-      ${disc("discVol", "Trainingsvolumen", `max. ${max >= 1000 ? (max / 1000).toFixed(1).replace(".", ",") + " t" : Math.round(max) + " kg"} pro Woche`,
+      ${H.length ? disc("discVol", "Trainingsvolumen", `max. ${max >= 1000 ? (max / 1000).toFixed(1).replace(".", ",") + " t" : Math.round(max) + " kg"} pro Woche`,
         `<div class="bars">${weeks.map(w => `<div class="b ${w.vol ? "" : "zero"}" style="height:${w.vol ? Math.max(4, w.vol / max * 100) : 4}%" title="${Math.round(w.vol)} kg"></div>`).join("")}</div>
          <div class="bars-x">${weeks.map((w, i) => `<span>${i === 7 ? "Jetzt" : w.s.getDate() + "." + (w.s.getMonth() + 1) + "."}</span>`).join("")}</div>
-         <p class="small faint">Gewicht × Wiederholungen, bei „pro Seite“ beide Seiten.</p>`, false)}
-      ${disc("discMuscle", "Muskelbelastung", `Sätze diese Woche · Ziel ${tmin}–${tmax}`,
-        `<div class="mlist">${muscleRows}</div><p class="small faint">Der helle Bereich zeigt die empfohlenen Sätze für ${(GOALS[goalKey] || GOALS.aufbau).label}. Mittrainierte Muskeln zählen halb.</p>`, false)}
-      ${disc("discCal", "Kalender", `${monthCount} ${monthCount === 1 ? "Trainingstag" : "Trainingstage"} · Ø ${String(Math.round(perWeek * 10) / 10).replace(".", ",")} pro Woche (letzte 4 Wochen)`,
+         <p class="small faint">Gewicht × Wiederholungen, bei „pro Seite“ beide Seiten.</p>`, false) : ""}
+      ${H.length ? disc("discMuscle", "Muskelbelastung", `Sätze diese Woche · Ziel ${tmin}–${tmax}`,
+        `<div class="mlist">${muscleRows}</div><p class="small faint">Der helle Bereich zeigt die empfohlenen Sätze für ${(GOALS[goalKey] || GOALS.aufbau).label}. Mittrainierte Muskeln zählen halb.</p>`, false) : ""}
+      ${H.length ? disc("discCal", "Kalender", `${monthCount} ${monthCount === 1 ? "Trainingstag" : "Trainingstage"} · Ø ${String(Math.round(perWeek * 10) / 10).replace(".", ",")} pro Woche (letzte 4 Wochen)`,
         `<div class="row between"><button class="icon-btn" data-a="calMonth" data-d="-1" aria-label="Voriger Monat">‹</button>
           <h3>${cm.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h3>
-          <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button></div>${cal}`, calOffset !== 0)}
+          <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button></div>${cal}`, calOffset !== 0) : ""}
       ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
           <div class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></div>
@@ -4289,7 +4320,15 @@ const A = {
   tab: el => go(el.dataset.v),
   closeSheet: (el, ev) => { if (ev.target === el || el.tagName === "BUTTON") closeSheet(); },
   setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
-  createPlan: () => { state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null; save(); go("home");
+  setupDay: el => { const tm = byId("setupTime"); if (tm && tm.value) setup.time = tm.value;
+    const d = +el.dataset.d, i = setup.wd.indexOf(d); if (i >= 0) setup.wd.splice(i, 1); else setup.wd.push(d); setup.wd.sort((a, b) => a - b);
+    if (TEMPLATES[setup.wd.length]) setup.days = setup.wd.length; vSetup(); },
+  createPlan: () => { const tm = byId("setupTime"); if (tm && /^\d{2}:\d{2}$/.test(tm.value)) setup.time = tm.value;
+    if (!TEMPLATES[setup.wd.length]) { const x = byId("setupDaysTxt"); if (x) { x.textContent = "Bitte 2 bis 4 Tage wählen."; x.style.color = "var(--bad)"; } return; }
+    setup.days = setup.wd.length;
+    state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null;
+    state.sched = cleanSched({ id: uid(), days: setup.wd.slice(), time: setup.time, planB: state.sched ? state.sched.planB : "next", since: new Date().toISOString() });
+    save(); go("home");
     if (state.plan.gaps.length) openSheet(`<h2>Plan erstellt</h2>${gapList(state.plan.gaps)}<button class="btn primary block" data-a="closeSheet">Verstanden</button>`); },
   gapsDone: () => { state.plan.gaps = []; save(); render(); },
   calMonth: el => { calOffset += +el.dataset.d; vHistory(); },
@@ -4329,7 +4368,7 @@ const A = {
     save(); bwOpen = true; vHistory(); bwOpen = false;
   },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
-  newPlan: () => go("setup"),
+  newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
   foodDay: el => { const today = dkey(), cur = foodDay && foodDay < today ? foodDay : today, dt = new Date(cur + "T12:00");
@@ -4490,8 +4529,9 @@ const A = {
     save(); closeSheet(); render();
   },
   openSettings: () => go("settings"),
+  openPreview: () => { const d = nextDay(); if (d) openSheet(previewSheet(d)); },
   prevWhy: el => { const e = prevList[+el.dataset.n]; if (e) openSheet(prevWhySheet(e)); },
-  openCoach: el => { coachBack = el.dataset.ret === "history" ? "history" : "home"; go("coach"); },
+  openCoach: el => { coachBack = ["history", "wissen"].includes(el.dataset.ret) ? el.dataset.ret : "home"; go("coach"); },
   coachBack: () => go(coachBack),
   coachHide: el => { state.coachOff[el.dataset.id] = new Date().toISOString(); save(); render(); },
   coachShowAll: () => { state.coachOff = {}; save(); render(); },
@@ -4794,7 +4834,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
