@@ -206,8 +206,9 @@
   .t-bar{display:flex;align-items:center;gap:var(--s3)}
   .t-bar .grow{display:grid}
   .t-bar .day{font-weight:600;font-size:15px}
-  .t-bar .cnt{font-size:13px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right}
+  .t-bar .cnt{font-size:13px;color:var(--text-3)}
+  .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right;display:grid;justify-items:end;line-height:1;gap:2px}
+  .t-clock small{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
   .bar{height:3px;background:var(--raise-2);border-radius:3px;overflow:hidden}
   .bar>div{height:100%;background:var(--accent);transition:width .35s}
   .ex-head{display:grid;gap:var(--s2)}
@@ -2375,8 +2376,8 @@ function vTrain() {
   const top = `<div class="t-top">
     <div class="t-bar">
       <button class="icon-btn" data-a="askStop" aria-label="Training pausieren oder beenden">${ICON.close}</button>
-      <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">Satz ${Math.min(done + 1, total)}/${total} · <span id="remain">noch ≈ ${remainMin(s)} Min.</span></span></div>
-      <span class="t-clock" id="elapsed">${fmtTime((Date.now() - s.start) / 1000)}</span>
+      <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">${done} von ${total} Sätzen</span></div>
+      <span class="t-clock"><span id="elapsed">${fmtTime((Date.now() - s.start) / 1000)}</span><small id="remain">≈ ${remainMin(s)} Min.</small></span>
       <button class="icon-btn ${state.voice ? "on" : ""}" data-a="voiceToggle" aria-label="Sprachbegleitung ${state.voice ? "aus" : "an"}schalten" aria-pressed="${state.voice}">${state.voice ? ICON.voiceOn : ICON.voiceOff}</button>
       <button class="icon-btn" data-a="openJump" aria-label="Übungen">${ICON.list}</button>
     </div>
@@ -4287,7 +4288,7 @@ let timer = null;
 function tick() {
   const s = S(); if (!s) return stopTick();
   const el = byId("elapsed"); if (el) el.textContent = fmtTime((Date.now() - s.start) / 1000);
-  const rm = byId("remain"); if (rm) rm.textContent = `noch ≈ ${remainMin(s)} Min.`;
+  const rm = byId("remain"); if (rm) rm.textContent = `≈ ${remainMin(s)} Min.`;
   if (s.phase !== "rest") return;
   const left = (s.restEnd - Date.now()) / 1000;
   const t = byId("timer"); if (t) t.textContent = fmtTime(left);

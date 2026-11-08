@@ -2365,7 +2365,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")] });
       await page.click("[data-a=start]");
       const rm = await tp(page, () => [document.getElementById("remain").textContent, window.__tp.remainMin(window.__tp.state.session)]);
-      ok("Kopfzeile zeigt die geschätzte Restzeit", rm[0] === `noch ≈ ${rm[1]} Min.` && rm[1] >= 20, JSON.stringify(rm));
+      ok("Kopfzeile zeigt die geschätzte Restzeit unter der Uhr", rm[0] === `≈ ${rm[1]} Min.` && rm[1] >= 20, JSON.stringify(rm));
       const wu = await page.textContent("#warmup");
       ok("Vor dem ersten Satz: zwei Aufwärmsätze (50 % und 75 % von 42,5 kg, auf Schritte gerundet)", wu.includes("Erst aufwärmen") && wu.includes("22,5 × 10") && wu.includes("32,5 × 5") && wu.includes("nicht eintragen") && wu.includes("42,5 kg pro Seite"), wu.replace(/\s+/g, " "));
       await page.click("[data-a=warmDone]");
