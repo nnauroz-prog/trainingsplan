@@ -1249,6 +1249,16 @@ function repBest(exId, u, kg) {
     if (e.exId === exId && e.u === u) for (const s of e.sets) if (validSet(s) && s.kg >= kg && (best === null || s.reps > best)) best = s.reps;
   return best;
 }
+// Bestwert im laufenden Training: gegen den Verlauf und die anderen erledigten Sätze dieser Übung heute (wie am Trainingsende)
+function livePr(x, si) {
+  const t = x.sets[si], u = x.u || unitOf(ex(x.exId)); if (!t || !t.done || !validSet(t)) return null;
+  const bk = bestKg(x.exId, u); if (bk === null) return null;          // erstes Mal an diesem Gerät: kein Vergleich
+  const other = x.sets.filter((o, i) => i !== si && o.done && validSet(o));
+  if (t.kg > Math.max(bk, ...other.map(o => o.kg))) return { reps: false, txt: `Neuer Bestwert: ${kgTxt(t.kg)} ${UNIT[u]} – mehr Gewicht als je zuvor.` };
+  const rb = repBest(x.exId, u, t.kg); if (rb === null) return null;
+  const prev = Math.max(rb, ...other.filter(o => o.kg >= t.kg).map(o => o.reps));
+  return t.reps > prev ? { reps: true, txt: `Neuer Bestwert: ${t.reps} Wdh. mit ${kgTxt(t.kg)} ${UNIT[u]} – vorher höchstens ${prev}.` } : null;
+}
 // Schwerster Satz einer Einheit und die meisten Wiederholungen damit
 function topSet(v) { const kg = Math.max(...v.map(t => t.kg)); return { kg, reps: Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)) }; }
 // Fortschritt zwischen zwei Einheiten: mehr Gewicht – oder beim gleichen Gewicht mehr Wiederholungen (doppelte Progression)
@@ -2454,17 +2464,17 @@ function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
   const err = setError(x.sets[i]); if (err) return showSetError(err);
-  const prev = bestKg(x.exId, x.u || unitOf(ex(x.exId))), isPR = prev !== null && x.sets[i].kg > prev && !x.sets.some((t, k) => k < i && t.done && t.kg >= x.sets[i].kg);
   x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i };
+  const pr = livePr(x, i), isPR = !!pr, ts = x.sets[i];
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
   s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0; s.said10 = false;
   if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
   save();
-  if (isPR) say(`Neuer Bestwert: ${kgTxt(x.sets[i].kg)} Kilo.`);
+  if (isPR) say(pr.reps ? `Neuer Bestwert: ${ts.reps} Wiederholungen mit ${kgTxt(ts.kg)} Kilo.` : `Neuer Bestwert: ${kgTxt(ts.kg)} Kilo.`);
   if (!x.rest) return endRest();
   const adv = setAdvice(s);
   if (!isPR) say(`Pause, ${x.rest} Sekunden.${adv ? ` Vorschlag: ${adv.up ? "mehr" : "weniger"} Gewicht, ${kgTxt(adv.kg)} Kilo.` : ""}`);
-  else if (adv) say(`Vorschlag: ${kgTxt(adv.kg)} Kilo.`);
+  else if (adv) say(`Vorschlag: ${adv.up ? "mehr" : "weniger"} Gewicht, ${kgTxt(adv.kg)} Kilo.`);
   render();
 }
 function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurrent(); }
@@ -2543,8 +2553,9 @@ function vTrain() {
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
           <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
+          ${(() => { const pr = livePr(lx, ld.si); return pr ? `<p class="small" id="livePr" style="margin:0;color:var(--ok);font-weight:600">${esc(pr.txt)}</p>` : ""; })()}
           ${(() => { const lp = lastPerf(lx.exId, lx.u || unitOf(ex(lx.exId))), ps = lp ? lp[ld.si] || null : null; if (!ps) return "";
-            const cmp = lt.kg !== null && validSet(lt) ? (lt.kg > ps.kg || (lt.kg === ps.kg && lt.reps > ps.reps) ? " · heute mehr" : lt.kg === ps.kg && lt.reps === ps.reps ? " · gleich" : " · heute weniger") : "";
+            const cmp = lt.kg !== null && validSet(lt) ? (livePr(lx, ld.si) ? "" : lt.kg > ps.kg || (lt.kg === ps.kg && lt.reps > ps.reps) ? " · heute mehr" : lt.kg === ps.kg && lt.reps === ps.reps ? " · gleich" : " · heute weniger") : "";
             return `<p class="small muted" id="vsLast" style="margin:0">Letztes Mal Satz ${ld.si + 1}: ${kgTxt(ps.kg)} × ${ps.reps}${cmp}</p>`; })()}
           <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `Reserve ${rirTxt(lt.rir)}` : "Reserve angeben"}</button>
             <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}">Satz korrigieren</button></div></div>` : ""}
