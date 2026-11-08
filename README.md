@@ -8,7 +8,19 @@ Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet
 
 ## Der Buddy
 
-Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bringt und dabei begleitet:
+Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bringt und dabei begleitet. Er wertet Training, Termine, Ernährung und Ziele gemeinsam aus, zieht daraus Schlüsse und erklärt jede davon:
+
+- **Buddy-Analyse** („Der Buddy hat bemerkt“ auf Heute, alles unter Fortschritt → Buddy-Analyse): Erkenntnisse aus den eigenen Daten mit Beleg im Text und einer Aktion mit einem Tipp. Regeln:
+  - Stillstand an einem Gerät (4 vollständige Einheiten über 3 Wochen ohne mehr Gewicht/Wdh.) → Gerät mit gleichem Bewegungsmuster tauschen, oder bei Reserve näher ans Limit
+  - Tatsächliche Häufigkeit der letzten 4 vollen Wochen gegen die Tage im Plan (z. B. „Im Schnitt 2 von 3“, mit Zählung je Tag) → Plan mit weniger Tagen als Vorschau, übernehmen, rückgängig machen (Menge pro Woche zählt mehr als Häufigkeit; Schoenfeld 2019)
+  - Trainingstag 12 Tage oder länger nicht dran, obwohl trainiert wurde → „Heute Beine“
+  - Termine: Treffer je Wochentag der letzten 4 Wochen (am Tag oder Plan B am Tag danach) → „Mittwochs klappt es selten“; ohne Termine lernt der Buddy deine echten Trainingstage und -zeiten (ab 6 Trainings in 6 Wochen) und schlägt sie als Termine vor
+  - Trainingsdauer der letzten 5 Trainings gegen das Zeitbudget; Gewichtstrend gegen das Ernährungsziel; Eiweiß der letzten Woche gegen 1,6 g/kg; Ziele mit verstrichenem oder nicht erreichbarem Datum; fehlende Muskelgruppen
+  - „Läuft gut“: mehr Gewicht als zu Beginn der letzten 8 Wochen, an wie vielen Geräten
+  - Hinweise lassen sich für 21 Tage ausblenden. „So denkt der Buddy“ legt alle Regeln offen; der Plan wird nie ohne Bestätigung geändert
+- **Dein Training heute:** auf „Heute“ steht vor dem Start jede Übung mit Gewicht, Sätzen, Wiederholungsziel und Kennzeichen (+2,5 kg, +1 Wdh., halten, neu); Antippen zeigt die Begründung. Exakt die Werte, die das Training beim Start einträgt
+- **Nächstes Mal:** nach dem Training zeigt die Zusammenfassung, was der Buddy aus diesem Training für die nächste Einheit ableitet
+- **Plan und Buddy-Check widersprechen sich nicht mehr:** Der Plan-Assistent zählt Sätze pro Muskel wie der Buddy-Check, streicht Sätze bei Muskeln über dem Richtwert und ergänzt sie bei großen Muskelgruppen darunter – nur, solange jeder Tag ins Zeitbudget passt (Einsteiger höchstens 3, Fortgeschrittene höchstens 5 Sätze pro Übung, Startwerte der App). Wo das Zeitbudget nicht reicht, sagt der Buddy-Check es
 
 - **Feste Termine mit Plan B:** Tage und Uhrzeit festlegen, dazu ein Plan B für Hindernisse (am nächsten Tag nachholen oder 30-Minuten-Version). Grundlage: Wenn-dann-Pläne verbessern im Mittel die Umsetzung (Gollwitzer & Sheeran 2006; Sheeran et al. 2025), für Bewegung kleiner bis mittlerer Effekt, stärker mit Plan für Hindernisse (Bélanger-Gravel et al. 2013). Als wöchentliche Serie mit Erinnerung 30 Minuten vorher in den iPhone-Kalender (.ics)
 - **Buddy auf „Heute“:** persönliche Nachricht aus deinen Daten – heutiger Termin, verpasster Termin mit Plan B, lange Pause mit Kurzversion, erledigt mit Sätzen und nächstem Termin, Wochenziel, Serie, frische Bestwerte, Ziel-Hinweise („Heute ist die Chest Press dran – noch 5 kg bis 50 kg pro Seite“), nach 4 Tagen ohne Training dein „Warum“
@@ -22,11 +34,11 @@ Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bring
 
 Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, verstehen**. Fünf Bereiche mit je einer Aufgabe:
 
-- **Heute:** nächstes Training mit Start-Knopf, die Woche (mit Wochenrückblick), letzte Steigerung, Essen heute, Wissen des Tages
+- **Heute:** nächstes Training mit Start-Knopf, Buddy-Nachricht, dein Training heute (Vorschläge je Übung), was der Buddy bemerkt hat, die Woche (mit Wochenrückblick), letzte Steigerung, Essen heute, Wissen des Tages
 - **Training:** Trainingstage und Erholung; Zahnrad → Einstellungen (Geräte, Wasser/Fasten an/aus, Apple Health/Watch, neuer Plan, Sicherung)
 - **Wissen:** Übungsbibliothek und Artikel (Training, Ernährung, Gesundheit)
 - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
-- **Fortschritt:** Wochenrückblick, deine Ziele und dein Warum, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
+- **Fortschritt:** Wochenrückblick, Buddy-Analyse, deine Ziele und dein Warum, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
 
 ## Funktionen
 
@@ -34,7 +46,7 @@ Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, ver
 - **Heute:** „Das trainierst du heute“ mit Begründung (Ablauf, Erholung, letzte Einheit), großer Start-Button, Wochenziel, Muskel-Erholung; pausiertes Training fortsetzen
 - **Training:** nur Übung, Satz, kg, Wiederholungen und „Satz fertig“; Werte vom letzten Mal übernommen; Pause mit Countdown und „Leicht / Passt / Schwer“; Sätze korrigieren, Übung später machen oder beenden, Gerät tauschen, pausieren
 - **Zeit für heute:** Dauer auf „Heute“ antippen (30/45/60/90 Min. oder Original) oder im Training unter „Übungen → Zeit anpassen“; die App priorisiert Grundübungen und Muskelabdeckung, kürzt nie Pausen und ändert den Plan nicht
-- **Progression:** nachvollziehbare Regeln mit Begründung aus den echten Sätzen: nur vergleichbare Einheiten (gleiches Gerät, gleiche Gewichtsangabe), unvollständige Einheiten und unterschiedliche Satzgewichte werden konservativ behandelt, Reduktion erst nach zwei Einheiten unter dem Ziel; optional RIR (Wiederholungen in Reserve) pro Satz
+- **Progression:** nachvollziehbare Regeln mit Begründung aus den echten Sätzen: nur vergleichbare Einheiten (gleiches Gerät, gleiche Gewichtsangabe), unvollständige Einheiten und unterschiedliche Satzgewichte werden konservativ behandelt, Reduktion erst nach zwei Einheiten unter dem Ziel, keine Steigerung, wenn die letzte Einheit am Gerät 21 Tage oder länger her ist (Regel der App); optional RIR (Wiederholungen in Reserve) pro Satz
 - **Geräte:** Hammer-Strength-Bibliothek mit Bewegungsmustern, Scheiben/Steckgewicht, Gewicht pro Seite oder insgesamt, Schritte je Gerät, Einstellungen, Technik-Tipps, „im Studio“ und „Bevorzugt“ unabhängig, eigene Geräte
 - **Gerät tauschen:** direkte Alternativen (gleiches Bewegungsmuster) vor anderen Übungen für denselben Muskel, mit Begründung; keine Gewichtsübertragung zwischen Maschinen
 - **Verlauf:** Körpergewicht, Sätze pro Muskel, Volumen, Kalender mit Trainingshäufigkeit, Bestwerte mit Kurve und 1RM pro Gerät

@@ -146,6 +146,10 @@
   /* ---------- Hinweise ---------- */
   .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .note.warn{background:var(--warn-tint)}
+  .ins{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
+  .ins.warn{box-shadow:inset 3px 0 0 var(--warn)}
+  .ins.good{box-shadow:inset 3px 0 0 var(--ok)}
+  .ins .t{font-weight:700}
   .note .cap{color:var(--text-2)}
   .reason{font-size:14px;line-height:1.4;color:var(--text-2)}
 
@@ -917,7 +921,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "" }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {} }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -940,6 +944,19 @@ function devFrom(s, id) {
 // Einheit: s = Scheiben pro Seite, t = Scheiben insgesamt, b = Steckgewicht am Block
 const unitOf = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
 
+function cleanPlan(pl) {
+  if (!isObj(pl) || !Array.isArray(pl.days)) return null;
+  return {
+    goal: GOALS[pl.goal] ? pl.goal : "aufbau",
+    level: pl.level === "fortgeschritten" ? "fortgeschritten" : "einsteiger",
+    minutes: clampInt(pl.minutes, 0, 300, 0) || null,
+    days: pl.days.filter(d => isObj(d) && Array.isArray(d.items)).map(d => ({
+      id: String(d.id || uid()), name: String(d.name || "Trainingstag").slice(0, 60),
+      items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
+        return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
+          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
+    gaps: Array.isArray(pl.gaps) ? pl.gaps.filter(isObj).map(g => ({ day: String(g.day || ""), name: String(g.name || ""), pattern: PATTERNS[g.pattern] ? g.pattern : null })) : [] };
+}
 function normalize(raw) {
   const s = blank();
   if (!isObj(raw)) return s;
@@ -961,16 +978,9 @@ function normalize(raw) {
     s.dev[id] = d;
   }
   if (isObj(raw.notes)) for (const [id, v] of Object.entries(raw.notes)) if (typeof v === "string" && v.trim()) s.notes[id] = v.slice(0, 120);
-  if (isObj(raw.plan) && Array.isArray(raw.plan.days)) s.plan = {
-    goal: GOALS[raw.plan.goal] ? raw.plan.goal : "aufbau",
-    level: raw.plan.level === "fortgeschritten" ? "fortgeschritten" : "einsteiger",
-    minutes: clampInt(raw.plan.minutes, 0, 300, 0) || null,
-    days: raw.plan.days.filter(d => isObj(d) && Array.isArray(d.items)).map(d => ({
-      id: String(d.id || uid()), name: String(d.name || "Trainingstag").slice(0, 60),
-      items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
-        return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
-          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
-    gaps: Array.isArray(raw.plan.gaps) ? raw.plan.gaps.filter(isObj).map(g => ({ day: String(g.day || ""), name: String(g.name || ""), pattern: PATTERNS[g.pattern] ? g.pattern : null })) : [] };
+  s.plan = cleanPlan(raw.plan);
+  s.prevPlan = isObj(raw.prevPlan) && cleanPlan(raw.prevPlan.plan) && !isNaN(new Date(raw.prevPlan.at)) ? { at: new Date(raw.prevPlan.at).toISOString(), why: String(raw.prevPlan.why || "").slice(0, 160), plan: cleanPlan(raw.prevPlan.plan) } : null;
+  s.coachOff = {}; if (isObj(raw.coachOff)) for (const [k, v] of Object.entries(raw.coachOff).slice(0, 60)) if (!isNaN(new Date(v)) && Date.now() - new Date(v) < 60 * 864e5) s.coachOff[String(k).slice(0, 80)] = new Date(v).toISOString();
   // RIR: nur übernehmen, wenn wirklich angegeben (0–4, 4 = 4+); fehlende Werte bleiben leer
   const cleanSet = t => { const o = { kg: kgOrNull(t.kg), reps: clampInt(t.reps, 0, 999, 0) }; if (["l", "m", "h"].includes(t.f)) o.f = t.f;
     if (Number.isInteger(t.rir) && t.rir >= 0 && t.rir <= 4) o.rir = t.rir; return o; };
@@ -1107,6 +1117,40 @@ function generatePlan(goal, days, level, minutes) {
     return day;
   }) };
   plan.gaps = gaps;
+  return balanceVolume(plan);
+}
+// Sätze pro Muskel und Woche wie unter „Fortschritt → Muskelbelastung“: Hauptmuskel voll, mittrainierte Muskeln halb; per = Durchläufe pro Woche
+function muscleSets(plan, per = 1) {
+  const ms = {}; for (const m in MUSCLES) ms[m] = 0;
+  plan.days.forEach(d => d.items.forEach(it => { const e = ex(it.exId); ms[e.muscle] += it.sets * per; e.sec.forEach(m => ms[m] += it.sets / 2 * per); }));
+  return ms;
+}
+const volTarget = goal => goal === "aufbau" ? [10, 20] : [6, 12];
+const MAJOR = ["brust", "ruecken", "schultern", "beinev", "beineh", "po"];
+// Neuer Plan nach derselben Zählung wie der Buddy-Check: erst Sätze bei Muskeln über dem Richtwert streichen (je Übung mind. 2),
+// dann bei großen Muskelgruppen unter dem Richtwert ergänzen – nur, solange jeder Tag ins Zeitbudget passt
+// und kein anderer Muskel dadurch über den Richtwert rutscht (je Übung höchstens 3 Sätze für Einsteiger, 5 für Fortgeschrittene – Startwerte der App)
+function balanceVolume(plan) {
+  const [tmin, tmax] = volTarget(plan.goal), cap = plan.level === "fortgeschritten" ? 5 : 3;
+  const fits = d => !plan.minutes || estimateSec(d.items) / 60 <= plan.minutes;
+  for (let guard = 0; guard < 200; guard++) {
+    const ms = muscleSets(plan);
+    const hi = Object.keys(ms).filter(m => ms[m] > tmax).sort((a, b) => ms[b] - ms[a])
+      .map(m => plan.days.flatMap(d => d.items).filter(it => ex(it.exId).muscle === m && it.sets > 2).sort((a, b) => b.sets - a.sets)[0]).find(Boolean);
+    if (hi) { hi.sets--; continue; }
+    let added = false;
+    for (const m of MAJOR.filter(m => ms[m] < tmin).sort((a, b) => ms[a] - ms[b])) {
+      const cands = plan.days.flatMap(d => d.items.filter(it => ex(it.exId).muscle === m && it.sets < cap).map(it => [d, it])).sort((a, b) => a[1].sets - b[1].sets);
+      for (const [d, it] of cands) {
+        it.sets++;
+        const ms2 = muscleSets(plan);
+        if (fits(d) && !Object.keys(ms2).some(k => ms2[k] > tmax && ms2[k] > ms[k])) { added = true; break; }
+        it.sets--;
+      }
+      if (added) break;
+    }
+    if (!added) break;
+  }
   return plan;
 }
 
@@ -1589,9 +1633,10 @@ function guideSheet(id, ret) {
 function tabOf(v) {
   if (["day", "settings", "plan"].includes(v)) return "plan";
   if (["lib", "wissen"].includes(v)) return "lib";
-  if (v === "ex") return exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
-  if (v === "art") return artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
+  if (v === "ex") return exBack === "coach" ? tabOf("coach") : exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
+  if (v === "art") return artBack === "coach" ? tabOf("coach") : artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
   if (v === "week") return weekBack === "history" ? "history" : "home";
+  if (v === "coach") return coachBack === "history" ? "history" : "home";
   return v;
 }
 function go(v) {
@@ -1604,7 +1649,7 @@ function go(v) {
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek, settings: vSettings })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek, settings: vSettings, coach: vCoach })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1687,6 +1732,11 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
+    ${day && !ses ? previewHtml(day) : ""}
+    ${(() => { const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
+      const cat = x => x.id.split(":")[0], top = [L[0], L.find(x => cat(x) !== cat(L[0]))].filter(Boolean);
+      return `<section class="section" id="coach"><div class="section-head"><h2>Der Buddy hat bemerkt</h2><button class="link small" data-a="openCoach" data-ret="home">${L.length > 2 ? `Alle ${L.length}` : "Analyse"} ›</button></div>
+        ${top.map(x => insightCard(x, "home")).join("")}</section>`; })()}
     ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
         <div class="cap">Neu: Gewicht pro Seite</div>
         <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
@@ -2062,6 +2112,7 @@ const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
 // 7. Alle Sätze „leicht“ oder RIR ≥ 3 und mindestens am unteren Ziel → +1 Schritt
 // 8. Alle Sätze unter dem Ziel → halten; erst beim zweiten Mal in Folge −1 Schritt
 // 9. Sonst Gewicht halten, Ziel je 1 Wiederholung mehr
+// Danach: Steigerung, aber letzte Einheit an diesem Gerät 21 Tage oder länger her → halten (Regel der App)
 function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step, n = it.sets;
   const planned = it.planned || it.sets;
@@ -2139,6 +2190,11 @@ function makeEntry(it, ctx) {
     } else {
       mode = "keep"; sets = fromLast(1); short = "Gleiches Gewicht · Ziel +1 Wdh.";
       why = `Letztes Mal ${lastTxt}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
+    }
+    const gap = Math.floor((Date.now() - L.date) / 864e5);
+    if (mode === "up" && gap >= 21) {
+      mode = "hold"; sets = fromLast(0); short = `Gewicht halten · ${gap} Tage Pause`;
+      why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
     }
   }
   return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, short,
@@ -3451,6 +3507,11 @@ function buddySays(day, thisWeek, goal, streak) {
   } else if (last && (now - new Date(last.date)) / 864e5 >= 7) {
     title = `Seit ${Math.floor((now - new Date(last.date)) / 864e5)} Tagen kein Training`;
     text = "Fang klein an: Die 30-Minuten-Version enthält die wichtigsten Übungen."; short();
+  } else if (!s && learnedSched()) {
+    const L = learnedSched();
+    title = `Du trainierst ${L.share >= 0.6 ? "meistens" : "oft"} ${joinDe(L.days.map(d => WD_ADV[d]))} gegen ${L.time}`;
+    text = "Mach daraus feste Termine: Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um.";
+    act.push(["schedLearned", "Als Termine übernehmen"]);
   } else if (!s) {
     title = "Lass uns feste Trainingstage ausmachen";
     text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um. Wähle Tage, Uhrzeit und einen Plan B – auf Wunsch mit Erinnerung im Kalender.";
@@ -3494,12 +3555,13 @@ function schedIcsText() {
 }
 // Plan-Check: Sätze pro Muskel und Woche wie unter „Fortschritt → Muskelbelastung“ (Hauptmuskel voll, mittrainierte halb)
 function planCheck() {
-  const p = state.plan, [tmin, tmax] = p.goal === "aufbau" ? [10, 20] : [6, 12], ms = {};
-  for (const m in MUSCLES) ms[m] = 0;
-  const per = state.sched ? state.sched.days.length / Math.max(1, p.days.length) : 1;
-  p.days.forEach(d => d.items.forEach(it => { const e = ex(it.exId); ms[e.muscle] += it.sets * per; e.sec.forEach(m => ms[m] += it.sets / 2 * per); }));
+  const p = state.plan, [tmin, tmax] = volTarget(p.goal);
+  const per = state.sched ? state.sched.days.length / Math.max(1, p.days.length) : 1, ms = muscleSets(p, per);
+  // Zeitbudget ausgeschöpft: An keinem Tag mit einer Übung für diesen Muskel passt ein weiterer Satz hinein
+  const full = m => !!p.minutes && p.days.some(d => d.items.some(it => ex(it.exId).muscle === m))
+    && p.days.every(d => d.items.every(it => ex(it.exId).muscle !== m || (estimateSec(d.items) + setSec(it) + it.rest) / 60 > p.minutes));
   const out = [];
-  for (const m of ["brust", "ruecken", "schultern", "beinev", "beineh", "po"]) if (ms[m] < tmin) out.push({ kind: "low", m, v: ms[m] });
+  for (const m of MAJOR) if (ms[m] < tmin) out.push({ kind: "low", m, v: ms[m], full: full(m) });
   for (const m in MUSCLES) if (ms[m] > tmax) out.push({ kind: "high", m, v: ms[m] });
   if (p.minutes) p.days.forEach(d => { const est = estMinutes(d); if (est > p.minutes + 10) out.push({ kind: "time", d, est }); });
   return { out, tmin, tmax, per };
@@ -3507,12 +3569,13 @@ function planCheck() {
 function planCheckHtml() {
   const c = planCheck(), f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
   const grp = (title, rows) => rows.length ? `<p class="small muted" style="margin:0">${title}</p><div class="group">${rows.join("")}</div>` : "";
-  const low = K("low").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${x.v === 0 ? "fehlt im Plan" : `${f(x.v)} Sätze pro Woche`}</div></div>
+  const low = K("low").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${x.v === 0 ? "fehlt im Plan" : `${f(x.v)} Sätze pro Woche${x.full ? ` · mehr passt nicht in ${state.plan.minutes} Min.` : ""}`}</div></div>
       <button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`);
   const high = K("high").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche</div></div></div>`);
   const time = K("time").map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${state.plan.minutes} Min. Zeitbudget</div></div>
       <button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`);
   return `<section class="section" id="planCheck"><h2>Buddy-Check</h2>
+    ${K("low").length && state.plan.level !== "fortgeschritten" ? `<p class="small" style="margin:0" id="begNote">Einsteiger-Pläne der App starten mit höchstens 3 Sätzen pro Übung (Startwert der App). Mehr Sätze oder Übungen kannst du an jedem Tag ergänzen oder mit „Fortgeschritten“ einen neuen Plan erstellen.</p>` : ""}
     ${c.out.length ? grp(`Unter dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, low) + grp(`Über dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, high) + grp("Länger als dein Zeitbudget:", time)
       : `<p class="small" style="margin:0">Alle großen Muskelgruppen liegen im Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche${state.plan.minutes ? ", und jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
     <p class="small faint" style="margin:0">Gezählt wie unter „Fortschritt → Muskelbelastung“: Hauptmuskel voll, mittrainierte Muskeln halb, ${state.sched ? `bei ${state.sched.days.length} Terminen pro Woche` : "jeder Trainingstag einmal pro Woche"}.</p>
@@ -3535,6 +3598,252 @@ function sayCurrent(prefix = "") {
   const i = curSetIdx(x); if (i === -1) return;
   const t = x.sets[i], u = x.u || unitOf(ex(x.exId));
   say(`${prefix}${i === 0 ? ex(x.exId).name + ". " : ""}Satz ${i + 1} von ${x.sets.length}. ${t.kg != null ? `${kgTxt(t.kg)} Kilo${u === "s" ? " pro Seite" : ""}, ` : ""}${x.rmin} bis ${x.rmax} Wiederholungen.`);
+}
+
+/* ================= Der Buddy denkt mit: Auswertung aller Daten ================= */
+// Jede Erkenntnis kommt aus deinen eigenen Daten (Beleg im Text), folgt einer festen Regel (siehe „So denkt der Buddy“)
+// und hat – wo möglich – eine Aktion mit einem Tipp. Studien nur dort, wo sie die Regel begründen.
+const WD_ADV = ["montags", "dienstags", "mittwochs", "donnerstags", "freitags", "samstags", "sonntags"];
+const joinDe = a => a.length < 2 ? (a[0] || "") : `${a.slice(0, -1).join(", ")} und ${a[a.length - 1]}`;
+const fmtDec = v => String(Math.round(v * 10) / 10).replace(".", ",");
+const DAY = 864e5;
+function monOf(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - wdOf(x)); return x; }
+const histStart = () => state.history.length ? Math.min(...state.history.map(h => +new Date(h.date))) : null;
+// Trainings je Woche in den letzten n vollen Wochen (ohne die laufende Woche)
+function weeklyCounts(n) {
+  const mon = monOf(new Date());
+  return Array.from({ length: n }, (_, k) => { const s = new Date(mon); s.setDate(mon.getDate() - (n - k) * 7); const e = new Date(s); e.setDate(s.getDate() + 7);
+    return state.history.filter(h => { const d = new Date(h.date); return d >= s && d < e; }).length; });
+}
+// Wann du tatsächlich trainierst: Wochentage mit mind. 3 Trainings in den letzten 6 Wochen, typische Startzeit (Median, auf 15 Min. gerundet)
+function learnedSched() {
+  const since = Date.now() - 42 * DAY, H = state.history.filter(h => +new Date(h.date) >= since);
+  if (H.length < 6) return null;
+  const cnt = [0, 0, 0, 0, 0, 0, 0], startOf = h => new Date(+new Date(h.date) - (h.durationSec || 0) * 1000);
+  H.forEach(h => cnt[wdOf(startOf(h))]++);
+  const days = cnt.map((c, i) => [c, i]).filter(([c]) => c >= 3).map(([, i]) => i);
+  if (!days.length) return null;
+  const on = H.filter(h => days.includes(wdOf(startOf(h))));
+  const mins = on.map(h => { const d = startOf(h); return d.getHours() * 60 + d.getMinutes(); }).sort((a, b) => a - b);
+  const r = Math.round(mins[Math.floor(mins.length / 2)] / 15) * 15 % 1440;
+  return { days, time: `${pad2(Math.floor(r / 60))}:${pad2(r % 60)}`, share: on.length / H.length, n: H.length };
+}
+// Termin-Treffer der letzten 4 vollen Wochen je Wochentag: am Tag selbst oder (Plan B) am Tag danach, sofern dort kein eigener Termin liegt
+function schedHits() {
+  const s = state.sched; if (!s) return null;
+  const since = new Date(s.since); since.setHours(0, 0, 0, 0);
+  const mon = monOf(new Date()), start = new Date(mon); start.setDate(mon.getDate() - 28);
+  const per = {};
+  for (let d = new Date(since > start ? since : start); d < mon; d.setDate(d.getDate() + 1)) {
+    const w = wdOf(d); if (!s.days.includes(w)) continue;
+    const end = new Date(d); end.setDate(d.getDate() + (s.days.includes((w + 1) % 7) ? 1 : 2));
+    const hit = state.history.some(h => { const t = new Date(h.date); return t >= d && t < end; });
+    per[w] = per[w] || [0, 0]; per[w][1]++; if (hit) per[w][0]++;
+  }
+  return per;
+}
+function insights() {
+  const out = [], p = state.plan, H = state.history, now = Date.now();
+  if (!p) return out;
+  const add = x => out.push(Object.assign({ kind: "tip", act: [], src: [], art: null }, x));
+  const span = histStart() ? (now - histStart()) / DAY : 0;
+  // 1. Stillstand an einem Gerät des Plans → Gerät mit gleichem Bewegungsmuster vorschlagen
+  const seen = new Set();
+  p.days.forEach(d => d.items.forEach(it => {
+    if (seen.has(it.exId)) return; seen.add(it.exId);
+    const pl = plateau(it.exId); if (!pl) return;
+    const e = ex(it.exId), alt = pl.reserve ? null : rankAlternatives(it.exId, new Set(d.items.map(i => i.exId))).direct[0];
+    add({ id: "plateau:" + it.exId, prio: 70, kind: "warn", title: `${e.name}: Stillstand seit ${pl.weeks} Wochen`,
+      text: `${pl.n} vollständige Einheiten ohne mehr Gewicht oder Wiederholungen. ${pl.reserve ? "Zuletzt mit Reserve trainiert – versuch zuerst, näher an dein Limit zu gehen."
+        : `Möglich: ${alt ? `ein Gerät mit gleichem Bewegungsmuster (${alt.e.name}), ` : ""}ein anderer Wiederholungsbereich oder mehr Erholung.`}`,
+      act: alt ? [{ a: "coachSwap", l: `Gegen ${alt.e.name} tauschen`, d: { from: it.exId, to: alt.e.id } }] : [{ a: "openEx", l: "Verlauf ansehen", d: { id: it.exId, ret: "coach" } }],
+      art: pl.reserve ? "rir" : "progression", src: ["acsm2009"] });
+  }));
+  // 2. Tatsächliche Häufigkeit gegen den Plan (ab 4 Wochen Verlauf)
+  const P = p.days.filter(d => d.items.length).length;
+  if (span >= 28 && P >= 3) {
+    const wc = weeklyCounts(4), avg = wc.reduce((a, b) => a + b, 0) / 4, n = Math.max(2, Math.round(avg));
+    if (avg < P - 0.5 && n < P && TEMPLATES[n]) {
+      const since = monOf(new Date()).getTime() - 28 * DAY;
+      const per = p.days.filter(d => d.items.length).map(d => `${d.name} ${H.filter(h => h.dayId === d.id && +new Date(h.date) >= since).length}×`);
+      add({ id: `freq:${P}>${n}`, prio: 75, kind: "warn", title: `Im Schnitt ${fmtDec(avg)} von ${P} Trainings pro Woche`,
+        text: `Letzte 4 Wochen: ${joinDe(per)}. Bei ${P} Tagen im Wechsel kommt so jede Muskelgruppe seltener dran. ${n === 2
+          ? "Ein Ganzkörperplan mit 2 Tagen trainiert Brust, Rücken, Schultern und Beine in jeder Einheit."
+          : `Ein Plan mit ${n} Tagen verteilt die Muskelgruppen auf weniger Einheiten.`} Für den Muskelaufbau zählt vor allem die Menge pro Woche.`,
+        act: [{ a: "coachPlan", l: `Plan mit ${n} Tagen ansehen`, d: { n } }], art: "frequenz", src: ["freq2019"] });
+    }
+  }
+  // 3. Trainingstag lange nicht drangekommen, obwohl du trainiert hast
+  const nd = nextDay(), mine = H.filter(h => p.days.some(d => d.id === h.dayId));
+  p.days.forEach(d => {
+    if (!d.items.length || (nd && nd.id === d.id)) return;
+    const hs = H.filter(h => h.dayId === d.id), last = hs.length ? Math.max(...hs.map(h => +new Date(h.date))) : null;
+    const others = last === null ? mine.length : H.filter(h => +new Date(h.date) > last).length, ago = last === null ? null : Math.floor((now - last) / DAY);
+    if ((last !== null && ago >= 12 && others >= 2) || (last === null && others >= 3)) {
+      const ms = [...new Set(d.items.map(i => MUSCLES[ex(i.exId).muscle]))].slice(0, 3);
+      add({ id: "neglect:" + d.id, prio: 60, kind: "warn", title: last === null ? `${d.name} noch nicht trainiert` : `${d.name} seit ${ago} Tagen nicht dran`,
+        text: `Seitdem ${others} andere Trainings. Damit kommen ${joinDe(ms)} zu kurz.`, act: [{ a: "coachDay", l: `Heute ${d.name}`, d: { id: d.id } }] });
+    }
+  });
+  // 4. Termine: welcher Wochentag klappt selten?
+  const sh = schedHits();
+  if (sh) {
+    const ws = Object.keys(sh).map(Number), tot = ws.reduce((a, w) => a + sh[w][1], 0), hits = ws.reduce((a, w) => a + sh[w][0], 0);
+    const bad = ws.filter(w => sh[w][1] >= 3 && sh[w][0] / sh[w][1] <= 0.34).sort((a, b) => sh[a][0] / sh[a][1] - sh[b][0] / sh[b][1])[0];
+    if (bad !== undefined) {
+      const oT = tot - sh[bad][1], oH = hits - sh[bad][0];
+      if (oT >= 3 && oH / oT >= 0.6) {
+        const since = now - 42 * DAY, cnt = [0, 0, 0, 0, 0, 0, 0];
+        H.filter(h => +new Date(h.date) >= since).forEach(h => cnt[wdOf(new Date(h.date))]++);
+        const instead = cnt.map((c, i) => [c, i]).filter(([c, i]) => c >= 2 && !state.sched.days.includes(i)).sort((a, b) => b[0] - a[0])[0];
+        add({ id: "wday:" + bad, prio: 55, kind: "tip", title: `${WD_ADV[bad][0].toUpperCase() + WD_ADV[bad].slice(1)} klappt es selten`,
+          text: `In den letzten Wochen ${sh[bad][0]} von ${sh[bad][1]} Terminen am ${WD_LONG[bad]} geschafft, an deinen anderen Tagen ${oH} von ${oT}.${instead ? ` Stattdessen hast du ${instead[0]}× ${WD_ADV[instead[1]]} trainiert.` : ""} Ein Termin, der in deinen Alltag passt, hält eher.`,
+          act: [{ a: "openSched", l: "Termine ändern", d: {} }], art: "termine" });
+      }
+    }
+  }
+  // 5. Trainingsdauer gegen das Zeitbudget (letzte 5 Trainings ohne Zeitanpassung)
+  const dur = H.filter(h => h.durationSec > 0 && !h.adj).slice(-5);
+  if (p.minutes && dur.length >= 4) {
+    const avg = dur.reduce((a, h) => a + h.durationSec, 0) / dur.length / 60, nb = Math.min(180, Math.ceil(avg / 15) * 15);
+    if (avg > p.minutes * 1.2 && avg - p.minutes >= 10)
+      add({ id: "dur:" + p.minutes, prio: 40, kind: "tip", title: `Deine Trainings dauern im Schnitt ${Math.round(avg)} Min.`,
+        text: `Geplant sind ${p.minutes} Min. (letzte ${dur.length} Trainings). Entweder du planst realistisch mehr Zeit ein, oder du nutzt an knappen Tagen die kürzere Version – die Pausen bleiben dabei gleich.`,
+        act: [{ a: "coachMinutes", l: `Zeitbudget ${nb} Min.`, d: { m: nb } }, { a: "openTime", l: "Heute kürzer", d: {} }] });
+  }
+  // 6. Ernährung: Gewichtstrend gegen das Ziel
+  const tr = weightTrend(), ng = state.nutr && NGOAL[state.nutr.goal];
+  if (tr && ng && (tr.pct < ng.lo || tr.pct > ng.hi)) {
+    const msg = tr.pct < ng.lo ? ({ ab: "Du nimmst schneller ab als geplant", halten: "Dein Gewicht sinkt", auf: "Du nimmst langsamer zu als geplant" })[state.nutr.goal]
+      : ({ ab: "Du nimmst langsamer ab als geplant", halten: "Dein Gewicht steigt", auf: "Du nimmst schneller zu als geplant" })[state.nutr.goal];
+    add({ id: "trend:" + state.nutr.goal, prio: 55, kind: "warn", title: msg,
+      text: `Gewicht ${Math.abs(tr.pct) < 0.05 ? "±0" : `${tr.pct > 0 ? "+" : "−"}${fmtN(Math.abs(tr.pct))}`} % pro Woche (${tr.days} Tage, ${tr.n} Einträge), Ziel: ${ng.rate}.${state.nutr.goal === "ab" && tr.pct < ng.lo ? " Langsameres Abnehmen hilft, Muskeln zu erhalten." : ""} Bleibt es so, passe dein Kalorienziel an.`,
+      act: [{ a: "openNutr", l: "Kalorienziel anpassen", d: {} }], art: "kalorien", src: [state.nutr.goal === "auf" ? "iraki2019" : "helms2014"] });
+  }
+  // 7. Eiweiß: Tage der letzten Woche mit Einträgen (mind. 800 kcal, ohne heute)
+  const G = nutrGoals();
+  if (G) {
+    const days = Array.from({ length: 7 }, (_, k) => dkey(new Date(now - (k + 1) * DAY))).map(dayTotals).filter(t => t.k >= 800);
+    if (days.length >= 4) {
+      const avgP = days.reduce((a, t) => a + t.p, 0) / days.length;
+      if (avgP < G.prot * 0.8)
+        add({ id: "prot", prio: 45, kind: "tip", title: `Eiweiß: im Schnitt ${fmtK(avgP)} g pro Tag`,
+          text: `Dein Ziel sind ${G.prot} g (1,6 g pro kg Körpergewicht), gezählt an ${days.length} erfassten Tagen der letzten Woche. Mehr Eiweiß unterstützt den Muskelaufbau durch Training bis etwa zu diesem Wert.`,
+          act: [{ a: "tab", l: "Zum Essen", d: { v: "food" } }], art: "eiweiss", src: ["morton2018"] });
+    }
+  }
+  // 8. Ziele: später als geplant oder Zieldatum verstrichen
+  (state.goals || []).filter(g => !g.done && g.date).forEach(g => {
+    const st = goalStatus(g), due = new Date(g.date + "T23:59");
+    if (due < new Date()) add({ id: "goal:" + g.id, prio: 50, kind: "tip", title: `${st.name}: Zieldatum verstrichen`,
+      text: `Ziel ${kgTxt(g.target)} ${st.unit}, aktuell ${kgTxt(st.cur)}. Ein neues Datum hält das Ziel lebendig.`, act: [{ a: "goalEdit", l: "Ziel anpassen", d: { id: g.id } }] });
+    else if (st.eta && st.eta > due) add({ id: "goal:" + g.id, prio: 50, kind: "tip", title: `${st.name}: später als geplant`,
+      text: `Bei deinem Tempo etwa am ${fmtDay(st.eta.toISOString())}, geplant war der ${fmtDay(g.date + "T12:00")}.`, act: [{ a: "goalEdit", l: "Ziel anpassen", d: { id: g.id } }] });
+  });
+  // 9. Muskelgruppe fehlt komplett im Plan
+  const miss = planCheck().out.filter(x => x.kind === "low" && x.v === 0).map(x => x.m);
+  if (miss.length) add({ id: "miss:" + miss.join(","), prio: 35, kind: "tip", title: `${joinDe(miss.map(m => MUSCLES[m]))} ${miss.length > 1 ? "fehlen" : "fehlt"} in deinem Plan`,
+    text: "Keine Übung trainiert diese Muskelgruppe – weder als Hauptmuskel noch mit.", act: [{ a: "checkFix", l: "+ Übung", d: { m: miss[0] } }], art: "volumen", src: ["vol2017"] });
+  // 10. Was gut läuft: mehr Gewicht als zu Beginn der letzten 8 Wochen
+  const since = now - 56 * DAY, by = {};
+  H.forEach(h => { if (+new Date(h.date) < since) return; h.exercises.forEach(x => { const v = x.sets.filter(validSet); if (!v.length) return;
+    (by[x.exId + "|" + x.u] = by[x.exId + "|" + x.u] || []).push([+new Date(h.date), Math.max(...v.map(t => t.kg)), x]); }); });
+  const prog = Object.values(by).filter(a => a.length >= 2).map(a => { a.sort((x, y) => x[0] - y[0]); const f = a[0], best = Math.max(...a.slice(1).map(z => z[1]));
+    return { exId: f[2].exId, u: f[2].u, from: f[1], to: best, weeks: Math.round((a[a.length - 1][0] - f[0]) / DAY / 7) }; }).filter(x => x.weeks >= 3);
+  const up = prog.filter(x => x.to > x.from).sort((a, b) => (b.to - b.from) / b.from - (a.to - a.from) / a.from);
+  if (prog.length >= 2 && up.length) {
+    const t = up[0];
+    add({ id: "good:" + up.length + "/" + prog.length, prio: 20, kind: "good", title: `Mehr Gewicht an ${up.length} von ${prog.length} Geräten`,
+      text: `Am meisten an der ${ex(t.exId).name}: ${kgTxt(t.from)} → ${kgTxt(t.to)} ${UNIT[t.u]} in ${t.weeks} Wochen (+${Math.round((t.to - t.from) / t.from * 100)} %). Verglichen wird mit deiner ersten Einheit der letzten 8 Wochen.`,
+      act: [{ a: "openEx", l: "Verlauf ansehen", d: { id: t.exId, ret: "coach" } }] });
+  }
+  return out.sort((a, b) => b.prio - a.prio);
+}
+const coachHidden = x => { const t = (state.coachOff || {})[x.id]; return !!t && Date.now() - new Date(t) < 21 * DAY; };
+function insightCard(x, ret) {
+  const attrs = d => Object.entries(d).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("");
+  return `<div class="ins ${x.kind}" data-ins="${esc(x.id)}"><div class="t">${esc(x.title)}</div>
+    <p class="small" style="margin:0">${esc(x.text)}</p>
+    ${x.act.length ? `<div class="row wrap" style="gap:var(--s2)">${x.act.map((a, i) => `<button class="btn sm ${i === 0 && x.kind !== "good" ? "primary" : ""}" data-a="${a.a}"${attrs(a.d)}>${esc(a.l)}</button>`).join("")}</div>` : ""}
+    <div class="row wrap" style="gap:var(--s4)">${x.art ? `<button class="link small" data-a="openArt" data-id="${x.art}" data-ret="${ret}">Hintergrund</button>` : ""}<button class="link small faint" data-a="coachHide" data-id="${esc(x.id)}">Ausblenden</button></div></div>`;
+}
+let coachBack = "home", coachDraft = null;
+const COACH_RULES = [
+  ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt der Buddy einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
+  ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung (Regel der App)."],
+  ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt der Buddy ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
+  ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, meldet sich der Buddy."],
+  ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],
+  ["Trainingsdauer", "Durchschnitt deiner letzten 5 Trainings gegen dein Zeitbudget."],
+  ["Ernährung", "Gewichtstrend der letzten 4 Wochen gegen die Zielrate deines Ernährungsziels; Eiweiß der letzten Woche (nur Tage mit Einträgen) gegen 1,6 g pro kg Körpergewicht."],
+  ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."]];
+function vCoach() {
+  const L = insights(), vis = L.filter(x => !coachHidden(x)), hid = L.length - vis.length;
+  const warn = vis.filter(x => x.kind !== "good"), good = vis.filter(x => x.kind === "good");
+  const pv = state.prevPlan;
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><div class="title">Buddy-Analyse</div></div>
+    ${pv ? `<div class="note" id="undoPlan"><div class="cap">Plan geändert · ${fmtDay(pv.at)}</div><p class="small">${esc(pv.why)}</p>
+      <div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div></div>` : ""}
+    <section class="section" id="coachTips"><h2>Vorschläge</h2>
+      ${warn.length ? warn.map(x => insightCard(x, "coach")).join("") : `<p class="small muted" style="margin:0">Gerade nichts zu verbessern. Je länger du trainierst und einträgst, desto mehr kann der Buddy auswerten: Häufigkeit ab 4 Wochen, Stillstand ab 4 Einheiten pro Gerät, Gewichtstrend ab 3 Einträgen in 2 Wochen.</p>`}</section>
+    ${good.length ? `<section class="section" id="coachGood"><h2>Läuft gut</h2>${good.map(x => insightCard(x, "coach")).join("")}</section>` : ""}
+    ${hid ? `<button class="link small" data-a="coachShowAll" style="justify-self:start">${hid} ausgeblendet – wieder zeigen</button>` : ""}
+    <section class="section" id="coachRules"><h2>So denkt der Buddy</h2>
+      <div class="group">${COACH_RULES.map(([t, s]) => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join("")}</div>
+      <p class="small faint" style="margin:0">Alles wird im Gerät aus deinen Einträgen berechnet. Der Buddy ändert deinen Plan nie ohne deine Bestätigung.</p>
+      ${srcList(["acsm2009", "freq2019", "helms2014", "iraki2019", "morton2018"])}</section>
+  </div>`;
+}
+function coachPlanSheet(n) {
+  const d = coachDraft, P = state.plan.days.length;
+  return `${sheetHead(`Plan mit ${n} Tagen`, "Abbrechen")}
+    <p class="small" style="margin:0">Gleiches Ziel, gleiche Erfahrung, gleiches Zeitbudget – nur ${n} statt ${P} Trainingstage. Gewichte und Verlauf bleiben erhalten.</p>
+    <div class="group">${d.days.map(x => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${x.items.map(i => esc(ex(i.exId).name)).join(" · ")}</div></div></div>`).join("")}</div>
+    ${d.gaps && d.gaps.length ? `<p class="small" style="color:var(--warn);margin:0">Nicht in deinem Studio: ${d.gaps.map(g => esc(g.name)).join(", ")}</p>` : ""}
+    ${state.sched && state.sched.days.length !== n ? `<p class="small muted" style="margin:0">Du hast ${state.sched.days.length} Termine pro Woche. Passe sie danach unter Training → Trainingstermine an.</p>` : ""}
+    <button class="btn primary block" data-a="coachPlanApply">Übernehmen</button>
+    <p class="small faint" style="margin:0">Dein jetziger Plan lässt sich danach in der Buddy-Analyse wiederherstellen.</p>`;
+}
+// Vorschau „Dein Training heute“: dieselben Vorschläge, die das Training beim Start einträgt
+let prevList = [];
+function previewEntries(day) {
+  const tp = activeTimeplan(day);
+  return day.items.map(it => {
+    const e = tp && tp.replace[it.id] ? makeEntry(Object.assign({}, it, { exId: tp.replace[it.id] }), { from: ex(it.exId).name }) : makeEntry(it);
+    const n = tp ? (tp.keep[it.id] ?? 0) : it.sets;
+    return n ? Object.assign(e, { sets: e.sets.slice(0, n) }) : null;
+  }).filter(Boolean);
+}
+function entryBadge(e) {
+  if (e.recKg === null && e.mode === "keep" && /^Neu/.test(e.short)) return `<span class="badge">neu</span>`;
+  if (e.mode === "up") return `<span class="badge up">${esc(e.short.split(" · ")[0])}</span>`;
+  if (e.mode === "down") return `<span class="badge">${esc(e.short.split(" · ")[0])}</span>`;
+  return `<span class="badge">${e.mode === "keep" ? "+1 Wdh." : "halten"}</span>`;
+}
+const entryLine = e => `${e.sets.length} × ${e.recKg !== null ? `${kgTxt(e.recKg)} kg ${UNIT_SHORT[e.u]}` : "Gewicht wählen"} · ${e.mode === "keep" && e.recKg !== null ? `Ziel ${e.sets.map(t => t.reps).join("/")}` : `${e.rmin}–${e.rmax}`} Wdh.`;
+function previewHtml(day) {
+  prevList = previewEntries(day);
+  if (!prevList.length) return "";
+  const ups = prevList.filter(e => e.mode === "up").length;
+  return `<section class="section" id="todayPlan"><div class="section-head"><h2>Dein Training heute</h2><span class="small muted">${ups ? `${ups}× mehr Gewicht` : "Vorschläge vom Buddy"}</span></div>
+    <div class="group">${prevList.map((e, i) => `<button class="li" data-a="prevWhy" data-n="${i}"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div><div class="s">${entryLine(e)}</div></div>${entryBadge(e)}</button>`).join("")}</div></section>`;
+}
+function prevWhySheet(e) {
+  return `${sheetHead(esc(ex(e.exId).name))}
+    <p class="small muted" style="margin:0">Vorschlag für heute: ${entryLine(e)}</p>
+    <p style="margin:0">${esc(e.why)}</p>
+    <div class="row wrap" style="gap:var(--s4)"><button class="link small" data-a="openArt" data-id="progression" data-ret="home">So steigert der Buddy</button>
+      <button class="link small" data-a="openEx" data-id="${e.exId}" data-ret="home">Gerät & Verlauf</button></div>`;
+}
+// Nach dem Training: was der Buddy daraus für das nächste Mal macht
+function nextTimeHtml(r) {
+  const pd = state.plan && state.plan.days.find(d => d.id === r.dayId); if (!pd) return "";
+  const rows = r.exercises.map(x => { const it = pd.items.find(i => i.exId === x.exId); return it ? makeEntry(it) : null; }).filter(Boolean);
+  if (!rows.length) return "";
+  return `<section class="section" id="nextTime"><h2>Nächstes Mal</h2><div class="group">${rows.map(e => `<div class="li"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div>
+      <div class="s">${e.recKg !== null ? `${kgTxt(e.recKg)} ${UNIT[e.u]}` : "–"} · ${esc(e.short.split(" · ").slice(1).join(" · ") || e.short)}</div></div>${entryBadge(e)}</div>`).join("")}</div>
+    <p class="small faint" style="margin:0">Berechnet aus diesem Training nach den Regeln unter „So denkt der Buddy“.</p></section>`;
 }
 
 /* ================= Apple Watch (parallel aufzeichnen) ================= */
@@ -3574,6 +3883,7 @@ function vSummary() {
       return `<div class="li"><div class="grow"><div class="t">${esc(st.name)}</div><div class="s">${kgTxt(g.start)} → ${kgTxt(g.target)} ${st.unit} seit ${fmtDay(g.startDate)}</div></div><span class="badge up">Geschafft</span></div>`; }).join("")}</div></section>` : ""}
     ${prs.length ? `<section class="section"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
       `<div class="li"><div class="grow t">${esc(p.name)}</div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div></section>` : ""}
+    ${nextTimeHtml(r)}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
       <div class="s">${x.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join("  ·  ")} · ${UNIT[x.u]}</div></div></div>`).join("")}</div></section>
     <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="tab" data-v="home">Fertig</button></div></div>
@@ -3631,6 +3941,8 @@ function vHistory() {
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
+    ${(() => { const n = state.plan ? insights().filter(x => !coachHidden(x)).length : 0;
+      return state.plan ? `<div class="group"><button class="li" data-a="openCoach" data-ret="history" id="histCoach"><div class="grow"><div class="t">Buddy-Analyse</div><div class="s">${n ? `${n} ${n === 1 ? "Erkenntnis" : "Erkenntnisse"} aus deinen Daten` : "Was der Buddy aus deinen Daten liest"}</div></div><span class="chev">›</span></button></div>` : ""; })()}
     ${goalsHtml()}
     ${H.length ? `
     <section class="section">
@@ -3973,6 +4285,23 @@ const A = {
     save(); closeSheet(); render();
   },
   openSettings: () => go("settings"),
+  prevWhy: el => { const e = prevList[+el.dataset.n]; if (e) openSheet(prevWhySheet(e)); },
+  openCoach: el => { coachBack = el.dataset.ret === "history" ? "history" : "home"; go("coach"); },
+  coachBack: () => go(coachBack),
+  coachHide: el => { state.coachOff[el.dataset.id] = new Date().toISOString(); save(); render(); },
+  coachShowAll: () => { state.coachOff = {}; save(); render(); },
+  coachSwap: el => { const f = el.dataset.from, to = el.dataset.to;
+    state.prevPlan = { at: new Date().toISOString(), why: `${ex(f).name} → ${ex(to).name} wegen Stillstand`, plan: JSON.parse(JSON.stringify(state.plan)) };
+    state.plan.days.forEach(d => d.items.forEach(i => { if (i.exId === f) i.exId = to; })); state.timeplan = null; save(); render(); },
+  coachPlan: el => { const p = state.plan; coachDraft = generatePlan(p.goal, +el.dataset.n, p.level, p.minutes); openSheet(coachPlanSheet(+el.dataset.n)); },
+  coachPlanApply: () => { if (!coachDraft) return;
+    state.prevPlan = { at: new Date().toISOString(), why: `${state.plan.days.length} → ${coachDraft.days.length} Trainingstage, passend zu deiner tatsächlichen Häufigkeit`, plan: state.plan };
+    state.plan = coachDraft; coachDraft = null; state.selDay = null; state.timeplan = null; save(); closeSheet(); render(); },
+  coachUndo: () => { if (!state.prevPlan) return; state.plan = state.prevPlan.plan; state.prevPlan = null; state.selDay = null; state.timeplan = null; save(); render(); },
+  coachKeep: () => { state.prevPlan = null; save(); render(); },
+  coachMinutes: el => { state.plan.minutes = +el.dataset.m; save(); render(); },
+  coachDay: el => { state.selDay = el.dataset.id; save(); go("home"); },
+  schedLearned: () => { const L = learnedSched(); if (!L) return; schedDraft = { days: L.days.slice(), time: L.time, planB: "next" }; openSheet(schedSheet()); },
   goalAdd: () => { const used = [...state.history].reverse().flatMap(h => h.exercises.map(x => x.exId)); goalDraft = { kind: "kraft", exId: used[0] || allEx()[0].id, target: null, date: null }; openSheet(goalSheet()); },
   goalEdit: el => { const g = state.goals.find(x => x.id === el.dataset.id); if (!g) return; goalDraft = JSON.parse(JSON.stringify(g)); openSheet(goalSheet()); },
   gKind: el => { goalDraft.kind = el.dataset.v; goalDraft.target = null; goalRefresh(); },
@@ -4051,9 +4380,9 @@ const A = {
     openExternal(weightUrl(w.kg));
   },
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
-  exBack: () => go(["history", "day", "plan", "home"].includes(exBack) ? exBack : "lib"),
+  exBack: () => go(["history", "day", "plan", "home", "coach"].includes(exBack) ? exBack : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
-  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : artBack === "plan" ? "plan" : "wissen"),
+  artBack: () => go(artBack === "coach" ? "coach" : artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : artBack === "plan" ? "plan" : "wissen"),
   openWeek: el => { weekOff = 0; weekBack = el.dataset.ret === "history" ? "history" : "home"; go("week"); },
   weekNav: el => { weekOff = Math.max(0, weekOff + +el.dataset.d); vWeek(); window.scrollTo(0, 0); },
   weekBack: () => go(weekBack),
@@ -4248,7 +4577,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
