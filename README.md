@@ -6,6 +6,26 @@ Trainings-App als Web-App (PWA) für Hammer-Strength-Geräte. Läuft unter https
 
 Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet dann im Vollbild und funktioniert auch offline.
 
+## Der Buddy
+
+Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bringt und dabei begleitet:
+
+- **Feste Termine mit Plan B:** Tage und Uhrzeit festlegen, dazu ein Plan B für Hindernisse (am nächsten Tag nachholen oder 30-Minuten-Version). Grundlage: Wenn-dann-Pläne verbessern im Mittel die Umsetzung (Gollwitzer & Sheeran 2006; Sheeran et al. 2025), für Bewegung kleiner bis mittlerer Effekt, stärker mit Plan für Hindernisse (Bélanger-Gravel et al. 2013). Als wöchentliche Serie mit Erinnerung 30 Minuten vorher in den iPhone-Kalender (.ics)
+- **Buddy auf „Heute“:** persönliche Nachricht aus deinen Daten – heutiger Termin, verpasster Termin mit Plan B, lange Pause mit Kurzversion, erledigt mit Sätzen und nächstem Termin, Wochenziel, Serie, frische Bestwerte
+- **Buddy-Check im Training:** Sätze pro Muskel und Woche gegen den Richtwert (wie Muskelbelastung; mit der Zahl der Termine), fehlende Muskelgruppen mit „+ Übung“ (öffnet die passende Übungsauswahl), Tage über dem Zeitbudget
+- **Sprachbegleitung im Training** (optional, im Gerät, ohne Internet): Übung, Satz, Gewicht, Wiederholungsziel, Pause, „Noch zehn Sekunden“, neue Bestwerte, Trainingsende
+- **Artikel „Warum feste Termine helfen“** mit Quellen, inklusive Gewohnheitsbildung (Lally et al. 2010: 18–254 Tage, ein ausgelassener Tag wirft nicht zurück)
+
+## Aufbau
+
+Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, verstehen**. Fünf Bereiche mit je einer Aufgabe:
+
+- **Heute:** nächstes Training mit Start-Knopf, die Woche (mit Wochenrückblick), letzte Steigerung, Essen heute, Wissen des Tages
+- **Training:** Trainingstage und Erholung; Zahnrad → Einstellungen (Geräte, Wasser/Fasten an/aus, Apple Health/Watch, neuer Plan, Sicherung)
+- **Wissen:** Übungsbibliothek und Artikel (Training, Ernährung, Gesundheit)
+- **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
+- **Fortschritt:** Wochenrückblick, Häufigkeit, Bestwerte, Körpergewicht, Muskelbelastung, Kalender, letzte Trainings
+
 ## Funktionen
 
 - **Plan-Assistent:** Ziel, Trainingstage, Zeit pro Training, Erfahrung und die Geräte deines Studios ergeben einen fertigen Plan
@@ -32,6 +52,7 @@ Die Übungstexte stehen in `src/app.html` (`GUIDE`, `SOURCES`, `ARTICLES`). Rege
   - Online-Suche: `world.openfoodfacts.org/cgi/search.pl` (CORS erlaubt); bei Ausfall oder Überlastung verständliche Meldung. Grundnahrungsmittel und eigene Lebensmittel funktionieren offline
   - **Wasser:** Gläser zählen (+250/+500/−250 ml) je Tag; Trinkziel 1,6 L (Frauen) bzw. 2,0 L (Männer) = 80 % des EFSA-Referenzwerts für die Gesamtzufuhr (2,0/2,5 L, davon 20–30 % aus Lebensmitteln), mit Erklärung und Quellen
   - **„Wie am Vortag“:** leere Mahlzeit mit einem Tipp vom Vortag übernehmen
+  - **Intervallfasten:** Timer für 14:10, 16:8, 18:6 oder 20:4; Startzeit nachträglich änderbar (Uhrzeit nach jetzt = Vortag), Restzeit und Zielzeit, Verlauf mit erreichten Zielen, Zählung im Wochenrückblick; Vorsichtshinweis und Artikel mit ehrlicher Einordnung (im Mittel ähnlicher Gewichtsverlust wie tägliche Kalorienreduktion; Cioffi 2018, Headland 2016)
   - **Meine Mahlzeiten:** Mahlzeiten ab zwei Einträgen mit Namen speichern (Lebensmittel, Mengen, Werte je 100 g) und unter „Hinzufügen“ mit einem Tipp einfügen; auch über die Suche auffindbar
   - **Barcode-Scan mit der Kamera:** eigener Decoder ohne externe Bibliothek (Safari auf dem iPhone bietet keine eingebaute Barcode-Erkennung) für EAN-13, EAN-8 und UPC-A. Eine Lesung zählt nur mit Begrenzungszeichen, Ruhezonen, gültigem Paritätsmuster, Prüfziffer und zwei gleichen Treffern; Balkenverbreiterung wird aus den Begrenzungszeichen geschätzt und ausgeglichen. Das Kamerabild wird nur im Gerät ausgewertet; die Kamera stoppt beim Schließen und im Hintergrund. Eingetippte Nummern werden ebenfalls über die Prüfziffer geprüft
 - **Datensicherung** per Code (Plan → „Daten sichern“)

@@ -309,6 +309,8 @@
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .addrow{color:var(--accent);font-weight:600;min-height:48px}
+  .buddy-says{display:grid;gap:var(--s2)}
+  .icon-btn.on{color:var(--accent)}
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -341,9 +343,10 @@
 <div id="app"></div>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
-  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Plan</button>
+  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Training</button>
+  <button data-a="tab" data-v="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5C5 4.2 8.5 4.2 12 6.2c3.5-2 7-2 9.5-.7V19c-2.5-1.3-6-1.3-9.5.7-3.5-2-7-2-9.5-.7z"/><path d="M12 6.2v13.5"/></svg>Wissen</button>
   <button data-a="tab" data-v="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 0-3.5 2.6-3.5 6.5S15 14 17 14"/></svg>Essen</button>
-  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Verlauf</button>
+  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Fortschritt</button>
 </div></nav>
 <div id="sheet-root"></div>
 
@@ -442,6 +445,12 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  gollwitzer2006: { t: "Gollwitzer PM, Sheeran P: Implementation intentions and goal achievement: a meta-analysis of effects and processes", j: "Adv Exp Soc Psychol 2006;38:69–119", url: "https://doi.org/10.1016/S0065-2601(06)38002-1" },
+  belanger2013: { t: "Bélanger-Gravel A, Godin G, Amireault S: A meta-analytic review of the effect of implementation intentions on physical activity", j: "Health Psychol Rev 2013;7(1):23–54", url: "https://doi.org/10.1080/17437199.2011.560095" },
+  sheeran2025: { t: "Sheeran P, Listrom O, Gollwitzer PM: The when and how of planning: meta-analysis of the scope and components of implementation intentions in 642 tests", j: "Eur Rev Soc Psychol 2025;36(1):162–194", url: "https://doi.org/10.1080/10463283.2024.2334563" },
+  lally2010: { t: "Lally P, van Jaarsveld CHM, Potts HWW, Wardle J: How are habits formed: modelling habit formation in the real world", j: "Eur J Soc Psychol 2010;40(6):998–1009", url: "https://doi.org/10.1002/ejsp.674" },
+  cioffi2018: { t: "Cioffi I, Evangelista A, Ponzo V et al.: Intermittent versus continuous energy restriction on weight loss and cardiometabolic outcomes: a systematic review and meta-analysis of randomized controlled trials", j: "J Transl Med 2018;16:371", url: "https://pubmed.ncbi.nlm.nih.gov/30583725/" },
+  headland2016: { t: "Headland M, Clifton PM, Carter S, Keogh JB: Weight-loss outcomes: a systematic review and meta-analysis of intermittent energy restriction trials lasting a minimum of 6 months", j: "Nutrients 2016;8(6):354", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4924195/" },
   gandy2016: { t: "Gandy J et al.: Recording of fluid, beverage and water intakes at the population level in Europe (Anteil von Wasser aus Lebensmitteln, wie von der EFSA angesetzt)", j: "Br J Nutr 2016;116(4):677–682", url: "https://doi.org/10.1017/S0007114516002336" }
 };
 
@@ -459,7 +468,7 @@ const ARTICLES = [
     body: [
       "Eine Meta-Analyse von 15 Studien fand einen Zusammenhang zwischen der Zahl wöchentlicher Sätze und dem Muskelzuwachs. Die Gruppe mit 10 oder mehr Sätzen pro Muskel und Woche lag im Mittel vorn; der Vergleich der drei Gruppen (unter 5, 5–9, 10+) war statistisch aber nur ein Trend.",
       "Für sehr hohe Satzzahlen reichen die Daten nicht für klare Aussagen. Neuere Studien mit Trainierten zeigen gemischte Ergebnisse.",
-      "Praktisch heißt das: 10 bis 20 harte Sätze pro Muskel und Woche sind ein gut begründeter Richtwert für Muskelaufbau. Unter „Verlauf → Muskelbelastung“ siehst du, wo du stehst."
+      "Praktisch heißt das: 10 bis 20 harte Sätze pro Muskel und Woche sind ein gut begründeter Richtwert für Muskelaufbau. Unter „Fortschritt → Muskelbelastung“ siehst du, wo du stehst."
     ], src: ["vol2017"] },
   { id: "frequenz", title: "Wie oft pro Woche einen Muskel trainieren?",
     lead: "Wichtiger als die Häufigkeit ist die Menge pro Woche. Mehrere Einheiten machen es leichter, diese Menge gut zu verteilen.",
@@ -517,7 +526,24 @@ const ARTICLES = [
       "Für den Tagesbedarf wird der Grundumsatz mit einem Aktivitätsfaktor multipliziert. Die Bereiche stammen aus einem Bericht von FAO, WHO und UNU: 1,40–1,69 für überwiegend sitzende, 1,70–1,99 für aktive und 2,00–2,40 für sehr aktive Menschen.",
       "Zum Abnehmen empfehlen Fachleute für Kraftsportler etwa 0,5–1 % des Körpergewichts pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Für Muskelaufbau nennt eine Übersichtsarbeit für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.",
       "Wiege dich regelmäßig. Nach zwei bis drei Wochen zeigt der Gewichtstrend unter „Essen“, ob dein Kalorienziel zu deinem Ziel passt."
-    ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] }
+    ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] },
+  { id: "intervallfasten", title: "Intervallfasten: Was es kann und was nicht",
+    lead: "Intervallfasten kann beim Abnehmen helfen – im Mittel aber nicht besser als eine tägliche Kalorienreduktion.",
+    body: [
+      "Beim Intervallfasten wechseln sich Essens- und Fastenzeiten ab, zum Beispiel 16:8: 16 Stunden ohne Kalorien, 8 Stunden Essenszeit. Wasser, ungesüßter Tee und schwarzer Kaffee sind in der Fastenzeit üblich.",
+      "Eine Meta-Analyse von 11 Studien mit 8 bis 24 Wochen Dauer verglich Intervallfasten mit täglicher Kalorienreduktion. Der Unterschied beim Gewichtsverlust war klein – rund 0,6 kg – und statistisch nicht gesichert; auch Blutwerte entwickelten sich vergleichbar. Eine Auswertung von Studien mit mindestens sechs Monaten Dauer kam zum selben Ergebnis. Wie es über Jahre aussieht, ist offen.",
+      "Entscheidend bleibt die Energiebilanz über Tage und Wochen. Intervallfasten ist eine Methode, weniger zu essen: Wem feste Essenszeiten leichtfallen, für den kann sie gut passen. Achte auch beim Fasten auf dein Eiweißziel – für Kraftsportler gibt es bisher vor allem kleine, kurze Studien.",
+      "Vorsicht: Nicht geeignet oder nur nach ärztlicher Rücksprache in Schwangerschaft und Stillzeit, für Kinder und Jugendliche, bei Essstörungen (auch früheren), Untergewicht und Diabetes mit blutzuckersenkenden Medikamenten."
+    ], src: ["cioffi2018", "headland2016"] },
+  { id: "termine", title: "Warum feste Termine helfen",
+    lead: "Wer vorher festlegt, wann er trainiert – und was er tut, wenn etwas dazwischenkommt –, setzt es im Schnitt häufiger um.",
+    body: [
+      "Viele trainieren seltener, als sie sich vornehmen. Ein gut untersuchtes Mittel dagegen sind Wenn-dann-Pläne: Du legst vorher fest, wann und wo du trainierst – zum Beispiel „Montag, Mittwoch und Freitag um 18 Uhr gehe ich ins Studio“.",
+      "Eine Meta-Analyse von 94 Studien fand, dass solche Pläne das Erreichen von Zielen deutlich verbessern. Eine neuere, viel größere Auswertung bestätigt den Nutzen, schätzt den Effekt nach Korrektur für Verzerrungen aber kleiner.",
+      "Speziell für Bewegung fand eine Meta-Analyse von 26 Studien einen kleinen bis mittleren Effekt. Am stärksten war er, wenn die Pläne auch den Umgang mit Hindernissen enthielten. Deshalb fragt dich die App nach einem Plan B: am nächsten Tag nachholen oder die 30-Minuten-Version.",
+      "Gewohnheiten brauchen Zeit. In einer Studie dauerte es je nach Person 18 bis 254 Tage, bis sich ein neues Verhalten automatisch anfühlte. Ein einzelner ausgelassener Tag warf den Prozess dabei nicht nennenswert zurück – also einfach beim nächsten Termin weitermachen.",
+      "Der Buddy auf „Heute“ erinnert dich an deinen nächsten Termin und an deinen Plan B. Auf Wunsch kommen die Termine mit Erinnerung in den Kalender deines iPhones."
+    ], src: ["gollwitzer2006", "sheeran2025", "belanger2013", "lally2010"] }
 ];
 
 // Ausführliche Übungsanleitungen. Grundsätze:
@@ -907,7 +933,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [] }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1017,7 +1043,12 @@ function normalize(raw) {
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   s.health = raw.health === true;
   s.watch = raw.watch === true;
-  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals);
+  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
+  s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
+  // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
+  const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
+  s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
+    fast: typeof no.fast === "boolean" ? no.fast : !!raw.fast || (Array.isArray(raw.fasts) && raw.fasts.length > 0) };
   return s;
 }
 function load() {
@@ -1417,6 +1448,9 @@ function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
 const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
   `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
 const ICON = {
+  voiceOn: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
+  voiceOff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`,
+  gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
   play: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
   close: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
   list: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg>`,
@@ -1501,8 +1535,9 @@ function vLib() {
   const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Übungen</div>
+    <div class="head"><div class="cap">Wissen</div><div class="title">Übungen</div>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
+    ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
@@ -1537,12 +1572,15 @@ function exAltHtml(id) {
   return `<div class="group">${list.map(a => `<button class="li" data-a="openEx" data-id="${a.e.id}" data-ret="${exBack}" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.e.name)}</div><div class="s">${esc(a.why)}</div></div><span class="chev">›</span></button>`).join("")}</div>`;
 }
+const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><div class="title">Trainingswissen</div>
-      <p class="sub">Die Grundlagen hinter deinem Plan – kurz erklärt und mit Quellen belegt.</p></div>
-    <div class="group">${ARTICLES.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
-      <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div>
+    <div class="head"><div class="cap">Wissen</div><div class="title">Artikel</div>
+      <p class="sub">Die Grundlagen hinter Training und Ernährung – kurz erklärt und mit Quellen belegt.</p></div>
+    ${wissenSeg("wissen")}
+    ${[["Training", ["termine", "progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
+      .map(([h, ids]) => { const L = ARTICLES.filter(a => ids.includes(a.id)); return L.length ? `<section class="section"><h2>${h}</h2><div class="group">${L.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
+      <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div></section>` : ""; }).join("")}
   </div>`;
 }
 function vArt() {
@@ -1562,18 +1600,26 @@ function guideSheet(id, ret) {
 }
 
 /* ================= Navigation ================= */
+// Welcher Tab gehört zu welcher Ansicht
+function tabOf(v) {
+  if (["day", "settings", "plan"].includes(v)) return "plan";
+  if (["lib", "wissen"].includes(v)) return "lib";
+  if (v === "ex") return exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
+  if (v === "art") return artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
+  if (v === "week") return weekBack === "history" ? "history" : "home";
+  return v;
+}
 function go(v) {
   view = v;
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
-  $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on",
-    b.dataset.v === v || (["day", "lib", "wissen"].includes(v) && b.dataset.v === "plan") || (v === "ex" && b.dataset.v === (exBack === "history" ? "history" : "plan")) || (v === "art" && b.dataset.v === (artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "plan")) || (v === "week" && b.dataset.v === (weekBack === "history" ? "history" : "home"))));
+  $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === tabOf(v)));
   render(); window.scrollTo(0, 0);
 }
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek, settings: vSettings })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -1583,7 +1629,7 @@ function vSetup() {
     `<button data-a="setup" data-k="${key}" data-val="${v}" class="${String(setup[key]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
   const all = allEx(), av = all.filter(e => !e.off).length, fav = all.filter(e => e.fav).length;
   $app.innerHTML = `<div class="page">
-    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Plan</button>` : `<div class="cap">Neuer Plan</div>`}
+    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Training</button>` : `<div class="cap">Neuer Plan</div>`}
       <div class="title">Dein Training</div>
       <p class="sub">Vier Angaben, dann steht dein Plan. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
@@ -1625,15 +1671,9 @@ function vHome() {
   if (day && ago !== null && ago >= 10) why += " Nach längerer Pause lieber etwas leichter einsteigen.";
   const ses = state.session;
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
-  const recTxt = tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt";
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
-    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
-        <div class="cap">Neu: Gewicht pro Seite</div>
-        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
-        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
-      </div>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
@@ -1644,7 +1684,7 @@ function vHome() {
       </section>`; })() : ""}
     ${day && !ses ? `<section class="hero">
       <div class="hero-top">
-        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Empfohlen"}</div>
+        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Dein Buddy"}</div>
           <div class="hero-name">${esc(day.name)}</div>
           ${(() => { const tp = activeTimeplan(day);
             return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}</span>
@@ -1653,7 +1693,7 @@ function vHome() {
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
         <div>${figure(workoutColors(day.items), "Muskeln in diesem Training")}</div>
       </div>
-      ${why ? `<p class="reason" ${nextReason ? 'style="color:var(--text)"' : ""}>${esc(why)}</p>` : ""}
+      ${nextReason ? `<p class="reason" style="color:var(--text)">${esc(why)}</p>` : buddySays(day, thisWeek, goal, streak)}
       <div class="stack-sm">
         <button class="btn primary xl block" data-a="start" ${day.items.length ? "" : "disabled"}>${ICON.play}Training starten</button>
         ${state.watch && day.items.length ? `<p class="small muted" id="watchHint">Apple Watch: Zuerst in der App „Training“ <b style="color:var(--text)">Traditionelles Krafttraining</b> starten.</p>` : ""}
@@ -1661,17 +1701,22 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
+    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
+        <div class="cap">Neu: Gewicht pro Seite</div>
+        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
+        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
+      </div>` : ""}
     <section class="section">
-      <div class="section-head"><h2>Diese Woche</h2><span class="small muted"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
+      <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
       ${streak ? `<p class="small muted">${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge das Wochenziel geschafft.</p>` : ""}
+      ${state.history.length ? `<button class="link small" data-a="openWeek" data-ret="home" id="homeWeek" style="justify-self:start">Wochenrückblick ansehen ›</button>` : ""}
     </section>
     <div class="plain-list">
-      ${lastH ? `<div class="li"><div class="grow"><div class="s">Zuletzt</div><div class="t">${esc(lastH.day)} <span class="muted" style="font-weight:400">· ${agoTxt} · ${Math.max(1, Math.round((lastH.durationSec || 0) / 60))} Min.</span></div></div></div>` : ""}
-      <button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${recTxt}</div></div><span class="chev">›</span></button>
+      ${(() => { const b = lastPR(); return b ? `<button class="li" data-a="openEx" data-id="${b.exId}" data-ret="home" id="homeBest"><div class="grow"><div class="s">Zuletzt verbessert · ${fmtWhenDay(b.date)}</div>
+        <div class="t">${esc(b.name)}: ${kgTxt(b.from)} → ${kgTxt(b.kg)} ${UNIT[b.u]}</div></div><span class="chev">›</span></button>` : ""; })()}
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!G && !tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
-      ${state.history.length ? `<button class="li" data-a="openWeek" data-ret="home" id="homeWeek"><div class="grow"><div class="s">Wochenrückblick</div><div class="t">${thisWeek} von ${goal} ${goal === 1 ? "Training" : "Trainings"} diese Woche</div></div><span class="chev">›</span></button>` : ""}
       ${(() => { const a = ARTICLES[Math.floor(Date.now() / 864e5) % ARTICLES.length];
         return `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="home" id="homeArt"><div class="grow"><div class="s">Wissen</div><div class="t">${esc(a.title)}</div></div><span class="chev">›</span></button>`; })()}
     </div>
@@ -1774,14 +1819,33 @@ function weekStreak(monday, goal) {
   return n;
 }
 
+// Letzte Steigerung des Höchstgewichts an einem Gerät (gleiche Gewichtsangabe)
+function lastPR() {
+  const best = {}; let last = null;
+  for (const h of [...state.history].sort((a, b) => new Date(a.date) - new Date(b.date))) for (const x of h.exercises) {
+    const v = x.sets.filter(validSet); if (!v.length) continue;
+    const k = x.exId + "|" + x.u, m = Math.max(...v.map(s => s.kg));
+    if (best[k] !== undefined && m > best[k]) last = { exId: x.exId, name: x.name, from: best[k], kg: m, u: x.u, date: h.date };
+    if (best[k] === undefined || m > best[k]) best[k] = m;
+  }
+  return last;
+}
+function fmtWhenDay(iso) {
+  const d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(iso).setHours(0, 0, 0, 0)) / 864e5);
+  return d <= 0 ? "heute" : d === 1 ? "gestern" : `vor ${d} Tagen`;
+}
+
 /* ================= Plan ================= */
 function vPlan() {
   if (!state.plan) return go("setup");
   const p = state.plan;
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div><div class="title">Plan</div></div>
+    <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
+      <div class="row between"><div class="title">Training</div><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
+    <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
+      <div class="t">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button></div>
     <div class="group">${p.days.map((d, i) => `
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
@@ -1791,23 +1855,33 @@ function vPlan() {
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
     </div>
-    <section class="section"><h2>Übungen & Wissen</h2>
-      <div class="group">
-        <button class="li" data-a="tab" data-v="lib"><div class="grow"><div class="t">Übungsbibliothek</div><div class="s">${allEx().length} Geräte: Muskeln, Einstellung, Ausführung, Fehler</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="tab" data-v="wissen"><div class="grow"><div class="t">Trainingswissen</div><div class="s">${ARTICLES.length} Grundlagen mit Quellen</div></div><span class="chev">›</span></button>
-      </div>
-    </section>
-    <section class="section"><h2>Einstellungen</h2>
-      <div class="group">
-        <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
-        <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button>
-      </div>
-      <p class="small faint">Plan und Verlauf liegen nur auf diesem Gerät. Kopiere ab und zu eine Sicherung, z. B. in deine Notizen.</p>
-    </section>
+    ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]);
+      return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
+    ${planCheckHtml()}
+  </div>`;
+}
+/* ================= Einstellungen ================= */
+function vSettings() {
+  const seg = (k, on) => `<div class="seg" style="min-width:140px"><button data-a="nOpt" data-k="${k}" data-v="0" class="${on ? "" : "on"}">Aus</button><button data-a="nOpt" data-k="${k}" data-v="1" class="${on ? "on" : ""}">An</button></div>`;
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><div class="title">Einstellungen</div></div>
+    <section class="section"><h2>Training</h2><div class="group">
+      <button class="li" data-a="openSched"><div class="grow"><div class="t">Trainingstermine</div><div class="s">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
+      <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
+        <div class="seg" style="min-width:140px"><button data-a="voiceSet" data-v="0" class="${state.voice ? "" : "on"}">Aus</button><button data-a="voiceSet" data-v="1" class="${state.voice ? "on" : ""}">An</button></div></div></div></section>
+    <section class="section"><h2>Studio</h2><div class="group">
+      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
+    <section class="section"><h2>Ernährung</h2><div class="group">
+      <div class="li" id="optWater"><div class="grow"><div class="t">Wasser zählen</div><div class="s">Gläser und Trinkziel im Tab „Essen“</div></div>${seg("water", state.nutrOpt.water)}</div>
+      <div class="li" id="optFast"><div class="grow"><div class="t">Intervallfasten</div><div class="s">Fasten-Timer im Tab „Essen“</div></div>${seg("fast", state.nutrOpt.fast)}</div></div></section>
+    <section class="section"><h2>Apple</h2><div class="group">
+      <button class="li" data-a="openHealth"><div class="grow"><div class="t">Apple Health</div><div class="s">${state.health ? "An" : "Aus"} · Training und Gewicht per Kurzbefehl eintragen</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button></div></section>
+    <section class="section"><h2>Plan und Daten</h2><div class="group">
+      <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button></div>
+      <p class="small faint">Plan und Verlauf liegen nur auf diesem Gerät. Kopiere ab und zu eine Sicherung, z. B. in deine Notizen.</p></section>
   </div>`;
 }
 function gapList(gaps) {
@@ -1820,7 +1894,7 @@ function vDay() {
   const d = curDay(); if (!d) return go("plan");
   $app.innerHTML = `<div class="page">
     <div class="head">
-      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
+      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Training</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
       <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${nEx(d.items.length)} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
@@ -1973,6 +2047,7 @@ function startTraining(day) {
     if (!state.session.list.length) { state.session.list = list; state.session.timeHidden = []; state.session.timeAdj = null; }
   }
   state.timeplan = null; state.selDay = null; save(); awake(true); go("train"); startTick();
+  sayCurrent("Los geht's. ");
 }
 /* ================= Progression 2.0 ================= */
 // Vergleichbare Einheiten an einem Gerät: gleiche Gewichtsangabe, nur gültige Arbeitssätze (alt → neu).
@@ -2102,15 +2177,18 @@ function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
   const err = setError(x.sets[i]); if (err) return showSetError(err);
+  const prev = bestKg(x.exId, x.u || unitOf(ex(x.exId))), isPR = prev !== null && x.sets[i].kg > prev && !x.sets.some((t, k) => k < i && t.done && t.kg >= x.sets[i].kg);
   x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i };
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
-  s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0;
+  s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0; s.said10 = false;
   if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
   save();
+  if (isPR) say(`Neuer Bestwert: ${kgTxt(x.sets[i].kg)} Kilo.`);
   if (!x.rest) return endRest();
+  if (!isPR) say(`Pause, ${x.rest} Sekunden.`);
   render();
 }
-function endRest() { const s = S(); s.phase = "set"; save(); render(); }
+function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurrent(); }
 function finish(saveIt) {
   stopTick(); awake(false);
   const s = S();
@@ -2126,6 +2204,7 @@ function finish(saveIt) {
       state.history.push(rec);
       summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0) };
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]);
+      say(prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
   }
   state.session = null; save(); closeSheet();
@@ -2145,6 +2224,7 @@ function vTrain() {
       <button class="icon-btn" data-a="askStop" aria-label="Training pausieren oder beenden">${ICON.close}</button>
       <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">${done} von ${total} Sätzen</span></div>
       <span class="t-clock" id="elapsed">${fmtTime((Date.now() - s.start) / 1000)}</span>
+      <button class="icon-btn ${state.voice ? "on" : ""}" data-a="voiceToggle" aria-label="Sprachbegleitung ${state.voice ? "aus" : "an"}schalten" aria-pressed="${state.voice}">${state.voice ? ICON.voiceOn : ICON.voiceOff}</button>
       <button class="icon-btn" data-a="openJump" aria-label="Übungen">${ICON.list}</button>
     </div>
     <div class="bar"><div style="width:${Math.round(done / total * 100)}%"></div></div></div>`;
@@ -2338,7 +2418,7 @@ function healthSheet() {
       <button data-a="setHealth" data-v="0" class="${state.health ? "" : "on"}">Aus</button><button data-a="setHealth" data-v="1" class="${state.health ? "on" : ""}">An</button></div></div>
     <section class="gsec"><h2>Was übertragen wird</h2><ul class="glist">
       <li>Art „Krafttraining“, Startzeit und Dauer des Trainings – nach dem Training oder später aus dem Verlauf.</li>
-      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Verlauf → Körpergewicht).</li>
+      <li>Auf Wunsch dein Körpergewicht vom heutigen Tag (Fortschritt → Körpergewicht).</li>
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
       <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul>
@@ -2710,7 +2790,7 @@ function weightTrend() {
 }
 function trendHtml(G) {
   const tr = weightTrend(), g = state.nutr && NGOAL[state.nutr.goal];
-  if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Verlauf → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
+  if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Fortschritt → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
   const ok = tr.pct >= g.lo && tr.pct <= g.hi;
   const msg = ok ? "Das passt zu deinem Ziel." : tr.pct < g.lo
     ? ({ ab: "Du nimmst schneller ab als geplant.", halten: "Dein Gewicht sinkt.", auf: "Du nimmst langsamer zu als geplant." })[state.nutr.goal]
@@ -2880,7 +2960,7 @@ function nutrSheet() {
   return `${sheetHead("Ziele & Berechnung", "Abbrechen")}
     <div class="field"><label>Formel für</label><div class="seg" id="nSex">${segBtn("sex", "m", "Männer")}${segBtn("sex", "w", "Frauen")}</div></div>
     <div class="form3">${inp("nAge", "Alter", d.age)}${inp("nCm", "Größe (cm)", d.cm)}${inp("nKg", "Gewicht (kg)", d.kg != null ? String(d.kg).replace(".", ",") : "")}</div>
-    <p class="small faint" style="margin:0">Das Gewicht kommt aus „Verlauf → Körpergewicht“. Ein geänderter Wert wird dort für heute eingetragen.</p>
+    <p class="small faint" style="margin:0">Das Gewicht kommt aus „Fortschritt → Körpergewicht“. Ein geänderter Wert wird dort für heute eingetragen.</p>
     <div class="field"><label>Aktivität im Alltag</label><div class="group" id="nPal">${PAL_OPTS.map(([v, l, s]) => `<button class="li" data-a="nSet" data-k="pal" data-v="${v}" style="align-items:flex-start">
       <div class="grow"><div class="t">${l}</div><div class="s">${s}</div></div><span class="check ${d.pal === v ? "on" : ""}" aria-hidden="true"></span></button>`).join("")}</div></div>
     <div class="field"><label>Ziel</label><div class="seg" id="nGoal">${Object.entries(NGOAL).map(([k, g]) => segBtn("goal", k, g.label)).join("")}</div></div>
@@ -2917,8 +2997,8 @@ function vFood() {
   const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Ernährung</div>
-      <div class="row between"><div class="title">${dl}</div>
+    <div class="head"><div class="cap">${dl}</div>
+      <div class="row between"><div class="title">Essen</div>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= today ? "disabled" : ""}>›</button></div></div></div>
     ${G ? `<section class="stack-sm" id="foodSum">
       <div class="kpi"><span class="num" style="font-size:48px">${fmtK(Math.abs(left))}</span><span class="sub">kcal ${left >= 0 ? "übrig" : "über dem Ziel"}</span></div>
@@ -2930,12 +3010,13 @@ function vFood() {
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
-    ${(() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
+    ${!state.nutrOpt.water ? "" : (() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
       return `<section class="stack-sm" id="waterBox"><div class="row between"><h2 style="margin:0">Wasser</h2><span class="small"><b>${fmtL(ml)} L</b> von ${wg ? fmtL(wg) + " L" : "1,6–2,0 L"}</span></div>
         ${bar(ml, goal, ml >= goal ? "var(--ok)" : "var(--accent)")}
         <div class="row" style="gap:var(--s2)"><button class="btn sm" data-a="water" data-ml="-250" ${ml ? "" : "disabled"} aria-label="250 ml weniger">−</button>
           <button class="btn sm grow" data-a="water" data-ml="250">+ 1 Glas (250 ml)</button><button class="btn sm grow" data-a="water" data-ml="500">+ 500 ml</button></div>
         <button class="link small" data-a="waterInfo" style="justify-self:start">Wie viel solltest du trinken?</button></section>`; })()}
+    ${state.nutrOpt.fast || state.fast ? fastHtml() : ""}
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
@@ -2953,8 +3034,10 @@ function vFood() {
       <button class="li" data-a="openArt" data-id="eiweiss" data-ret="food"><div class="grow"><div class="t">Wie viel Eiweiß brauchst du?</div><div class="s">Trainingswissen mit Quelle</div></div><span class="chev">›</span></button>
       <button class="li" data-a="openArt" data-id="kalorien" data-ret="food"><div class="grow"><div class="t">Kalorienbedarf: Schätzung und Wirklichkeit</div><div class="s">Trainingswissen mit Quellen</div></div><span class="chev">›</span></button>
     </div></section>
+    ${!state.nutrOpt.water || !state.nutrOpt.fast ? `<p class="small faint" id="optHint">${[!state.nutrOpt.water && "Wasser zählen", !state.nutrOpt.fast && "Intervallfasten"].filter(Boolean).join(" und ")} kannst du in den <button class="link small" data-a="openSettings" style="display:inline">Einstellungen</button> einschalten.</p>` : ""}
     <p class="small faint">Nährwerte: USDA FoodData Central (Grundnahrungsmittel) und Open Food Facts (Packungsangaben). Das sind Durchschnitts- bzw. Herstellerangaben; tatsächliche Gehalte schwanken.</p>
   </div>`;
+  fastLive();
 }
 
 /* ================= Barcode-Scan (Kamera, eigener Decoder) ================= */
@@ -3109,6 +3192,49 @@ async function lookupBarcode(code, scanned) {
   } catch (e) { show(offErr()); }
 }
 
+/* ================= Intervallfasten ================= */
+const FAST_OPTS = [14, 16, 18, 20];
+let fastTimer = 0;
+const fmtHM = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return `${Math.floor(m / 60)} h ${m % 60} min`; };
+function fmtWhen(iso) {
+  const d = new Date(iso), t = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }), k = dkey(d);
+  return k === dkey() ? t : k === dkey(new Date(Date.now() - 864e5)) ? "gestern " + t : k === dkey(new Date(Date.now() + 864e5)) ? "morgen " + t
+    : d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" }) + " " + t;
+}
+function fastHtml() {
+  const f = state.fast;
+  if (!f) {
+    const last = state.fasts[state.fasts.length - 1], recent = state.fasts.slice(-7);
+    return `<section class="stack-sm" id="fastBox"><div class="row between"><h2 style="margin:0">Intervallfasten</h2>
+        <button class="link small" data-a="openArt" data-id="intervallfasten" data-ret="food">Was bringt das?</button></div>
+      <div class="seg" id="fastSeg">${FAST_OPTS.map(h => `<button data-a="fastPick" data-h="${h}" class="${state.fastH === h ? "on" : ""}">${h}:${24 - h}</button>`).join("")}</div>
+      <button class="btn block" data-a="fastStart">Fasten starten · ${state.fastH} Stunden</button>
+      <p class="small faint" style="margin:0">Nicht geeignet oder nur nach ärztlicher Rücksprache: in Schwangerschaft und Stillzeit, bei Essstörungen, Untergewicht oder Diabetes mit blutzuckersenkenden Medikamenten.</p>
+      ${last ? `<p class="small" style="margin:0" id="fastLast">Zuletzt: <b>${fmtHM(new Date(last.e) - new Date(last.s))}</b> von ${last.h} h${new Date(last.e) - new Date(last.s) >= last.h * 3600e3 ? " · Ziel erreicht" : ""}${recent.length > 1 ? ` · ${recent.filter(x => new Date(x.e) - new Date(x.s) >= x.h * 3600e3).length} von ${recent.length} der letzten Fastenzeiten mit erreichtem Ziel` : ""}</p>` : ""}
+    </section>`;
+  }
+  const el = Date.now() - new Date(f.s), goal = f.h * 3600e3, end = new Date(new Date(f.s).getTime() + goal).toISOString(), done = el >= goal;
+  return `<section class="stack-sm" id="fastBox"><div class="row between"><h2 style="margin:0">Intervallfasten · ${f.h}:${24 - f.h}</h2>
+      <span class="small" id="fastNow"><b>${fmtHM(el)}</b> von ${f.h} h</span></div>
+    <div class="mtrack" style="height:10px"><div class="mfill" style="width:${Math.min(100, el / goal * 100)}%;background:${done ? "var(--ok)" : "var(--accent)"}"></div></div>
+    <p class="small muted" style="margin:0">Seit ${fmtWhen(f.s)} · Ziel ${fmtWhen(end)}${done ? ` · <b style="color:var(--ok)">Ziel erreicht</b>` : ` · noch ${fmtHM(goal - el)}`}</p>
+    <div class="row" style="gap:var(--s2)"><button class="btn sm grow" data-a="fastEdit">Startzeit ändern</button><button class="btn sm grow" data-a="fastEnd">Fasten beenden</button></div></section>`;
+}
+function fastLive() {
+  clearInterval(fastTimer);
+  if (!state.fast) return;
+  fastTimer = setInterval(() => { const b = byId("fastBox"); if (!b || !state.fast || view !== "food") { clearInterval(fastTimer); return; } b.outerHTML = fastHtml(); }, 30000);
+}
+function cleanFastActive(f) {
+  if (!isObj(f) || isNaN(new Date(f.s)) || ![14, 16, 18, 20].includes(f.h)) return null;
+  const s = new Date(f.s).getTime(); if (s > Date.now() + 60000 || Date.now() - s > 7 * 864e5) return null;
+  return { s: new Date(s).toISOString(), h: f.h };
+}
+function cleanFasts(a) {
+  return Array.isArray(a) ? a.filter(x => isObj(x) && !isNaN(new Date(x.s)) && !isNaN(new Date(x.e)) && [14, 16, 18, 20].includes(x.h)
+    && new Date(x.e) > new Date(x.s) && new Date(x.e) - new Date(x.s) <= 7 * 864e5).map(x => ({ s: new Date(x.s).toISOString(), e: new Date(x.e).toISOString(), h: x.h })).slice(-120) : [];
+}
+
 /* ================= Wochenrückblick ================= */
 // Nur aus den eigenen Daten berechnet; Hinweise ergeben sich direkt aus den Zahlen.
 let weekOff = 0, weekBack = "home";
@@ -3140,6 +3266,7 @@ function weekStats(off) {
     min: Math.round(H.reduce((a, h) => a + (h.durationSec || 0), 0) / 60), prs, ms, tmin, tmax, planned,
     food: fdays.length ? { n: fdays.length, k: tot.reduce((a, t) => a + t.k, 0) / tot.length, p: tot.reduce((a, t) => a + t.p, 0) / tot.length, hit: G ? tot.filter(t => t.p >= G.prot).length : 0 } : null,
     water: wdays.length ? wdays.reduce((a, k) => a + state.water[k], 0) / wdays.length : null, G,
+    fasts: (() => { const F = state.fasts.filter(x => { const d = new Date(x.e); return d >= mon && d < end; }); return F.length ? { n: F.length, hit: F.filter(x => new Date(x.e) - new Date(x.s) >= x.h * 3600e3).length } : null; })(),
     wt: W.length >= 2 ? { a: W[0], b: W[W.length - 1] } : null, streak: off === 0 ? weekStreak(mon, Math.max(1, state.plan?.days.length || 1)) : null };
 }
 function vWeek() {
@@ -3167,10 +3294,11 @@ function vWeek() {
         ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
       ${s.prs.length ? `<div class="group">${s.prs.map(p => `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">vorher ${kgTxt(p.from)} kg</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div>` : ""}
       ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}</section>
-    ${s.food || s.water ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
+    ${s.food || s.water || s.fasts ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
       <div class="grid3" style="align-items:start">${s.food ? stat("Ø kcal", fmtK(s.food.k), s.G ? `Ziel ${fmtK(s.G.kcal)}` : `${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"}`) + stat("Ø Eiweiß", fmtK(s.food.p) + '<span class="small muted"> g</span>', s.G ? `Ziel an ${s.food.hit} von ${s.food.n} Tagen` : "") : ""}
         ${s.water ? stat("Ø Wasser", fmtL(s.water) + '<span class="small muted"> L</span>', "") : ""}</div>
-      ${s.food ? `<p class="small faint" style="margin:0">Durchschnitt über ${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"} mit Einträgen.</p>` : ""}</section>` : ""}
+      ${s.food ? `<p class="small faint" style="margin:0">Durchschnitt über ${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"} mit Einträgen.</p>` : ""}
+      ${s.fasts ? `<p class="small" style="margin:0" id="weekFast">Intervallfasten: ${s.fasts.n} ${s.fasts.n === 1 ? "Fastenzeit" : "Fastenzeiten"}, davon ${s.fasts.hit} mit erreichtem Ziel.</p>` : ""}</section>` : ""}
     ${s.wt ? `<section class="stack-sm" id="weekWeight"><h2 style="margin:0">Gewicht</h2>
       <p class="small" style="margin:0"><b>${kgTxt(s.wt.a.kg)} → ${kgTxt(s.wt.b.kg)} kg</b> (${s.wt.b.kg - s.wt.a.kg > 0 ? "+" : s.wt.b.kg - s.wt.a.kg < 0 ? "−" : "±"}${kgTxt(Math.abs(Math.round((s.wt.b.kg - s.wt.a.kg) * 10) / 10))} kg). Das Gewicht schwankt von Tag zu Tag, zum Beispiel durch Wasser und Mageninhalt – aussagekräftiger ist der Trend über mehrere Wochen.</p>
       ${weekOff === 0 && state.nutr ? trendHtml(s.G) : ""}</section>` : ""}
@@ -3178,6 +3306,144 @@ function vWeek() {
       ${below.length || none.length ? `<button class="link small" data-a="openArt" data-id="volumen" data-ret="week">Wie viele Sätze pro Woche? (Trainingswissen)</button>` : ""}
       ${s.food && s.G && s.food.p < s.G.prot * 0.9 ? `<button class="link small" data-a="openArt" data-id="eiweiss" data-ret="week">Wie viel Eiweiß brauchst du? (Trainingswissen)</button>` : ""}</section>
   </div>`;
+}
+
+/* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
+// Grundlage: Wenn-dann-Pläne (wann/wo trainiere ich, was tue ich bei Hindernissen) erhöhen im Mittel die Umsetzung
+// (Gollwitzer & Sheeran 2006; für Bewegung Bélanger-Gravel 2013, Effekt größer mit Plan für Hindernisse).
+const WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const wdOf = d => (d.getDay() + 6) % 7;
+function cleanSched(x) {
+  if (!isObj(x) || !Array.isArray(x.days) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(x.time || "")) return null;
+  const days = [...new Set(x.days.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b);
+  if (!days.length) return null;
+  return { id: String(x.id || uid()), days, time: x.time, planB: x.planB === "short" ? "short" : "next", since: isNaN(new Date(x.since)) ? new Date().toISOString() : new Date(x.since).toISOString() };
+}
+function schedAt(d) { const [h, m] = state.sched.time.split(":").map(Number), x = new Date(d); x.setHours(h, m, 0, 0); return x; }
+function nextSched(from = new Date()) {
+  const s = state.sched; if (!s) return null;
+  for (let k = 0; k < 8; k++) { const d = new Date(from); d.setDate(from.getDate() + k); if (s.days.includes(wdOf(d))) { const at = schedAt(d); if (at > from) return at; } }
+  return null;
+}
+const trainedOn = d => state.history.some(h => dkey(new Date(h.date)) === dkey(d));
+// Letzter verpasster Termin dieser Woche (vor heute), seit dem nicht trainiert wurde
+function missedThisWeek() {
+  const s = state.sched; if (!s) return null;
+  const now = new Date(), w = wdOf(now), since = new Date(s.since); since.setHours(0, 0, 0, 0);
+  for (let i = w - 1; i >= 0; i--) {
+    if (!s.days.includes(i)) continue;
+    const d = new Date(now); d.setDate(now.getDate() - (w - i)); d.setHours(0, 0, 0, 0);
+    if (d < since) return null;
+    return state.history.some(h => new Date(h.date) >= d) ? null : i;
+  }
+  return null;
+}
+function whenTxt(d) {
+  const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  return `${k === 0 ? "heute" : k === 1 ? "morgen" : WD_LONG[wdOf(d)]} um ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+}
+function buddySays(day, thisWeek, goal, streak) {
+  const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [];
+  const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
+  const goalTxt = thisWeek >= goal ? ` Wochenziel geschafft: ${thisWeek} von ${goal}.` : "";
+  const short = () => act.push(["openTime30", "30-Min.-Version"]);
+  let title, text;
+  if (trainedOn(now)) {
+    const t = H.filter(h => dkey(new Date(h.date)) === dkey(now)), lt = t[t.length - 1];
+    title = "Heute erledigt";
+    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${goalTxt}${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
+  } else if (s && s.days.includes(wdOf(now))) {
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min. Den Termin hast du dir selbst gesetzt.${goalTxt}`; }
+    else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
+    else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
+  } else if (s && missedThisWeek() !== null) {
+    title = `${WD_LONG[missedThisWeek()]} ist ausgefallen`;
+    if (s.planB === "short") { text = `Plan B: heute die 30-Minuten-Version von ${dn}.`; short(); } else text = `Plan B: heute nachholen – ${dn}, ca. ${min} Min.`;
+  } else if (last && (now - new Date(last.date)) / 864e5 >= 7) {
+    title = `Seit ${Math.floor((now - new Date(last.date)) / 864e5)} Tagen kein Training`;
+    text = "Fang klein an: Die 30-Minuten-Version enthält die wichtigsten Übungen."; short();
+  } else if (!s) {
+    title = "Lass uns feste Trainingstage ausmachen";
+    text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um. Wähle Tage, Uhrzeit und einen Plan B – auf Wunsch mit Erinnerung im Kalender.";
+    act.push(["openSched", "Termine festlegen"]);
+  } else { title = "Heute ist trainingsfrei"; text = `${nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""}${goalTxt}`; }
+  if (streak >= 2) text += ` ${streak} Wochen in Folge geschafft.`;
+  const pr = lastPR();
+  if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
+  return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
+    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}
+      ${s ? `<button class="link small" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
+}
+let schedDraft = null;
+function schedSheet() {
+  const d = schedDraft, n = state.plan ? state.plan.days.length : 3;
+  return `${sheetHead("Trainingstermine", "Abbrechen")}
+    <p class="small muted" style="margin:0">Leg fest, wann du trainierst. Dein Plan hat ${n} ${n === 1 ? "Trainingstag" : "Trainingstage"} pro Woche.</p>
+    <div class="field"><label>Tage</label><div class="chips wrap" id="schedDays">${WD.map((w, i) => `<button class="chip ${d.days.includes(i) ? "on" : ""}" data-a="schedDay" data-d="${i}">${w}</button>`).join("")}</div></div>
+    <div class="field"><label for="schedTime">Uhrzeit</label><input id="schedTime" type="time" value="${d.time}"></div>
+    <div class="field"><label>Plan B, wenn es zur Uhrzeit nicht klappt</label><div class="seg" id="schedB">
+      <button data-a="schedB" data-v="next" class="${d.planB === "next" ? "on" : ""}">Am nächsten Tag</button><button data-a="schedB" data-v="short" class="${d.planB === "short" ? "on" : ""}">Kurzversion</button></div></div>
+    <p class="small faint" style="margin:0">Pläne mit festem Wann und einem Plan B für Hindernisse wirkten in Studien am besten.</p>
+    <p class="error" id="schedErr" hidden>Bitte mindestens einen Tag und eine Uhrzeit wählen.</p>
+    <button class="btn primary block" data-a="schedSave">Speichern</button>
+    ${state.sched ? `<button class="btn block" data-a="schedIcs">In den Kalender eintragen</button><button class="btn block quiet" data-a="schedDel">Termine entfernen</button>` : ""}
+    <button class="link small" data-a="openArt" data-id="termine" data-ret="${view === "plan" ? "plan" : "home"}" style="justify-self:start">Warum feste Termine helfen</button>`;
+}
+// Kalenderdatei: wöchentliche Wiederholung, lokale Uhrzeit, Erinnerung 30 Minuten vorher
+function schedIcsText() {
+  const s = state.sched, mins = Math.max(30, (state.plan && state.plan.minutes) || 60), first = nextSched(new Date(Date.now() - 60000));
+  const f = d => `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}00`;
+  const end = new Date(first.getTime() + mins * 60000), stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const desc = `Fester Trainingstermin. Plan B: ${s.planB === "short" ? "Kurzversion mit 30 Minuten" : "am nächsten Tag nachholen"}.`.replace(/([,;\\])/g, "\\$1");
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trainingsplan//Termine//DE", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+    `UID:trainingsplan-${s.id}@trainingsplan`, `DTSTAMP:${stamp}`, `DTSTART:${f(first)}`, `DTEND:${f(end)}`,
+    `RRULE:FREQ=WEEKLY;BYDAY=${s.days.map(i => ["MO", "TU", "WE", "TH", "FR", "SA", "SU"][i]).join(",")}`,
+    "SUMMARY:Training", `DESCRIPTION:${desc}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Training in 30 Minuten", "TRIGGER:-PT30M", "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n";
+}
+// Plan-Check: Sätze pro Muskel und Woche wie unter „Fortschritt → Muskelbelastung“ (Hauptmuskel voll, mittrainierte halb)
+function planCheck() {
+  const p = state.plan, [tmin, tmax] = p.goal === "aufbau" ? [10, 20] : [6, 12], ms = {};
+  for (const m in MUSCLES) ms[m] = 0;
+  const per = state.sched ? state.sched.days.length / Math.max(1, p.days.length) : 1;
+  p.days.forEach(d => d.items.forEach(it => { const e = ex(it.exId); ms[e.muscle] += it.sets * per; e.sec.forEach(m => ms[m] += it.sets / 2 * per); }));
+  const out = [];
+  for (const m of ["brust", "ruecken", "schultern", "beinev", "beineh", "po"]) if (ms[m] < tmin) out.push({ kind: "low", m, v: ms[m] });
+  for (const m in MUSCLES) if (ms[m] > tmax) out.push({ kind: "high", m, v: ms[m] });
+  if (p.minutes) p.days.forEach(d => { const est = estMinutes(d); if (est > p.minutes + 10) out.push({ kind: "time", d, est }); });
+  return { out, tmin, tmax, per };
+}
+function planCheckHtml() {
+  const c = planCheck(), f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
+  const grp = (title, rows) => rows.length ? `<p class="small muted" style="margin:0">${title}</p><div class="group">${rows.join("")}</div>` : "";
+  const low = K("low").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${x.v === 0 ? "fehlt im Plan" : `${f(x.v)} Sätze pro Woche`}</div></div>
+      <button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`);
+  const high = K("high").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche</div></div></div>`);
+  const time = K("time").map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${state.plan.minutes} Min. Zeitbudget</div></div>
+      <button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`);
+  return `<section class="section" id="planCheck"><h2>Buddy-Check</h2>
+    ${c.out.length ? grp(`Unter dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, low) + grp(`Über dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, high) + grp("Länger als dein Zeitbudget:", time)
+      : `<p class="small" style="margin:0">Alle großen Muskelgruppen liegen im Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche${state.plan.minutes ? ", und jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
+    <p class="small faint" style="margin:0">Gezählt wie unter „Fortschritt → Muskelbelastung“: Hauptmuskel voll, mittrainierte Muskeln halb, ${state.sched ? `bei ${state.sched.days.length} Terminen pro Woche` : "jeder Trainingstag einmal pro Woche"}.</p>
+    <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
+}
+// Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
+function say(t) {
+  if (!state.voice) return;
+  if (window.__tp) (window.__tp.said = window.__tp.said || []).push(t);
+  try {
+    const ss = window.speechSynthesis; if (!ss || typeof SpeechSynthesisUtterance === "undefined") return;
+    ss.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "de-DE";
+    const v = ss.getVoices().find(x => /^de/i.test(x.lang)); if (v) u.voice = v;
+    ss.speak(u);
+  } catch (e) { /* Sprachausgabe nicht verfügbar */ }
+}
+function sayCurrent(prefix = "") {
+  const s = S(); if (!s || !state.voice) return;
+  const x = s.list[s.idx]; if (!x) return;
+  const i = curSetIdx(x); if (i === -1) return;
+  const t = x.sets[i], u = x.u || unitOf(ex(x.exId));
+  say(`${prefix}${i === 0 ? ex(x.exId).name + ". " : ""}Satz ${i + 1} von ${x.sets.length}. ${t.kg != null ? `${kgTxt(t.kg)} Kilo${u === "s" ? " pro Seite" : ""}, ` : ""}${x.rmin} bis ${x.rmax} Wiederholungen.`);
 }
 
 /* ================= Apple Watch (parallel aufzeichnen) ================= */
@@ -3269,7 +3535,7 @@ function vHistory() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)), lastW = W[W.length - 1];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Verlauf</div></div>
+    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
     <section class="section">
@@ -3399,6 +3665,7 @@ function tick() {
   const t = byId("timer"); if (t) t.textContent = fmtTime(left);
   const arc = byId("ringArc"); if (arc) { const C = 2 * Math.PI * 54; arc.setAttribute("stroke-dashoffset", C * (1 - Math.max(0, s.restTotal ? left / s.restTotal : 0))); }
   const sec = Math.ceil(left);
+  if (sec === 10 && s.restTotal > 15 && !s.said10) { s.said10 = true; say("Noch zehn Sekunden."); }
   if (sec <= 3 && sec >= 1 && s.beeped !== sec) { s.beeped = sec; tone(660, .12); }
   if (left <= 0) { tone(990, .45); buzz([200, 100, 200]); endRest(); }
 }
@@ -3495,6 +3762,27 @@ const A = {
       <button class="btn block danger" data-a="mealDelDo" data-id="${x.id}">Löschen</button>`);
   },
   mealDelDo: el => { state.meals = state.meals.filter(y => y.id !== el.dataset.id); save(); openSheet(foodAddSheet()); },
+  fastPick: el => { state.fastH = +el.dataset.h; save(); byId("fastBox").outerHTML = fastHtml(); },
+  fastStart: () => { state.fast = { s: new Date().toISOString(), h: state.fastH }; save(); byId("fastBox").outerHTML = fastHtml(); fastLive(); },
+  fastEdit: () => {
+    const d = new Date(state.fast.s), v = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    openSheet(`${sheetHead("Startzeit ändern", "Abbrechen")}
+      <div class="field"><label for="fastT">Letzte Mahlzeit bzw. Fastenbeginn</label><input id="fastT" type="time" value="${v}"></div>
+      <p class="small faint">Liegt die Uhrzeit nach jetzt, gilt der Vortag.</p>
+      <p class="error" id="fastErr" hidden>Bitte eine Uhrzeit wählen.</p>
+      <button class="btn primary block" data-a="fastEditSave">Speichern</button>`);
+  },
+  fastEditSave: () => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(byId("fastT").value); if (!m) { byId("fastErr").hidden = false; return; }
+    const d = new Date(); d.setHours(+m[1], +m[2], 0, 0); if (d.getTime() > Date.now()) d.setDate(d.getDate() - 1);
+    state.fast.s = d.toISOString(); save(); closeSheet(); vFood();
+  },
+  fastEnd: () => {
+    const f = state.fast; if (!f) return;
+    const e = new Date().toISOString();
+    if (Date.now() - new Date(f.s) >= 60000) state.fasts = [...state.fasts, { s: f.s, e, h: f.h }].slice(-120);
+    state.fast = null; save(); clearInterval(fastTimer); byId("fastBox").outerHTML = fastHtml();
+  },
   copyMeal: el => {
     const d = foodDay && foodDay < dkey() ? foodDay : dkey(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
     const src = (state.food[prev] || []).filter(e => e.m === el.dataset.m); if (!src.length) return;
@@ -3589,6 +3877,37 @@ const A = {
     if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
     save(); closeSheet(); render();
   },
+  openSettings: () => go("settings"),
+  openSched: () => { const n = state.plan ? state.plan.days.length : 3;
+    const def = [[0], [0], [0, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 3, 4], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5, 6]][Math.min(7, n)];
+    schedDraft = state.sched ? JSON.parse(JSON.stringify(state.sched)) : { days: def, time: "18:00", planB: "next" }; openSheet(schedSheet()); },
+  schedDay: el => { const d = +el.dataset.d, i = schedDraft.days.indexOf(d); if (i >= 0) schedDraft.days.splice(i, 1); else schedDraft.days.push(d); el.classList.toggle("on", i < 0); },
+  schedB: el => { schedDraft.planB = el.dataset.v; byId("schedB").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el)); },
+  schedSave: () => {
+    const time = byId("schedTime").value, sc = cleanSched(Object.assign({}, schedDraft, { time, id: state.sched ? state.sched.id : uid(), since: state.sched ? state.sched.since : new Date().toISOString() }));
+    if (!sc) { byId("schedErr").hidden = false; return; }
+    state.sched = sc; save(); render();
+    openSheet(`${sheetHead("Termine gespeichert")}
+      <p><b>${sc.days.map(d => WD_LONG[d]).join(", ")}</b> um <b>${sc.time}</b>. Plan B: ${sc.planB === "short" ? "die 30-Minuten-Version" : "am nächsten Tag nachholen"}.</p>
+      <p class="small muted">Soll dich dein iPhone erinnern? Die Termine kommen als wöchentliche Serie in deinen Kalender, mit Erinnerung 30 Minuten vorher.</p>
+      <button class="btn primary block" data-a="schedIcs">In den Kalender eintragen</button><button class="btn block" data-a="closeSheet">Später</button>`);
+  },
+  schedIcs: () => {
+    if (!state.sched) return;
+    const ics = schedIcsText();
+    if (window.__tp) { window.__tp.lastIcs = ics; return; }
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" })), a = document.createElement("a");
+    a.href = url; a.download = "training.ics"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
+  schedDel: () => { state.sched = null; save(); closeSheet(); render(); },
+  openTime30: () => { timeSel = 30; openSheet(timeSheet()); },
+  checkFix: el => {
+    const d = [...state.plan.days].sort((a, b) => estMinutes(a) - estMinutes(b))[0]; if (!d) return;
+    state.editDay = d.id; save(); go("day"); pickQuery = ""; pickFilter = el.dataset.m; openSheet(pickerHtml());
+  },
+  voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
+  voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
+  nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
   openHealth: () => openSheet(healthSheet()),
   openWatch: () => openSheet(watchSheet()),
   setWatch: el => { state.watch = el.dataset.v === "1"; save(); render();
@@ -3614,9 +3933,9 @@ const A = {
     openExternal(weightUrl(w.kg));
   },
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
-  exBack: () => go(exBack === "history" ? "history" : exBack === "day" ? "day" : exBack === "plan" ? "plan" : "lib"),
+  exBack: () => go(["history", "day", "plan", "home"].includes(exBack) ? exBack : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
-  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : "wissen"),
+  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : artBack === "plan" ? "plan" : "wissen"),
   openWeek: el => { weekOff = 0; weekBack = el.dataset.ret === "history" ? "history" : "home"; go("week"); },
   weekNav: el => { weekOff = Math.max(0, weekOff + +el.dataset.d); vWeek(); window.scrollTo(0, 0); },
   weekBack: () => go(weekBack),
@@ -3809,7 +4128,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

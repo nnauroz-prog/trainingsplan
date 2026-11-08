@@ -129,11 +129,11 @@ async function finishAllSets(page, kg, reps) {
       // Sicherungscode im alten Format (ohne Einheiten) importieren
       const code = "TP1:" + Buffer.from(JSON.stringify(OLD_V2), "utf8").toString("base64");
       const { ctx, page } = await open(null);
-      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const st = await stored(page);
       ok("Alter Sicherungscode wird importiert (Verlauf, Einheiten ergänzt)", st.history.length === 1 && st.history[0].exercises[1].u === "t" && st.notes["hs-chest"] === "Sitz 4");
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=importOpen]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=importOpen]");
       await page.fill("#impTxt", "TP1:kaputt"); await page.click("[data-a=importDo]");
       ok("Ungültiger Code wird abgelehnt, Daten bleiben", (await page.textContent("#impMsg")).includes("ungültig") && (await stored(page)).history.length === 1);
       await ctx.close();
@@ -170,7 +170,7 @@ async function finishAllSets(page, kg, reps) {
     section("4. Individuelle Gewichtsschritte");
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }])] });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]");
       await page.click("[data-a=devFilt][data-k=brust]"); await page.click("[data-a=editDev][data-id=hs-chest]");
       await page.click("[data-a=devSet][data-k=step][data-v='1.25']"); await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
       ok("Schritt dauerhaft gespeichert", (await stored(page)).dev["hs-chest"].step === 1.25);
@@ -197,13 +197,13 @@ async function finishAllSets(page, kg, reps) {
     }
     {
       const { ctx, page } = await open(OLD_V2);
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=brust]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=brust]");
       await page.click("[data-a=editDev][data-id=hs-chest]"); await page.click("[data-a=devSet][data-k=off][data-v=true]");
       await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
       const st = await stored(page);
       ok("Bestehender Plan bleibt unverändert", st.plan.days[0].items[0].exId === "hs-chest");
       ok("Historie bleibt unverändert", st.history[0].exercises[0].exId === "hs-chest" && st.history[0].exercises[0].sets.length === 3);
-      await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("[data-a=pickFilter][data-k=brust]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("[data-a=pickFilter][data-k=brust]");
       const picks = await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id));
       ok("Übungsauswahl blendet das Gerät aus", !picks.includes("hs-chest") && picks.length > 0);
       await ctx.close();
@@ -308,10 +308,10 @@ async function finishAllSets(page, kg, reps) {
       const data = JSON.parse(JSON.stringify(OLD_V2)); data.dev = { "hs-chest": { step: 1.25, sec: ["trizeps"] } };
       const { ctx, page } = await open(data);
       const before = await tp(page, () => JSON.parse(JSON.stringify(window.__tp.state)));
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       await page.evaluate(() => localStorage.clear()); await page.reload();
-      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const after = await stored(page);
       for (const k of ["history", "dev", "notes", "weights", "custom", "plan"])
@@ -342,9 +342,11 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }], 2, "s")], weights: [{ d: "2026-10-01", kg: 80 }, { d: "2026-11-01", kg: 79 }] }, { light });
       const views = [];
       views.push(["Heute", await noOverflow(page)]);
-      await page.click("[data-a=tab][data-v=plan]"); views.push(["Plan", await noOverflow(page)]);
+      await page.click("[data-a=tab][data-v=plan]"); views.push(["Training", await noOverflow(page)]);
+      await page.click("[data-a=openSettings]"); views.push(["Einstellungen", await noOverflow(page)]);
       await page.click("[data-a=openDevs]"); views.push(["Geräte", await noOverflow(page)]);
       await page.click("[data-a=editDev] >> nth=0"); views.push(["Gerät bearbeiten", await noOverflow(page)]); await page.click("[data-a=devCancel]"); await page.click("[data-a=devsDone]");
+      await page.click("[data-a=tab][data-v=plan]");
       await page.click("[data-a=editDay]"); views.push(["Tag", await noOverflow(page)]);
       await page.click("[data-a=tab][data-v=history]"); views.push(["Verlauf", await noOverflow(page)]);
       await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]"); views.push(["Training", await noOverflow(page)]);
@@ -360,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v19)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v19")));
+      ok("Service Worker aktiv (Cache trainingsplan-v23)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v23")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -392,7 +394,7 @@ async function finishAllSets(page, kg, reps) {
     section("14. Lieblingsgeräte");
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=brust]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=brust]");
       await page.click("[data-a=editDev][data-id=hs-widechest]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]");
       let st = await stored(page);
       ok("Bevorzugt wird gespeichert", st.dev["hs-widechest"].fav === true && !st.dev["hs-widechest"].off);
@@ -445,7 +447,7 @@ async function finishAllSets(page, kg, reps) {
     {
       // Eigenes Gerät mit Bewegungsmuster wird direkte Alternative
       const { ctx, page } = await open({ plan: PLAN_SMALL });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=newDev]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=newDev]");
       await page.fill("#devName", "Brustpresse Halle 2"); await page.selectOption("#devPattern", "push_h"); await page.click("[data-a=devSave]");
       const st = await stored(page); const c = st.custom.find(x => x.name === "Brustpresse Halle 2");
       ok("Eigenes Gerät speichert Bewegungsmuster", c && c.pattern === "push_h");
@@ -517,13 +519,13 @@ async function finishAllSets(page, kg, reps) {
       ok("Laufendes Training aus alter Version wird fortgesetzt", await page.isVisible("#kgIn") && s.session.list[0].sets[0].done === true);
       ok("Historie und Einheiten unverändert", s.history[0].exercises.map(x => x.u).join() === "s,t,b,t");
       await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=bizeps]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); await page.click("[data-a=devFilt][data-k=bizeps]");
       await page.click("[data-a=editDev][data-id=hs-curl]"); await page.click("[data-a=devSet][data-k=fav][data-v=true]"); await page.click("[data-a=devSave]"); await page.click("[data-a=devsDone]");
       await page.evaluate(() => { const T = window.__tp; T.state.custom.push({ id: "c-x", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); T.state.plan.gaps = [{ day: "Push", name: "Lateral Raise", pattern: "lateral" }]; });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       await page.evaluate(() => localStorage.clear()); await page.reload();
-      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const st = await stored(page);
       ok("Sicherung: bevorzugtes Gerät", st.dev["hs-curl"].fav === true);
@@ -533,7 +535,7 @@ async function finishAllSets(page, kg, reps) {
     }
     for (const light of [false, true]) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, dev: { "hs-decline": { fav: true } } }, { light });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openDevs]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]");
       const a = await noOverflow(page);
       await page.click("[data-a=editDev][data-id=hs-decline]"); const b = await noOverflow(page); await page.click("[data-a=devCancel]"); await page.click("[data-a=devsDone]");
       await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]"); const c = await noOverflow(page);
@@ -572,7 +574,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Hellmodus: Bottom-Sheet ist hell", /255, 255, 255/.test(bg), bg);
       await page.click(".sheet [data-a=selDay][data-id=d2]");
       ok("„Anderes Training wählen“ übernimmt den Tag", (await page.textContent(".hero-name")) === "Zweiter Tag");
-      await page.click("[data-a=showRec]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=showRec]");
       ok("Erholungsdetails erst auf Tipp (Sheet mit Muskeln)", (await page.textContent(".sheet")).includes("Erholung") && await page.isVisible(".sheet .fig"));
       await page.click(".sheet [data-a=closeSheet]");
       await page.click("[data-a=tab][data-v=history]");
@@ -730,11 +732,11 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
       await page.click("[data-a=tab][data-v=home]");
       await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); await page.click("[data-a=timeApply]");
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       const before = await stored(page);
       await page.evaluate(() => localStorage.clear()); await page.reload();
-      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const after = await stored(page);
       ok("16. Sicherung: Verlauf inkl. Zeitanpassung wiederhergestellt", canon(after.history) === canon(before.history) && after.history.at(-1).adj > 0, canon(after.history).slice(0, 200) + " | " + canon(before.history).slice(0, 200));
@@ -890,11 +892,11 @@ async function finishAllSets(page, kg, reps) {
       ok("14. Alte Daten: keine erfundene Planung", s.history[0].exercises.every(x => x.planned === undefined && x.rmin === undefined));
       await page.evaluate(() => { const T = window.__tp; T.state.history.push({ id: "n1", dayId: "d1", day: "Push", date: new Date().toISOString(), durationSec: 600,
         exercises: [{ exId: "hs-chest", name: "c", u: "s", planned: 4, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 12, rir: 2 }, { kg: 40, reps: 11, f: "h", rir: 0 }] }] }); });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
       const before = await tp(page, () => JSON.parse(JSON.stringify(window.__tp.state.history)));
       await page.evaluate(() => localStorage.clear()); await page.reload();
-      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=createPlan]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
       const after = (await stored(page)).history;
       ok("16. Export/Import: RIR, Planung, Bereich und Bewertung erhalten", canon(after) === canon(before) && after.at(-1).exercises[0].sets[1].rir === 0 && after.at(-1).exercises[0].planned === 4);
@@ -936,7 +938,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
       ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
       // Bibliothek
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=lib]");
+      await page.click("[data-a=tab][data-v=lib]");
       ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 29);
       await page.fill("#libQ", "Brust");
       const brust = await tp(page, () => window.__tp.allEx().filter(e => e.name.toLowerCase().includes("brust") || e.muscle === "brust").length);
@@ -969,7 +971,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=openEx][data-id=c-k]");
       ok("Eigenes Gerät: Hinweis statt erfundener Anleitung", (await page.textContent("#app")).includes("keine ausführliche Anleitung"));
       // Wissen
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=wissen]");
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
       ok("Trainingswissen listet alle Artikel", (await page.$$("[data-a=openArt]")).length === chk.arts);
       await page.click("[data-a=openArt][data-id=pause]");
       ok("Artikel zeigt Text und verlinkte Quelle", (await page.textContent("#app")).includes("3 Minuten") && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("26605807")));
@@ -1017,9 +1019,9 @@ async function finishAllSets(page, kg, reps) {
       await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
       const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
       const res = [];
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=lib]"); res.push(await noOverflow(page));
+      await page.click("[data-a=tab][data-v=lib]"); res.push(await noOverflow(page));
       for (const id of ["hs-chest", "hs-legpress", "hs-lateral", "hs-seatcalf"]) { await page.click(`[data-a=openEx][data-id=${id}]`); res.push(await noOverflow(page)); await page.click("[data-a=exBack]"); }
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=wissen]");
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
       for (const a of ["volumen", "gesundheit"]) { await page.click(`[data-a=openArt][data-id=${a}]`); res.push(await noOverflow(page)); await page.click("[data-a=artBack]"); }
       ok(`${w} px ${light ? "hell" : "dunkel"}: Bibliothek, Übungsseiten und Artikel ohne seitliches Scrollen`, res.every(Boolean), res.join());
       await ctx.close();
@@ -1052,7 +1054,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Ausgeschaltet: kein Health-Button im Verlauf", !(await page.$("[data-a=sendHealth]")));
       ok("Verlauf: „1 Eintrag“ statt „1 Einträge“", (await page.textContent("#discLog summary")).includes("1 Eintrag") && !(await page.textContent("#discLog summary")).includes("Einträge"));
       // Einschalten in den Einstellungen
-      await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       ok("Einstellungen zeigen „Apple Health · Aus“", (await page.textContent("[data-a=openHealth]")).includes("Aus"));
       await page.click("[data-a=openHealth]");
       const sh = await page.textContent(".sheet");
@@ -1087,7 +1089,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click(`#discLog [data-a=sendHealth][data-id="${first.id}"]`);
       ok("Verlauf: älteres Training wird mit seiner eigenen Zeit übergeben", await tp(page, () => window.__tp.lastUrl) === await tp(page, h => window.__tp.healthUrl(h), first) && (await stored(page)).history[0].hk === true);
       // Sicherung enthält die Einstellung
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=exportData]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
       const code = await page.inputValue("#expTxt");
       ok("Sicherung enthält Einstellung und Markierungen", (() => { const d = JSON.parse(Buffer.from(code.slice(4), "base64").toString("utf8")); return d.health === true && d.history.every(h => h.hk === true); })());
       await page.click(".sheet [data-a=closeSheet]");
@@ -1105,7 +1107,7 @@ async function finishAllSets(page, kg, reps) {
         return { u1: T.weightUrl(82.5), u2: T.weightUrl(80), u3: T.weightUrl(82.3), hk1: n[0].hk, hk2: n[1].hk }; });
       ok("Gewicht als ganze Gramm übergeben (keine Komma-/Punkt-Verwechslung)", w.u1 === "shortcuts://run-shortcut?name=Trainingsplan%20Gewicht&input=text&text=82500" && w.u2.endsWith("text=80000") && w.u3.endsWith("text=82300"), w.u1);
       ok("Gewicht: Übergabe-Markierung nur bei echtem true", w.hk1 === true && w.hk2 === undefined);
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openHealth]");
       const sh = await page.textContent(".sheet");
       ok("Anleitung für den Gewichts-Kurzbefehl", sh.includes("Trainingsplan Gewicht") && sh.includes("Kurzbefehleingabe ÷ 1000") && sh.includes("Health-Messung protokollieren") && (await page.$$(".sheet #hkSetupW ol li")).length === 4);
       await page.click(".sheet [data-a=closeSheet]");
@@ -1123,14 +1125,14 @@ async function finishAllSets(page, kg, reps) {
       await page.fill("#bwIn", "83"); await page.click("[data-a=addWeight]");
       ok("Geänderter Wert gilt als noch nicht übergeben", (await stored(page)).weights[0].hk === undefined && (await page.textContent("#bwHk")).includes("In Apple Health eintragen") && (await page.textContent("#bwHk")).includes("83 kg"));
       ok("Körpergewicht mit Health-Button bei 360 px ohne seitliches Scrollen", await noOverflow(page));
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]"); await page.click(".sheet [data-a=setHealth][data-v='0']");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openHealth]"); await page.click(".sheet [data-a=setHealth][data-v='0']");
       await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discWeight summary");
       ok("Ausgeschaltet: kein Gewichts-Button", !(await page.$("[data-a=sendWeight]")) && await page.isVisible("#bwIn"));
       await ctx.close();
     }
     for (const light of [false, true]) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, health: true }, { light });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openHealth]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openHealth]");
       const a = await noOverflow(page);
       await page.keyboard.press("Escape").catch(() => {}); await page.goto(URL);
       await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
@@ -1145,7 +1147,7 @@ async function finishAllSets(page, kg, reps) {
       const nz = await tp(page, () => { const T = window.__tp; return [T.normalize({}).watch, T.normalize({ watch: "ja" }).watch, T.normalize({ watch: true }).watch]; });
       ok("Standard aus; nur echtes „an“ wird übernommen", nz[0] === false && nz[1] === false && nz[2] === true);
       ok("Ausgeschaltet: keine Watch-Erinnerung auf „Heute“", !(await page.$("#watchHint")));
-      await page.click("[data-a=tab][data-v=plan]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
       ok("Einstellungen zeigen „Apple Watch · Aus“", (await page.textContent("[data-a=openWatch]")).includes("Aus"));
       await page.click("[data-a=openWatch]");
       const sh = await page.textContent(".sheet");
@@ -1168,7 +1170,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Verlauf: keine Trainings-Übergabe", !(await page.$("[data-a=sendHealth]")));
       await page.click("#discWeight summary"); await page.fill("#bwIn", "80"); await page.click("[data-a=addWeight]");
       ok("Körpergewicht lässt sich weiter übergeben", await page.isVisible("#bwHk [data-a=sendWeight]"));
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openWatch]"); await page.click(".sheet [data-a=setWatch][data-v='0']"); await page.click(".sheet [data-a=closeSheet]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openWatch]"); await page.click(".sheet [data-a=setWatch][data-v='0']"); await page.click(".sheet [data-a=closeSheet]");
       await page.click("[data-a=tab][data-v=history]");
       ok("Ausschalten: Trainings-Übergabe wieder da", (await stored(page)).watch === false && !!(await page.$("[data-a=sendHealth]")));
       await page.click("[data-a=tab][data-v=home]");
@@ -1541,7 +1543,7 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
     for (const light of [false, true]) {
-      const { ctx, page } = await open({ plan: PLAN_SMALL, water: {} }, { light });
+      const { ctx, page } = await open({ plan: PLAN_SMALL, water: {}, nutrOpt: { water: true } }, { light });
       await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=water][data-ml='500']");
       ok(`360 px ${light ? "hell" : "dunkel"}: Wasserbereich ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#waterBox"));
       await ctx.close();
@@ -1617,7 +1619,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Neue Bestwerte nur bei Steigerung gegenüber allem davor (Brustpresse 42,5 → 45; erstes Mal Pec Fly zählt nicht)",
         ws.prs.length === 1 && ws.prs[0].kg === 45 && ws.prs[0].from === 42.5 && ws.pprs.length === 1 && ws.pprs[0].kg === 42.5 && ws.pprs[0].from === 40);
       ok("Ernährung und Wasser aus Tagen mit Einträgen", ws.food.n === 1 && Math.round(ws.food.k) === 379 && ws.food.hit === 0 && ws.water === 1500);
-      ok("„Heute“ zeigt den Rückblick-Einstieg", (await page.textContent("#homeWeek")).includes("2 von 3 Trainings diese Woche"));
+      ok("„Heute“ zeigt den Rückblick-Einstieg", (await page.textContent("#homeWeekSec")).includes("2 von 3") && await page.isVisible("#homeWeek"));
       await page.click("#homeWeek");
       const txt = await page.textContent("#app");
       ok("Rückblick: Trainings, Sätze, Volumen mit Vergleich zur Vorwoche (+65 %)", (await page.textContent("#weekTrain")).includes("2") && (await page.textContent("#weekTrain")).includes("+65 % zur Vorwoche"));
@@ -1649,7 +1651,258 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("30. Konsole");
+    section("30. Intervallfasten");
+    {
+      const ago = h => new Date(Date.now() - h * 3600e3).toISOString();
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: ago(2), h: 17 }, fasts: [{ s: ago(50), e: ago(60), h: 16 }, { s: ago(40), e: ago(23), h: 16 }], fastH: 99 });
+      const cl = await tp(page, () => { const s = window.__tp.state; return { fast: s.fast, n: s.fasts.length, h: s.fastH, fmt: window.__tp.fmtHM(16 * 3600e3 + 5 * 60e3) }; });
+      ok("Ungültige Daten verworfen (Ziel 17 h, Ende vor Beginn, unbekannte Vorgabe)", cl.fast === null && cl.n === 1 && cl.h === 16);
+      ok("Zeitformat: 16 h 5 min", cl.fmt === "16 h 5 min");
+      await page.click("[data-a=tab][data-v=food]");
+      const box = await page.textContent("#fastBox");
+      ok("Fasten-Bereich mit Vorgaben 14:10 bis 20:4 und Vorsichtshinweis", (await page.$$("[data-a=fastPick]")).length === 4 && box.includes("16:8") && box.includes("Schwangerschaft") && box.includes("Diabetes"));
+      ok("Letzte Fastenzeit mit Ergebnis", (await page.textContent("#fastLast")).includes("17 h 0 min") && (await page.textContent("#fastLast")).includes("Ziel erreicht"));
+      await page.click("[data-a=fastPick][data-h='18']");
+      ok("Vorgabe wählbar und gespeichert", (await stored(page)).fastH === 18 && (await page.textContent("[data-a=fastStart]")).includes("18 Stunden"));
+      await page.click("[data-a=fastStart]");
+      let st = await stored(page);
+      ok("Start: läuft mit 18 h Ziel", st.fast && st.fast.h === 18 && Math.abs(Date.now() - new Date(st.fast.s)) < 10000 && (await page.textContent("#fastNow")).includes("0 h 0 min von 18 h"));
+      ok("Restzeit und Zielzeit angezeigt", (await page.textContent("#fastBox")).includes("noch 18 h 0 min") || (await page.textContent("#fastBox")).includes("noch 17 h 59 min"));
+      // Startzeit ändern: zwei Stunden zurück
+      const two = new Date(Date.now() - 2 * 3600e3), hhmm = `${String(two.getHours()).padStart(2, "0")}:${String(two.getMinutes()).padStart(2, "0")}`;
+      await page.click("[data-a=fastEdit]"); await page.fill("#fastT", hhmm); await page.click("[data-a=fastEditSave]");
+      st = await stored(page);
+      const el = (Date.now() - new Date(st.fast.s)) / 3600e3;
+      ok("Startzeit geändert (vor 2 Stunden)", el > 1.95 && el < 2.05 && (await page.textContent("#fastNow")).includes("2 h"));
+      const later = new Date(Date.now() + 2 * 3600e3), hh2 = `${String(later.getHours()).padStart(2, "0")}:${String(later.getMinutes()).padStart(2, "0")}`;
+      await page.click("[data-a=fastEdit]"); await page.fill("#fastT", hh2); await page.click("[data-a=fastEditSave]");
+      st = await stored(page);
+      const el2 = (Date.now() - new Date(st.fast.s)) / 3600e3;
+      ok("Uhrzeit nach jetzt gilt als Vortag (vor 22 Stunden)", el2 > 21.9 && el2 < 22.1 && (await page.textContent("#fastBox")).includes("Ziel erreicht"));
+      await page.click("[data-a=fastEnd]");
+      st = await stored(page);
+      ok("Beenden speichert die Fastenzeit", st.fast === null && st.fasts.length === 2 && st.fasts[1].h === 18 && (await page.textContent("#fastLast")).includes("22 h") && (await page.textContent("#fastLast")).includes("Ziel erreicht"));
+      ok("Statistik der letzten Fastenzeiten", (await page.textContent("#fastLast")).includes("2 von 2 der letzten Fastenzeiten mit erreichtem Ziel"));
+      await page.click("[data-a=fastStart]"); await page.click("[data-a=fastEnd]");
+      ok("Versehentlicher Start (unter 1 Minute) wird nicht gespeichert", (await stored(page)).fasts.length === 2);
+      await page.click("#fastBox [data-a=openArt]");
+      const art = await page.textContent("#app");
+      ok("Artikel: ehrliche Einordnung mit Quellen und Vorsichtshinweis", art.includes("nicht besser als eine tägliche Kalorienreduktion") && art.includes("0,6 kg") && art.includes("Essstörungen")
+        && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("30583725")) && (await page.$$(".srcs a")).length === 2);
+      await page.click("[data-a=artBack]");
+      ok("Zurück zur Ernährung", await page.isVisible("#fastBox"));
+      ok("Fasten-Bereich bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Wochenrückblick
+      await page.click("[data-a=tab][data-v=history]");
+      await tp(page, () => { const s = window.__tp.state; s.history.push({ id: "x", dayId: "d1", day: "Test", date: new Date().toISOString(), durationSec: 60, exercises: [] }); });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#histWeek");
+      const fw = await page.textContent("#weekFast").catch(() => "");
+      const expect = await tp(page, () => { const s = window.__tp.weekStats(0); return s.fasts; });
+      ok("Wochenrückblick zählt Fastenzeiten der Woche", expect && fw.includes(`${expect.n} ${expect.n === 1 ? "Fastenzeit" : "Fastenzeiten"}, davon ${expect.hit} mit erreichtem Ziel`), fw);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: new Date(Date.now() - 16.5 * 3600e3).toISOString(), h: 16 } });
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Laufendes Fasten übersteht Neuladen; Ziel erreicht nach 16,5 h", (await page.textContent("#fastNow")).includes("16 h 30 min") && (await page.textContent("#fastBox")).includes("Ziel erreicht"));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: new Date(Date.now() - 5 * 3600e3).toISOString(), h: 20 } }, { light });
+      await page.click("[data-a=tab][data-v=food]");
+      ok(`360 px ${light ? "hell" : "dunkel"}: laufendes Fasten ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#fastNow"));
+      await ctx.close();
+    }
+
+    section("31. Aufbau der App: ein Zweck, klare Bereiche");
+    {
+      const pr = [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 2, "s")];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: pr, hints: { units: true } });
+      const tabs = await page.$$eval("#tabs button", b => b.map(x => [x.dataset.v, x.textContent.trim()]));
+      ok("Fünf Bereiche: Heute, Training, Wissen, Essen, Fortschritt", JSON.stringify(tabs) === JSON.stringify([["home", "Heute"], ["plan", "Training"], ["lib", "Wissen"], ["food", "Essen"], ["history", "Fortschritt"]]), JSON.stringify(tabs));
+      const home = await page.textContent("#app");
+      ok("„Heute“ ohne Ballast: keine Zeilen „Zuletzt“ und „Erholung“", !(await page.$("#app [data-a=showRec]")) && !(await page.$$eval("#app .li .s", e => e.some(x => ["Zuletzt", "Erholung"].includes(x.textContent.trim())))) && home.length > 0);
+      ok("„Heute“: Fortschritts-Highlight aus echten Daten (40 → 42,5 kg pro Seite)", (await page.textContent("#homeBest")).includes("40 → 42,5 kg pro Seite") && (await page.textContent("#homeBest")).includes("vor 2 Tagen"));
+      await page.click("#homeBest");
+      ok("Highlight öffnet die Übungsseite; zurück zu „Heute“", (await page.textContent(".head")).includes("Iso-Lateral Chest Press") && await page.$eval("#tabs [data-v=home]", b => b.classList.contains("on")));
+      await page.click("[data-a=exBack]");
+      ok("Zurück auf „Heute“", await page.isVisible("#homeBest"));
+      ok("Wochenrückblick über „Diese Woche“ erreichbar", await page.isVisible("#homeWeek"));
+      await page.click("[data-a=tab][data-v=plan]");
+      const plan = await page.textContent("#app");
+      ok("„Training“: Plan und Erholung, keine Einstellungen oder Bibliothek dazwischen", (await page.textContent(".head")).includes("Training") && !!(await page.$("#app [data-a=showRec]"))
+        && !(await page.$("#app [data-a=openDevs]")) && !(await page.$("#app [data-a=exportData]")) && !plan.includes("Übungen & Wissen"));
+      await page.click("[data-a=openSettings]");
+      const set = await page.textContent("#app");
+      ok("Zahnrad öffnet alle Einstellungen an einem Ort", ["Geräte verwalten", "Wasser zählen", "Intervallfasten", "Apple Health", "Apple Watch", "Neuen Plan erstellen", "Sicherung kopieren", "Sicherung einfügen"].every(s => set.includes(s))
+        && await page.$eval("#tabs [data-v=plan]", b => b.classList.contains("on")));
+      ok("Einstellungen bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Essen: Wasser und Fasten nur auf Wunsch
+      await page.click("[data-a=tab][data-v=food]");
+      ok("„Essen“: Titel „Essen“, Wasser und Fasten standardmäßig aus, mit Hinweis", (await page.textContent(".head .title")) === "Essen" && !(await page.$("#waterBox")) && !(await page.$("#fastBox"))
+        && (await page.textContent("#optHint")).includes("Wasser zählen und Intervallfasten"));
+      await page.click("#optHint [data-a=openSettings]");
+      await page.click("#optWater [data-a=nOpt][data-v='1']"); await page.click("#optFast [data-a=nOpt][data-v='1']");
+      ok("Einschalten wird gespeichert", JSON.stringify((await stored(page)).nutrOpt) === '{"water":true,"fast":true}');
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Danach erscheinen Wasser und Fasten", await page.isVisible("#waterBox") && await page.isVisible("#fastBox") && !(await page.$("#optHint")));
+      await page.click("[data-a=fastStart]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("#optFast [data-a=nOpt][data-v='0']");
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Laufendes Fasten bleibt sichtbar, auch wenn ausgeschaltet (zum Beenden)", await page.isVisible("#fastBox [data-a=fastEnd]"));
+      // Wissen
+      await page.click("[data-a=tab][data-v=lib]");
+      ok("„Wissen“: Übungen mit Umschalter zu den Artikeln", await page.isVisible("#libQ") && await page.isVisible("#wissenSeg"));
+      await page.click("#wissenSeg [data-v=wissen]");
+      const art = await page.textContent("#app");
+      ok("Artikel nach Training, Ernährung und Gesundheit geordnet", art.includes("Training") && art.includes("Ernährung") && art.includes("Gesundheit") && await page.$eval("#tabs [data-v=lib]", b => b.classList.contains("on")));
+      await page.click("[data-a=openArt][data-id=eiweiss]"); await page.click("[data-a=artBack]");
+      ok("Artikel → zurück zur Artikelliste im Bereich „Wissen“", await page.isVisible("#wissenSeg") && await page.$eval("#tabs [data-v=lib]", b => b.classList.contains("on")));
+      await page.click("[data-a=tab][data-v=history]");
+      ok("„Fortschritt“: Wochenrückblick oben", (await page.textContent(".head .title")) === "Fortschritt" && await page.isVisible("#histWeek"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, water: { "2026-01-01": 500 } });
+      ok("Wer Wasser schon genutzt hat, behält es eingeschaltet", (await tp(page, () => window.__tp.state.nutrOpt.water)) === true);
+      await tp(page, () => { window.__tp.state.nutrOpt.water = false; });
+      const n = await tp(page, () => window.__tp.normalize(JSON.parse(JSON.stringify(window.__tp.state))).nutrOpt.water);
+      ok("Bewusst ausgeschaltet bleibt ausgeschaltet, auch mit alten Daten", n === false);
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { light });
+      const r = [];
+      for (const v of ["home", "plan", "lib", "food", "history"]) { await page.click(`[data-a=tab][data-v=${v}]`); r.push(await noOverflow(page)); }
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); r.push(await noOverflow(page));
+      ok(`360 px ${light ? "hell" : "dunkel"}: alle fünf Bereiche und Einstellungen ohne seitliches Scrollen`, r.every(Boolean), r.join());
+      await ctx.close();
+    }
+
+    section("32. Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung");
+    {
+      const pad = n => String(n).padStart(2, "0"), wd = d => (d.getDay() + 6) % 7;
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const cs = await tp(page, () => { const c = window.__tp.cleanSched; return [c({ days: [4, 0, 0, 9], time: "18:30" }), c({ days: [], time: "18:00" }), c({ days: [1], time: "25:00" })]; });
+      ok("Termine bereinigt (Tage sortiert, doppelte und ungültige entfernt)", JSON.stringify(cs[0].days) === "[0,4]" && cs[0].planB === "next" && cs[1] === null && cs[2] === null);
+      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Lass uns feste Trainingstage ausmachen") && await page.isVisible("#buddy [data-a=openSched]"));
+      await page.click("#buddy [data-a=openSched]");
+      ok("Vorschlag passt zum Plan (1 Trainingstag)", (await page.$$("#schedDays .chip.on")).length === 1 && (await page.textContent(".sheet")).includes("1 Trainingstag pro Woche"));
+      // heute und morgen auswählen, 23:59
+      const today = wd(new Date()), tomorrow = (today + 1) % 7;
+      for (const d of [0, 1, 2, 3, 4, 5, 6]) { const on = await page.$eval(`#schedDays [data-d='${d}']`, b => b.classList.contains("on")); if (on !== (d === today || d === tomorrow)) await page.click(`#schedDays [data-d='${d}']`); }
+      await page.fill("#schedTime", "23:59"); await page.click("#schedB [data-v=short]"); await page.click("[data-a=schedSave]");
+      let st = await stored(page);
+      ok("Termine gespeichert (heute und morgen, 23:59, Plan B Kurzversion)", JSON.stringify(st.sched.days) === JSON.stringify([today, tomorrow].sort((a, b) => a - b)) && st.sched.time === "23:59" && st.sched.planB === "short");
+      ok("Nach dem Speichern: Angebot für den Kalender", (await page.textContent(".sheet")).includes("In den Kalender eintragen") && (await page.textContent(".sheet")).includes("30 Minuten vorher"));
+      await page.click(".sheet [data-a=schedIcs]");
+      const ics = await tp(page, () => window.__tp.lastIcs), n = new Date(), ymd = `${n.getFullYear()}${pad(n.getMonth() + 1)}${pad(n.getDate())}`, codes = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+      ok("Kalenderdatei: wöchentliche Serie an den gewählten Tagen, erster Termin heute 23:59, Erinnerung 30 Min. vorher",
+        ics.startsWith("BEGIN:VCALENDAR\r\n") && ics.includes(`DTSTART:${ymd}T235900`) && ics.includes("RRULE:FREQ=WEEKLY;BYDAY=") && [today, tomorrow].every(d => ics.includes(codes[d]))
+        && ics.includes("TRIGGER:-PT30M") && ics.includes("SUMMARY:Training") && ics.includes("Plan B: Kurzversion mit 30 Minuten") && ics.trim().endsWith("END:VCALENDAR"), ics.slice(0, 300));
+      await page.keyboard.press("Escape");
+      ok("Buddy nennt den heutigen Termin", (await page.textContent("#buddy")).includes("Heute um 23:59: Test") && (await page.textContent("#buddySched")).includes("23:59"));
+      // Termin vorbei (nur wenn es spät genug ist)
+      const hNow = new Date().getHours();
+      if (hNow >= 2) {
+        await tp(page, () => { const s = window.__tp.state, d = new Date(Date.now() - 2 * 3600e3); s.sched.time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; });
+        await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
+        ok("Termin verpasst: Buddy bietet Plan B an (30-Min.-Version)", (await page.textContent("#buddy")).includes("Dein Termin war um") && (await page.textContent("#buddy")).includes("Plan B: die 30-Minuten-Version"));
+        await page.click("#buddy [data-a=openTime30]");
+        ok("Plan B öffnet die Zeitanpassung mit 30 Minuten", (await page.textContent(".sheet")).includes("30") && !!(await page.$(".sheet [data-a=timeApply]")));
+        await page.keyboard.press("Escape");
+      } else ok("Termin verpasst (übersprungen: kurz nach Mitternacht)", true);
+      // Training: Termine und Buddy-Check
+      await page.click("[data-a=tab][data-v=plan]");
+      const curT = await tp(page, () => window.__tp.state.sched.time);
+      ok("„Training“ zeigt die Termine mit Plan B", (await page.textContent("#schedRow")).includes(curT) && (await page.textContent("#schedRow")).includes("Kurzversion"));
+      const pc = await tp(page, () => window.__tp.planCheck());
+      const pcTxt = await page.textContent("#planCheck");
+      ok("Buddy-Check findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Unter dem Richtwert von 10–20") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
+      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("bei 2 Terminen pro Woche"));
+      await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
+      ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
+      await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
+      ok("Übung landet im Plan", (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-row"));
+      // Artikel
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("#schedRow"); await page.click(".sheet [data-a=openArt][data-id=termine]");
+      const art = await page.textContent("#app");
+      ok("Artikel „Warum feste Termine helfen“ mit 4 Quellen, Plan B und Gewohnheitsdauer", art.includes("Plan B") && art.includes("18 bis 254 Tage") && art.includes("nicht nennenswert zurück")
+        && (await page.$$(".srcs a")).length === 4 && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("17437199.2011.560095")));
+      await page.click("[data-a=artBack]");
+      ok("Zurück zum Training", await page.isVisible("#schedRow"));
+      await page.click("#schedRow"); await page.click(".sheet [data-a=schedDel]");
+      ok("Termine lassen sich entfernen", (await stored(page)).sched === null && (await page.textContent("#schedRow")).includes("Noch keine festen Termine"));
+      await ctx.close();
+    }
+    {
+      // Heute erledigt; lange Pause
+      const done = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 9 }], 0, "s")] });
+      ok("Nach dem Training: „Heute erledigt“ mit Sätzen", (await done.page.textContent("#buddy")).includes("Heute erledigt") && (await done.page.textContent("#buddy")).includes("2 Sätze"));
+      await done.ctx.close();
+      const gap = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s")] });
+      ok("Nach 9 Tagen Pause: Buddy schlägt die Kurzversion vor", (await gap.page.textContent("#buddy")).includes("Seit 9 Tagen kein Training") && await gap.page.isVisible("#buddy [data-a=openTime30]"));
+      await gap.ctx.close();
+    }
+    {
+      // Buddy-Check: ausgewogen, zu viel, zu lang
+      const bal = { goal: "aufbau", level: "einsteiger", minutes: null, days: [
+        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: bal });
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Ausgewogener Plan: Buddy bestätigt den Richtwert", (await page.textContent("#planCheck")).includes("Alle großen Muskelgruppen liegen im Richtwert von 10–20"));
+      await tp(page, () => { const p = window.__tp.state.plan; p.days[0].items.push({ id: "a2", exId: "hs-incline", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "a3", exId: "hs-fly", sets: 5, rmin: 8, rmax: 12, rest: 90 }); p.minutes = 30; });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]");
+      const t = await page.textContent("#planCheck");
+      ok("Zu viel und zu lang: Brust über dem Richtwert, Tag länger als das Zeitbudget", t.includes("Über dem Richtwert von 10–20") && /Brust\s*25 Sätze pro Woche/.test(t) && t.includes("Länger als dein Zeitbudget") && t.includes("bei 30 Min. Zeitbudget"));
+      ok("Training mit Buddy-Check bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Sprachbegleitung
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 5, "s")] });
+      await page.click("[data-a=start]");
+      let said = await tp(page, () => window.__tp.said || []);
+      ok("Start: Ansage mit Übung, Satz, Gewicht und Wiederholungen", said.some(x => x.startsWith("Los geht's. Iso-Lateral Chest Press. Satz 1 von 2.") && x.includes("Kilo pro Seite") && x.includes("8 bis 12 Wiederholungen")), said.join(" | "));
+      await page.fill("#kgIn", "45"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Neuer Bestwert wird angesagt (45 > 40)", said.includes("Neuer Bestwert: 45 Kilo."));
+      await tp(page, () => { window.__tp.state.session.restEnd = Date.now() + 10500; });
+      await page.waitForFunction(() => (window.__tp.said || []).includes("Noch zehn Sekunden."), null, { timeout: 5000 }).catch(() => {});
+      ok("Pausenende wird angekündigt („Noch zehn Sekunden.“)", (await tp(page, () => window.__tp.said)).includes("Noch zehn Sekunden."));
+      await page.click("[data-a=skipRest]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Nach der Pause: nächster Satz", said[said.length - 1].startsWith("Satz 2 von 2."));
+      await page.click("[data-a=voiceToggle]");
+      ok("Sprachbegleitung im Training abschaltbar", (await stored(page)).voice === false && !(await page.$eval("[data-a=voiceToggle]", b => b.classList.contains("on"))));
+      await page.click("[data-a=voiceToggle]");
+      ok("… und wieder einschaltbar", (await stored(page)).voice === true && (await tp(page, () => window.__tp.said)).includes("Sprachbegleitung an."));
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Ende: „Training geschafft. Mit neuem Bestwert.“", said[said.length - 1] === "Training geschafft. Mit neuem Bestwert.");
+      await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+      ok("Einstellungen: Termine und Sprachbegleitung", (await page.textContent("#app")).includes("Trainingstermine") && await page.isVisible("#optVoice [data-a=voiceSet][data-v='1'].on"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=start]");
+      ok("Ohne Einschalten keine Ansagen", ((await tp(page, () => window.__tp.said)) || []).length === 0);
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched: { days: [0, 2, 4], time: "18:00", planB: "next" } }, { light });
+      const a = await noOverflow(page) && await page.isVisible("#buddy");
+      await page.click("#buddySched"); const b = await noOverflow(page);
+      await page.keyboard.press("Escape"); await page.click("[data-a=tab][data-v=plan]"); const c = await noOverflow(page);
+      ok(`360 px ${light ? "hell" : "dunkel"}: Buddy, Termine und Buddy-Check ohne seitliches Scrollen`, a && b && c);
+      await ctx.close();
+    }
+
+    section("33. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
