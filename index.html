@@ -341,14 +341,6 @@
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
   .ins.ask{box-shadow:inset 3px 0 0 var(--text-3)}
-  .askbox{display:grid;gap:var(--s3)}
-  .askform{display:flex;gap:var(--s2);align-items:center;background:var(--raise);border-radius:var(--r-lg);padding:var(--s2) var(--s2) var(--s2) var(--s4)}
-  .askform input{flex:1;min-width:0;width:auto;min-height:0;background:transparent;border:0;padding:10px 0;font-size:16px;color:var(--text)}
-  .askform .icon-btn.on{color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
-  .asklog{display:grid;gap:var(--s2)}
-  .asklog .q{justify-self:end;max-width:85%;background:var(--raise-2);border-radius:14px 14px 4px 14px;padding:8px 12px;font-size:15px}
-  .asklog .a{justify-self:start;max-width:94%;background:var(--accent-tint);border-radius:14px 14px 14px 4px;padding:10px 12px;display:grid;gap:var(--s2);font-size:15px;line-height:1.4}
-  .asklog .a p{margin:0}
   .ask .chip{min-height:34px;font-size:14px}
   .trks{display:grid;gap:var(--s2)}
   .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
@@ -968,7 +960,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, buddyName: "", me: "" }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1086,7 +1078,6 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
-  s.buddyName = typeof raw.buddyName === "string" ? raw.buddyName.trim().slice(0, 24) : ""; s.me = typeof raw.me === "string" ? raw.me.trim().slice(0, 24) : "";
   s.misses = cleanMisses(raw.misses); s.missSkip = /^\d{4}-\d{2}-\d{2}$/.test(raw.missSkip || "") ? raw.missSkip : null;
   s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
   // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
@@ -1526,9 +1517,6 @@ function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
 const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
   `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
 const ICON = {
-  mic: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`,
-  send: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
-  speak: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>`,
   voiceOn: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voiceOff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`,
   gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
@@ -1800,7 +1788,7 @@ function vHome() {
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}${state.me ? ` · ${greet(now)}, ${esc(state.me)}` : ""}</div><div class="title">Heute</div></div>
+    <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
@@ -1811,7 +1799,7 @@ function vHome() {
       </section>`; })() : ""}
     ${day && !ses ? `<section class="hero">
       <div class="hero-top">
-        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : state.buddyName ? esc(state.buddyName) : "Dein Buddy"}</div>
+        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Dein Buddy"}</div>
           <div class="hero-name">${esc(day.name)}</div>
           ${(() => { const tp = activeTimeplan(day);
             return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}</span>
@@ -1828,7 +1816,6 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
-    ${day && !ses ? askHtml() : ""}
     ${day && !ses ? missAskHtml() : ""}
     ${day && !ses ? previewHtml(day) : ""}
     <section class="section">
@@ -1998,13 +1985,9 @@ function vSettings() {
   const seg = (k, on) => `<div class="seg" style="min-width:140px"><button data-a="nOpt" data-k="${k}" data-v="0" class="${on ? "" : "on"}">Aus</button><button data-a="nOpt" data-k="${k}" data-v="1" class="${on ? "on" : ""}">An</button></div>`;
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><div class="title">Einstellungen</div></div>
-    <section class="section"><h2>Dein Buddy</h2><div class="group">
-      <div class="li"><div class="grow"><div class="t">Name des Buddys</div><input id="buddyNameIn" data-i="buddyName" value="${esc(state.buddyName)}" placeholder="Buddy" maxlength="24" autocomplete="off" style="margin-top:6px"></div></div>
-      <div class="li"><div class="grow"><div class="t">So nennt er dich</div><input id="meIn" data-i="meName" value="${esc(state.me)}" placeholder="Dein Vorname" maxlength="24" autocomplete="off" style="margin-top:6px"></div></div></div>
-      <p class="small faint">Fragen und Befehle tippst du auf „Heute“ in die Zeile „Frag ${esc(NAME())}“. Spracheingabe gibt es auf dem iPhone je nach Version nur in Safari, nicht in der Home-Bildschirm-App. Alle Antworten kommen aus deinen Einträgen, nicht aus einem Sprachmodell.</p></section>
     <section class="section"><h2>Training</h2><div class="group">
       <button class="li" data-a="openSched"><div class="grow"><div class="t">Trainingstermine</div><div class="s">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
-      <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht, Pausenende und Antworten an</div></div>
+      <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
         <div class="seg" style="min-width:140px"><button data-a="voiceSet" data-v="0" class="${state.voice ? "" : "on"}">Aus</button><button data-a="voiceSet" data-v="1" class="${state.voice ? "on" : ""}">An</button></div></div></div></section>
     <section class="section"><h2>Studio</h2><div class="group">
       <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
@@ -3621,263 +3604,6 @@ function whenTxt(d) {
   const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
   return `${k === 0 ? "heute" : k === 1 ? "morgen" : WD_LONG[wdOf(d)]} um ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 }
-/* ================= Frag den Buddy: Fragen und Befehle aus den eigenen Daten ================= */
-// Kein Sprachmodell: Jede Antwort wird aus deinen Einträgen berechnet und ist nachprüfbar. Was der Buddy nicht versteht, sagt er.
-const NAME = () => state.buddyName || "Buddy";
-function greet(d = new Date()) { const h = d.getHours(); return h < 5 ? "Guten Abend" : h < 11 ? "Guten Morgen" : h < 17 ? "Hallo" : "Guten Abend"; }
-const normQ = s => String(s || "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[’']/g, "'").replace(/\s+/g, " ").trim();
-const speakable = t => String(t).replace(/\bkg\b/g, "Kilo").replace(/\bMin\./g, "Minuten").replace(/\bWdh\./g, "Wiederholungen").replace(/\bca\./g, "etwa").replace(/→/g, "auf").replace(/ · /g, ", ").replace(/–/g, ",").replace(/×/g, "mal");
-const EX_ALIAS = {
-  "hs-chest": ["chest press", "brustpresse", "bankdruecken", "chest"], "hs-incline": ["incline press", "incline", "schraegbank"], "hs-decline": ["decline press", "decline"],
-  "hs-widechest": ["wide chest"], "hs-fly": ["pec fly", "butterfly", "fly", "pec"], "hs-row": ["iso-lateral row", "rudern", "row"], "hs-lowrow": ["low row"], "hs-highrow": ["high row"],
-  "hs-pulldown": ["front lat pulldown", "front pulldown", "pulldown"], "hs-dyrow": ["d.y. row", "dy row"], "hs-lat": ["lat pulldown", "latzug", "latziehen", "lat"],
-  "hs-shoulder": ["shoulder press", "schulterdruecken", "schulterpresse", "schulter"], "hs-lateral": ["lateral raise", "seitheben"], "hs-reardelt": ["rear delt", "reverse fly", "hintere schulter"],
-  "hs-curl": ["biceps curl", "bizeps curl", "bizepscurl", "curl", "bizeps"], "hs-dip": ["seated dip", "dips", "dip"], "hs-triext": ["triceps extension", "trizeps extension", "trizepsstrecken", "trizeps"],
-  "hs-legpress": ["linear leg press", "beinpresse", "leg press", "legpress"], "hs-isolegpress": ["iso-lateral leg press", "iso leg press"], "hs-vsquat": ["v-squat", "v squat", "vsquat"],
-  "hs-hack": ["hack squat", "hackenschmidt", "hack"], "hs-legext": ["leg extension", "beinstrecker", "beinstrecken"], "hs-kneelcurl": ["kneeling leg curl", "kneeling curl"],
-  "hs-seatcurl": ["seated leg curl", "beinbeuger", "beincurl", "leg curl"], "hs-hipthrust": ["hip thrust", "hipthrust"], "hs-calf": ["standing calf", "wadenheben stehend", "calf raise", "waden", "wade", "calf"],
-  "hs-seatcalf": ["seated calf", "wadenheben sitzend"], "hs-ab": ["ab crunch", "crunch", "bauch"] };
-// Gerät aus dem Text: längster passender Name oder Alias; bei Gleichstand das Gerät aus dem Plan
-function askEx(q) {
-  const inPlan = new Set((state.plan ? state.plan.days : []).flatMap(d => d.items.map(i => i.exId)));
-  let best = null, len = 0;
-  for (const e of allEx()) {
-    const names = [normQ(e.name), normQ(e.name).replace(/^iso-lateral /, ""), ...(EX_ALIAS[e.id] || [])];
-    for (const n of names) if (n.length >= 3 && new RegExp(`(^|[^a-z])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z]|$)`).test(q)) {
-      const sc = n.length * 10 + (inPlan.has(e.id) ? 5 : 0);
-      if (sc > len) { len = sc; best = e; }
-    }
-  }
-  return best;
-}
-const askNum = q => { const m = q.match(/(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : null; };
-function weekCtx() {
-  const now = new Date(), monday = new Date(now); monday.setHours(0, 0, 0, 0); monday.setDate(now.getDate() - wdOf(now));
-  const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length, goal = Math.max(1, state.plan ? state.plan.days.length : 1);
-  return { monday, thisWeek, goal, streak: weekStreak(monday, goal) };
-}
-const planItem = exId => (state.plan ? state.plan.days : []).flatMap(d => d.items).find(i => i.exId === exId) || null;
-const bestOf = (exId, u) => { let b = null; state.history.forEach(h => h.exercises.forEach(x => { if (x.exId !== exId || x.u !== u) return; x.sets.filter(validSet).forEach(t => { if (!b || t.kg > b.kg) b = { kg: t.kg, date: h.date }; }); })); return b; };
-const lastOf = (exId, u) => { for (let i = state.history.length - 1; i >= 0; i--) { const x = state.history[i].exercises.find(e => e.exId === exId && e.u === u); if (x && x.sets.filter(validSet).length) return { sets: x.sets.filter(validSet), date: state.history[i].date }; } return null; };
-const ART_KEY = [["rir", /\brir\b|reserve|limit|versagen/], ["volumen", /volumen|saetze pro woche|wie viele saetze/], ["progression", /progression|steiger|ueberlastung|fortschritt entsteht/], ["pause", /pause/], ["dehnung", /dehn/],
-  ["frequenz", /frequenz|wie oft/], ["eiweiss", /eiweiss|protein/], ["kalorien", /kalorien|kcal|grundumsatz/], ["intervallfasten", /fasten/], ["termine", /termin|gewohnheit|wenn-dann/], ["gesundheit", /gesund|lebenserwartung|sterblichkeit/], ["last", /schwer oder leicht|wiederholungsbereich|leichte gewichte|schwere gewichte/]];
-// Antwort: { a: Text, btns: [{a, l, d}], go: Funktion (führt aus statt neu zu zeichnen) }
-function ask(raw) {
-  const q = normQ(raw), day = state.plan ? nextDay() : null, now = new Date(), s = state.sched, me = state.me ? `, ${state.me}` : "";
-  const e = askEx(q), ses = state.session, w = (exId, u, v) => `${kgTxt(v)} ${UNIT[u]}`;
-  const R = (a, btns, go) => ({ a, btns: btns || [], go });
-  if (!state.plan) return R("Erstell zuerst einen Plan – dann kann ich aus deinen Daten antworten.");
-  if (/^(hilfe|was kannst du|befehle|\?)$/.test(q)) return R(`Frag mich nach deinem Training, deinen Werten oder gib Befehle. Zum Beispiel: „Was steht heute an?“, „Bestwert Chest Press“, „Wie lief die Woche?“, „Wie erholt bin ich?“, „Heute fällt aus, keine Zeit“, „Wiege 82,5“, „Ziel 50 kg Chest Press“, „Was ist RIR?“, „Nenn mich Nico“. Ich antworte nur aus deinen Einträgen – was ich nicht weiß, sage ich.`);
-  if (/^(hallo|hi|hey|moin|servus|guten (morgen|tag|abend))\b/.test(q)) return R(`${greet()}${me}. Was kann ich für dich tun?`, [{ a: "askQ", l: "Was steht heute an?", d: { q: "Was steht heute an?" } }, { a: "askQ", l: "Wie lief die Woche?", d: { q: "Wie lief die Woche?" } }]);
-  if (/^(danke|dankeschoen|merci|top|super|cool)\b/.test(q)) return R("Gern. Ich bin da, wenn du mich brauchst.");
-  // Namen
-  let m;
-  if ((m = q.match(/(?:nenn mich|ich heisse|mein name ist) ([a-z][a-z\-]{1,23})$/))) { state.me = raw.trim().split(/\s+/).pop().replace(/[^\p{L}\-]/gu, "").slice(0, 24); save(); return R(`Alles klar, ${state.me}. So nenne ich dich ab jetzt.`); }
-  if ((m = q.match(/(?:du heisst|ich nenne dich|dein name ist|heiss|heisse)(?: ab jetzt| jetzt| ab sofort)? ([a-z][a-z\-]{1,23})$/))) { state.buddyName = raw.trim().split(/\s+/).pop().replace(/[^\p{L}\-]/gu, "").slice(0, 24); save(); return R(`Ab jetzt heiße ich ${state.buddyName}.`); }
-  // Stimme
-  if (/(sprich|stimme an|ton an|sprache an|sag mir .* an|lauter)/.test(q)) { state.voice = true; save(); return R("Sprachbegleitung an. Ich sage Sätze, Pausen und Bestwerte an und lese dir Antworten vor."); }
-  if (/^(sei still|stumm|ruhe|leise|stimme aus|ton aus|sprache aus|halt den mund)/.test(q)) { state.voice = false; save(); try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (x) {} return R("Sprachbegleitung aus."); }
-  // Training starten / kurz / fortsetzen
-  if (ses && ses.paused && /(weiter|fortsetzen|fortfahren)/.test(q)) return R(`Weiter geht's: ${ses.dayName}.`, [], () => A.resumeT());
-  if (/(^|\s)(starte?|beginne?|los geht'?s|los|anfangen|start)(\s|$)/.test(q) && !/nicht/.test(q) && !/(termin|woche|plan b)/.test(q) || /^(training|workout) (starten|beginnen)$/.test(q)) {
-    if (ses) return R(`Du hast ein pausiertes Training (${ses.dayName}). Fortsetzen oder beenden?`, [{ a: "resumeT", l: "Fortsetzen", d: {} }, { a: "askStop", l: "Beenden", d: {} }]);
-    if (!day || !day.items.length) return R("Dein Plan hat noch keine Übungen für heute.");
-    const why = nextReason ? ` ${nextReason}` : "";
-    return R(`Los geht's: ${day.name}, ${day.items.length} ${nEx(day.items.length)}, etwa ${estMinutes(day)} Min.${why}`, [], () => startTraining(day));
-  }
-  if (/(kurz|wenig zeit|30 min|halbe stunde|schnell|knapp)/.test(q) && !/(faellt aus|absag)/.test(q)) return R("Die 30-Minuten-Version: die wichtigsten Übungen, Pausen bleiben gleich. Ich habe sie geöffnet – dort siehst du, was entfällt.", [], () => { timeSel = 30; openSheet(timeSheet()); });
-  // Heute absagen
-  if (/(faellt aus|absag|sag(e)? (heute )?ab|kann (heute )?nicht|schaff(e)? (es |das )?(heute )?nicht|heute nicht|pause heute|keine zeit heute|heute keine zeit)/.test(q)) {
-    if (trainedOn(now)) return R("Heute hast du schon trainiert – da gibt es nichts abzusagen.");
-    const r = /(muede|erschoepft|kaputt|schlapp)/.test(q) ? "muede" : /(krank|verletzt|erkaeltet|fieber|schmerz)/.test(q) ? "krank" : /(zeit|stress|arbeit|termin|spaet)/.test(q) ? "zeit" : /(lust|bock|motivation)/.test(q) ? "lust" : /(unterwegs|urlaub|reise|weg|auswaerts)/.test(q) ? "weg" : "sonst";
-    state.misses = cleanMisses([...(state.misses || []).filter(x => x.d !== dkey(now)), { d: dkey(now), r }]); save();
-    const mdl = buddyModel(day, weekCtx().thisWeek, weekCtx().goal, weekCtx().streak);
-    return R(`${mdl.title}. ${mdl.text}${r === "sonst" ? " Wenn du magst, sag mir den Grund – dann passe ich Plan B an." : ""} Mit „Doch trainieren“ nimmst du es zurück.`, [{ a: "missUndo", l: "Doch trainieren", d: {} }]);
-  }
-  // Nächster Termin / heute
-  if (/(wann|naechste[rs]?).*(training|termin|dran)|wann trainiere ich|wann (bin ich|ist) .*dran/.test(q)) {
-    const nx = nextSched(now);
-    if (trainedOn(now)) { const n2 = nextSched((() => { const d = new Date(now); d.setHours(23, 59, 59, 0); return d; })()); return R(`Heute hast du schon trainiert.${n2 ? ` Nächster Termin: ${whenTxt(n2)} – ${day ? day.name : "Training"}.` : ""}`); }
-    if (nx) return R(`Dein nächster Termin: ${whenTxt(nx)} – ${day ? day.name : "Training"}, etwa ${day ? estMinutes(day) : 0} Min.`, [{ a: "start", l: "Jetzt starten", d: {} }]);
-    return R(`Du hast keine festen Termine. Im Ablauf ist als Nächstes ${day ? day.name : "ein Training"} dran.${learnedSched() ? ` Du trainierst meist ${joinDe(learnedSched().days.map(d => WD_ADV[d]))} gegen ${learnedSched().time} – soll ich daraus Termine machen?` : ""}`, [{ a: learnedSched() ? "schedLearned" : "openSched", l: "Termine festlegen", d: {} }]);
-  }
-  if (/(was (steht|ist) heute|was mache ich heute|heute (an|dran)$|welche uebungen|plan (fuer )?heute|training heute|was ist dran|was steht an)/.test(q)) {
-    if (!day) return R("Dein Plan hat noch keinen Trainingstag.");
-    const L = previewEntries(day), known = L.filter(x => x.recKg !== null);
-    const head = trainedOn(now) ? `Heute hast du schon trainiert. Als Nächstes im Ablauf: ${day.name}.` : `Heute: ${day.name}, ${day.items.length} ${nEx(day.items.length)}, etwa ${estMinutes(day)} Min.${nextReason ? ` ${nextReason}` : ""}`;
-    const lines = L.map(x => `${ex(x.exId).name}: ${x.sets.length} × ${x.recKg !== null ? w(x.exId, x.u, x.recKg) : "Gewicht wählen"}${x.mode === "up" ? " (+)" : x.mode === "down" ? " (−)" : ""}`);
-    return R(`${head} ${lines.join(" · ")}.${known.some(x => x.mode === "up") ? " Wo ein Plus steht, schlage ich mehr Gewicht vor als zuletzt." : ""}`, trainedOn(now) ? [] : [{ a: "start", l: "Training starten", d: {} }]);
-  }
-  // Woche
-  if (/(woche|wochenrueckblick|wie lief es|wie laeuft es)/.test(q) && !/wochenziel/.test(q)) {
-    const off = /(letzte|vorige|vergangene) woche/.test(q) ? 1 : 0, st = weekStats(off), dv = st.pvol ? Math.round((st.vol - st.pvol) / st.pvol * 100) : null;
-    const parts = [`${off ? "Letzte" : "Diese"} Woche: ${st.n} von ${st.goal} Trainings, ${st.sets} Sätze, ${st.min} Min.`];
-    if (st.prs.length) parts.push(`${st.prs.length} ${st.prs.length === 1 ? "neuer Bestwert" : "neue Bestwerte"}: ${st.prs.slice(0, 2).map(p => `${p.name} ${kgTxt(p.kg)} kg`).join(", ")}.`);
-    if (dv !== null && st.vol) parts.push(`Volumen ${dv > 0 ? "+" : ""}${dv} % gegenüber der Vorwoche.`);
-    if (st.food && st.G) parts.push(`Essen im Schnitt ${fmtK(st.food.k)} kcal und ${fmtK(st.food.p)} g Eiweiß (Ziel ${G0(st.G)}).`);
-    return R(parts.join(" "), [{ a: "openWeek", l: "Wochenrückblick", d: { ret: "home" } }]);
-  }
-  // Erholung
-  if (/(erholt|erholung|regenerat|muskelkater|frisch|ausgeruht|fit bin ich)/.test(q)) {
-    const rec = recovery(), tired = Object.entries(rec).filter(([, p]) => p < 85).sort((a, b) => a[1] - b[1]);
-    if (!tired.length) return R("Alle Muskeln sind erholt (Schätzung der App: 72 Stunden für Hauptmuskeln, 48 für mittrainierte).", [{ a: "showRec", l: "Erholung ansehen", d: {} }]);
-    return R(`Noch nicht ganz erholt: ${tired.map(([m2, p]) => `${MUSCLES[m2]} (${Math.round(p)} %)`).join(", ")}. Alles andere ist erholt. Das ist eine Schätzung der App aus deinen letzten Trainings.`, [{ a: "showRec", l: "Erholung ansehen", d: {} }]);
-  }
-  // Termine
-  if (/(termine|trainingstage|feste tage)/.test(q)) return R(s ? `Deine Termine: ${s.days.map(d => WD_LONG[d]).join(", ")} um ${s.time}. Plan B: ${s.planB === "short" ? "Kurzversion" : "am nächsten Tag nachholen"}.` : "Du hast noch keine festen Termine. Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um.", [{ a: "openSched", l: s ? "Termine ändern" : "Termine festlegen", d: {} }]);
-  // Ziel setzen / Ziele
-  if ((m = q.match(/ziel\s*[:=]?\s*(\d+(?:[.,]\d+)?)\s*(?:kg|kilo)?/)) && !/wochenziel/.test(q)) {
-    const target = parseFloat(m[1].replace(",", "."));
-    if (e) {
-      const u = unitOf(e), best = bestKg(e.id, u);
-      if (best !== null && target <= best) return R(`Dein Bestwert an der ${e.name} ist schon ${kgTxt(best)} ${UNIT[u]}. Ein Ziel sollte darüber liegen.`);
-      if (!(target > 0 && target <= 1000)) return R("Dieses Zielgewicht kann ich nicht einordnen.");
-      state.goals = cleanGoals([...(state.goals || []), { id: uid(), kind: "kraft", exId: e.id, u, target, start: best ?? 0, startDate: new Date().toISOString(), date: null }]); save();
-      return R(`Ziel gesetzt: ${kgTxt(target)} ${UNIT[u]} an der ${e.name}${best !== null ? ` – aktuell ${kgTxt(best)}` : ""}. Ich sage Bescheid, wenn du es erreichst.`, [{ a: "tab", l: "Ziele ansehen", d: { v: "history" } }]);
-    }
-    const lw = lastWeight();
-    if (lw && target >= 30 && target <= 300) { state.goals = cleanGoals([...(state.goals || []), { id: uid(), kind: "gewicht", target, start: lw.kg, startDate: new Date().toISOString(), date: null }]); save(); return R(`Körpergewichts-Ziel gesetzt: ${kgTxt(target)} kg, aktuell ${kgTxt(lw.kg)} kg.`, [{ a: "tab", l: "Ziele ansehen", d: { v: "history" } }]); }
-    return R("Für welches Gerät? Sag zum Beispiel „Ziel 50 kg Chest Press“. Für ein Körpergewichts-Ziel trag zuerst dein Gewicht ein.");
-  }
-  if (/(^|\s)(ziel|ziele|wie weit bin ich)(\s|$)/.test(q) && !/wochenziel/.test(q)) {
-    const G = (state.goals || []).filter(g => !g.done);
-    if (!G.length) return R("Du hast noch kein Ziel. Sag zum Beispiel „Ziel 50 kg Chest Press“ oder „Ziel 78 kg“ für dein Körpergewicht.", [{ a: "goalAdd", l: "Ziel festlegen", d: {} }]);
-    return R(G.map(g => { const st = goalStatus(g); return `${st.name}: ${kgTxt(st.cur)} von ${kgTxt(g.target)} ${st.unit}, noch ${kgTxt(Math.round(st.left * 10) / 10)} kg${st.eta ? `, bei deinem Tempo etwa ${fmtDay(st.eta.toISOString())}` : ""}`; }).join(". ") + ".", [{ a: "tab", l: "Ziele ansehen", d: { v: "history" } }]);
-  }
-  // Körpergewicht
-  if ((m = q.match(/(?:wiege|gewicht|koerpergewicht)\s*(?:heute\s*)?(?:ist\s*)?(\d+(?:[.,]\d+)?)/)) && !e) {
-    const v = parseFloat(m[1].replace(",", "."));
-    if (!(v >= 30 && v <= 300)) return R("Das Gewicht kann ich nicht einordnen – bitte zwischen 30 und 300 kg.");
-    const d = dkey(now); state.weights = (state.weights || []).filter(x => x.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]); save(); checkGoals();
-    const tr = weightTrend();
-    return R(`Notiert: ${kgTxt(Math.round(v * 10) / 10)} kg heute.${tr ? ` Trend: ${tr.pct > 0 ? "+" : ""}${fmtN(tr.pct)} % pro Woche über ${tr.days} Tage.` : ""}`);
-  }
-  if (/(wie ?viel wiege ich|mein gewicht|gewichtstrend|koerpergewicht|wiege ich)/.test(q) && !e) {
-    const lw = lastWeight(), tr = weightTrend();
-    if (!lw) return R("Du hast noch kein Körpergewicht eingetragen. Sag zum Beispiel „Wiege 82,5“.");
-    return R(`Zuletzt ${kgTxt(lw.kg)} kg (${fmtWhenDay(lw.d + "T12:00")}).${tr ? ` Trend: ${tr.pct > 0 ? "+" : ""}${fmtN(tr.pct)} % pro Woche über ${tr.days} Tage.` : " Für einen Trend brauche ich drei Einträge über zwei Wochen."}`);
-  }
-  // Essen und Wasser
-  if (/(wasser|trink|glas)/.test(q)) {
-    if (!state.nutrOpt.water) return R("Wasserzählen ist ausgeschaltet. Du kannst es in den Einstellungen unter Ernährung einschalten.", [{ a: "openSettings", l: "Einstellungen", d: {} }]);
-    const ml = /glas|glaeser/.test(q) && askNum(q) === null ? 250 : askNum(q) !== null ? (askNum(q) <= 5 ? askNum(q) * 250 : askNum(q)) : null, d = dkey(now);
-    if (ml !== null && /(trink|getrunken|wasser \d|glas|plus|dazu|\+)/.test(q)) { state.water[d] = Math.max(0, (state.water[d] || 0) + Math.round(ml)); save(); }
-    const cur = state.water[d] || 0, g = waterGoal();
-    return R(`${ml !== null ? "Eingetragen. " : ""}Heute ${fmtL(cur)} L${g ? ` von ${fmtL(g)} L` : ""}.`, [{ a: "tab", l: "Essen", d: { v: "food" } }]);
-  }
-  if (/(kalorien|kcal|eiweiss|protein|gegessen|essen heute|makros|noch essen|uebrig)/.test(q)) {
-    const G = nutrGoals(), t = dayTotals(dkey(now));
-    if (!G) return R(`Heute ${fmtK(t.k)} kcal und ${fmtK(t.p)} g Eiweiß eingetragen. Ein Kalorienziel hast du noch nicht – unter Essen → Ziele.`, [{ a: "tab", l: "Essen", d: { v: "food" } }]);
-    const left = G.kcal - t.k;
-    return R(`Heute ${fmtK(t.k)} von ${fmtK(G.kcal)} kcal${left >= 0 ? ` – noch ${fmtK(left)} übrig` : ` – ${fmtK(-left)} über dem Ziel`}. Eiweiß ${fmtK(t.p)} von ${G.prot} g${t.p < G.prot ? `, noch ${fmtK(G.prot - t.p)} g` : " – Ziel erreicht"}.`, [{ a: "tab", l: "Essen", d: { v: "food" } }]);
-  }
-  // Warum dieses Gewicht
-  if (/^warum/.test(q)) {
-    const x = ses ? ses.list[ses.idx] : null;
-    if (x && x.why) return R(`${ex(x.exId).name}: ${x.why}`);
-    if (e && planItem(e.id)) { const en = makeEntry(planItem(e.id)); return R(`${e.name}: ${en.why}`); }
-    if (day) { const L = previewEntries(day).filter(x2 => x2.recKg !== null); if (L.length) return R(`${ex(L[0].exId).name}: ${L[0].why}`); }
-    return R("Frag mich „Warum“ zu einem Gerät, zum Beispiel „Warum Chest Press?“ – dann erkläre ich den Vorschlag.");
-  }
-  // Erklären
-  if (/(was ist|was bedeutet|was heisst|erklaer|erklaere|wie funktioniert|wieso)/.test(q) && !e) {
-    const hit = ART_KEY.find(([, re]) => re.test(q)), art = hit && ARTICLES.find(a => a.id === hit[0]);
-    if (art) return R(`${art.title}: ${art.lead}`, [{ a: "openArt", l: "Artikel lesen", d: { id: art.id, ret: "home" } }]);
-    return R("Dazu habe ich keinen Artikel. Ich kann erklären: Progression, Volumen, Häufigkeit, Gewicht und Wiederholungen, RIR, Pausen, Dehnung, Gesundheit, Eiweiß, Kalorien, Intervallfasten, Termine.");
-  }
-  // Gerätefragen
-  if (e) {
-    const u = unitOf(e), it = planItem(e.id), best = bestOf(e.id, u), last = lastOf(e.id, u);
-    if (/(technik|anleitung|ausfuehrung|wie (mache|geht|fuehre)|richtig|einstell)/.test(q)) return R(`${e.name}: ${(TIPS[e.id] || ["Für eigene Geräte gibt es keine Kurzanleitung."]).join(". ")}.`, [{ a: "openEx", l: "Anleitung", d: { id: e.id, ret: "home" } }]);
-    if (/(bestwert|rekord|maximum|pr\b|max\b|staerkste)/.test(q)) return R(best ? `Dein Bestwert an der ${e.name}: ${w(e.id, u, best.kg)} (${fmtWhenDay(best.date)}).` : `An der ${e.name} hast du noch keinen gültigen Satz eingetragen.`, [{ a: "openEx", l: "Verlauf", d: { id: e.id, ret: "home" } }]);
-    if (/(letzte[sn]? mal|zuletzt|vorher|davor|letzte einheit)/.test(q)) return R(last ? `Zuletzt an der ${e.name} (${fmtWhenDay(last.date)}): ${last.sets.map(t => `${kgTxt(t.kg)} × ${t.reps}`).join(", ")} – ${UNIT[u]}.` : `An der ${e.name} hast du noch nichts eingetragen.`, [{ a: "openEx", l: "Verlauf", d: { id: e.id, ret: "home" } }]);
-    if (/(tausch|ersatz|alternative|statt|besetzt)/.test(q)) { const alt = rankAlternatives(e.id, new Set()).direct[0]; return R(alt ? `Statt ${e.name}: ${alt.e.name} – ${alt.why}` : `Für die ${e.name} gibt es in deinem Studio kein Gerät mit gleicher Bewegung.`, alt ? [{ a: "openEx", l: alt.e.name, d: { id: alt.e.id, ret: "home" } }] : []); }
-    if (it) { const en = makeEntry(it); return R(`${e.name} heute: ${en.sets.length} × ${en.recKg !== null ? w(e.id, u, en.recKg) : "Gewicht wählen"}, ${it.rmin}–${it.rmax} Wdh. ${en.why}`, [{ a: "openEx", l: "Gerät & Verlauf", d: { id: e.id, ret: "home" } }]); }
-    return R(`${e.name}: ${best ? `Bestwert ${w(e.id, u, best.kg)}` : "noch kein Eintrag"}${last ? `, zuletzt ${last.sets.map(t => `${kgTxt(t.kg)} × ${t.reps}`).join(", ")} (${fmtWhenDay(last.date)})` : ""}. Steht nicht in deinem Plan.`, [{ a: "openEx", l: "Gerät ansehen", d: { id: e.id, ret: "home" } }]);
-  }
-  if (/(bestwert|rekord|pr\b|maximum)/.test(q)) { const pr = lastPR(); return R(pr ? `Dein letzter Bestwert: ${pr.name} ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} ${UNIT[pr.u]} (${fmtWhenDay(pr.date)}). Für ein bestimmtes Gerät frag z. B. „Bestwert Chest Press“.` : "Noch keine Bestwerte – die kommen mit den ersten Trainings."); }
-  // Stillstand, Motivation
-  if (/(stillstand|stagnier|komme nicht weiter|plateau|keine fortschritte|nicht staerker)/.test(q)) {
-    const P = [...new Set(state.plan.days.flatMap(d => d.items.map(i => i.exId)))].map(id => [id, plateau(id)]).filter(x => x[1]);
-    if (P.length) return R(`Stillstand erkannt: ${P.map(([id, pl]) => `${ex(id).name} seit ${pl.weeks} Wochen`).join(", ")}. ${plateauTxt(P[0][1])}`, [{ a: "openCoach", l: "Buddy-Analyse", d: { ret: "home" } }]);
-    return R("Ich erkenne keinen Stillstand (mindestens 4 vollständige Einheiten über 3 Wochen ohne mehr Gewicht oder Wiederholungen).", [{ a: "openCoach", l: "Buddy-Analyse", d: { ret: "home" } }]);
-  }
-  if (/(keine lust|motivation|motivier|aufraffen|warum trainiere ich|kein bock|durchhalten)/.test(q)) {
-    const c = weekCtx(), G = (state.goals || []).filter(g => !g.done), parts = [];
-    if (state.why) parts.push(`Dein Warum: „${state.why}“.`); else parts.push("Du hast noch kein Warum festgehalten – ein Satz genügt.");
-    if (G.length) { const st = goalStatus(G[0]); parts.push(`Dein Ziel: ${kgTxt(g0(G[0]))} ${st.unit} an der ${st.name}, noch ${kgTxt(Math.round(st.left * 10) / 10)} kg.`); }
-    if (c.streak >= 1) parts.push(`${c.streak} ${c.streak === 1 ? "Woche" : "Wochen"} in Folge hast du dein Wochenziel geschafft.`);
-    parts.push("Kleinster Schritt: die 30-Minuten-Version – die wichtigsten Übungen, nicht mehr.");
-    return R(parts.join(" "), [{ a: "openTime30", l: "30-Min.-Version", d: {} }, ...(state.why ? [] : [{ a: "whyEdit", l: "Warum festhalten", d: {} }])]);
-  }
-  if (/(analyse|was hast du bemerkt|auffaellig|hinweise)/.test(q)) { const I = insights().filter(x => !coachHidden(x)); return R(I.length ? `${I.length} ${I.length === 1 ? "Hinweis" : "Hinweise"}: ${I.slice(0, 3).map(x => x.title).join(" · ")}.` : "Gerade nichts Auffälliges in deinen Daten.", [{ a: "openCoach", l: "Buddy-Analyse", d: { ret: "home" } }]); }
-  return R(`Das habe ich nicht verstanden${me}. Ich kenne Fragen zu Training, Terminen, Bestwerten, Erholung, Zielen, Essen und Gewicht – und Befehle wie „Training starten“ oder „Heute fällt aus“.`, [{ a: "askQ", l: "Was kannst du?", d: { q: "Was kannst du?" } }, { a: "askQ", l: "Was steht heute an?", d: { q: "Was steht heute an?" } }]);
-}
-const g0 = g => g.target, G0 = G => `${fmtK(G.kcal)} kcal, ${G.prot} g`;
-// Vorschlags-Chips je nach Lage
-function askChips() {
-  const c = [], now = new Date(), day = state.plan ? nextDay() : null;
-  if (state.session && state.session.paused) c.push("Training fortsetzen");
-  if (!trainedOn(now) && day) c.push("Was steht heute an?");
-  if (state.history.length) c.push("Wie lief die Woche?");
-  c.push("Wie erholt bin ich?");
-  const lastH = state.history[state.history.length - 1];
-  if (lastH && lastH.exercises[0]) c.push(`Bestwert ${ex(lastH.exercises[0].exId).name.replace(/^Iso-Lateral /, "")}`);
-  if (nutrGoals()) c.push("Essen heute");
-  if (!state.history.length) c.push("Was kannst du?");
-  return c.slice(0, 5);
-}
-let askLog = [], askListening = false;
-function askHtml() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const attrs = d => Object.entries(d || {}).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("");
-  return `<section class="askbox" id="askBar">
-    <form class="askform" id="askForm" autocomplete="off"><input id="askIn" placeholder="Frag ${esc(NAME())} …" autocomplete="off" enterkeyhint="send" aria-label="Frage an ${esc(NAME())}">
-      ${SR ? `<button type="button" class="icon-btn ${askListening ? "on" : ""}" data-a="askMic" aria-label="Spracheingabe">${ICON.mic}</button>` : ""}
-      <button type="submit" class="icon-btn" aria-label="Senden">${ICON.send}</button></form>
-    ${askLog.length ? `<div class="asklog" id="askOut">${askLog.slice(-3).map(x => `${x.q ? `<div class="q">${esc(x.q)}</div>` : ""}<div class="a"><p>${esc(x.a)}</p>${x.btns && x.btns.length ? `<div class="row wrap" style="gap:var(--s2)">${x.btns.map(b => `<button class="btn sm" data-a="${b.a}"${attrs(b.d)}>${esc(b.l)}</button>`).join("")}</div>` : ""}</div>`).join("")}</div>` : ""}
-    <div class="chips" id="askChips">${askChips().map(x => `<button class="chip" data-a="askQ" data-q="${esc(x)}">${esc(x)}</button>`).join("")}</div>
-  </section>`;
-}
-function askSubmit(raw) {
-  const q = String(raw || "").trim(); if (!q) return;
-  const r = ask(q);
-  askLog.push({ q, a: r.a, btns: r.btns }); if (askLog.length > 6) askLog.shift();
-  say(speakable(r.a));
-  if (r.go) { r.go(); return; }
-  render(); const o = byId("askOut"); if (o) o.scrollIntoView({ block: "nearest", behavior: "smooth" });
-}
-function askMic() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return;
-  try {
-    const r = new SR(); r.lang = "de-DE"; r.interimResults = false; r.maxAlternatives = 1; askListening = true; render();
-    r.onresult = ev => { askListening = false; const t = ev.results[0][0].transcript; const i = byId("askIn"); if (i) i.value = t; askSubmit(t); };
-    r.onerror = () => { askListening = false; askLog.push({ q: "", a: "Spracheingabe gerade nicht möglich – tipp deine Frage ein. Auf dem iPhone geht Spracheingabe je nach Version nur in Safari, nicht in der Home-Bildschirm-App." }); render(); };
-    r.onend = () => { if (askListening) { askListening = false; render(); } };
-    r.start();
-  } catch (e) { askListening = false; render(); }
-}
-// Briefing: Lage in Worten, aus denselben Berechnungen wie die Karten
-function briefing() {
-  if (!state.plan) return { text: "", parts: [] };
-  const day = nextDay(), c = weekCtx(), m = buddyModel(day, c.thisWeek, c.goal, c.streak), parts = [], now = new Date();
-  parts.push(`${greet(now)}${state.me ? `, ${state.me}` : ""}.`);
-  parts.push(`${m.title}. ${m.text}`.trim());
-  if (m.facts.length) parts.push(m.facts.join(". ") + ".");
-  if (day && day.items.length && !trainedOn(now) && !m.mToday && !m.sick) {
-    const known = previewEntries(day).filter(x => x.recKg !== null);
-    parts.push(`Dein Training: ${day.name}, ${day.items.length} ${nEx(day.items.length)}, etwa ${estMinutes(day)} Min.${known.length ? ` ${known.slice(0, 3).map(x => `${ex(x.exId).name} ${kgTxt(x.recKg)} kg ${UNIT_SHORT[x.u]}${x.mode === "up" ? " – mehr als zuletzt" : x.mode === "down" ? " – weniger als zuletzt" : ""}`).join("; ")}.` : ""}`);
-  }
-  const I = insights().filter(x => !coachHidden(x)); if (I.length) parts.push(`Außerdem: ${I[0].title}.`);
-  const G = nutrGoals(); if (G) { const t = dayTotals(dkey(now)); if (t.k) parts.push(`Essen heute: ${fmtK(t.k)} von ${fmtK(G.kcal)} kcal, ${fmtK(t.p)} von ${G.prot} g Eiweiß.`); }
-  return { text: parts.join(" "), parts };
-}
-function briefingSheet(b) {
-  return `${sheetHead(`Briefing von ${esc(NAME())}`)}
-    ${b.parts.map((p, i) => `<p style="margin:0${i === 0 ? ";font-weight:700" : ""}">${esc(p)}</p>`).join("")}
-    <button class="btn primary block" data-a="briefingSay">Vorlesen</button>
-    <p class="small faint" style="margin:0">Jede Angabe stammt aus deinen Einträgen und denselben Regeln wie die Karten auf „Heute“.</p>`;
-}
 /* ================= Hindernisse: warum ein Training ausfällt ================= */
 // Pläne, die Hindernisse einbeziehen, wirkten in Studien stärker (Bélanger-Gravel 2013). Darum fragt der Buddy einmal nach dem Grund
 // und passt Plan B daran an. Krank oder unterwegs zählt nicht als verpasster Termin.
@@ -3921,7 +3647,7 @@ function missSheet() {
     <p class="small muted" style="margin:0">Sag dem Buddy kurz, warum. Er plant dann passend weiter.</p>
     <div class="group">${Object.entries(MISS_R).map(([k, l]) => `<button class="li" data-a="missSet" data-d="${dkey()}" data-r="${k}"><div class="grow t">${l}</div><span class="chev">›</span></button>`).join("")}</div>`;
 }
-function buddyModel(day, thisWeek, goal, streak) {
+function buddySays(day, thisWeek, goal, streak) {
   const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [], facts = [];
   const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
   const short = () => act.push(["openTime30", "30-Min.-Version"]);
@@ -3969,21 +3695,16 @@ function buddyModel(day, thisWeek, goal, streak) {
   // Kurze Fakten in einer eigenen Zeile (höchstens drei): Ziel oder Bestwert, Warum, Wochenziel, Serie, letzter Ausfall
   const gh = goalHint(done || mToday || sick ? null : day, !s || s.days.includes(wdOf(now))), pr = lastPR();
   if (gh) facts.push(gh.trim().replace(/\.$/, ""));
-  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt an der ${ex(pr.exId).name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
+  else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
   if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
   if (thisWeek >= goal) facts.push(`Wochenziel geschafft: ${thisWeek} von ${goal}`);
   if (streak >= 2) facts.push(`${streak} Wochen in Folge geschafft`);
   const rm = (state.misses || []).filter(m => m.d !== dkey(now) && !trainedOn(dateOf(m.d)) && (now - dateOf(m.d)) / 864e5 <= 3).pop();
   if (rm && !mw && !sick && !mToday) facts.push(`${WD_LONG[wdOf(dateOf(rm.d))]} ausgefallen – ${MISS_L[rm.r]}`);
-  return { title, text: text.trim(), facts: facts.slice(0, 3), act, mToday, sick };
-}
-function buddySays(day, thisWeek, goal, streak) {
-  const m = buddyModel(day, thisWeek, goal, streak), s = state.sched;
-  return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(m.title)}.</b> ${esc(m.text)}</p>
-    ${m.facts.length ? `<p class="small muted bfacts" style="margin:0">${m.facts.map(esc).join(" · ")}</p>` : ""}
-    <div class="row wrap" style="gap:var(--s2) var(--s4);align-items:center">${m.act.map(([a, l, c]) => `<button class="${c || "btn sm"}" data-a="${a}">${l}</button>`).join("")}
-      <button class="link small" data-a="briefing" id="briefingBtn">${ICON.speak} Briefing</button>
-      ${s ? `<button class="link small" style="color:var(--text-3)" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div></div>`;
+  return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
+    ${facts.length ? `<p class="small muted bfacts" style="margin:0">${facts.slice(0, 3).map(esc).join(" · ")}</p>` : ""}
+    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2) var(--s4);align-items:center">${act.map(([a, l, c]) => `<button class="${c || "btn sm"}" data-a="${a}">${l}</button>`).join("")}
+      ${s ? `<button class="link small" style="color:var(--text-3)" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
 }
 let schedDraft = null;
 function schedSheet() {
@@ -4041,8 +3762,8 @@ function planCheckHtml() {
     <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
 }
 // Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
-function say(t, force = false) {
-  if (!state.voice && !force) return;
+function say(t) {
+  if (!state.voice) return;
   if (window.__tp) (window.__tp.said = window.__tp.said || []).push(t);
   try {
     const ss = window.speechSynthesis; if (!ss || typeof SpeechSynthesisUtterance === "undefined") return;
@@ -4784,10 +4505,6 @@ const A = {
   coachKeep: () => { state.prevPlan = null; save(); render(); },
   coachMinutes: el => { state.plan.minutes = +el.dataset.m; save(); render(); },
   coachDay: el => { state.selDay = el.dataset.id; save(); go("home"); },
-  askQ: el => askSubmit(el.dataset.q),
-  askMic: () => askMic(),
-  briefing: () => { const b = briefing(); openSheet(briefingSheet(b)); say(speakable(b.text)); },
-  briefingSay: () => say(speakable(briefing().text), true),
   missSet: el => { state.misses = cleanMisses([...(state.misses || []).filter(m => m.d !== el.dataset.d), { d: el.dataset.d, r: el.dataset.r }]); save(); closeSheet(); render(); },
   missSkip: el => { state.missSkip = el.dataset.d; save(); render(); },
   missToday: () => openSheet(missSheet()),
@@ -5033,13 +4750,10 @@ document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-a]"); if (!el || el.disabled) return;
   const f = A[el.dataset.a]; if (f) f(el, ev);
 });
-document.addEventListener("submit", ev => { if (ev.target && ev.target.id === "askForm") { ev.preventDefault(); const i = byId("askIn"); askSubmit(i ? i.value : ""); } });
 document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
-  else if (k === "buddyName") { state.buddyName = el.value.trim().slice(0, 24); save(); }
-  else if (k === "meName") { state.me = el.value.trim().slice(0, 24); save(); }
   else if (k === "gEx") { goalDraft.exId = el.value; goalDraft.target = null; goalRefresh(); }
   else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
   else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }
@@ -5063,7 +4777,6 @@ document.addEventListener("input", ev => {
 });
 document.addEventListener("keydown", ev => {
   if (ev.key === "Escape") closeSheet();
-  if (ev.key === "Enter" && ev.target.id === "askIn") { ev.preventDefault(); askSubmit(ev.target.value); return; }
   if (ev.key === "Enter" && ev.target.id === "foodQ") { ev.preventDefault(); A.offSearch(); return; }
   if (ev.key === "Enter" && ev.target.id === "bcIn") { ev.preventDefault(); A.barcodeGo(); return; }
   if (ev.key === "Enter" && ev.target.matches("input:not([type=search])")) ev.target.blur();
@@ -5076,7 +4789,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { ask, askSubmit, askEx, briefing, buddyModel, greet, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
