@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v21)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v21")));
+      ok("Service Worker aktiv (Cache trainingsplan-v22)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v22")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1779,7 +1779,130 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("32. Konsole");
+    section("32. Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung");
+    {
+      const pad = n => String(n).padStart(2, "0"), wd = d => (d.getDay() + 6) % 7;
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const cs = await tp(page, () => { const c = window.__tp.cleanSched; return [c({ days: [4, 0, 0, 9], time: "18:30" }), c({ days: [], time: "18:00" }), c({ days: [1], time: "25:00" })]; });
+      ok("Termine bereinigt (Tage sortiert, doppelte und ungültige entfernt)", JSON.stringify(cs[0].days) === "[0,4]" && cs[0].planB === "next" && cs[1] === null && cs[2] === null);
+      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Lass uns feste Trainingstage ausmachen") && await page.isVisible("#buddy [data-a=openSched]"));
+      await page.click("#buddy [data-a=openSched]");
+      ok("Vorschlag passt zum Plan (1 Trainingstag)", (await page.$$("#schedDays .chip.on")).length === 1 && (await page.textContent(".sheet")).includes("1 Trainingstag pro Woche"));
+      // heute und morgen auswählen, 23:59
+      const today = wd(new Date()), tomorrow = (today + 1) % 7;
+      for (const d of [0, 1, 2, 3, 4, 5, 6]) { const on = await page.$eval(`#schedDays [data-d='${d}']`, b => b.classList.contains("on")); if (on !== (d === today || d === tomorrow)) await page.click(`#schedDays [data-d='${d}']`); }
+      await page.fill("#schedTime", "23:59"); await page.click("#schedB [data-v=short]"); await page.click("[data-a=schedSave]");
+      let st = await stored(page);
+      ok("Termine gespeichert (heute und morgen, 23:59, Plan B Kurzversion)", JSON.stringify(st.sched.days) === JSON.stringify([today, tomorrow].sort((a, b) => a - b)) && st.sched.time === "23:59" && st.sched.planB === "short");
+      ok("Nach dem Speichern: Angebot für den Kalender", (await page.textContent(".sheet")).includes("In den Kalender eintragen") && (await page.textContent(".sheet")).includes("30 Minuten vorher"));
+      await page.click(".sheet [data-a=schedIcs]");
+      const ics = await tp(page, () => window.__tp.lastIcs), n = new Date(), ymd = `${n.getFullYear()}${pad(n.getMonth() + 1)}${pad(n.getDate())}`, codes = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+      ok("Kalenderdatei: wöchentliche Serie an den gewählten Tagen, erster Termin heute 23:59, Erinnerung 30 Min. vorher",
+        ics.startsWith("BEGIN:VCALENDAR\r\n") && ics.includes(`DTSTART:${ymd}T235900`) && ics.includes("RRULE:FREQ=WEEKLY;BYDAY=") && [today, tomorrow].every(d => ics.includes(codes[d]))
+        && ics.includes("TRIGGER:-PT30M") && ics.includes("SUMMARY:Training") && ics.includes("Plan B: Kurzversion mit 30 Minuten") && ics.trim().endsWith("END:VCALENDAR"), ics.slice(0, 300));
+      await page.keyboard.press("Escape");
+      ok("Buddy nennt den heutigen Termin", (await page.textContent("#buddy")).includes("Heute um 23:59: Test") && (await page.textContent("#buddySched")).includes("23:59"));
+      // Termin vorbei (nur wenn es spät genug ist)
+      const hNow = new Date().getHours();
+      if (hNow >= 2) {
+        await tp(page, () => { const s = window.__tp.state, d = new Date(Date.now() - 2 * 3600e3); s.sched.time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; });
+        await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
+        ok("Termin verpasst: Buddy bietet Plan B an (30-Min.-Version)", (await page.textContent("#buddy")).includes("Dein Termin war um") && (await page.textContent("#buddy")).includes("Plan B: die 30-Minuten-Version"));
+        await page.click("#buddy [data-a=openTime30]");
+        ok("Plan B öffnet die Zeitanpassung mit 30 Minuten", (await page.textContent(".sheet")).includes("30") && !!(await page.$(".sheet [data-a=timeApply]")));
+        await page.keyboard.press("Escape");
+      } else ok("Termin verpasst (übersprungen: kurz nach Mitternacht)", true);
+      // Training: Termine und Buddy-Check
+      await page.click("[data-a=tab][data-v=plan]");
+      const curT = await tp(page, () => window.__tp.state.sched.time);
+      ok("„Training“ zeigt die Termine mit Plan B", (await page.textContent("#schedRow")).includes(curT) && (await page.textContent("#schedRow")).includes("Kurzversion"));
+      const pc = await tp(page, () => window.__tp.planCheck());
+      const pcTxt = await page.textContent("#planCheck");
+      ok("Buddy-Check findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Unter dem Richtwert von 10–20") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
+      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("bei 2 Terminen pro Woche"));
+      await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
+      ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
+      await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
+      ok("Übung landet im Plan", (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-row"));
+      // Artikel
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("#schedRow"); await page.click(".sheet [data-a=openArt][data-id=termine]");
+      const art = await page.textContent("#app");
+      ok("Artikel „Warum feste Termine helfen“ mit 4 Quellen, Plan B und Gewohnheitsdauer", art.includes("Plan B") && art.includes("18 bis 254 Tage") && art.includes("nicht nennenswert zurück")
+        && (await page.$$(".srcs a")).length === 4 && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("17437199.2011.560095")));
+      await page.click("[data-a=artBack]");
+      ok("Zurück zum Training", await page.isVisible("#schedRow"));
+      await page.click("#schedRow"); await page.click(".sheet [data-a=schedDel]");
+      ok("Termine lassen sich entfernen", (await stored(page)).sched === null && (await page.textContent("#schedRow")).includes("Noch keine festen Termine"));
+      await ctx.close();
+    }
+    {
+      // Heute erledigt; lange Pause
+      const done = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 9 }], 0, "s")] });
+      ok("Nach dem Training: „Heute erledigt“ mit Sätzen", (await done.page.textContent("#buddy")).includes("Heute erledigt") && (await done.page.textContent("#buddy")).includes("2 Sätze"));
+      await done.ctx.close();
+      const gap = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s")] });
+      ok("Nach 9 Tagen Pause: Buddy schlägt die Kurzversion vor", (await gap.page.textContent("#buddy")).includes("Seit 9 Tagen kein Training") && await gap.page.isVisible("#buddy [data-a=openTime30]"));
+      await gap.ctx.close();
+    }
+    {
+      // Buddy-Check: ausgewogen, zu viel, zu lang
+      const bal = { goal: "aufbau", level: "einsteiger", minutes: null, days: [
+        { id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Pull", items: [{ id: "b1", exId: "hs-row", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: bal });
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Ausgewogener Plan: Buddy bestätigt den Richtwert", (await page.textContent("#planCheck")).includes("Alle großen Muskelgruppen liegen im Richtwert von 10–20"));
+      await tp(page, () => { const p = window.__tp.state.plan; p.days[0].items.push({ id: "a2", exId: "hs-incline", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "a3", exId: "hs-fly", sets: 5, rmin: 8, rmax: 12, rest: 90 }); p.minutes = 30; });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]");
+      const t = await page.textContent("#planCheck");
+      ok("Zu viel und zu lang: Brust über dem Richtwert, Tag länger als das Zeitbudget", t.includes("Über dem Richtwert von 10–20") && /Brust\s*25 Sätze pro Woche/.test(t) && t.includes("Länger als dein Zeitbudget") && t.includes("bei 30 Min. Zeitbudget"));
+      ok("Training mit Buddy-Check bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      // Sprachbegleitung
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 5, "s")] });
+      await page.click("[data-a=start]");
+      let said = await tp(page, () => window.__tp.said || []);
+      ok("Start: Ansage mit Übung, Satz, Gewicht und Wiederholungen", said.some(x => x.startsWith("Los geht's. Iso-Lateral Chest Press. Satz 1 von 2.") && x.includes("Kilo pro Seite") && x.includes("8 bis 12 Wiederholungen")), said.join(" | "));
+      await page.fill("#kgIn", "45"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Neuer Bestwert wird angesagt (45 > 40)", said.includes("Neuer Bestwert: 45 Kilo."));
+      await tp(page, () => { window.__tp.state.session.restEnd = Date.now() + 10500; });
+      await page.waitForFunction(() => (window.__tp.said || []).includes("Noch zehn Sekunden."), null, { timeout: 5000 }).catch(() => {});
+      ok("Pausenende wird angekündigt („Noch zehn Sekunden.“)", (await tp(page, () => window.__tp.said)).includes("Noch zehn Sekunden."));
+      await page.click("[data-a=skipRest]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Nach der Pause: nächster Satz", said[said.length - 1].startsWith("Satz 2 von 2."));
+      await page.click("[data-a=voiceToggle]");
+      ok("Sprachbegleitung im Training abschaltbar", (await stored(page)).voice === false && !(await page.$eval("[data-a=voiceToggle]", b => b.classList.contains("on"))));
+      await page.click("[data-a=voiceToggle]");
+      ok("… und wieder einschaltbar", (await stored(page)).voice === true && (await tp(page, () => window.__tp.said)).includes("Sprachbegleitung an."));
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      said = await tp(page, () => window.__tp.said);
+      ok("Ende: „Training geschafft. Mit neuem Bestwert.“", said[said.length - 1] === "Training geschafft. Mit neuem Bestwert.");
+      await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+      ok("Einstellungen: Termine und Sprachbegleitung", (await page.textContent("#app")).includes("Trainingstermine") && await page.isVisible("#optVoice [data-a=voiceSet][data-v='1'].on"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=start]");
+      ok("Ohne Einschalten keine Ansagen", ((await tp(page, () => window.__tp.said)) || []).length === 0);
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched: { days: [0, 2, 4], time: "18:00", planB: "next" } }, { light });
+      const a = await noOverflow(page) && await page.isVisible("#buddy");
+      await page.click("#buddySched"); const b = await noOverflow(page);
+      await page.keyboard.press("Escape"); await page.click("[data-a=tab][data-v=plan]"); const c = await noOverflow(page);
+      ok(`360 px ${light ? "hell" : "dunkel"}: Buddy, Termine und Buddy-Check ohne seitliches Scrollen`, a && b && c);
+      await ctx.close();
+    }
+
+    section("33. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

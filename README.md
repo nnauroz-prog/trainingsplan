@@ -6,6 +6,16 @@ Trainings-App als Web-App (PWA) für Hammer-Strength-Geräte. Läuft unter https
 
 Link in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Die App startet dann im Vollbild und funktioniert auch offline.
 
+## Der Buddy
+
+Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bringt und dabei begleitet:
+
+- **Feste Termine mit Plan B:** Tage und Uhrzeit festlegen, dazu ein Plan B für Hindernisse (am nächsten Tag nachholen oder 30-Minuten-Version). Grundlage: Wenn-dann-Pläne verbessern im Mittel die Umsetzung (Gollwitzer & Sheeran 2006; Sheeran et al. 2025), für Bewegung kleiner bis mittlerer Effekt, stärker mit Plan für Hindernisse (Bélanger-Gravel et al. 2013). Als wöchentliche Serie mit Erinnerung 30 Minuten vorher in den iPhone-Kalender (.ics)
+- **Buddy auf „Heute“:** persönliche Nachricht aus deinen Daten – heutiger Termin, verpasster Termin mit Plan B, lange Pause mit Kurzversion, erledigt mit Sätzen und nächstem Termin, Wochenziel, Serie, frische Bestwerte
+- **Buddy-Check im Training:** Sätze pro Muskel und Woche gegen den Richtwert (wie Muskelbelastung; mit der Zahl der Termine), fehlende Muskelgruppen mit „+ Übung“ (öffnet die passende Übungsauswahl), Tage über dem Zeitbudget
+- **Sprachbegleitung im Training** (optional, im Gerät, ohne Internet): Übung, Satz, Gewicht, Wiederholungsziel, Pause, „Noch zehn Sekunden“, neue Bestwerte, Trainingsende
+- **Artikel „Warum feste Termine helfen“** mit Quellen, inklusive Gewohnheitsbildung (Lally et al. 2010: 18–254 Tage, ein ausgelassener Tag wirft nicht zurück)
+
 ## Aufbau
 
 Ein Zweck: Krafttraining an Hammer-Strength-Geräten **planen, durchführen, verstehen**. Fünf Bereiche mit je einer Aufgabe:

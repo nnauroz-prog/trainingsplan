@@ -292,6 +292,10 @@
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .addrow{color:var(--accent);font-weight:600;min-height:48px}
+  .buddy{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
+  .buddy h2{margin:0;font-size:22px;line-height:1.15}
+  .buddy p{margin:0}
+  .icon-btn.on{color:var(--accent)}
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -426,6 +430,10 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  gollwitzer2006: { t: "Gollwitzer PM, Sheeran P: Implementation intentions and goal achievement: a meta-analysis of effects and processes", j: "Adv Exp Soc Psychol 2006;38:69–119", url: "https://doi.org/10.1016/S0065-2601(06)38002-1" },
+  belanger2013: { t: "Bélanger-Gravel A, Godin G, Amireault S: A meta-analytic review of the effect of implementation intentions on physical activity", j: "Health Psychol Rev 2013;7(1):23–54", url: "https://doi.org/10.1080/17437199.2011.560095" },
+  sheeran2025: { t: "Sheeran P, Listrom O, Gollwitzer PM: The when and how of planning: meta-analysis of the scope and components of implementation intentions in 642 tests", j: "Eur Rev Soc Psychol 2025;36(1):162–194", url: "https://doi.org/10.1080/10463283.2024.2334563" },
+  lally2010: { t: "Lally P, van Jaarsveld CHM, Potts HWW, Wardle J: How are habits formed: modelling habit formation in the real world", j: "Eur J Soc Psychol 2010;40(6):998–1009", url: "https://doi.org/10.1002/ejsp.674" },
   cioffi2018: { t: "Cioffi I, Evangelista A, Ponzo V et al.: Intermittent versus continuous energy restriction on weight loss and cardiometabolic outcomes: a systematic review and meta-analysis of randomized controlled trials", j: "J Transl Med 2018;16:371", url: "https://pubmed.ncbi.nlm.nih.gov/30583725/" },
   headland2016: { t: "Headland M, Clifton PM, Carter S, Keogh JB: Weight-loss outcomes: a systematic review and meta-analysis of intermittent energy restriction trials lasting a minimum of 6 months", j: "Nutrients 2016;8(6):354", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4924195/" },
   gandy2016: { t: "Gandy J et al.: Recording of fluid, beverage and water intakes at the population level in Europe (Anteil von Wasser aus Lebensmitteln, wie von der EFSA angesetzt)", j: "Br J Nutr 2016;116(4):677–682", url: "https://doi.org/10.1017/S0007114516002336" }
@@ -511,7 +519,16 @@ const ARTICLES = [
       "Eine Meta-Analyse von 11 Studien mit 8 bis 24 Wochen Dauer verglich Intervallfasten mit täglicher Kalorienreduktion. Der Unterschied beim Gewichtsverlust war klein – rund 0,6 kg – und statistisch nicht gesichert; auch Blutwerte entwickelten sich vergleichbar. Eine Auswertung von Studien mit mindestens sechs Monaten Dauer kam zum selben Ergebnis. Wie es über Jahre aussieht, ist offen.",
       "Entscheidend bleibt die Energiebilanz über Tage und Wochen. Intervallfasten ist eine Methode, weniger zu essen: Wem feste Essenszeiten leichtfallen, für den kann sie gut passen. Achte auch beim Fasten auf dein Eiweißziel – für Kraftsportler gibt es bisher vor allem kleine, kurze Studien.",
       "Vorsicht: Nicht geeignet oder nur nach ärztlicher Rücksprache in Schwangerschaft und Stillzeit, für Kinder und Jugendliche, bei Essstörungen (auch früheren), Untergewicht und Diabetes mit blutzuckersenkenden Medikamenten."
-    ], src: ["cioffi2018", "headland2016"] }
+    ], src: ["cioffi2018", "headland2016"] },
+  { id: "termine", title: "Warum feste Termine helfen",
+    lead: "Wer vorher festlegt, wann er trainiert – und was er tut, wenn etwas dazwischenkommt –, setzt es im Schnitt häufiger um.",
+    body: [
+      "Viele trainieren seltener, als sie sich vornehmen. Ein gut untersuchtes Mittel dagegen sind Wenn-dann-Pläne: Du legst vorher fest, wann und wo du trainierst – zum Beispiel „Montag, Mittwoch und Freitag um 18 Uhr gehe ich ins Studio“.",
+      "Eine Meta-Analyse von 94 Studien fand, dass solche Pläne das Erreichen von Zielen deutlich verbessern. Eine neuere, viel größere Auswertung bestätigt den Nutzen, schätzt den Effekt nach Korrektur für Verzerrungen aber kleiner.",
+      "Speziell für Bewegung fand eine Meta-Analyse von 26 Studien einen kleinen bis mittleren Effekt. Am stärksten war er, wenn die Pläne auch den Umgang mit Hindernissen enthielten. Deshalb fragt dich die App nach einem Plan B: am nächsten Tag nachholen oder die 30-Minuten-Version.",
+      "Gewohnheiten brauchen Zeit. In einer Studie dauerte es je nach Person 18 bis 254 Tage, bis sich ein neues Verhalten automatisch anfühlte. Ein einzelner ausgelassener Tag warf den Prozess dabei nicht nennenswert zurück – also einfach beim nächsten Termin weitermachen.",
+      "Der Buddy auf „Heute“ erinnert dich an deinen nächsten Termin und an deinen Plan B. Auf Wunsch kommen die Termine mit Erinnerung in den Kalender deines iPhones."
+    ], src: ["gollwitzer2006", "sheeran2025", "belanger2013", "lally2010"] }
 ];
 
 // Ausführliche Übungsanleitungen. Grundsätze:
@@ -901,7 +918,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false } }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1012,6 +1029,7 @@ function normalize(raw) {
   s.health = raw.health === true;
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
+  s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
   // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
   const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
   s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
@@ -1415,6 +1433,8 @@ function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
 const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
   `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
 const ICON = {
+  voiceOn: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
+  voiceOff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`,
   gear: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
   play: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>`,
   close: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`,
@@ -1543,7 +1563,7 @@ function vWissen() {
     <div class="head"><div class="cap">Wissen</div><div class="title">Artikel</div>
       <p class="sub">Die Grundlagen hinter Training und Ernährung – kurz erklärt und mit Quellen belegt.</p></div>
     ${wissenSeg("wissen")}
-    ${[["Training", ["progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
+    ${[["Training", ["termine", "progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
       .map(([h, ids]) => { const L = ARTICLES.filter(a => ids.includes(a.id)); return L.length ? `<section class="section"><h2>${h}</h2><div class="group">${L.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div></section>` : ""; }).join("")}
   </div>`;
@@ -1570,7 +1590,7 @@ function tabOf(v) {
   if (["day", "settings", "plan"].includes(v)) return "plan";
   if (["lib", "wissen"].includes(v)) return "lib";
   if (v === "ex") return exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
-  if (v === "art") return artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
+  if (v === "art") return artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
   if (v === "week") return weekBack === "history" ? "history" : "home";
   return v;
 }
@@ -1639,6 +1659,7 @@ function vHome() {
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
+    ${buddyCard(day, thisWeek, goal, streak)}
     ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
         <div class="cap">Neu: Gewicht pro Seite</div>
         <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
@@ -1809,6 +1830,8 @@ function vPlan() {
       <div class="row between"><div class="title">Training</div><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
+    <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
+      <div class="t">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button></div>
     <div class="group">${p.days.map((d, i) => `
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
@@ -1820,6 +1843,7 @@ function vPlan() {
     </div>
     ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]);
       return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
+    ${planCheckHtml()}
   </div>`;
 }
 /* ================= Einstellungen ================= */
@@ -1827,6 +1851,10 @@ function vSettings() {
   const seg = (k, on) => `<div class="seg" style="min-width:140px"><button data-a="nOpt" data-k="${k}" data-v="0" class="${on ? "" : "on"}">Aus</button><button data-a="nOpt" data-k="${k}" data-v="1" class="${on ? "on" : ""}">An</button></div>`;
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><div class="title">Einstellungen</div></div>
+    <section class="section"><h2>Training</h2><div class="group">
+      <button class="li" data-a="openSched"><div class="grow"><div class="t">Trainingstermine</div><div class="s">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
+      <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
+        <div class="seg" style="min-width:140px"><button data-a="voiceSet" data-v="0" class="${state.voice ? "" : "on"}">Aus</button><button data-a="voiceSet" data-v="1" class="${state.voice ? "on" : ""}">An</button></div></div></div></section>
     <section class="section"><h2>Studio</h2><div class="group">
       <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
     <section class="section"><h2>Ernährung</h2><div class="group">
@@ -2005,6 +2033,7 @@ function startTraining(day) {
     if (!state.session.list.length) { state.session.list = list; state.session.timeHidden = []; state.session.timeAdj = null; }
   }
   state.timeplan = null; state.selDay = null; save(); awake(true); go("train"); startTick();
+  sayCurrent("Los geht's. ");
 }
 /* ================= Progression 2.0 ================= */
 // Vergleichbare Einheiten an einem Gerät: gleiche Gewichtsangabe, nur gültige Arbeitssätze (alt → neu).
@@ -2134,15 +2163,18 @@ function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
   const err = setError(x.sets[i]); if (err) return showSetError(err);
+  const prev = bestKg(x.exId, x.u || unitOf(ex(x.exId))), isPR = prev !== null && x.sets[i].kg > prev && !x.sets.some((t, k) => k < i && t.done && t.kg >= x.sets[i].kg);
   x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i };
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
-  s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0;
+  s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0; s.said10 = false;
   if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
   save();
+  if (isPR) say(`Neuer Bestwert: ${kgTxt(x.sets[i].kg)} Kilo.`);
   if (!x.rest) return endRest();
+  if (!isPR) say(`Pause, ${x.rest} Sekunden.`);
   render();
 }
-function endRest() { const s = S(); s.phase = "set"; save(); render(); }
+function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurrent(); }
 function finish(saveIt) {
   stopTick(); awake(false);
   const s = S();
@@ -2158,6 +2190,7 @@ function finish(saveIt) {
       state.history.push(rec);
       summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0) };
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]);
+      say(prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
   }
   state.session = null; save(); closeSheet();
@@ -2177,6 +2210,7 @@ function vTrain() {
       <button class="icon-btn" data-a="askStop" aria-label="Training pausieren oder beenden">${ICON.close}</button>
       <div class="grow"><span class="day ellipsis">${esc(s.dayName)}</span><span class="cnt">${done} von ${total} Sätzen</span></div>
       <span class="t-clock" id="elapsed">${fmtTime((Date.now() - s.start) / 1000)}</span>
+      <button class="icon-btn ${state.voice ? "on" : ""}" data-a="voiceToggle" aria-label="Sprachbegleitung ${state.voice ? "aus" : "an"}schalten" aria-pressed="${state.voice}">${state.voice ? ICON.voiceOn : ICON.voiceOff}</button>
       <button class="icon-btn" data-a="openJump" aria-label="Übungen">${ICON.list}</button>
     </div>
     <div class="bar"><div style="width:${Math.round(done / total * 100)}%"></div></div></div>`;
@@ -3260,6 +3294,144 @@ function vWeek() {
   </div>`;
 }
 
+/* ================= Buddy: Termine, Plan B, Plan-Check, Sprachbegleitung ================= */
+// Grundlage: Wenn-dann-Pläne (wann/wo trainiere ich, was tue ich bei Hindernissen) erhöhen im Mittel die Umsetzung
+// (Gollwitzer & Sheeran 2006; für Bewegung Bélanger-Gravel 2013, Effekt größer mit Plan für Hindernisse).
+const WD = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], WD_LONG = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const wdOf = d => (d.getDay() + 6) % 7;
+function cleanSched(x) {
+  if (!isObj(x) || !Array.isArray(x.days) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(x.time || "")) return null;
+  const days = [...new Set(x.days.filter(d => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b);
+  if (!days.length) return null;
+  return { id: String(x.id || uid()), days, time: x.time, planB: x.planB === "short" ? "short" : "next", since: isNaN(new Date(x.since)) ? new Date().toISOString() : new Date(x.since).toISOString() };
+}
+function schedAt(d) { const [h, m] = state.sched.time.split(":").map(Number), x = new Date(d); x.setHours(h, m, 0, 0); return x; }
+function nextSched(from = new Date()) {
+  const s = state.sched; if (!s) return null;
+  for (let k = 0; k < 8; k++) { const d = new Date(from); d.setDate(from.getDate() + k); if (s.days.includes(wdOf(d))) { const at = schedAt(d); if (at > from) return at; } }
+  return null;
+}
+const trainedOn = d => state.history.some(h => dkey(new Date(h.date)) === dkey(d));
+// Letzter verpasster Termin dieser Woche (vor heute), seit dem nicht trainiert wurde
+function missedThisWeek() {
+  const s = state.sched; if (!s) return null;
+  const now = new Date(), w = wdOf(now), since = new Date(s.since); since.setHours(0, 0, 0, 0);
+  for (let i = w - 1; i >= 0; i--) {
+    if (!s.days.includes(i)) continue;
+    const d = new Date(now); d.setDate(now.getDate() - (w - i)); d.setHours(0, 0, 0, 0);
+    if (d < since) return null;
+    return state.history.some(h => new Date(h.date) >= d) ? null : i;
+  }
+  return null;
+}
+function whenTxt(d) {
+  const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
+  return `${k === 0 ? "heute" : k === 1 ? "morgen" : WD_LONG[wdOf(d)]} um ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
+}
+function buddyCard(day, thisWeek, goal, streak) {
+  const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [];
+  const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
+  const goalTxt = thisWeek >= goal ? ` Wochenziel geschafft: ${thisWeek} von ${goal}.` : "";
+  const short = () => act.push(["openTime30", "30-Min.-Version"]);
+  let title, text;
+  if (trainedOn(now)) {
+    const t = H.filter(h => dkey(new Date(h.date)) === dkey(now)), lt = t[t.length - 1];
+    title = "Heute erledigt";
+    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${goalTxt}${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
+  } else if (s && s.days.includes(wdOf(now))) {
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min. Den Termin hast du dir selbst gesetzt.${goalTxt}`; }
+    else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
+    else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
+  } else if (s && missedThisWeek() !== null) {
+    title = `${WD_LONG[missedThisWeek()]} ist ausgefallen`;
+    if (s.planB === "short") { text = `Plan B: heute die 30-Minuten-Version von ${dn}.`; short(); } else text = `Plan B: heute nachholen – ${dn}, ca. ${min} Min.`;
+  } else if (last && (now - new Date(last.date)) / 864e5 >= 7) {
+    title = `Seit ${Math.floor((now - new Date(last.date)) / 864e5)} Tagen kein Training`;
+    text = "Fang klein an: Die 30-Minuten-Version enthält die wichtigsten Übungen."; short();
+  } else if (!s) {
+    title = "Lass uns feste Trainingstage ausmachen";
+    text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um. Wähle Tage, Uhrzeit und einen Plan B – auf Wunsch mit Erinnerung im Kalender.";
+    act.push(["openSched", "Termine festlegen"]);
+  } else { title = "Heute ist trainingsfrei"; text = `${nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""}${goalTxt}`; }
+  if (streak >= 2) text += ` ${streak} Wochen in Folge geschafft.`;
+  const pr = lastPR();
+  if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
+  return `<section class="buddy" id="buddy"><div class="cap">Dein Buddy</div><h2>${esc(title)}</h2><p class="small">${esc(text.trim())}</p>
+    ${act.length ? `<div class="row" style="gap:var(--s2)">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}</div>` : ""}
+    ${s ? `<button class="link small" data-a="openSched" id="buddySched" style="justify-self:start">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</section>`;
+}
+let schedDraft = null;
+function schedSheet() {
+  const d = schedDraft, n = state.plan ? state.plan.days.length : 3;
+  return `${sheetHead("Trainingstermine", "Abbrechen")}
+    <p class="small muted" style="margin:0">Leg fest, wann du trainierst. Dein Plan hat ${n} ${n === 1 ? "Trainingstag" : "Trainingstage"} pro Woche.</p>
+    <div class="field"><label>Tage</label><div class="chips wrap" id="schedDays">${WD.map((w, i) => `<button class="chip ${d.days.includes(i) ? "on" : ""}" data-a="schedDay" data-d="${i}">${w}</button>`).join("")}</div></div>
+    <div class="field"><label for="schedTime">Uhrzeit</label><input id="schedTime" type="time" value="${d.time}"></div>
+    <div class="field"><label>Plan B, wenn es zur Uhrzeit nicht klappt</label><div class="seg" id="schedB">
+      <button data-a="schedB" data-v="next" class="${d.planB === "next" ? "on" : ""}">Am nächsten Tag</button><button data-a="schedB" data-v="short" class="${d.planB === "short" ? "on" : ""}">Kurzversion</button></div></div>
+    <p class="small faint" style="margin:0">Pläne mit festem Wann und einem Plan B für Hindernisse wirkten in Studien am besten.</p>
+    <p class="error" id="schedErr" hidden>Bitte mindestens einen Tag und eine Uhrzeit wählen.</p>
+    <button class="btn primary block" data-a="schedSave">Speichern</button>
+    ${state.sched ? `<button class="btn block" data-a="schedIcs">In den Kalender eintragen</button><button class="btn block quiet" data-a="schedDel">Termine entfernen</button>` : ""}
+    <button class="link small" data-a="openArt" data-id="termine" data-ret="${view === "plan" ? "plan" : "home"}" style="justify-self:start">Warum feste Termine helfen</button>`;
+}
+// Kalenderdatei: wöchentliche Wiederholung, lokale Uhrzeit, Erinnerung 30 Minuten vorher
+function schedIcsText() {
+  const s = state.sched, mins = Math.max(30, (state.plan && state.plan.minutes) || 60), first = nextSched(new Date(Date.now() - 60000));
+  const f = d => `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}T${pad2(d.getHours())}${pad2(d.getMinutes())}00`;
+  const end = new Date(first.getTime() + mins * 60000), stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const desc = `Fester Trainingstermin. Plan B: ${s.planB === "short" ? "Kurzversion mit 30 Minuten" : "am nächsten Tag nachholen"}.`.replace(/([,;\\])/g, "\\$1");
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trainingsplan//Termine//DE", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+    `UID:trainingsplan-${s.id}@trainingsplan`, `DTSTAMP:${stamp}`, `DTSTART:${f(first)}`, `DTEND:${f(end)}`,
+    `RRULE:FREQ=WEEKLY;BYDAY=${s.days.map(i => ["MO", "TU", "WE", "TH", "FR", "SA", "SU"][i]).join(",")}`,
+    "SUMMARY:Training", `DESCRIPTION:${desc}`, "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Training in 30 Minuten", "TRIGGER:-PT30M", "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n";
+}
+// Plan-Check: Sätze pro Muskel und Woche wie unter „Fortschritt → Muskelbelastung“ (Hauptmuskel voll, mittrainierte halb)
+function planCheck() {
+  const p = state.plan, [tmin, tmax] = p.goal === "aufbau" ? [10, 20] : [6, 12], ms = {};
+  for (const m in MUSCLES) ms[m] = 0;
+  const per = state.sched ? state.sched.days.length / Math.max(1, p.days.length) : 1;
+  p.days.forEach(d => d.items.forEach(it => { const e = ex(it.exId); ms[e.muscle] += it.sets * per; e.sec.forEach(m => ms[m] += it.sets / 2 * per); }));
+  const out = [];
+  for (const m of ["brust", "ruecken", "schultern", "beinev", "beineh", "po"]) if (ms[m] < tmin) out.push({ kind: "low", m, v: ms[m] });
+  for (const m in MUSCLES) if (ms[m] > tmax) out.push({ kind: "high", m, v: ms[m] });
+  if (p.minutes) p.days.forEach(d => { const est = estMinutes(d); if (est > p.minutes + 10) out.push({ kind: "time", d, est }); });
+  return { out, tmin, tmax, per };
+}
+function planCheckHtml() {
+  const c = planCheck(), f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
+  const grp = (title, rows) => rows.length ? `<p class="small muted" style="margin:0">${title}</p><div class="group">${rows.join("")}</div>` : "";
+  const low = K("low").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${x.v === 0 ? "fehlt im Plan" : `${f(x.v)} Sätze pro Woche`}</div></div>
+      <button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`);
+  const high = K("high").map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche</div></div></div>`);
+  const time = K("time").map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${state.plan.minutes} Min. Zeitbudget</div></div>
+      <button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`);
+  return `<section class="section" id="planCheck"><h2>Buddy-Check</h2>
+    ${c.out.length ? grp(`Unter dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, low) + grp(`Über dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, high) + grp("Länger als dein Zeitbudget:", time)
+      : `<p class="small" style="margin:0">Alle großen Muskelgruppen liegen im Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche${state.plan.minutes ? ", und jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
+    <p class="small faint" style="margin:0">Gezählt wie unter „Fortschritt → Muskelbelastung“: Hauptmuskel voll, mittrainierte Muskeln halb, ${state.sched ? `bei ${state.sched.days.length} Terminen pro Woche` : "jeder Trainingstag einmal pro Woche"}.</p>
+    <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
+}
+// Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
+function say(t) {
+  if (!state.voice) return;
+  if (window.__tp) (window.__tp.said = window.__tp.said || []).push(t);
+  try {
+    const ss = window.speechSynthesis; if (!ss || typeof SpeechSynthesisUtterance === "undefined") return;
+    ss.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "de-DE";
+    const v = ss.getVoices().find(x => /^de/i.test(x.lang)); if (v) u.voice = v;
+    ss.speak(u);
+  } catch (e) { /* Sprachausgabe nicht verfügbar */ }
+}
+function sayCurrent(prefix = "") {
+  const s = S(); if (!s || !state.voice) return;
+  const x = s.list[s.idx]; if (!x) return;
+  const i = curSetIdx(x); if (i === -1) return;
+  const t = x.sets[i], u = x.u || unitOf(ex(x.exId));
+  say(`${prefix}${i === 0 ? ex(x.exId).name + ". " : ""}Satz ${i + 1} von ${x.sets.length}. ${t.kg != null ? `${kgTxt(t.kg)} Kilo${u === "s" ? " pro Seite" : ""}, ` : ""}${x.rmin} bis ${x.rmax} Wiederholungen.`);
+}
+
 /* ================= Apple Watch (parallel aufzeichnen) ================= */
 // Web-Apps laufen nicht auf der Watch. Sie zeichnet das Training in ihrer App „Training“ auf;
 // diese App erinnert daran und verhindert doppelte Workouts in Health.
@@ -3479,6 +3651,7 @@ function tick() {
   const t = byId("timer"); if (t) t.textContent = fmtTime(left);
   const arc = byId("ringArc"); if (arc) { const C = 2 * Math.PI * 54; arc.setAttribute("stroke-dashoffset", C * (1 - Math.max(0, s.restTotal ? left / s.restTotal : 0))); }
   const sec = Math.ceil(left);
+  if (sec === 10 && s.restTotal > 15 && !s.said10) { s.said10 = true; say("Noch zehn Sekunden."); }
   if (sec <= 3 && sec >= 1 && s.beeped !== sec) { s.beeped = sec; tone(660, .12); }
   if (left <= 0) { tone(990, .45); buzz([200, 100, 200]); endRest(); }
 }
@@ -3691,6 +3864,35 @@ const A = {
     save(); closeSheet(); render();
   },
   openSettings: () => go("settings"),
+  openSched: () => { const n = state.plan ? state.plan.days.length : 3;
+    const def = [[0], [0], [0, 3], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 3, 4], [0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5, 6]][Math.min(7, n)];
+    schedDraft = state.sched ? JSON.parse(JSON.stringify(state.sched)) : { days: def, time: "18:00", planB: "next" }; openSheet(schedSheet()); },
+  schedDay: el => { const d = +el.dataset.d, i = schedDraft.days.indexOf(d); if (i >= 0) schedDraft.days.splice(i, 1); else schedDraft.days.push(d); el.classList.toggle("on", i < 0); },
+  schedB: el => { schedDraft.planB = el.dataset.v; byId("schedB").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el)); },
+  schedSave: () => {
+    const time = byId("schedTime").value, sc = cleanSched(Object.assign({}, schedDraft, { time, id: state.sched ? state.sched.id : uid(), since: state.sched ? state.sched.since : new Date().toISOString() }));
+    if (!sc) { byId("schedErr").hidden = false; return; }
+    state.sched = sc; save(); render();
+    openSheet(`${sheetHead("Termine gespeichert")}
+      <p><b>${sc.days.map(d => WD_LONG[d]).join(", ")}</b> um <b>${sc.time}</b>. Plan B: ${sc.planB === "short" ? "die 30-Minuten-Version" : "am nächsten Tag nachholen"}.</p>
+      <p class="small muted">Soll dich dein iPhone erinnern? Die Termine kommen als wöchentliche Serie in deinen Kalender, mit Erinnerung 30 Minuten vorher.</p>
+      <button class="btn primary block" data-a="schedIcs">In den Kalender eintragen</button><button class="btn block" data-a="closeSheet">Später</button>`);
+  },
+  schedIcs: () => {
+    if (!state.sched) return;
+    const ics = schedIcsText();
+    if (window.__tp) { window.__tp.lastIcs = ics; return; }
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" })), a = document.createElement("a");
+    a.href = url; a.download = "training.ics"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  },
+  schedDel: () => { state.sched = null; save(); closeSheet(); render(); },
+  openTime30: () => { timeSel = 30; openSheet(timeSheet()); },
+  checkFix: el => {
+    const d = [...state.plan.days].sort((a, b) => estMinutes(a) - estMinutes(b))[0]; if (!d) return;
+    state.editDay = d.id; save(); go("day"); pickQuery = ""; pickFilter = el.dataset.m; openSheet(pickerHtml());
+  },
+  voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
+  voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
   nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
   openHealth: () => openSheet(healthSheet()),
   openWatch: () => openSheet(watchSheet()),
@@ -3719,7 +3921,7 @@ const A = {
   openEx: el => { exDetail = el.dataset.id; exBack = el.dataset.ret || "lib"; closeSheet(); go("ex"); },
   exBack: () => go(["history", "day", "plan", "home"].includes(exBack) ? exBack : "lib"),
   openArt: el => { artId = el.dataset.id; artBack = el.dataset.ret || "wissen"; closeSheet(); go("art"); },
-  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : "wissen"),
+  artBack: () => go(artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "week" ? "week" : artBack === "plan" ? "plan" : "wissen"),
   openWeek: el => { weekOff = 0; weekBack = el.dataset.ret === "history" ? "history" : "home"; go("week"); },
   weekNav: el => { weekOff = Math.max(0, weekOff + +el.dataset.d); vWeek(); window.scrollTo(0, 0); },
   weekBack: () => go(weekBack),
@@ -3912,7 +4114,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { buddyCard, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
