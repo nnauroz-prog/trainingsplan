@@ -203,7 +203,7 @@ async function finishAllSets(page, kg, reps) {
       const st = await stored(page);
       ok("Bestehender Plan bleibt unverändert", st.plan.days[0].items[0].exId === "hs-chest");
       ok("Historie bleibt unverändert", st.history[0].exercises[0].exId === "hs-chest" && st.history[0].exercises[0].sets.length === 3);
-      await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("[data-a=pickFilter][data-k=brust]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("[data-a=pickFilter][data-k=brust]");
       const picks = await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id));
       ok("Übungsauswahl blendet das Gerät aus", !picks.includes("hs-chest") && picks.length > 0);
       await ctx.close();
