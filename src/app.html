@@ -995,7 +995,7 @@ function normalize(raw) {
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
-      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [] })) })) : [];
+      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [], adv: x.adv === true ? true : undefined })) })) : [];
   s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => Object.assign({ d: w.d, kg: +w.kg }, w.hk === true ? { hk: true } : {})) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
     const r = raw.session;
@@ -1006,7 +1006,7 @@ function normalize(raw) {
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
       trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
-      ord: Number.isInteger(x.ord) ? x.ord : undefined,
+      ord: Number.isInteger(x.ord) ? x.ord : undefined, adv: x.adv === true ? true : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length + (Array.isArray(x.trim) ? x.trim.length : 0)),
       short: typeof x.short === "string" ? x.short : undefined, recKg: typeof x.recKg === "number" ? x.recKg : undefined,
       rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
@@ -1022,7 +1022,7 @@ function normalize(raw) {
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
-      paused: +r.paused || null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
+      paused: +r.paused || null, advDone: typeof r.advDone === "string" ? r.advDone.slice(0, 80) : null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
       timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null };
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
@@ -2095,7 +2095,7 @@ function compSessions(exId, u = unitOf(ex(exId))) {
     const v = x.sets.filter(validSet); if (!v.length) return;
     const kgs = [...new Set(v.map(t => t.kg))];
     out.push({ date: new Date(h.date).getTime(), sets: v, planned: x.planned || null, rmin: x.rmin || null, rmax: x.rmax || null,
-      uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj });
+      uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj, adv: !!x.adv });
   });
   return out;
 }
@@ -2104,6 +2104,7 @@ const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
 // Regeln (in dieser Reihenfolge, immer mit Begründung aus den echten Daten):
 // 1. Wiederholungsbereich seit letztem Mal geändert → Gewicht halten
 // 2. Unterschiedliche Gewichte in den Sätzen → satzweise übernehmen, keine pauschale Steigerung
+//    (Ausnahme: im Training per Satz-Coach angepasst und mit dem neuen Gewicht im Ziel → alle Sätze mit dem neuen Gewicht)
 // 3. Letzte Einheit unvollständig (weniger Sätze als geplant) → halten; Steigerung nur, wenn die Einheit davor
 //    vollständig am oberen Ziel war
 // 4. Letzter Satz schwer oder RIR 0 → keine Steigerung; Reduktion nur bei zwei Einheiten in Folge unter dem Ziel
@@ -2150,6 +2151,11 @@ function makeEntry(it, ctx) {
     if (rangeChanged) {
       mode = "hold"; sets = fromLast(0); short = "Gewicht halten · neuer Wdh.-Bereich";
       why = `Wiederholungsbereich geändert (${L.rmin}–${L.rmax} → ${it.rmin}–${it.rmax}). Letztes Mal ${lastTxt}. Gewicht zunächst wie zuletzt.`;
+    } else if (!L.uniform && L.adv && ls.kg !== L.sets[0].kg && !lastHard && (() => { for (let i = done - 1; i >= 0 && L.sets[i].kg === ls.kg; i--) if (L.sets[i].reps < it.rmin) return false; return true; })()) {
+      const tail = L.sets.filter((t, i) => i >= L.sets.findIndex((u, j) => L.sets.slice(j).every(v => v.kg === ls.kg))), d = ls.kg - L.sets[0].kg;
+      mode = d > 0 ? "up" : "down"; sets = uniformSets(ls.kg, clampR(Math.min(...tail.map(t => t.reps)) + 1));
+      short = `${d > 0 ? "+" : "−"}${kgTxt(Math.abs(d))} kg · im Training angepasst`;
+      why = `Letztes Mal ${lastTxt}: im Training auf ${w(ls.kg)} ${d > 0 ? "gesteigert" : "reduziert"} und damit im Ziel geblieben. Heute alle Sätze mit ${w(ls.kg)}.`;
     } else if (!L.uniform) {
       mode = "hold"; sets = fromLast(lastHard ? 0 : 1); short = "Gewichte satzweise · zuletzt uneinheitlich";
       why = `Letztes Mal unterschiedliche Gewichte: ${lastTxt}. Gewichte satzweise übernommen${lastHard ? `, letzter Satz ${hardTxt}` : ", Ziel je 1 Wdh. mehr"}. Keine pauschale Steigerung.`;
@@ -2227,17 +2233,34 @@ function doneSet() {
   save();
   if (isPR) say(`Neuer Bestwert: ${kgTxt(x.sets[i].kg)} Kilo.`);
   if (!x.rest) return endRest();
-  if (!isPR) say(`Pause, ${x.rest} Sekunden.`);
+  const adv = setAdvice(s);
+  if (!isPR) say(`Pause, ${x.rest} Sekunden.${adv ? ` Vorschlag: ${adv.up ? "mehr" : "weniger"} Gewicht, ${kgTxt(adv.kg)} Kilo.` : ""}`);
+  else if (adv) say(`Vorschlag: ${kgTxt(adv.kg)} Kilo.`);
   render();
 }
 function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurrent(); }
+// Satz-Coach (Regel der App): Liegt der gerade beendete Satz deutlich über oder unter dem Wiederholungsziel, schlägt der Buddy
+// für die restlichen Sätze dieser Übung einen Gewichtsschritt mehr bzw. weniger vor. Geändert wird nur nach einem Tipp.
+// Mehr: 2+ Wdh. über dem Ziel, oder am oberen Ziel und „leicht“ bzw. RIR 3+. Weniger: 2+ Wdh. unter dem Ziel, oder darunter und „schwer“ bzw. RIR 0.
+function setAdvice(s) {
+  const ld = s.lastDone, x = ld && s.list.find(l => l.key === ld.key); if (!x) return null;
+  const t = x.sets[ld.si], open = x.sets.filter(o => !o.done);
+  if (!t || !open.length || !validSet(t) || open.some(o => o.kg !== t.kg) || s.advDone === x.key + ":" + ld.si) return null;
+  const step = ex(x.exId).step, easy = t.f === "l" || (t.rir != null && t.rir >= 3), hard = t.f === "h" || t.rir === 0;
+  const up = t.reps >= x.rmax + 2 || (t.reps >= x.rmax && easy), down = !up && t.kg - step > 0 && (t.reps <= x.rmin - 2 || (t.reps < x.rmin && hard));
+  if (!up && !down) return null;
+  const kg = Math.round((up ? t.kg + step : t.kg - step) * 100) / 100, n = open.length, u = x.u || unitOf(ex(x.exId));
+  const how = up ? (t.reps >= x.rmax + 2 ? `über deinem Ziel von ${x.rmin}–${x.rmax}` : `am oberen Ziel und ${t.f === "l" ? "„leicht“" : "mit 3+ Wdh. Reserve"}`)
+    : (t.reps <= x.rmin - 2 ? `unter deinem Ziel von ${x.rmin}–${x.rmax}` : `unter dem Ziel und ${t.f === "h" ? "„schwer“" : "mit RIR 0"}`);
+  return { key: x.key, si: ld.si, kg, up, txt: `${t.reps} Wdh. bei ${kgTxt(t.kg)} kg – ${how}. Für ${n === 1 ? "den letzten Satz" : `die restlichen ${n} Sätze`}: ${kgTxt(kg)} ${UNIT[u]} (${up ? "+" : "−"}${kgTxt(step)} kg)?` };
+}
 function finish(saveIt) {
   stopTick(); awake(false);
   const s = S();
   if (saveIt) {
     const exs = s.list.map(x => ({ exId: x.exId, name: ex(x.exId).name, u: x.u || unitOf(ex(x.exId)),
       planned: x.planned || x.sets.length + (x.trim || []).length, rmin: x.rmin, rmax: x.rmax,
-      sets: x.sets.filter(t => t.done).map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {}, t.rir != null ? { rir: t.rir } : {})) })).filter(x => x.sets.length);
+      sets: x.sets.filter(t => t.done).map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {}, t.rir != null ? { rir: t.rir } : {})), adv: x.adv ? true : undefined })).filter(x => x.sets.length);
     if (exs.length) {
       const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
         return b === null || m > b ? { name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
@@ -2288,6 +2311,8 @@ function vTrain() {
           <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
           <div class="row" style="gap:var(--s5)"><button class="link small" data-a="openRir" data-key="${lx.key}" data-i2="${ld.si}">${lt.rir != null ? `RIR ${rirTxt(lt.rir)}` : "RIR angeben"}</button>
             <button class="link small" data-a="editSet" data-key="${lx.key}" data-i2="${ld.si}">Satz korrigieren</button></div></div>` : ""}
+      ${(() => { const a = setAdvice(s); return a ? `<div class="ins ${a.up ? "good" : "warn"}" id="setAdv"><div class="t">${a.up ? "Mehr Gewicht?" : "Weniger Gewicht?"}</div><p class="small" style="margin:0">${esc(a.txt)}</p>
+        <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="advApply">${kgTxt(a.kg)} kg übernehmen</button><button class="btn sm" data-a="advSkip">So lassen</button></div></div>` : ""; })()}
       <div class="next"><div class="cap">${sameEx ? "Nächster Satz" : "Nächste Übung"}</div>
         <h2>${esc(ne.name)}</h2>
         <p class="small muted">Satz ${ni + 1} von ${nx.sets.length} · ${ns.kg !== null ? kgTxt(ns.kg) + " " + unitTxt(ne) : "Gewicht wählen"} × ${ns.reps}</p>
@@ -3771,6 +3796,7 @@ let coachBack = "home", coachDraft = null;
 const COACH_RULES = [
   ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt der Buddy einen erholten Tag vor. Erholung ist eine Schätzung der App: Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung (Regel der App)."],
+  ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt der Buddy für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. RIR 0 – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt der Buddy ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, meldet sich der Buddy."],
   ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],
@@ -4526,6 +4552,9 @@ const A = {
   openRir: el => { rirTarget = { key: el.dataset.key, i: +el.dataset.i2 }; openSheet(rirSheet()); },
   setRir: el => { const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i]; if (!t) return closeSheet();
     if (el.dataset.v === "") delete t.rir; else t.rir = +el.dataset.v; save(); closeSheet(); render(); },
+  advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
+    x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
+  advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
   feel: el => { const s = S(), ld = s.lastDone; const x = ld && s.list.find(l => l.key === ld.key); if (!x) return; const t = x.sets[ld.si]; t.f = t.f === el.dataset.f ? undefined : el.dataset.f; save(); render(); },
   stopSave: () => finish(true),
   stopDiscard: () => finish(false)
@@ -4577,7 +4606,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

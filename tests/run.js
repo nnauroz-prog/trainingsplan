@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v24)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v24")));
+      ok("Service Worker aktiv (Cache trainingsplan-v25)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v25")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2160,7 +2160,64 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("35. Konsole");
+    section("35. Satz-Coach im Training");
+    {
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].sets = 3; plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, voice: true, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      ok("Satz im Ziel (10 bei 8–12): kein Vorschlag", !(await page.$("#setAdv")));
+      await page.click("[data-a=feel][data-f=l]");
+      ok("„Leicht“ unter dem oberen Ziel: weiterhin kein Vorschlag", !(await page.$("#setAdv")));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "15"); await page.click("[data-a=doneSet]");
+      const t = await page.textContent("#setAdv");
+      ok("15 Wdh. (Ziel 8–12): „Mehr Gewicht?“ mit 42,5 kg für den letzten Satz", t.includes("Mehr Gewicht?") && t.includes("15 Wdh. bei 40 kg – über deinem Ziel von 8–12") && t.includes("Für den letzten Satz: 42,5 kg pro Seite (+2,5 kg)"), t.replace(/\s+/g, " "));
+      const said = await tp(page, () => window.__tp.said);
+      ok("Sprachbegleitung nennt den Vorschlag", said[said.length - 1] === "Pause, 60 Sekunden. Vorschlag: mehr Gewicht, 42,5 Kilo.", said[said.length - 1]);
+      ok("360 px: Pause mit Vorschlag ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=advApply]");
+      let sets = await tp(page, () => window.__tp.state.session.list[0].sets.map(x => x.kg));
+      ok("Übernommen: restlicher Satz 42,5 kg, Vorschlag verschwindet", JSON.stringify(sets) === "[40,40,42.5]" && !(await page.$("#setAdv")) && (await page.textContent(".next")).includes("42,5"));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await finishAllSets(page, 100, 10);
+      const h = (await stored(page)).history.pop(), cx = h.exercises.find(x => x.exId === "hs-chest");
+      ok("Im Verlauf gekennzeichnet: im Training angepasst", cx.adv === true && JSON.stringify(cx.sets.map(x => x.kg)) === "[40,40,42.5]");
+      ok("Nächstes Mal: alle Sätze mit 42,5 kg statt wieder 40", (await page.textContent("#nextTime")).includes("42,5 kg pro Seite") && (await page.textContent("#nextTime")).includes("im Training angepasst"));
+      await page.click(".actionbar [data-a=tab][data-v=home]");
+      const row = (await page.textContent("#todayPlan .li")).replace(/\s+/g, " ");
+      ok("Vorschau: 3 × 42,5 kg, Kennzeichen +2,5 kg", row.includes("3 × 42,5 kg pro Seite") && row.includes("+2,5 kg"), row);
+      await ctx.close();
+    }
+    {
+      const plan = JSON.parse(JSON.stringify(PLAN_SMALL)); plan.days[0].items[0].sets = 3; plan.days[0].items[0].rest = 60;
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "5"); await page.click("[data-a=doneSet]");
+      ok("5 Wdh. (Ziel 8–12): „Weniger Gewicht?“ mit 37,5 kg für die restlichen 2 Sätze", (await page.textContent("#setAdv")).includes("Weniger Gewicht?") && (await page.textContent("#setAdv")).includes("die restlichen 2 Sätze: 37,5 kg"));
+      await page.click("[data-a=advSkip]");
+      ok("„So lassen“: Vorschlag weg, Gewicht unverändert", !(await page.$("#setAdv")) && JSON.stringify(await tp(page, () => window.__tp.state.session.list[0].sets.map(x => x.kg))) === "[40,40,40]");
+      await page.click("[data-a=feel][data-f=h]");
+      ok("… und bleibt weg, auch nach einer Bewertung", !(await page.$("#setAdv")));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]"); await page.click("[data-a=feel][data-f=l]");
+      ok("Am oberen Ziel und „leicht“: Vorschlag +2,5 kg", (await page.textContent("#setAdv")).includes("am oberen Ziel und „leicht“"));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "20"); await page.click("[data-a=doneSet]");
+      ok("Letzter Satz einer Übung: kein Vorschlag mehr", !(await page.$("#setAdv")));
+      await ctx.close();
+    }
+    {
+      // Pyramide ohne Satz-Coach bleibt satzweise (keine pauschale Steigerung)
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 45, reps: 10 }], 3, "s")] });
+      await page.click("#todayPlan [data-a=prevWhy][data-n='0']");
+      ok("Unterschiedliche Gewichte ohne Anpassung im Training: weiter satzweise", (await page.textContent(".sheet")).includes("Gewichte satzweise übernommen"));
+      await ctx.close();
+    }
+
+    section("36. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
