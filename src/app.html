@@ -942,7 +942,7 @@ const GOALS = {
 };
 const TEMPLATES = {
   2:[["Ganzkörper A",["hs-chest","hs-row","hs-legpress","hs-shoulder","hs-seatcurl","hs-ab"]],
-     ["Ganzkörper B",["hs-incline","hs-pulldown","hs-hack","hs-lateral","hs-dip","hs-calf"]]],
+     ["Ganzkörper B",["hs-incline","hs-pulldown","hs-hack","hs-hipthrust","hs-lateral","hs-dip","hs-calf"]]],
   3:[["Drücken",["hs-chest","hs-incline","hs-shoulder","hs-lateral","hs-dip"]],
      ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl"]],
      ["Beine",["hs-legpress","hs-hack","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]]],
@@ -1201,7 +1201,9 @@ function balanceVolume(plan) {
     if (hi) { hi.sets--; continue; }
     let added = false;
     for (const m of MAJOR.filter(m => ms[m] < tmin).sort((a, b) => ms[a] - ms[b])) {
-      const cands = plan.days.flatMap(d => d.items.filter(it => ex(it.exId).muscle === m && it.sets < cap).map(it => [d, it])).sort((a, b) => a[1].sets - b[1].sets);
+      // Erst Übungen mit diesem Hauptmuskel, dann solche, die ihn mittrainieren (zählt halb)
+      const by = f => plan.days.flatMap(d => d.items.filter(it => f(ex(it.exId)) && it.sets < cap).map(it => [d, it])).sort((a, b) => a[1].sets - b[1].sets);
+      const cands = [...by(e => e.muscle === m), ...by(e => e.muscle !== m && e.sec.includes(m))];
       for (const [d, it] of cands) {
         it.sets++;
         const ms2 = muscleSets(plan);
@@ -3570,8 +3572,13 @@ function vWeek() {
   const label = weekOff === 0 ? "Diese Woche" : weekOff === 1 ? "Letzte Woche" : `${fmtD(s.mon)} – ${fmtD(last)}`;
   const stat = (cap, num, sub) => `<div class="stat"><div class="cap">${cap}</div><div class="num">${num}</div>${sub ? `<div class="small faint">${sub}</div>` : ""}</div>`;
   const dv = s.pvol ? Math.round((s.vol - s.pvol) / s.pvol * 100) : null;
-  const inRange = [], below = [], none = [];
-  for (const [m, l] of Object.entries(MUSCLES)) { const v = s.ms[m]; if (v >= s.tmin && v <= s.tmax) inRange.push(l); else if (v > 0 && v < s.tmin) below.push(`${l} (${String(Math.round(v * 2) / 2).replace(".", ",")})`); else if (v === 0 && s.planned.has(m)) none.push(l); }
+  const inRange = [], less = [], planLow = [], none = [], fS = v => String(Math.round(v * 2) / 2).replace(".", ",");
+  const P = state.plan, pms = P ? muscleSets(P, state.sched ? state.sched.days.length / Math.max(1, P.days.length) : 1) : {}, done = weekOff > 0 || s.n >= s.goal;
+  for (const [m, l] of Object.entries(MUSCLES)) { const v = s.ms[m], pv = pms[m] || 0;
+    if (v >= s.tmin && v <= s.tmax) inRange.push(l);
+    else if (!done) continue;
+    else if (v === 0 && s.planned.has(m)) none.push(l);
+    else if (v > 0 && v < s.tmin && MAJOR.includes(m)) (pv >= s.tmin ? less.push(`${l} ${fS(v)} statt ${fS(pv)}`) : pv > 0 && planLow.push(l)); }
   const hints = [];
   if (s.n >= s.goal) hints.push(`Wochenziel erreicht: ${s.n} von ${s.goal} ${s.goal === 1 ? "Training" : "Trainings"}.`);
   else if (weekOff === 0) hints.push(`Noch ${s.goal - s.n} ${s.goal - s.n === 1 ? "Training" : "Trainings"} bis zum Wochenziel.`);
@@ -3579,7 +3586,7 @@ function vWeek() {
   if (s.prs.length) hints.push(`${s.prs.length} ${s.prs.length === 1 ? "neuer Bestwert" : "neue Bestwerte"} – mehr Gewicht als je zuvor an diesen Geräten.`);
   const wm = (state.misses || []).filter(m => { const d = dateOf(m.d); return d >= s.mon && d < s.end && !trainedOn(d); });
   if (wm.length) hints.push(`Ausgefallen: ${wm.map(m => `${WD[wdOf(dateOf(m.d))]} (${MISS_R[m.r]})`).join(", ")}.`);
-  if (below.length) hints.push(`Unter dem Zielbereich von ${s.tmin}–${s.tmax} Sätzen: ${below.join(", ")}.`);
+  if (less.length) hints.push(`Weniger Sätze als im Plan: ${less.join(", ")}.`);
   if (none.length) hints.push(`Ohne Satz in dieser Woche, obwohl im Plan: ${none.join(", ")}.`);
   if (s.food && s.G && s.food.p < s.G.prot * 0.9) hints.push(`Eiweiß lag im Schnitt ${fmtK(s.G.prot - s.food.p)} g unter deinem Ziel von ${s.G.prot} g.`);
   $app.innerHTML = `<div class="page">
@@ -3590,7 +3597,8 @@ function vWeek() {
       <div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : "")}
         ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
       ${s.prs.length ? `<div class="group">${s.prs.map(p => `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">vorher ${kgTxt(p.from)} kg</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div>` : ""}
-      ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}</section>
+      ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}
+      ${planLow.length ? `<p class="small faint" style="margin:0" id="weekPlanLow">${joinDe(planLow)}: Dein Plan sieht weniger als ${s.tmin} Sätze pro Woche vor. <button class="link small" data-a="tab" data-v="plan" style="display:inline">Zur Planprüfung</button></p>` : ""}</section>
     ${s.food || s.water || s.fasts ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
       <div class="grid3" style="align-items:start">${s.food ? stat("Ø kcal", fmtK(s.food.k), s.G ? `Ziel ${fmtK(s.G.kcal)}` : `${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"}`) + stat("Ø Eiweiß", fmtK(s.food.p) + '<span class="small muted"> g</span>', s.G ? `Ziel an ${s.food.hit} von ${s.food.n} Tagen` : "") : ""}
         ${s.water ? stat("Ø Wasser", fmtL(s.water) + '<span class="small muted"> L</span>', "") : ""}</div>
@@ -3600,7 +3608,7 @@ function vWeek() {
       <p class="small" style="margin:0"><b>${kgTxt(s.wt.a.kg)} → ${kgTxt(s.wt.b.kg)} kg</b> (${s.wt.b.kg - s.wt.a.kg > 0 ? "+" : s.wt.b.kg - s.wt.a.kg < 0 ? "−" : "±"}${kgTxt(Math.abs(Math.round((s.wt.b.kg - s.wt.a.kg) * 10) / 10))} kg). Das Gewicht schwankt von Tag zu Tag, zum Beispiel durch Wasser und Mageninhalt – aussagekräftiger ist der Trend über mehrere Wochen.</p>
       ${weekOff === 0 && state.nutr ? trendHtml(s.G) : ""}</section>` : ""}
     <section class="section" id="weekHints"><h2>Auf einen Blick</h2><ul class="glist">${hints.map(h => `<li>${esc(h)}</li>`).join("")}</ul>
-      ${below.length || none.length ? `<button class="link small" data-a="openArt" data-id="volumen" data-ret="week">Wie viele Sätze pro Woche? (Trainingswissen)</button>` : ""}
+      ${less.length || none.length ? `<button class="link small" data-a="openArt" data-id="volumen" data-ret="week">Wie viele Sätze pro Woche? (Trainingswissen)</button>` : ""}
       ${s.food && s.G && s.food.p < s.G.prot * 0.9 ? `<button class="link small" data-a="openArt" data-id="eiweiss" data-ret="week">Wie viel Eiweiß brauchst du? (Trainingswissen)</button>` : ""}</section>
   </div>`;
 }
@@ -3920,10 +3928,20 @@ function planCheckHtml() {
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
     ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
     ...high.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche – über dem Richtwert von ${c.tmin}–${c.tmax}</div></div></div>`)];
-  const why = low.length ? (low.every(x => x.full) ? `Mehr passt nicht in dein Zeitbudget von ${p.minutes} Min.` : p.level !== "fortgeschritten" ? "Einsteiger-Pläne starten mit höchstens 3 Sätzen pro Übung (Startwert der App) – mehr kannst du jederzeit ergänzen." : "") : "";
+  // Grund je Muskel: Zeitbudget voll, nur mittrainiert, Satzgrenze pro Übung erreicht oder einfach Sätze ergänzen
+  const capN = p.level === "fortgeschritten" ? 5 : 3, prim = m => p.days.flatMap(d => d.items.filter(it => ex(it.exId).muscle === m).map(it => [d, it]));
+  const room = (d, it) => !p.minutes || (estimateSec(d.items) + setSec(it) + it.rest) / 60 <= p.minutes;
+  const reason = x => { const L = prim(x.m); return !L.length ? "only" : L.some(([d, it]) => it.sets < capN && room(d, it)) ? "more" : L.every(([d, it]) => !room(d, it)) ? "time" : "cap"; };
+  const only = m => !prim(m).length, add = low.filter(x => only(x.m));
+  const R = { time: `Mehr passt nicht in dein Zeitbudget von ${p.minutes} Min.`, only: "Nur mittrainiert, das zählt halb – eine eigene Übung zählt voll.",
+    cap: p.level === "fortgeschritten" ? "Mehr als 5 Sätze pro Übung plant die App nicht (Regel der App) – eine weitere Übung bringt mehr." : "Einsteiger-Pläne starten mit höchstens 3 Sätzen pro Übung (Startwert der App) – mehr kannst du jederzeit ergänzen.",
+    more: "Ein paar Sätze mehr bringen dich in den Bereich." };
+  const groups = Object.keys(R).map(r => [r, low.filter(x => reason(x) === r).map(x => MUSCLES[x.m])]).filter(([, a]) => a.length);
+  const why = groups.length === 1 ? R[groups[0][0]] : groups.map(([r, a]) => `${joinDe(a)}: ${R[r].charAt(0).toLowerCase() + R[r].slice(1)}`).join(" ");
   return `<section class="section" id="planCheck"><h2>Planprüfung</h2>
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : `<p class="small" style="margin:0">Alle großen Muskelgruppen sind dabei${p.minutes ? ", jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
-    ${low.length ? `<p class="small muted" style="margin:0" id="lowNote">Noch unter ${c.tmin} Sätzen pro Woche: ${low.map(x => `${MUSCLES[x.m]} ${f(x.v)}`).join(", ")}. ${why}</p>` : ""}
+    ${low.length ? `<p class="small muted" style="margin:0" id="lowNote">Noch unter ${c.tmin} Sätzen pro Woche: ${low.map(x => `${MUSCLES[x.m]} ${f(x.v)}`).join(", ")}. ${why}</p>
+      ${add.length ? `<div class="row wrap" style="gap:var(--s2)">${add.map(x => `<button class="btn sm" data-a="checkFix" data-m="${x.m}">+ Übung für ${MUSCLES[x.m]}</button>`).join("")}</div>` : ""}` : ""}
     <p class="small faint" style="margin:0">Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}. Richtwert für ${(GOALS[p.goal] || GOALS.aufbau).label}: ${c.tmin}–${c.tmax}.</p>
     <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
 }

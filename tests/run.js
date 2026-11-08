@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v33)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v33")));
+      ok("Service Worker aktiv (Cache trainingsplan-v34)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v34")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1625,11 +1625,18 @@ async function finishAllSets(page, kg, reps) {
       ok("Rückblick: Trainings, Sätze, Volumen mit Vergleich zur Vorwoche (+65 %)", (await page.textContent("#weekTrain")).includes("2") && (await page.textContent("#weekTrain")).includes("+65 % zur Vorwoche"));
       ok("Bestwert mit vorherigem Wert", (await page.textContent("#weekTrain")).includes("vorher 42,5 kg") && (await page.textContent("#weekTrain")).includes("45 kg pro Seite"));
       ok("Hinweise ergeben sich aus den Zahlen", txt.includes("Noch 1 Training bis zum Wochenziel") && txt.includes("1 neuer Bestwert")
-        && txt.includes("Unter dem Zielbereich von 10–20 Sätzen: Brust (3)") && txt.includes("obwohl im Plan: Rücken") && txt.includes("Eiweiß lag im Schnitt 115 g unter deinem Ziel von 128 g"));
+        && txt.includes("Eiweiß lag im Schnitt 115 g unter deinem Ziel von 128 g"));
+      ok("Laufende Woche, Wochenziel offen: noch keine Bewertung der Sätze", !txt.includes("obwohl im Plan") && !txt.includes("Weniger Sätze als im Plan") && !(await page.$("#weekPlanLow")));
       ok("Ernährung: Ø kcal mit Ziel, Eiweißziel an 0 von 1 Tagen, Ø Wasser 1,5 L", (await page.textContent("#weekFood")).includes("379") && (await page.textContent("#weekFood")).includes("an 0 von 1 Tagen") && (await page.textContent("#weekFood")).includes("1,5"));
       ok("Gewicht: Veränderung der Woche mit ehrlichem Hinweis auf Schwankungen", (await page.textContent("#weekWeight")).includes("80,4 → 80 kg") && (await page.textContent("#weekWeight")).includes("−0,4 kg") && (await page.textContent("#weekWeight")).includes("Trend über mehrere Wochen"));
-      ok("Links zum passenden Trainingswissen", !!(await page.$("#weekHints [data-a=openArt][data-id=volumen]")) && !!(await page.$("#weekHints [data-a=openArt][data-id=eiweiss]")));
+      ok("Link zum passenden Trainingswissen (Eiweiß)", !!(await page.$("#weekHints [data-a=openArt][data-id=eiweiss]")));
       ok("Rückblick bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=weekNav][data-d='1']");
+      const prev = await page.textContent("#app");
+      ok("Abgeschlossene Woche: geplante Muskeln ohne Satz, Plan unter Richtwert mit Weg zur Planprüfung", prev.includes("obwohl im Plan: Rücken, Beine vorn")
+        && (await page.textContent("#weekPlanLow")).includes("Brust und Schultern: Dein Plan sieht weniger als 10 Sätze pro Woche vor") && !!(await page.$("#weekPlanLow [data-a=tab][data-v=plan]"))
+        && !!(await page.$("#weekHints [data-a=openArt][data-id=volumen]")));
+      await page.click("[data-a=weekNav][data-d='-1']");
       ok("Keine Zukunft: nächste Woche gesperrt", await page.isDisabled("[data-a=weekNav][data-d='-1']"));
       await page.click("[data-a=weekNav][data-d='1']");
       ok("Letzte Woche: 1 Training, Bestwert 40 → 42,5", (await page.textContent(".head")).includes("Letzte Woche") && (await page.textContent("#weekTrain")).includes("vorher 40 kg"));
@@ -2050,6 +2057,10 @@ async function finishAllSets(page, kg, reps) {
       ok("App-Pläne: Einsteiger höchstens 3, Fortgeschrittene höchstens 5 Sätze pro Übung", r.every(x => x.maxSets <= (x.k.endsWith("einsteiger") ? 3 : 5)));
       const ms = await tp(page, () => { const T = window.__tp; T.state.plan = T.generatePlan("aufbau", 4, "fortgeschritten", 60); return T.planCheck().out.length; });
       ok("4 Tage, Fortgeschritten: alle Muskelgruppen im Richtwert", ms === 0);
+      const full = await tp(page, () => { const T = window.__tp; T.state.sched = null; return [2, 3].map(n => { T.state.plan = T.generatePlan("aufbau", n, "fortgeschritten", 90); return T.planCheck().out.filter(x => x.kind === "low").map(x => x.m); }); });
+      ok("2 und 3 Tage, Fortgeschritten, 90 Min.: alle großen Muskelgruppen im Richtwert (auch über mittrainierte Muskeln aufgefüllt)", full.every(a => !a.length), JSON.stringify(full));
+      const two = await tp(page, () => window.__tp.generatePlan("aufbau", 2, "einsteiger", 60).days[1].items.map(i => i.exId));
+      ok("2-Tage-Plan: Po mit eigener Übung (Hüftheben) statt nur mittrainiert", two.includes("hs-hipthrust"), two.join());
       await ctx.close();
     }
     {
@@ -2674,7 +2685,50 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("45. Konsole");
+    section("45. Plan und Wochenrückblick bewerten gleich");
+    {
+      // Planprüfung: Grund je Muskel – nur mittrainiert (mit „+ Übung“), Zeitbudget, Satzgrenze
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await tp(page, () => { const T = window.__tp; T.state.sched = null; T.state.plan = T.generatePlan("aufbau", 3, "fortgeschritten", 90);
+        T.state.plan.days.forEach(d => d.items = d.items.filter(i => i.exId !== "hs-hipthrust")); });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=tab][data-v=plan]");
+      let low = await page.textContent("#lowNote");
+      ok("Ohne Hüftheben: Po mit Grund „nur mittrainiert“ (einmal) und „+ Übung für Po“", low.includes("Po 5.") && low.split("nur mittrainiert").length === 2 && low.includes("Po: nur mittrainiert, das zählt halb") && (await page.textContent("#planCheck [data-a=checkFix]")).includes("+ Übung für Po"));
+      ok("Satzgrenze als Regel der App benannt", low.includes("Beine hinten: mehr als 5 Sätze pro Übung plant die App nicht (Regel der App)"));
+      await page.click("#planCheck [data-a=checkFix]");
+      ok("„+ Übung für Po“ öffnet die Auswahl mit Po-Übungen", (await page.textContent(".sheet")).includes("Hüftheben"));
+      await page.keyboard.press("Escape");
+      await tp(page, () => { const T = window.__tp; T.state.plan = T.generatePlan("aufbau", 3, "fortgeschritten", 45); });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=tab][data-v=plan]");
+      low = await page.textContent("#lowNote");
+      ok("45 Min.: Grund ist das Zeitbudget, keine „+ Übung“-Aufforderung", low.includes("Mehr passt nicht in dein Zeitbudget von 45 Min.") && !(await page.$("#planCheck [data-a=checkFix]")));
+      await ctx.close();
+    }
+    {
+      // Wochenrückblick: weniger Sätze als im Plan nur für große Muskelgruppen; kleine Muskeln werden nicht bemängelt
+      const plan = { goal: "aufbau", level: "fortgeschritten", minutes: 90, days: [
+        { id: "a", name: "Oben", items: [{ id: "a1", exId: "hs-chest", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-incline", sets: 5, rmin: 8, rmax: 12, rest: 90 },
+          { id: "a3", exId: "hs-row", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "a4", exId: "hs-pulldown", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "a5", exId: "hs-shoulder", sets: 5, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Unten", items: [{ id: "b1", exId: "hs-legpress", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "b2", exId: "hs-legext", sets: 5, rmin: 8, rmax: 12, rest: 90 },
+          { id: "b3", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "b4", exId: "hs-kneelcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "b5", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const now = new Date(), mon = new Date(now); mon.setHours(0, 0, 0, 0); mon.setDate(now.getDate() - (now.getDay() + 6) % 7 - 7);
+      const at = (d, h) => { const x = new Date(mon); x.setDate(mon.getDate() + d); x.setHours(h); return x.toISOString(); };
+      const S = (n, kg) => Array.from({ length: n }, () => ({ kg, reps: 10 }));
+      const X = (exId, n) => ({ exId, name: exId, u: "t", planned: 5, rmin: 8, rmax: 12, sets: S(n, 40) });
+      const history = [
+        { id: "w1", dayId: "a", day: "Oben", date: at(0, 18), durationSec: 3600, exercises: ["hs-chest", "hs-incline", "hs-row", "hs-pulldown", "hs-shoulder"].map(e => X(e, 5)) },
+        { id: "w2", dayId: "b", day: "Unten", date: at(3, 18), durationSec: 3600, exercises: [X("hs-legpress", 5), X("hs-legext", 5), X("hs-seatcurl", 1), X("hs-kneelcurl", 1), X("hs-hipthrust", 5)] }];
+      const { ctx, page } = await open({ plan, history });
+      await page.evaluate(() => { window.__tp.state.sched = null; });
+      await page.click("#homeWeek"); await page.click("[data-a=weekNav][data-d='1']");
+      const txt = (await page.textContent("#weekHints")).replace(/\s+/g, " ");
+      ok("Weniger als im Plan: „Beine hinten 7 statt 15“", txt.includes("Weniger Sätze als im Plan: Beine hinten 7 statt 15"), txt);
+      ok("Bizeps, Trizeps und Waden werden nicht bemängelt (wie in der Planprüfung)", !/Bizeps|Trizeps|Waden/.test(txt));
+      ok("Kein Satz „Unter dem Zielbereich“ mehr, der den eigenen Plan kritisiert", !txt.includes("Unter dem Zielbereich"));
+      await ctx.close();
+    }
+
+    section("46. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
