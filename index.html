@@ -309,9 +309,7 @@
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .addrow{color:var(--accent);font-weight:600;min-height:48px}
-  .buddy{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
-  .buddy h2{margin:0;font-size:22px;line-height:1.15}
-  .buddy p{margin:0}
+  .buddy-says{display:grid;gap:var(--s2)}
   .icon-btn.on{color:var(--accent)}
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -1676,12 +1674,6 @@ function vHome() {
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
-    ${buddyCard(day, thisWeek, goal, streak)}
-    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
-        <div class="cap">Neu: Gewicht pro Seite</div>
-        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
-        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
-      </div>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
@@ -1692,7 +1684,7 @@ function vHome() {
       </section>`; })() : ""}
     ${day && !ses ? `<section class="hero">
       <div class="hero-top">
-        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Empfohlen"}</div>
+        <div class="hero-meta"><div class="cap">${nextReason ? "Angepasst" : "Dein Buddy"}</div>
           <div class="hero-name">${esc(day.name)}</div>
           ${(() => { const tp = activeTimeplan(day);
             return `<div class="metaline"><span><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}</span>
@@ -1701,7 +1693,7 @@ function vHome() {
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
         <div>${figure(workoutColors(day.items), "Muskeln in diesem Training")}</div>
       </div>
-      ${why ? `<p class="reason" ${nextReason ? 'style="color:var(--text)"' : ""}>${esc(why)}</p>` : ""}
+      ${nextReason ? `<p class="reason" style="color:var(--text)">${esc(why)}</p>` : buddySays(day, thisWeek, goal, streak)}
       <div class="stack-sm">
         <button class="btn primary xl block" data-a="start" ${day.items.length ? "" : "disabled"}>${ICON.play}Training starten</button>
         ${state.watch && day.items.length ? `<p class="small muted" id="watchHint">Apple Watch: Zuerst in der App „Training“ <b style="color:var(--text)">Traditionelles Krafttraining</b> starten.</p>` : ""}
@@ -1709,6 +1701,11 @@ function vHome() {
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
       </div>
     </section>` : ""}
+    ${!state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
+        <div class="cap">Neu: Gewicht pro Seite</div>
+        <p class="small">Iso-Lateral-Geräte zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
+        <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
+      </div>` : ""}
     <section class="section">
       <div class="section-head"><h2>Diese Woche</h2><span class="small muted" id="homeWeekSec"><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? ' · <span style="color:var(--ok)">Ziel erreicht</span>' : ""}</span></div>
       <div class="week">${week}</div>
@@ -3345,7 +3342,7 @@ function whenTxt(d) {
   const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
   return `${k === 0 ? "heute" : k === 1 ? "morgen" : WD_LONG[wdOf(d)]} um ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 }
-function buddyCard(day, thisWeek, goal, streak) {
+function buddySays(day, thisWeek, goal, streak) {
   const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [];
   const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
   const goalTxt = thisWeek >= goal ? ` Wochenziel geschafft: ${thisWeek} von ${goal}.` : "";
@@ -3373,9 +3370,9 @@ function buddyCard(day, thisWeek, goal, streak) {
   if (streak >= 2) text += ` ${streak} Wochen in Folge geschafft.`;
   const pr = lastPR();
   if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
-  return `<section class="buddy" id="buddy"><div class="cap">Dein Buddy</div><h2>${esc(title)}</h2><p class="small">${esc(text.trim())}</p>
-    ${act.length ? `<div class="row" style="gap:var(--s2)">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}</div>` : ""}
-    ${s ? `<button class="link small" data-a="openSched" id="buddySched" style="justify-self:start">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</section>`;
+  return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
+    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}
+      ${s ? `<button class="link small" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
 }
 let schedDraft = null;
 function schedSheet() {
@@ -4131,7 +4128,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { buddyCard, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
