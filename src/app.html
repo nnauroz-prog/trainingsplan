@@ -425,6 +425,8 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  cioffi2018: { t: "Cioffi I, Evangelista A, Ponzo V et al.: Intermittent versus continuous energy restriction on weight loss and cardiometabolic outcomes: a systematic review and meta-analysis of randomized controlled trials", j: "J Transl Med 2018;16:371", url: "https://pubmed.ncbi.nlm.nih.gov/30583725/" },
+  headland2016: { t: "Headland M, Clifton PM, Carter S, Keogh JB: Weight-loss outcomes: a systematic review and meta-analysis of intermittent energy restriction trials lasting a minimum of 6 months", j: "Nutrients 2016;8(6):354", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4924195/" },
   gandy2016: { t: "Gandy J et al.: Recording of fluid, beverage and water intakes at the population level in Europe (Anteil von Wasser aus Lebensmitteln, wie von der EFSA angesetzt)", j: "Br J Nutr 2016;116(4):677–682", url: "https://doi.org/10.1017/S0007114516002336" }
 };
 
@@ -500,7 +502,15 @@ const ARTICLES = [
       "Für den Tagesbedarf wird der Grundumsatz mit einem Aktivitätsfaktor multipliziert. Die Bereiche stammen aus einem Bericht von FAO, WHO und UNU: 1,40–1,69 für überwiegend sitzende, 1,70–1,99 für aktive und 2,00–2,40 für sehr aktive Menschen.",
       "Zum Abnehmen empfehlen Fachleute für Kraftsportler etwa 0,5–1 % des Körpergewichts pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Für Muskelaufbau nennt eine Übersichtsarbeit für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.",
       "Wiege dich regelmäßig. Nach zwei bis drei Wochen zeigt der Gewichtstrend unter „Essen“, ob dein Kalorienziel zu deinem Ziel passt."
-    ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] }
+    ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] },
+  { id: "intervallfasten", title: "Intervallfasten: Was es kann und was nicht",
+    lead: "Intervallfasten kann beim Abnehmen helfen – im Mittel aber nicht besser als eine tägliche Kalorienreduktion.",
+    body: [
+      "Beim Intervallfasten wechseln sich Essens- und Fastenzeiten ab, zum Beispiel 16:8: 16 Stunden ohne Kalorien, 8 Stunden Essenszeit. Wasser, ungesüßter Tee und schwarzer Kaffee sind in der Fastenzeit üblich.",
+      "Eine Meta-Analyse von 11 Studien mit 8 bis 24 Wochen Dauer verglich Intervallfasten mit täglicher Kalorienreduktion. Der Unterschied beim Gewichtsverlust war klein – rund 0,6 kg – und statistisch nicht gesichert; auch Blutwerte entwickelten sich vergleichbar. Eine Auswertung von Studien mit mindestens sechs Monaten Dauer kam zum selben Ergebnis. Wie es über Jahre aussieht, ist offen.",
+      "Entscheidend bleibt die Energiebilanz über Tage und Wochen. Intervallfasten ist eine Methode, weniger zu essen: Wem feste Essenszeiten leichtfallen, für den kann sie gut passen. Achte auch beim Fasten auf dein Eiweißziel – für Kraftsportler gibt es bisher vor allem kleine, kurze Studien.",
+      "Vorsicht: Nicht geeignet oder nur nach ärztlicher Rücksprache in Schwangerschaft und Stillzeit, für Kinder und Jugendliche, bei Essstörungen (auch früheren), Untergewicht und Diabetes mit blutzuckersenkenden Medikamenten."
+    ], src: ["cioffi2018", "headland2016"] }
 ];
 
 // Ausführliche Übungsanleitungen. Grundsätze:
@@ -890,7 +900,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [] }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16 }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1000,7 +1010,7 @@ function normalize(raw) {
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   s.health = raw.health === true;
   s.watch = raw.watch === true;
-  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals);
+  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   return s;
 }
 function load() {
@@ -2919,6 +2929,7 @@ function vFood() {
         <div class="row" style="gap:var(--s2)"><button class="btn sm" data-a="water" data-ml="-250" ${ml ? "" : "disabled"} aria-label="250 ml weniger">−</button>
           <button class="btn sm grow" data-a="water" data-ml="250">+ 1 Glas (250 ml)</button><button class="btn sm grow" data-a="water" data-ml="500">+ 500 ml</button></div>
         <button class="link small" data-a="waterInfo" style="justify-self:start">Wie viel solltest du trinken?</button></section>`; })()}
+    ${fastHtml()}
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
@@ -2938,6 +2949,7 @@ function vFood() {
     </div></section>
     <p class="small faint">Nährwerte: USDA FoodData Central (Grundnahrungsmittel) und Open Food Facts (Packungsangaben). Das sind Durchschnitts- bzw. Herstellerangaben; tatsächliche Gehalte schwanken.</p>
   </div>`;
+  fastLive();
 }
 
 /* ================= Barcode-Scan (Kamera, eigener Decoder) ================= */
@@ -3092,6 +3104,49 @@ async function lookupBarcode(code, scanned) {
   } catch (e) { show(offErr()); }
 }
 
+/* ================= Intervallfasten ================= */
+const FAST_OPTS = [14, 16, 18, 20];
+let fastTimer = 0;
+const fmtHM = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return `${Math.floor(m / 60)} h ${m % 60} min`; };
+function fmtWhen(iso) {
+  const d = new Date(iso), t = d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }), k = dkey(d);
+  return k === dkey() ? t : k === dkey(new Date(Date.now() - 864e5)) ? "gestern " + t : k === dkey(new Date(Date.now() + 864e5)) ? "morgen " + t
+    : d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" }) + " " + t;
+}
+function fastHtml() {
+  const f = state.fast;
+  if (!f) {
+    const last = state.fasts[state.fasts.length - 1], recent = state.fasts.slice(-7);
+    return `<section class="stack-sm" id="fastBox"><div class="row between"><h2 style="margin:0">Intervallfasten</h2>
+        <button class="link small" data-a="openArt" data-id="intervallfasten" data-ret="food">Was bringt das?</button></div>
+      <div class="seg" id="fastSeg">${FAST_OPTS.map(h => `<button data-a="fastPick" data-h="${h}" class="${state.fastH === h ? "on" : ""}">${h}:${24 - h}</button>`).join("")}</div>
+      <button class="btn block" data-a="fastStart">Fasten starten · ${state.fastH} Stunden</button>
+      <p class="small faint" style="margin:0">Nicht geeignet oder nur nach ärztlicher Rücksprache: in Schwangerschaft und Stillzeit, bei Essstörungen, Untergewicht oder Diabetes mit blutzuckersenkenden Medikamenten.</p>
+      ${last ? `<p class="small" style="margin:0" id="fastLast">Zuletzt: <b>${fmtHM(new Date(last.e) - new Date(last.s))}</b> von ${last.h} h${new Date(last.e) - new Date(last.s) >= last.h * 3600e3 ? " · Ziel erreicht" : ""}${recent.length > 1 ? ` · ${recent.filter(x => new Date(x.e) - new Date(x.s) >= x.h * 3600e3).length} von ${recent.length} der letzten Fastenzeiten mit erreichtem Ziel` : ""}</p>` : ""}
+    </section>`;
+  }
+  const el = Date.now() - new Date(f.s), goal = f.h * 3600e3, end = new Date(new Date(f.s).getTime() + goal).toISOString(), done = el >= goal;
+  return `<section class="stack-sm" id="fastBox"><div class="row between"><h2 style="margin:0">Intervallfasten · ${f.h}:${24 - f.h}</h2>
+      <span class="small" id="fastNow"><b>${fmtHM(el)}</b> von ${f.h} h</span></div>
+    <div class="mtrack" style="height:10px"><div class="mfill" style="width:${Math.min(100, el / goal * 100)}%;background:${done ? "var(--ok)" : "var(--accent)"}"></div></div>
+    <p class="small muted" style="margin:0">Seit ${fmtWhen(f.s)} · Ziel ${fmtWhen(end)}${done ? ` · <b style="color:var(--ok)">Ziel erreicht</b>` : ` · noch ${fmtHM(goal - el)}`}</p>
+    <div class="row" style="gap:var(--s2)"><button class="btn sm grow" data-a="fastEdit">Startzeit ändern</button><button class="btn sm grow" data-a="fastEnd">Fasten beenden</button></div></section>`;
+}
+function fastLive() {
+  clearInterval(fastTimer);
+  if (!state.fast) return;
+  fastTimer = setInterval(() => { const b = byId("fastBox"); if (!b || !state.fast || view !== "food") { clearInterval(fastTimer); return; } b.outerHTML = fastHtml(); }, 30000);
+}
+function cleanFastActive(f) {
+  if (!isObj(f) || isNaN(new Date(f.s)) || ![14, 16, 18, 20].includes(f.h)) return null;
+  const s = new Date(f.s).getTime(); if (s > Date.now() + 60000 || Date.now() - s > 7 * 864e5) return null;
+  return { s: new Date(s).toISOString(), h: f.h };
+}
+function cleanFasts(a) {
+  return Array.isArray(a) ? a.filter(x => isObj(x) && !isNaN(new Date(x.s)) && !isNaN(new Date(x.e)) && [14, 16, 18, 20].includes(x.h)
+    && new Date(x.e) > new Date(x.s) && new Date(x.e) - new Date(x.s) <= 7 * 864e5).map(x => ({ s: new Date(x.s).toISOString(), e: new Date(x.e).toISOString(), h: x.h })).slice(-120) : [];
+}
+
 /* ================= Wochenrückblick ================= */
 // Nur aus den eigenen Daten berechnet; Hinweise ergeben sich direkt aus den Zahlen.
 let weekOff = 0, weekBack = "home";
@@ -3123,6 +3178,7 @@ function weekStats(off) {
     min: Math.round(H.reduce((a, h) => a + (h.durationSec || 0), 0) / 60), prs, ms, tmin, tmax, planned,
     food: fdays.length ? { n: fdays.length, k: tot.reduce((a, t) => a + t.k, 0) / tot.length, p: tot.reduce((a, t) => a + t.p, 0) / tot.length, hit: G ? tot.filter(t => t.p >= G.prot).length : 0 } : null,
     water: wdays.length ? wdays.reduce((a, k) => a + state.water[k], 0) / wdays.length : null, G,
+    fasts: (() => { const F = state.fasts.filter(x => { const d = new Date(x.e); return d >= mon && d < end; }); return F.length ? { n: F.length, hit: F.filter(x => new Date(x.e) - new Date(x.s) >= x.h * 3600e3).length } : null; })(),
     wt: W.length >= 2 ? { a: W[0], b: W[W.length - 1] } : null, streak: off === 0 ? weekStreak(mon, Math.max(1, state.plan?.days.length || 1)) : null };
 }
 function vWeek() {
@@ -3150,10 +3206,11 @@ function vWeek() {
         ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
       ${s.prs.length ? `<div class="group">${s.prs.map(p => `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">vorher ${kgTxt(p.from)} kg</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div>` : ""}
       ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}</section>
-    ${s.food || s.water ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
+    ${s.food || s.water || s.fasts ? `<section class="stack-sm" id="weekFood"><h2 style="margin:0">Ernährung</h2>
       <div class="grid3" style="align-items:start">${s.food ? stat("Ø kcal", fmtK(s.food.k), s.G ? `Ziel ${fmtK(s.G.kcal)}` : `${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"}`) + stat("Ø Eiweiß", fmtK(s.food.p) + '<span class="small muted"> g</span>', s.G ? `Ziel an ${s.food.hit} von ${s.food.n} Tagen` : "") : ""}
         ${s.water ? stat("Ø Wasser", fmtL(s.water) + '<span class="small muted"> L</span>', "") : ""}</div>
-      ${s.food ? `<p class="small faint" style="margin:0">Durchschnitt über ${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"} mit Einträgen.</p>` : ""}</section>` : ""}
+      ${s.food ? `<p class="small faint" style="margin:0">Durchschnitt über ${s.food.n} ${s.food.n === 1 ? "Tag" : "Tage"} mit Einträgen.</p>` : ""}
+      ${s.fasts ? `<p class="small" style="margin:0" id="weekFast">Intervallfasten: ${s.fasts.n} ${s.fasts.n === 1 ? "Fastenzeit" : "Fastenzeiten"}, davon ${s.fasts.hit} mit erreichtem Ziel.</p>` : ""}</section>` : ""}
     ${s.wt ? `<section class="stack-sm" id="weekWeight"><h2 style="margin:0">Gewicht</h2>
       <p class="small" style="margin:0"><b>${kgTxt(s.wt.a.kg)} → ${kgTxt(s.wt.b.kg)} kg</b> (${s.wt.b.kg - s.wt.a.kg > 0 ? "+" : s.wt.b.kg - s.wt.a.kg < 0 ? "−" : "±"}${kgTxt(Math.abs(Math.round((s.wt.b.kg - s.wt.a.kg) * 10) / 10))} kg). Das Gewicht schwankt von Tag zu Tag, zum Beispiel durch Wasser und Mageninhalt – aussagekräftiger ist der Trend über mehrere Wochen.</p>
       ${weekOff === 0 && state.nutr ? trendHtml(s.G) : ""}</section>` : ""}
@@ -3478,6 +3535,27 @@ const A = {
       <button class="btn block danger" data-a="mealDelDo" data-id="${x.id}">Löschen</button>`);
   },
   mealDelDo: el => { state.meals = state.meals.filter(y => y.id !== el.dataset.id); save(); openSheet(foodAddSheet()); },
+  fastPick: el => { state.fastH = +el.dataset.h; save(); byId("fastBox").outerHTML = fastHtml(); },
+  fastStart: () => { state.fast = { s: new Date().toISOString(), h: state.fastH }; save(); byId("fastBox").outerHTML = fastHtml(); fastLive(); },
+  fastEdit: () => {
+    const d = new Date(state.fast.s), v = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    openSheet(`${sheetHead("Startzeit ändern", "Abbrechen")}
+      <div class="field"><label for="fastT">Letzte Mahlzeit bzw. Fastenbeginn</label><input id="fastT" type="time" value="${v}"></div>
+      <p class="small faint">Liegt die Uhrzeit nach jetzt, gilt der Vortag.</p>
+      <p class="error" id="fastErr" hidden>Bitte eine Uhrzeit wählen.</p>
+      <button class="btn primary block" data-a="fastEditSave">Speichern</button>`);
+  },
+  fastEditSave: () => {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(byId("fastT").value); if (!m) { byId("fastErr").hidden = false; return; }
+    const d = new Date(); d.setHours(+m[1], +m[2], 0, 0); if (d.getTime() > Date.now()) d.setDate(d.getDate() - 1);
+    state.fast.s = d.toISOString(); save(); closeSheet(); vFood();
+  },
+  fastEnd: () => {
+    const f = state.fast; if (!f) return;
+    const e = new Date().toISOString();
+    if (Date.now() - new Date(f.s) >= 60000) state.fasts = [...state.fasts, { s: f.s, e, h: f.h }].slice(-120);
+    state.fast = null; save(); clearInterval(fastTimer); byId("fastBox").outerHTML = fastHtml();
+  },
   copyMeal: el => {
     const d = foodDay && foodDay < dkey() ? foodDay : dkey(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
     const src = (state.food[prev] || []).filter(e => e.m === el.dataset.m); if (!src.length) return;
@@ -3792,7 +3870,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

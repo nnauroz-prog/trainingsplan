@@ -360,7 +360,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v19)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v19")));
+      ok("Service Worker aktiv (Cache trainingsplan-v20)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v20")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1649,7 +1649,70 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("30. Konsole");
+    section("30. Intervallfasten");
+    {
+      const ago = h => new Date(Date.now() - h * 3600e3).toISOString();
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: ago(2), h: 17 }, fasts: [{ s: ago(50), e: ago(60), h: 16 }, { s: ago(40), e: ago(23), h: 16 }], fastH: 99 });
+      const cl = await tp(page, () => { const s = window.__tp.state; return { fast: s.fast, n: s.fasts.length, h: s.fastH, fmt: window.__tp.fmtHM(16 * 3600e3 + 5 * 60e3) }; });
+      ok("Ungültige Daten verworfen (Ziel 17 h, Ende vor Beginn, unbekannte Vorgabe)", cl.fast === null && cl.n === 1 && cl.h === 16);
+      ok("Zeitformat: 16 h 5 min", cl.fmt === "16 h 5 min");
+      await page.click("[data-a=tab][data-v=food]");
+      const box = await page.textContent("#fastBox");
+      ok("Fasten-Bereich mit Vorgaben 14:10 bis 20:4 und Vorsichtshinweis", (await page.$$("[data-a=fastPick]")).length === 4 && box.includes("16:8") && box.includes("Schwangerschaft") && box.includes("Diabetes"));
+      ok("Letzte Fastenzeit mit Ergebnis", (await page.textContent("#fastLast")).includes("17 h 0 min") && (await page.textContent("#fastLast")).includes("Ziel erreicht"));
+      await page.click("[data-a=fastPick][data-h='18']");
+      ok("Vorgabe wählbar und gespeichert", (await stored(page)).fastH === 18 && (await page.textContent("[data-a=fastStart]")).includes("18 Stunden"));
+      await page.click("[data-a=fastStart]");
+      let st = await stored(page);
+      ok("Start: läuft mit 18 h Ziel", st.fast && st.fast.h === 18 && Math.abs(Date.now() - new Date(st.fast.s)) < 10000 && (await page.textContent("#fastNow")).includes("0 h 0 min von 18 h"));
+      ok("Restzeit und Zielzeit angezeigt", (await page.textContent("#fastBox")).includes("noch 18 h 0 min") || (await page.textContent("#fastBox")).includes("noch 17 h 59 min"));
+      // Startzeit ändern: zwei Stunden zurück
+      const two = new Date(Date.now() - 2 * 3600e3), hhmm = `${String(two.getHours()).padStart(2, "0")}:${String(two.getMinutes()).padStart(2, "0")}`;
+      await page.click("[data-a=fastEdit]"); await page.fill("#fastT", hhmm); await page.click("[data-a=fastEditSave]");
+      st = await stored(page);
+      const el = (Date.now() - new Date(st.fast.s)) / 3600e3;
+      ok("Startzeit geändert (vor 2 Stunden)", el > 1.95 && el < 2.05 && (await page.textContent("#fastNow")).includes("2 h"));
+      const later = new Date(Date.now() + 2 * 3600e3), hh2 = `${String(later.getHours()).padStart(2, "0")}:${String(later.getMinutes()).padStart(2, "0")}`;
+      await page.click("[data-a=fastEdit]"); await page.fill("#fastT", hh2); await page.click("[data-a=fastEditSave]");
+      st = await stored(page);
+      const el2 = (Date.now() - new Date(st.fast.s)) / 3600e3;
+      ok("Uhrzeit nach jetzt gilt als Vortag (vor 22 Stunden)", el2 > 21.9 && el2 < 22.1 && (await page.textContent("#fastBox")).includes("Ziel erreicht"));
+      await page.click("[data-a=fastEnd]");
+      st = await stored(page);
+      ok("Beenden speichert die Fastenzeit", st.fast === null && st.fasts.length === 2 && st.fasts[1].h === 18 && (await page.textContent("#fastLast")).includes("22 h") && (await page.textContent("#fastLast")).includes("Ziel erreicht"));
+      ok("Statistik der letzten Fastenzeiten", (await page.textContent("#fastLast")).includes("2 von 2 der letzten Fastenzeiten mit erreichtem Ziel"));
+      await page.click("[data-a=fastStart]"); await page.click("[data-a=fastEnd]");
+      ok("Versehentlicher Start (unter 1 Minute) wird nicht gespeichert", (await stored(page)).fasts.length === 2);
+      await page.click("#fastBox [data-a=openArt]");
+      const art = await page.textContent("#app");
+      ok("Artikel: ehrliche Einordnung mit Quellen und Vorsichtshinweis", art.includes("nicht besser als eine tägliche Kalorienreduktion") && art.includes("0,6 kg") && art.includes("Essstörungen")
+        && (await page.$$eval(".srcs a", a => a.map(x => x.href))).some(h => h.includes("30583725")) && (await page.$$(".srcs a")).length === 2);
+      await page.click("[data-a=artBack]");
+      ok("Zurück zur Ernährung", await page.isVisible("#fastBox"));
+      ok("Fasten-Bereich bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Wochenrückblick
+      await page.click("[data-a=tab][data-v=history]");
+      await tp(page, () => { const s = window.__tp.state; s.history.push({ id: "x", dayId: "d1", day: "Test", date: new Date().toISOString(), durationSec: 60, exercises: [] }); });
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#histWeek");
+      const fw = await page.textContent("#weekFast").catch(() => "");
+      const expect = await tp(page, () => { const s = window.__tp.weekStats(0); return s.fasts; });
+      ok("Wochenrückblick zählt Fastenzeiten der Woche", expect && fw.includes(`${expect.n} ${expect.n === 1 ? "Fastenzeit" : "Fastenzeiten"}, davon ${expect.hit} mit erreichtem Ziel`), fw);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: new Date(Date.now() - 16.5 * 3600e3).toISOString(), h: 16 } });
+      await page.click("[data-a=tab][data-v=food]");
+      ok("Laufendes Fasten übersteht Neuladen; Ziel erreicht nach 16,5 h", (await page.textContent("#fastNow")).includes("16 h 30 min") && (await page.textContent("#fastBox")).includes("Ziel erreicht"));
+      await ctx.close();
+    }
+    for (const light of [false, true]) {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, fast: { s: new Date(Date.now() - 5 * 3600e3).toISOString(), h: 20 } }, { light });
+      await page.click("[data-a=tab][data-v=food]");
+      ok(`360 px ${light ? "hell" : "dunkel"}: laufendes Fasten ohne seitliches Scrollen`, await noOverflow(page) && await page.isVisible("#fastNow"));
+      await ctx.close();
+    }
+
+    section("31. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
