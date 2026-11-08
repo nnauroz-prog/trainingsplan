@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v34)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v34")));
+      ok("Service Worker aktiv (Cache trainingsplan-v35)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v35")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2728,7 +2728,43 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("46. Konsole");
+    section("46. Fortschritt zählt auch Wiederholungen");
+    {
+      const H4 = (d, exs) => ({ id: "p" + d, dayId: "d1", day: "Test", date: new Date(Date.now() - d * 864e5).toISOString(), durationSec: 2400, exercises: exs });
+      const X = (exId, u, kg, reps) => ({ exId, name: exId, u, sets: reps.map(r => ({ kg, reps: r })) });
+      const history = [
+        H4(28, [X("hs-chest", "s", 40, [8, 8]), X("hs-legpress", "t", 100, [10, 10]), X("hs-row", "s", 50, [10, 10])]),
+        H4(21, [X("hs-chest", "s", 40, [9, 8]), X("hs-legpress", "t", 105, [8, 8]), X("hs-row", "s", 50, [9, 8])]),
+        H4(14, [X("hs-chest", "s", 40, [10, 9]), X("hs-legpress", "t", 105, [10, 9]), X("hs-row", "s", 47.5, [10, 10])]),
+        H4(7, [X("hs-chest", "s", 40, [11, 10]), X("hs-legpress", "t", 110, [8, 8]), X("hs-row", "s", 47.5, [12, 11])])];
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [
+        { id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 0 }, { id: "i2", exId: "hs-legpress", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }] };
+      const { ctx, page } = await open({ plan, history, backupAt: new Date().toISOString() });
+      await page.click("[data-a=tab][data-v=history]");
+      const row = async id => (await page.textContent(`[data-a=showEx][data-id=${id}]`)).replace(/\s+/g, " ");
+      ok("Gleiches Gewicht, mehr Wiederholungen: „+3 Wdh.“ statt „±0“, Bestwert 40 kg × 11", (await row("hs-chest")).includes("+3 Wdh.") && (await row("hs-chest")).includes("× 11"));
+      ok("Mehr Gewicht: „+10 kg“", (await row("hs-legpress")).includes("+10 kg"));
+      ok("Weniger Gewicht wird ehrlich gezeigt: „−2,5 kg“ (grau) statt „±0“", (await row("hs-row")).includes("−2,5 kg") && await page.$eval("[data-a=showEx][data-id=hs-row] .delta", e => e.classList.contains("zero")));
+      await page.click("[data-a=showEx][data-id=hs-chest]");
+      ok("Gerätekurve: „Seit Beginn +3 Wdh.“ mit Datum der ersten Einheit", (await page.textContent("#sinceStart")).replace(/\s+/g, " ").includes("+3 Wdh.") && (await page.textContent("#sinceStart")).includes("seit"));
+      ok("Gerätekurve: Wiederholungen über jedem Punkt (8, 9, 10, 11)", JSON.stringify(await page.$$eval(".sheet .repLbl", a => a.map(e => e.textContent))) === '["8","9","10","11"]');
+      ok("360 px: Gerätekurve ohne seitliches Scrollen", await noOverflow(page));
+      await page.keyboard.press("Escape"); await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const sets = async list => { for (const [kg, r] of list) { if (!(await page.$("[data-a=doneSet]"))) break; await page.fill("#kgIn", String(kg)); await page.fill("#repsIn", String(r)); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]"); } };
+      await sets([[40, 12], [40, 11], [110, 9], [110, 8]]);
+      let pr = (await page.textContent("#prList")).replace(/\s+/g, " ");
+      ok("Nach dem Training: Wiederholungsrekord „12 Wdh. mit 40 kg pro Seite, vorher höchstens 11“ (+1 Wdh.)", pr.includes("12 Wdh. mit 40 kg pro Seite, vorher höchstens 11") && pr.includes("+1 Wdh."), pr);
+      ok("… und an der Beinpresse „9 Wdh. mit 110 kg insgesamt, vorher höchstens 8“", pr.includes("9 Wdh. mit 110 kg insgesamt, vorher höchstens 8"));
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await sets([[42.5, 8], [42.5, 8], [110, 7], [110, 7]]);
+      pr = (await page.textContent("#prList")).replace(/\s+/g, " ");
+      ok("Mehr Gewicht zählt als Bestwert, weniger Wiederholungen als zuvor nicht", pr.includes("Brustpresse") && pr.includes("Mehr Gewicht als je zuvor") && !pr.includes("Beinpresse"), pr);
+      await ctx.close();
+    }
+
+    section("47. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

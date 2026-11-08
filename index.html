@@ -1259,6 +1259,21 @@ function lastPerf(exId, u = unitOf(ex(exId))) {
   }
   return null;
 }
+// Meiste Wiederholungen mit mindestens diesem Gewicht (gleiche Gewichtsangabe); null = noch nie so schwer
+function repBest(exId, u, kg) {
+  let best = null;
+  for (const h of state.history) for (const e of h.exercises)
+    if (e.exId === exId && e.u === u) for (const s of e.sets) if (validSet(s) && s.kg >= kg && (best === null || s.reps > best)) best = s.reps;
+  return best;
+}
+// Schwerster Satz einer Einheit und die meisten Wiederholungen damit
+function topSet(v) { const kg = Math.max(...v.map(t => t.kg)); return { kg, reps: Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)) }; }
+// Fortschritt zwischen zwei Einheiten: mehr Gewicht – oder beim gleichen Gewicht mehr Wiederholungen (doppelte Progression)
+function progDelta(a, b) {
+  const dk = b.kg - a.kg, dr = b.reps - a.reps;
+  if (dk) return { up: dk > 0, n: `${dk > 0 ? "+" : "−"}${kgTxt(Math.abs(dk))}`, u: "kg" };
+  return dr ? { up: dr > 0, n: `${dr > 0 ? "+" : "−"}${Math.abs(dr)}`, u: "Wdh." } : { up: false, n: "±0", u: "" };
+}
 function bestKg(exId, u = unitOf(ex(exId))) {
   let best = null;
   for (const h of state.history) for (const e of h.exercises)
@@ -2494,13 +2509,18 @@ function finish(saveIt) {
       sets: x.sets.filter(t => t.done).map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {}, t.rir != null ? { rir: t.rir } : {})), adv: x.adv ? true : undefined })).filter(x => x.sets.length);
     if (exs.length) {
       const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
-        return b === null || m > b ? { name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
+        return b === null || m > b ? { exId: x.exId, name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
+      // Ohne mehr Gewicht: mehr Wiederholungen als je zuvor mit mindestens diesem Gewicht (vor dem Speichern berechnet)
+      const repPrs = exs.filter(x => !prs.some(p => p.exId === x.exId)).map(x => { const v = x.sets.filter(validSet); if (!v.length || bestKg(x.exId, x.u) === null) return null;
+        for (const kg of [...new Set(v.map(t => t.kg))].sort((a, b) => b - a)) { const r = Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)), rb = repBest(x.exId, x.u, kg);
+          if (rb !== null && r > rb) return { name: x.name, kg, u: x.u, reps: r, from: rb }; }
+        return null; }).filter(Boolean);
       const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date().toISOString(), durationSec: Math.round((Date.now() - s.start) / 1000), exercises: exs };
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       state.history.push(rec);
-      summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
+      summary = { rec, prs, repPrs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]); askPersist();
-      say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
+      say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) || repPrs.length ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
   }
   state.session = null; save(); closeSheet();
@@ -4285,7 +4305,7 @@ function watchSheet() {
 
 function vSummary() {
   const sm = summary; if (!sm) return go("home");
-  const r = sm.rec, prs = sm.prs.filter(p => !p.first);
+  const r = sm.rec, prs = sm.prs.filter(p => !p.first), reps = sm.repPrs || [];
   $app.innerHTML = `<div class="page">
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
@@ -4300,8 +4320,9 @@ function vSummary() {
       <p class="small faint">Übergibt an den Kurzbefehl „${HK_NAME}“: ${healthTxt(r)}</p></section>` : ""}
     ${sm.goals && sm.goals.length ? `<section class="section" id="goalDone"><h2>Ziel erreicht</h2><div class="group">${sm.goals.map(g => { const st = goalStatus(g);
       return `<div class="li"><div class="grow"><div class="t">${esc(st.name)}</div><div class="s">${kgTxt(g.start)} → ${kgTxt(g.target)} ${st.unit} seit ${fmtDay(g.startDate)}</div></div><span class="badge up">Geschafft</span></div>`; }).join("")}</div></section>` : ""}
-    ${prs.length ? `<section class="section"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
-      `<div class="li"><div class="grow t">${esc(p.name)}</div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div></section>` : ""}
+    ${prs.length || reps.length ? `<section class="section" id="prList"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
+      `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">Mehr Gewicht als je zuvor</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}${reps.map(p =>
+      `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">${p.reps} Wdh. mit ${kgTxt(p.kg)} ${UNIT[p.u]}, vorher höchstens ${p.from}</div></div><span class="badge pr">+${p.reps - p.from} Wdh.</span></div>`).join("")}</div></section>` : ""}
     ${nextTimeHtml(r)}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
       <div class="s">${x.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join("  ·  ")} · ${UNIT[x.u]}</div></div></div>`).join("")}</div></section>
@@ -4335,8 +4356,8 @@ function vHistory() {
   // Bestwerte je Gerät UND Gewichtsangabe; Verlauf der besten Sätze je Training für Kraftentwicklung
   const best = {}, series = {};
   H.forEach(h => h.exercises.forEach(x => { const k = x.exId + "|" + x.u, v = x.sets.filter(validSet);
-    v.forEach(t => { if (!best[k] || t.kg > best[k].kg) best[k] = { id: x.exId, u: x.u, kg: t.kg, reps: t.reps, name: ex(x.exId).name, lastAt: 0 }; });
-    if (v.length) { (series[k] = series[k] || []).push(Math.max(...v.map(t => t.kg))); best[k].lastAt = new Date(h.date).getTime(); } }));
+    v.forEach(t => { if (!best[k] || t.kg > best[k].kg || (t.kg === best[k].kg && t.reps > best[k].reps)) best[k] = { id: x.exId, u: x.u, kg: t.kg, reps: t.reps, name: ex(x.exId).name, lastAt: best[k] ? best[k].lastAt : 0 }; });
+    if (v.length) { (series[k] = series[k] || []).push(topSet(v)); best[k].lastAt = new Date(h.date).getTime(); } }));
   const bestList = Object.entries(best).sort((a, b) => b[1].lastAt - a[1].lastAt).slice(0, 8);
   const spark = arr => { if (arr.length < 2) return `<svg class="spark" viewBox="0 0 72 28" aria-hidden="true"><circle cx="36" cy="14" r="3" fill="var(--accent)"/></svg>`;
     const p = arr.slice(-8), lo = Math.min(...p), hi = Math.max(...p), span = hi - lo || 1;
@@ -4369,10 +4390,11 @@ function vHistory() {
     </section>
     <section class="section">
       <div class="section-head"><h2>Kraft & Bestwerte</h2><span class="small muted">Antippen für Details</span></div>
-      <div class="group">${bestList.map(([k, b]) => { const sr = series[k] || [], dlt = sr.length > 1 ? sr[sr.length - 1] - sr[0] : 0;
+      <div class="group">${bestList.map(([k, b]) => { const sr = series[k] || [], dl = sr.length > 1 ? progDelta(sr[0], sr[sr.length - 1]) : { up: false, n: "±0", u: "" };
         return `<button class="li" data-a="showEx" data-id="${b.id}" data-u="${b.u}">
           <div class="grow"><div class="t ellipsis">${esc(b.name)}</div><div class="s">${kgTxt(b.kg)} kg ${UNIT_SHORT[b.u]} × ${b.reps}</div></div>
-          ${spark(sr)}<span class="delta ${dlt > 0 ? "" : "zero"}">${dlt > 0 ? "+" + kgTxt(dlt) : "±0"}</span></button>`; }).join("")}</div>
+          ${spark(sr.map(x => x.kg))}<span class="delta ${dl.up ? "" : "zero"}">${dl.n}${dl.u ? ` ${dl.u}` : ""}</span></button>`; }).join("")}</div>
+      <p class="small faint" style="margin:0">Veränderung seit der ersten Einheit: mehr Gewicht – oder beim gleichen Gewicht mehr Wiederholungen.</p>
     </section>` : `<p class="muted">Noch keine Trainings. Nach deinem ersten Training siehst du hier Häufigkeit, Kraftentwicklung und Bestwerte.</p>`}
     ${goalsHtml()}
     <div>
@@ -4440,29 +4462,28 @@ function weightCard() {
 function exChart(exId, u = unitOf(ex(exId))) {
   const all = state.history.map(h => { const x = h.exercises.find(e => e.exId === exId); if (!x) return null;
     const v = x.sets.filter(validSet); return v.length ? { d: new Date(h.date), kg: Math.max(...v.map(t => t.kg)), sets: v, u: x.u } : null; }).filter(Boolean);
-  const other = all.filter(p => p.u !== u).length;
-  const pts = all.filter(p => p.u === u).slice(-12);
+  const other = all.filter(p => p.u !== u).length, allU = all.filter(p => p.u === u);
+  const pts = allU.slice(-12);
   const name = ex(exId).name;
   const otherNote = other ? `<p class="small faint">${other} ${other === 1 ? "Eintrag" : "Einträge"} mit anderer Gewichtsangabe ausgeblendet, damit nichts Ungleiches verglichen wird.</p>` : "";
   if (!pts.length) return `${sheetHead(esc(name), "Schließen")}<p class="muted">Noch keine Daten mit „${UNIT[u]}“.</p>${otherNote}`;
-  const W = 320, H = 150, pl = 36, pr = 12, pt = 14, pb = 26;
+  const W = 320, H = 160, pl = 36, pr = 12, pt = 24, pb = 26;
   let lo = Math.min(...pts.map(p => p.kg)), hi = Math.max(...pts.map(p => p.kg));
   if (hi === lo) { lo = Math.max(0, lo - 5); hi = hi + 5; }
   const X = i => pts.length === 1 ? (pl + W - pr) / 2 : pl + i * (W - pl - pr) / (pts.length - 1);
   const Y = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
   const line = pts.map((p, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(p.kg).toFixed(1)}`).join("");
   const area = line + `L${X(pts.length - 1).toFixed(1)},${H - pb}L${X(0).toFixed(1)},${H - pb}Z`;
-  const first = pts[0].kg, lastP = pts[pts.length - 1];
-  const diff = lastP.kg - first;
+  const lastP = pts[pts.length - 1], since = progDelta(topSet(allU[0].sets), topSet(lastP.sets));
   const dl = d => d.getDate() + "." + (d.getMonth() + 1) + ".";
   return `${sheetHead(esc(name), "Schließen")}
     <div class="grid3">
       <div class="stat"><div class="cap">Aktuell</div><div class="num">${kgTxt(lastP.kg)}<span class="small muted"> kg</span></div><div class="small faint">${UNIT_SHORT[u]} · ${lastP.sets.map(t => t.reps).join("/")} Wdh.</div></div>
-      <div class="stat"><div class="cap">Seit Beginn</div><div class="num" style="color:${diff > 0 ? "var(--ok)" : "var(--text)"}">${diff > 0 ? "+" : ""}${kgTxt(diff)}<span class="small muted"> kg</span></div></div>
+      <div class="stat" id="sinceStart"><div class="cap">Seit Beginn</div><div class="num" style="color:${since.up ? "var(--ok)" : "var(--text)"}">${since.n}${since.u ? `<span class="small muted"> ${since.u}</span>` : ""}</div><div class="small faint">seit ${allU[0].d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric", year: "2-digit" })}</div></div>
       <div class="stat"><div class="cap">1RM geschätzt</div><div class="num">≈${kgTxt(Math.round(Math.max(...lastP.sets.map(e1rm)) * 2) / 2)}<span class="small muted"> kg</span></div><div class="small faint">Näherung</div></div>
     </div>
     ${(() => { const pl = plateau(exId); return pl ? `<p class="small" style="color:var(--warn)" id="plateauChart">${esc(plateauTxt(pl))}</p>` : ""; })()}${otherNote}
-    <p class="small faint">1RM nach Epley aus deinen Sätzen geschätzt. An Maschinen nur eine grobe Näherung.</p>
+    <p class="small faint">Linie: schwerster Satz je Training, Zahl darüber: Wiederholungen damit. 1RM nach Epley aus deinen Sätzen geschätzt, an Maschinen nur eine grobe Näherung.</p>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" role="img" aria-label="Gewichtsverlauf ${esc(name)}">
       <line x1="${pl}" x2="${W - pr}" y1="${Y(hi)}" y2="${Y(hi)}" stroke="var(--hair)"/>
       <line x1="${pl}" x2="${W - pr}" y1="${Y(lo)}" y2="${Y(lo)}" stroke="var(--hair)"/>
@@ -4470,7 +4491,8 @@ function exChart(exId, u = unitOf(ex(exId))) {
       <text x="${pl - 6}" y="${Y(lo) + 4}" text-anchor="end" font-size="11" fill="var(--text-3)">${kgTxt(lo)}</text>
       <path d="${area}" fill="var(--accent-tint)"/>
       <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      ${pts.map((p, i) => `<circle cx="${X(i)}" cy="${Y(p.kg)}" r="${i === pts.length - 1 ? 5 : 3}" fill="var(--accent)" stroke="var(--raise)" stroke-width="2"/>`).join("")}
+      ${pts.map((p, i) => `<circle cx="${X(i)}" cy="${Y(p.kg)}" r="${i === pts.length - 1 ? 5 : 3}" fill="var(--accent)" stroke="var(--raise)" stroke-width="2"/>
+        <text x="${X(i)}" y="${Y(p.kg) - 10}" text-anchor="middle" font-size="10" fill="var(--text-2)" class="repLbl">${topSet(p.sets).reps}</text>`).join("")}
       <text x="${X(0)}" y="${H - 6}" text-anchor="${pts.length === 1 ? "middle" : "start"}" font-size="11" fill="var(--text-3)">${dl(pts[0].d)}</text>
       ${pts.length > 1 ? `<text x="${X(pts.length - 1)}" y="${H - 6}" text-anchor="end" font-size="11" fill="var(--text-3)">${dl(lastP.d)}</text>` : ""}
     </svg>
