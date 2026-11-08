@@ -377,7 +377,7 @@
     .sheet,.scrim{animation:none}.bar>div,.fig .m,details.disc>summary .chev{transition:none}.btn{transition:none}}
 </style>
 
-<p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Plan eine Sicherung kopieren.</p>
+<p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Training → Einstellungen eine Sicherung erstellen.</p>
 <div id="app"></div>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
@@ -974,7 +974,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1096,6 +1096,7 @@ function normalize(raw) {
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
   s.misses = cleanMisses(raw.misses); s.missSkip = /^\d{4}-\d{2}-\d{2}$/.test(raw.missSkip || "") ? raw.missSkip : null;
   s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
+  s.backupAt = typeof raw.backupAt === "string" && !isNaN(new Date(raw.backupAt)) && +new Date(raw.backupAt) <= Date.now() + 864e5 ? new Date(raw.backupAt).toISOString() : null;
   // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
   const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
   s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
@@ -1120,6 +1121,27 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); saveFailed = false; }
   catch (e) { saveFailed = true; const b = document.getElementById("saveWarn"); if (b) b.hidden = false; }
 }
+// Datensicherung: Datei (Teilen-Menü bzw. Download) oder Text. Der Browser wird um dauerhaften Speicher gebeten –
+// ob er zusagt, entscheidet er selbst (Storage Standard: ohne Zusage darf er die Daten bei Speichermangel löschen).
+const BACKUP_N = 5, BACKUP_DAYS = 14;              // Erinnerung: Regel der App
+function backupData(at) { const { session, ...rest } = state; return Object.assign({}, rest, { backupAt: at }); }
+function sinceBackup() { const b = state.backupAt; return state.history.filter(h => !b || h.date > b).length; }
+function askPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {} }
+function markBackup(at) { state.backupAt = at; save(); askPersist(); }
+function parseBackup(raw) {
+  raw = String(raw || "").trim();
+  let data = raw.startsWith("TP1:") ? JSON.parse(decodeURIComponent(escape(atob(raw.slice(4))))) : JSON.parse(raw);
+  if (isObj(data) && data.app === "trainingsplan" && isObj(data.data)) data = data.data;
+  if (!isObj(data) || !Array.isArray(data.history)) throw 0;
+  return data;
+}
+function downloadText(text, name, type) {
+  const url = URL.createObjectURL(new Blob([text], { type })), a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+const nTr = n => `${n} ${n === 1 ? "Training" : "Trainings"}`, nTd = n => `${n} ${n === 1 ? "Trainingstag" : "Trainingstage"}`;
+const backupLine = () => { const b = state.backupAt, n = sinceBackup(), H = state.history.length;
+  return b ? `Zuletzt am ${fmtDay(b)}${n ? ` · seitdem ${nTr(n)}` : " · aktuell"}` : H ? `Noch keine · ${nTr(H)} ungesichert` : "Noch keine"; };
 function exIdByName(name, s) {
   const hit = LIB.find(e => e.name.toLowerCase() === name.toLowerCase()) || s.custom.find(e => e.name.toLowerCase() === name.toLowerCase());
   if (hit) return hit.id;
@@ -1805,8 +1827,9 @@ function tabOf(v) {
   if (v === "coach") return coachBack === "history" ? "history" : coachBack === "wissen" ? "lib" : "home";
   return v;
 }
+let homeNote = "";
 function go(v) {
-  view = v;
+  view = v; if (v !== "home") homeNote = "";
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
@@ -1876,6 +1899,7 @@ function vHome() {
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
+    ${homeNote ? `<p class="note small" id="homeNote" role="status" style="margin:0">${esc(homeNote)}</p>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
@@ -2082,10 +2106,45 @@ function vSettings() {
       <button class="li" data-a="openWatch"><div class="grow"><div class="t">Apple Watch</div><div class="s">${state.watch ? "Zeichnet mit auf" : "Aus"} · Puls und Kalorien in Health</div></div><span class="chev">›</span></button></div></section>
     <section class="section"><h2>Plan und Daten</h2><div class="group">
       <button class="li" data-a="newPlan"><div class="grow"><div class="t">Neuen Plan erstellen</div><div class="s">Dein Verlauf bleibt erhalten</div></div><span class="chev">›</span></button>
-      <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung kopieren</div></div><span class="chev">›</span></button>
-      <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung einfügen</div></div><span class="chev">›</span></button></div>
-      <p class="small faint">Plan und Verlauf liegen nur auf diesem Gerät. Kopiere ab und zu eine Sicherung, z. B. in deine Notizen.</p></section>
+      <button class="li" data-a="exportData"><div class="grow"><div class="t">Sicherung erstellen</div><div class="s" id="backupLine">${backupLine()}</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="importOpen"><div class="grow"><div class="t">Sicherung wiederherstellen</div><div class="s">Aus Datei oder Text</div></div><span class="chev">›</span></button></div>
+      <p class="small faint" id="persistInfo">Plan und Verlauf liegen nur in diesem Browser auf diesem Gerät. Eine Sicherungsdatei schützt bei Handywechsel, Verlust oder gelöschten Browserdaten.</p></section>
   </div>`;
+  // Antwort des Browsers anzeigen, nichts versprechen
+  try { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(ok => { const el = byId("persistInfo"); if (!el) return;
+    el.textContent = ok ? "Plan und Verlauf liegen nur in diesem Browser auf diesem Gerät. Der Browser hat zugesagt, sie nicht von sich aus zu löschen – bei Handywechsel oder Verlust hilft nur eine Sicherungsdatei."
+      : "Plan und Verlauf liegen nur in diesem Browser auf diesem Gerät. Der Browser hat keinen dauerhaften Speicher zugesagt und darf sie z. B. bei Speichermangel ohne Rückfrage löschen – eine Sicherungsdatei schützt davor."; }, () => {}); } catch (e) {}
+}
+function backupSheet(ok) {
+  const at = new Date().toISOString(), code = "TP1:" + btoa(unescape(encodeURIComponent(JSON.stringify(backupData(at)))));
+  return `${sheetHead("Sicherung erstellen", "Schließen")}
+    <p class="small" id="bkMsg" style="margin:0;${ok ? "color:var(--ok)" : ""}">${ok ? esc(ok) : state.backupAt ? `Letzte Sicherung am ${fmtDay(state.backupAt)}, ${sinceBackup() ? `seitdem ${nTr(sinceBackup())}` : "seitdem nichts Neues"}.` : `Noch keine Sicherung${state.history.length ? ` – ${nTr(state.history.length)} ungesichert` : ""}.`}</p>
+    <p class="small muted" style="margin:0">Die Datei enthält ${nTr(state.history.length)} und ${nTd(state.plan?.days.length || 0)}. Auf dem iPhone öffnet sich das Teilen-Menü: „In Dateien sichern“ legt die Datei in iCloud Drive oder auf dem iPhone ab.</p>
+    <button class="btn primary block" data-a="backupFile">Als Datei sichern</button>
+    <details class="gdet" id="codeDet"><summary>Stattdessen als Text kopieren</summary><div class="gdet-in">
+      <p class="small muted" style="margin:0">Zum Beispiel in deine Notizen. Zum Wiederherstellen den ganzen Text einfügen.</p>
+      <textarea id="expTxt" readonly aria-label="Sicherung als Text" data-at="${at}">${esc(code)}</textarea>
+      <button class="btn block" data-a="copyExp">Text kopieren</button></div></details>`;
+}
+let pendingRestore = null;
+function tryRestore(raw, bad) {
+  const msg = byId("impMsg"), box = byId("impConfirm"); let data;
+  try { data = parseBackup(raw); } catch (e) { if (msg) { msg.textContent = bad; msg.style.color = "var(--bad)"; } if (box) box.innerHTML = ""; return; }
+  const n = data.history.length, cur = state.history.length;
+  // Weniger Trainings als auf dem Gerät: erst nachfragen, damit nichts aus Versehen verloren geht
+  if (n < cur) {
+    pendingRestore = data;
+    msg.textContent = `Die Sicherung enthält ${nTr(n)}, auf diesem Gerät sind ${cur}. Beim Ersetzen gehen ${cur - n} verloren.`; msg.style.color = "var(--warn)";
+    box.innerHTML = `<button class="btn block" data-a="restoreConfirm" style="color:var(--bad)">Trotzdem ersetzen</button>`;
+    return;
+  }
+  restoreBackup(data);
+}
+function restoreBackup(data) {
+  pendingRestore = null;
+  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet();
+  homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.`;
+  go("home");
 }
 function gapList(gaps) {
   return `<p class="small">Für diese Übungen gibt es in deinem Studio kein Gerät mit gleicher Bewegung. Sie wurden weggelassen statt durch eine unpassende Übung ersetzt:</p>
@@ -2438,7 +2497,7 @@ function finish(saveIt) {
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       state.history.push(rec);
       summary = { rec, prs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
-      tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]);
+      tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]); askPersist();
       say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
   }
@@ -4083,6 +4142,12 @@ function insights() {
       text: `Am meisten: ${ex(t.exId).name}, ${kgTxt(t.from)} → ${kgTxt(t.to)} ${UNIT[t.u]} in ${t.weeks} Wochen (+${Math.round((t.to - t.from) / t.from * 100)} %). Verglichen wird mit deiner ersten Einheit der letzten 8 Wochen.`,
       act: [{ a: "openEx", l: "Verlauf ansehen", d: { id: t.exId, ret: "coach" } }] });
   }
+  // 11. Sicherung: Daten liegen nur im Browser (Regel der App: ab 5 neuen Trainings und 14 Tagen seit der letzten Sicherung)
+  const nb = sinceBackup(), bAge = state.backupAt ? (now - new Date(state.backupAt)) / DAY : Infinity;
+  if (nb >= BACKUP_N && bAge >= BACKUP_DAYS) add({ id: "backup", prio: 45, kind: "tip",
+    title: state.backupAt ? `${nb} Trainings seit der letzten Sicherung` : `${nb} Trainings, noch keine Sicherung`,
+    text: `Plan und Verlauf liegen nur in diesem Browser. Eine Sicherungsdatei, z. B. in iCloud Drive, bewahrt sie, falls der Browser Daten löscht oder du das Handy wechselst.${state.backupAt ? ` Letzte Sicherung: ${fmtDay(state.backupAt)}.` : ""}`,
+    act: [{ a: "backupFile", l: "Jetzt sichern", d: {} }, { a: "exportData", l: "Andere Wege", d: {} }] });
   return out.sort((a, b) => b.prio - a.prio);
 }
 const coachHidden = x => { const t = (state.coachOff || {})[x.id]; return !!t && Date.now() - new Date(t) < 21 * DAY; };
@@ -4105,7 +4170,8 @@ const COACH_RULES = [
   ["Hindernisse", "Fällt ein Termin aus, fragt die App einmal nach dem Grund. Krank, verletzt oder unterwegs zählt nicht als verpasst. Ab 2 Ausfällen in 6 Wochen nennt sie dein häufigstes Hindernis und schlägt einen passenden Plan B vor – Pläne für Hindernisse wirkten in Studien stärker."],
   ["Trainingsdauer", "Durchschnitt deiner letzten 5 Trainings gegen dein Zeitbudget."],
   ["Ernährung", "Gewichtstrend der letzten 4 Wochen gegen die Zielrate deines Ernährungsziels; Eiweiß der letzten Woche (nur Tage mit Einträgen) gegen 1,6 g pro kg Körpergewicht."],
-  ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."]];
+  ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."],
+  ["Sicherung", "Sind seit der letzten Sicherung 5 Trainings dazugekommen und mindestens 14 Tage vergangen – oder gibt es noch keine –, erinnert die App an eine neue Sicherungsdatei."]];
 function vCoach() {
   const L = insights(), vis = L.filter(x => !coachHidden(x)), hid = L.length - vis.length;
   const warn = vis.filter(x => x.kind !== "good"), good = vis.filter(x => x.kind === "good");
@@ -4177,7 +4243,7 @@ function nextTimeHtml(r) {
   const rows = r.exercises.map(x => { const it = pd.items.find(i => i.exId === x.exId); return it ? makeEntry(it) : null; }).filter(Boolean);
   if (!rows.length) return "";
   return `<section class="section" id="nextTime"><h2>Nächstes Mal</h2><div class="group">${rows.map(e => `<div class="li"><div class="grow"><div class="t">${esc(ex(e.exId).name)}</div>
-      <div class="s">${e.recKg !== null ? `${kgTxt(e.recKg)} ${UNIT[e.u]}` : "–"} · ${esc(e.short.split(" · ").slice(1).join(" · ") || e.short)}</div></div>${entryBadge(e)}</div>`).join("")}</div>
+      <div class="s">${e.recKg !== null ? `${kgTxt(e.recKg)} ${UNIT[e.u]}` : "–"} · ${e.mode === "keep" && e.recKg !== null ? `Ziel ${e.sets.map(x => x.reps).join("/")} Wdh.` : esc(e.short.split(" · ").slice(1).join(" · ") || e.short)}</div></div>${entryBadge(e)}</div>`).join("")}</div>
     <p class="small faint" style="margin:0">Berechnet aus diesem Training nach den Regeln unter „So entscheidet die App“.</p></section>`;
 }
 
@@ -4430,33 +4496,46 @@ const A = {
     if (state.plan.gaps.length) openSheet(`<h2>Plan erstellt</h2>${gapList(state.plan.gaps)}<button class="btn primary block" data-a="closeSheet">Verstanden</button>`); },
   gapsDone: () => { state.plan.gaps = []; save(); render(); },
   calMonth: el => { calOffset += +el.dataset.d; vHistory(); },
-  exportData: () => {
-    const { session, ...rest } = state;
-    const code = "TP1:" + btoa(unescape(encodeURIComponent(JSON.stringify(rest))));
-    openSheet(`<h2>Sicherung</h2>
-      <textarea id="expTxt" readonly aria-label="Sicherungscode">${esc(code)}</textarea>
-      <p class="muted small" id="expMsg">${state.history.length} Trainings und ${state.plan?.days.length || 0} Trainingstage.</p>
-      <button class="btn primary block" data-a="copyExp">Kopieren</button><button class="btn block" data-a="closeSheet">Schließen</button>`);
+  exportData: () => openSheet(backupSheet()),
+  backupFile: async () => {
+    const at = new Date().toISOString(), name = `trainingsplan-sicherung-${dkey()}.json`;
+    const json = JSON.stringify({ app: "trainingsplan", format: 1, at, data: backupData(at) });
+    const done = how => { markBackup(at); render(); openSheet(backupSheet(how)); };
+    let file = null; try { file = new File([json], name, { type: "application/json" }); } catch (e) {}
+    if (file && navigator.canShare && navigator.share) {
+      let can = false; try { can = navigator.canShare({ files: [file] }); } catch (e) {}
+      if (can) {
+        try { await navigator.share({ files: [file] }); done(`Gesichert: ${name}`); }
+        catch (e) { if (!e || e.name !== "AbortError") { downloadText(json, name, "application/json"); done(`Heruntergeladen: ${name}`); } }
+        return;
+      }
+    }
+    downloadText(json, name, "application/json"); done(`Heruntergeladen: ${name}`);
   },
   copyExp: () => {
-    const t = byId("expTxt"), msg = byId("expMsg");
-    const done = () => { msg.textContent = "Kopiert. Füge den Code jetzt z. B. in deine Notizen ein."; msg.style.color = "var(--ok)"; };
-    try { navigator.clipboard.writeText(t.value).then(done, () => { t.select(); msg.textContent = "Text ist markiert. Tippe auf „Kopieren“ im Menü."; }); }
-    catch (e) { t.select(); msg.textContent = "Text ist markiert. Tippe auf „Kopieren“ im Menü."; }
+    const t = byId("expTxt"), msg = byId("bkMsg"), at = t.dataset.at;
+    const done = () => { markBackup(at); msg.textContent = "Kopiert. Füge den Text jetzt z. B. in deine Notizen ein."; msg.style.color = "var(--ok)"; };
+    const manual = () => { t.select(); msg.textContent = "Text ist markiert. Tippe auf „Kopieren“ im Menü."; };
+    try { navigator.clipboard.writeText(t.value).then(done, manual); } catch (e) { manual(); }
   },
-  importOpen: () => openSheet(`<h2>Sicherung einfügen</h2>
-    <textarea id="impTxt" placeholder="Code hier einfügen (beginnt mit TP1:)" aria-label="Sicherungscode"></textarea>
-    <p class="muted small" id="impMsg">Achtung: Ersetzt Plan und Verlauf auf diesem Gerät.</p>
-    <button class="btn primary block" data-a="importDo">Wiederherstellen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
-  importDo: () => {
-    const raw = byId("impTxt").value.trim(), msg = byId("impMsg");
-    try {
-      if (!raw.startsWith("TP1:")) throw 0;
-      const data = JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));
-      if (!isObj(data) || !Array.isArray(data.history)) throw 0;
-      state = normalize(Object.assign({}, data, { session: null })); save(); closeSheet(); go("home");
-    } catch (e) { msg.textContent = "Der Code ist ungültig. Kopiere ihn vollständig, er beginnt mit TP1:"; msg.style.color = "var(--bad)"; }
+  importOpen: () => {
+    pendingRestore = null;
+    openSheet(`${sheetHead("Sicherung wiederherstellen", "Abbrechen")}
+      <p class="small" id="impMsg" style="margin:0">Ersetzt Plan und Verlauf auf diesem Gerät.</p>
+      <div id="impConfirm" style="display:contents"></div>
+      <button class="btn primary block" data-a="impFilePick">Datei wählen</button>
+      <input type="file" id="impFile" accept=".json,application/json,text/plain" hidden>
+      <label for="impTxt" class="small muted">Oder Text einfügen (beginnt mit TP1:)</label>
+      <textarea id="impTxt" placeholder="TP1:…" aria-label="Sicherung als Text"></textarea>
+      <button class="btn block" data-a="importDo">Text wiederherstellen</button>`);
+    byId("impFile").addEventListener("change", ev => {
+      const f = ev.target.files && ev.target.files[0]; if (!f) return;
+      f.text().then(txt => tryRestore(txt, "Die Datei ist keine Sicherung dieser App."), () => tryRestore("", "Die Datei ließ sich nicht lesen."));
+    });
   },
+  impFilePick: () => byId("impFile").click(),
+  importDo: () => tryRestore(byId("impTxt").value, "Der Text ist ungültig. Kopiere ihn vollständig, er beginnt mit TP1:"),
+  restoreConfirm: () => { if (pendingRestore) restoreBackup(pendingRestore); },
   showEx: el => openSheet(exChart(el.dataset.id, el.dataset.u)),
   addWeight: () => {
     const v = num(byId("bwIn").value);

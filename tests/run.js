@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v32)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v32")));
+      ok("Service Worker aktiv (Cache trainingsplan-v33)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v33")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1732,7 +1732,7 @@ async function finishAllSets(page, kg, reps) {
         && !(await page.$("#app [data-a=openDevs]")) && !(await page.$("#app [data-a=exportData]")) && !plan.includes("Übungen & Wissen"));
       await page.click("[data-a=openSettings]");
       const set = await page.textContent("#app");
-      ok("Zahnrad öffnet alle Einstellungen an einem Ort", ["Geräte verwalten", "Wasser zählen", "Intervallfasten", "Apple Health", "Apple Watch", "Neuen Plan erstellen", "Sicherung kopieren", "Sicherung einfügen"].every(s => set.includes(s))
+      ok("Zahnrad öffnet alle Einstellungen an einem Ort", ["Geräte verwalten", "Wasser zählen", "Intervallfasten", "Apple Health", "Apple Watch", "Neuen Plan erstellen", "Sicherung erstellen", "Sicherung wiederherstellen"].every(s => set.includes(s))
         && await page.$eval("#tabs [data-v=plan]", b => b.classList.contains("on")));
       ok("Einstellungen bei 360 px ohne seitliches Scrollen", await noOverflow(page));
       // Essen: Wasser und Fasten nur auf Wunsch
@@ -2588,7 +2588,93 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("44. Konsole");
+    section("44. Datensicherung");
+    {
+      const six = [20, 16, 12, 9, 6, 3].map(d => hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], d, "s"));
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: six });
+      const ins = await tp(page, () => window.__tp.insights().find(x => x.id === "backup"));
+      ok("6 Trainings ohne Sicherung: Hinweis mit „Jetzt sichern“", !!ins && ins.title === "6 Trainings, noch keine Sicherung" && ins.act[0].a === "backupFile");
+      ok("Auf „Heute“ als Hinweis", (await page.textContent("#coach")).includes("noch keine Sicherung"));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=tab][data-v=wissen]"); await page.click("#wissenCoach");
+      ok("Regel der Erinnerung steht unter „So entscheidet die App“", (await page.textContent("#coachRules")).includes("5 Trainings dazugekommen und mindestens 14 Tage"));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+      ok("Einstellungen: „Noch keine · 6 Trainings ungesichert“ und Hinweis zum Speicher", (await page.textContent("#backupLine")).includes("6 Trainings ungesichert") && (await page.textContent("#persistInfo")).includes("nur in diesem Browser"));
+      await page.click("[data-a=exportData]");
+      ok("Sicherung erstellen: Datei zuerst, Text eingeklappt", await page.isVisible(".sheet [data-a=backupFile]") && !(await page.isVisible("#expTxt")) && (await page.textContent(".sheet")).includes("In Dateien sichern"));
+      // Ohne Teilen-Menü (Desktop-Chromium): Download der Datei
+      const [dl] = await Promise.all([page.waitForEvent("download"), page.click(".sheet [data-a=backupFile]")]);
+      const fp = await dl.path(), file = JSON.parse(require("fs").readFileSync(fp, "utf8"));
+      const today = await tp(page, () => window.__tp.dkey());
+      ok("Datei „trainingsplan-sicherung-JJJJ-MM-TT.json“ mit allen Trainings", dl.suggestedFilename() === `trainingsplan-sicherung-${today}.json` && file.app === "trainingsplan" && file.data.history.length === 6 && !("session" in file.data));
+      let st = await stored(page);
+      ok("Zeitpunkt der Sicherung gespeichert und in der Datei enthalten", !!st.backupAt && file.data.backupAt === st.backupAt);
+      ok("Bestätigung im Sheet, Hinweis verschwindet", (await page.textContent("#bkMsg")).includes("Heruntergeladen") && !(await tp(page, () => window.__tp.insights().some(x => x.id === "backup"))));
+      await page.click(".sheet >> text=Schließen");
+      ok("Einstellungen: „Zuletzt am … · aktuell“", (await page.textContent("#backupLine")).includes("aktuell"));
+      // Teilen-Menü (iPhone): abgebrochen → keine Sicherung vermerkt, geteilt → vermerkt
+      await page.evaluate(() => { localStorage.setItem("trainingsplan-v2", JSON.stringify(Object.assign(JSON.parse(localStorage.getItem("trainingsplan-v2")), { backupAt: null })));
+        navigator.canShare = () => true; navigator.share = () => Promise.reject(new DOMException("abgebrochen", "AbortError")); });
+      await page.evaluate(() => { window.__tp.state.backupAt = null; });
+      await page.click("[data-a=exportData]"); await page.click(".sheet [data-a=backupFile]"); await page.waitForTimeout(150);
+      ok("Teilen abgebrochen: nichts als gesichert vermerkt", (await stored(page)).backupAt === null);
+      await page.evaluate(() => { navigator.share = d => { window.__tp.shared = d.files[0].name; return Promise.resolve(); }; });
+      await page.click(".sheet [data-a=backupFile]"); await page.waitForTimeout(150);
+      ok("Teilen-Menü bekommt die Datei, danach „Gesichert“", (await tp(page, () => window.__tp.shared)).startsWith("trainingsplan-sicherung-") && !!(await stored(page)).backupAt && (await page.textContent("#bkMsg")).includes("Gesichert"));
+      // Als Text kopieren
+      await ctx.grantPermissions(["clipboard-read", "clipboard-write"], { origin: URL.match(/^https?:\/\/[^/]+/)[0] });
+      await page.click(".sheet [data-a=closeSheet]"); const prev = (await stored(page)).backupAt; await page.waitForTimeout(5); await page.click("[data-a=exportData]");
+      await page.click("#codeDet summary");
+      const code = await page.inputValue("#expTxt");
+      await page.click("[data-a=copyExp]"); await page.waitForTimeout(150);
+      ok("Text kopieren: beginnt mit TP1:, gilt als Sicherung", code.startsWith("TP1:") && (await page.textContent("#bkMsg")).includes("Kopiert") && (await stored(page)).backupAt > prev);
+      ok("360 px: Sicherung ohne seitliches Scrollen", await noOverflow(page));
+      await page.keyboard.press("Escape");
+      // Wiederherstellen aus Datei: weniger Trainings als auf dem Gerät → erst nachfragen
+      const small = JSON.stringify({ app: "trainingsplan", format: 1, at: new Date().toISOString(), data: { plan: PLAN_SMALL, history: six.slice(0, 2), backupAt: new Date(Date.now() - 864e5).toISOString() } });
+      await page.click("[data-a=importOpen]");
+      await page.setInputFiles("#impFile", { name: "trainingsplan-sicherung.json", mimeType: "application/json", buffer: Buffer.from(small) });
+      await page.waitForSelector("[data-a=restoreConfirm]");
+      ok("Sicherung mit weniger Trainings: Warnung „gehen 4 verloren“, noch nichts ersetzt", (await page.textContent("#impMsg")).includes("4 verloren") && (await stored(page)).history.length === 6);
+      await page.click("[data-a=restoreConfirm]");
+      st = await stored(page);
+      ok("Nach Bestätigung ersetzt, Hinweis auf „Heute“", st.history.length === 2 && (await page.textContent("#homeNote")).includes("Sicherung wiederhergestellt: 2 Trainings"));
+      await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=tab][data-v=home]");
+      ok("Hinweis verschwindet beim Wechsel der Ansicht", !(await page.$("#homeNote")));
+      // Ungültige Datei, gleich große Sicherung ohne Rückfrage, Textcode weiterhin möglich
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=importOpen]");
+      await page.setInputFiles("#impFile", { name: "foto.json", mimeType: "application/json", buffer: Buffer.from("{\"x\":1}") });
+      await page.waitForFunction(() => document.getElementById("impMsg").textContent.includes("keine Sicherung"));
+      ok("Fremde Datei wird abgelehnt, Daten bleiben", (await stored(page)).history.length === 2);
+      await page.setInputFiles("#impFile", { name: "s.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "trainingsplan", format: 1, data: { plan: PLAN_SMALL, history: six } })) });
+      await page.waitForSelector("#homeNote");
+      ok("Sicherung mit mehr Trainings: ohne Rückfrage wiederhergestellt", (await stored(page)).history.length === 6);
+      await ctx.close();
+    }
+    {
+      // Erinnerung erst nach 5 neuen Trainings und 14 Tagen (Regel der App)
+      const H = [30, 25, 20, 9, 6, 4, 3, 2, 1].map(d => hist("hs-chest", [{ kg: 40, reps: 10 }], d, "s"));
+      const r = async (backupDays, hh = H) => { const { ctx, page } = await open({ plan: PLAN_SMALL, history: hh, backupAt: new Date(Date.now() - backupDays * 864e5).toISOString() });
+        const x = await tp(page, () => window.__tp.insights().find(i => i.id === "backup")); await ctx.close(); return x; };
+      const a = await r(10), b = await r(22), c = await r(22, H.slice(2, 3).concat(H.slice(-3)));
+      ok("Sicherung vor 10 Tagen, 6 Trainings seitdem: noch keine Erinnerung", !a);
+      ok("Sicherung vor 22 Tagen, 7 Trainings seitdem: Erinnerung mit Datum", !!b && b.title === "7 Trainings seit der letzten Sicherung" && b.text.includes("Letzte Sicherung"));
+      ok("Sicherung vor 22 Tagen, aber erst 4 Trainings seitdem: keine Erinnerung", !c);
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: H, backupAt: "kaputt" });
+      ok("Ungültiges Sicherungsdatum wird verworfen", (await tp(page, () => window.__tp.state.backupAt)) === null);
+      await ctx.close();
+    }
+    {
+      // „Nächstes Mal“ bei gleichem Gewicht: Ziel-Wiederholungen statt doppelt „+1 Wdh.“
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 9 }, { kg: 40, reps: 9 }], 3, "s")] });
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await finishAllSets(page, 40, 10);
+      const nt = (await page.textContent("#nextTime")).replace(/\s+/g, " ");
+      ok("Nächstes Mal: „Ziel 11/11 Wdh.“ mit Abzeichen „+1 Wdh.“, keine Dopplung", nt.includes("Ziel 11/11 Wdh.") && nt.includes("+1 Wdh.") && !nt.includes("Ziel +1"), nt.slice(0, 200));
+      await ctx.close();
+    }
+
+    section("45. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
