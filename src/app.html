@@ -423,7 +423,9 @@ const SOURCES = {
   helms2014: { t: "Helms ER, Aragon AA, Fitschen PJ: Evidence-based recommendations for natural bodybuilding contest preparation: nutrition and supplementation", j: "J Int Soc Sports Nutr 2014;11:20", url: "https://pubmed.ncbi.nlm.nih.gov/24864135/" },
   iraki2019: { t: "Iraki J, Fitschen P, Espinar S, Helms E: Nutrition recommendations for bodybuilders in the off-season: a narrative review", j: "Sports 2019;7(7):154", url: "https://pubmed.ncbi.nlm.nih.gov/31247944/" },
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
-  off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" }
+  off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
+  efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  gandy2016: { t: "Gandy J et al.: Recording of fluid, beverage and water intakes at the population level in Europe (Anteil von Wasser aus Lebensmitteln, wie von der EFSA angesetzt)", j: "Br J Nutr 2016;116(4):677–682", url: "https://doi.org/10.1017/S0007114516002336" }
 };
 
 // Trainingsprinzipien: kurz, belegt, ohne Übertreibung. Unsicherheiten werden benannt.
@@ -888,7 +890,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [] }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {} }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -998,7 +1000,7 @@ function normalize(raw) {
   if (isObj(raw.hints)) for (const [k, v] of Object.entries(raw.hints)) if (v === true) s.hints[k] = true;
   s.health = raw.health === true;
   s.watch = raw.watch === true;
-  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods);
+  s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water);
   return s;
 }
 function load() {
@@ -2520,6 +2522,16 @@ function cleanMyFoods(a) {
   }).filter(Boolean) : [];
 }
 
+function cleanWater(w) {
+  const out = {};
+  if (isObj(w)) for (const [d, ml] of Object.entries(w)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && Number.isFinite(+ml) && +ml > 0 && +ml <= 10000) out[d] = Math.round(+ml);
+  return out;
+}
+// Wasser: EFSA-Referenzwert für die gesamte Wasserzufuhr (2,0 L Frauen, 2,5 L Männer, inkl. Wasser aus Lebensmitteln,
+// bei mäßiger Temperatur und Aktivität). Lebensmittel liefern laut EFSA 20–30 %, daher Trinkziel = 80 % davon.
+const waterGoal = () => state.nutr && state.nutr.sex === "w" ? 1600 : state.nutr ? 2000 : null;
+const fmtL = ml => (ml / 1000).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+
 // Berechnung
 function lastWeight() { const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)); return W[W.length - 1] || null; }
 const bmrOf = (n, kg) => 10 * kg + 6.25 * n.cm - 5 * n.age + (n.sex === "w" ? -161 : 5);   // Mifflin-St Jeor 1990
@@ -2764,12 +2776,20 @@ function vFood() {
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
+    ${(() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
+      return `<section class="stack-sm" id="waterBox"><div class="row between"><h2 style="margin:0">Wasser</h2><span class="small"><b>${fmtL(ml)} L</b> von ${wg ? fmtL(wg) + " L" : "1,6–2,0 L"}</span></div>
+        ${bar(ml, goal, ml >= goal ? "var(--ok)" : "var(--accent)")}
+        <div class="row" style="gap:var(--s2)"><button class="btn sm" data-a="water" data-ml="-250" ${ml ? "" : "disabled"} aria-label="250 ml weniger">−</button>
+          <button class="btn sm grow" data-a="water" data-ml="250">+ 1 Glas (250 ml)</button><button class="btn sm grow" data-a="water" data-ml="500">+ 500 ml</button></div>
+        <button class="link small" data-a="waterInfo" style="justify-self:start">Wie viel solltest du trinken?</button></section>`; })()}
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
+      const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
         <div class="group">${es.map(e => { const v = entryVals(e); return `<button class="li" data-a="foodEdit" data-id="${e.id}">
           <div class="grow"><div class="t">${esc(e.n)}</div><div class="s">${e.g !== null ? fmtN(e.g) + " g · " : ""}${fmtN(v.p)} g Eiweiß</div></div>
           <span class="small" style="font-weight:600;white-space:nowrap">${fmtK(v.k)} kcal</span></button>`; }).join("")}
-          <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button></div></section>`; }).join("")}
+          <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button>
+          ${pes.length ? `<button class="li addrow" data-a="copyMeal" data-m="${m}">Wie am Vortag · ${pes.length} ${pes.length === 1 ? "Eintrag" : "Einträge"}, ${fmtK(pes.reduce((a, e) => a + entryVals(e).k, 0))} kcal</button>` : ""}</div></section>`; }).join("")}
     ${G ? `<section class="section"><h2>Letzte 7 Tage</h2>
       ${days.length ? `<p class="small" style="margin:0">Ø <b>${fmtK(avg("k"))}</b> kcal und Ø <b>${fmtK(avg("p"))}</b> g Eiweiß an ${days.length} ${days.length === 1 ? "Tag" : "Tagen"} mit Einträgen · Ziel ${fmtK(G.kcal)} kcal und ${G.prot} g</p>` : ""}
       ${trendHtml(G)}</section>` : ""}
@@ -3210,6 +3230,21 @@ const A = {
     dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n >= today ? null : n; vFood(); },
   foodAdd: el => { foodCtx = { m: el.dataset.m, d: foodDay && foodDay < dkey() ? foodDay : dkey(), q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }; openSheet(foodAddSheet()); },
   foodAddBack: () => openSheet(foodAddSheet()),
+  water: el => { const d = foodDay && foodDay < dkey() ? foodDay : dkey(), v = Math.max(0, Math.min(10000, (state.water[d] || 0) + +el.dataset.ml));
+    if (v) state.water[d] = v; else delete state.water[d]; save(); vFood(); },
+  waterInfo: () => openSheet(`${sheetHead("Wie viel trinken?")}
+    <p>Die Europäische Behörde für Lebensmittelsicherheit (EFSA) nennt als angemessene Gesamtzufuhr an Wasser <b>2,0 Liter pro Tag für Frauen</b> und <b>2,5 Liter für Männer</b>.</p>
+    <ul class="glist"><li>Das gilt für alle Quellen zusammen – Getränke und Wasser aus Lebensmitteln – und bei mäßiger Temperatur und mäßiger körperlicher Aktivität.</li>
+      <li>Lebensmittel liefern etwa 20–30 % davon. Aus Getränken sind es deshalb rund 1,6 Liter (Frauen) bzw. 2,0 Liter (Männer). Diesen Wert zeigt die App als Ziel.</li>
+      <li>Bei Hitze und an Trainingstagen brauchst du mehr – trinke dann nach Durst zusätzlich.</li></ul>
+    <div class="cap">Quellen</div>${srcList(["efsa2010", "gandy2016"])}`),
+  copyMeal: el => {
+    const d = foodDay && foodDay < dkey() ? foodDay : dkey(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
+    const src = (state.food[prev] || []).filter(e => e.m === el.dataset.m); if (!src.length) return;
+    const list = state.food[d] || (state.food[d] = []);
+    src.forEach(e => list.push(JSON.parse(JSON.stringify(Object.assign({}, e, { id: uid() })))));
+    save(); vFood();
+  },
   foodPick: el => { const x = foodPool.get(el.dataset.k); if (!x) return; foodCtx.food = x; foodCtx.edit = null; foodCtx.g = x.por ? x.por[1] : 100; openSheet(amountSheet()); },
   amtSet: el => { foodCtx.g = +el.dataset.g; byId("amtG").value = String(foodCtx.g).replace(".", ","); byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); },
   mealSet: el => { foodCtx.m = el.dataset.m; byId("mealSeg").querySelectorAll("button").forEach(b => b.classList.toggle("on", b === el)); },
@@ -3514,7 +3549,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
