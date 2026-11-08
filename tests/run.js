@@ -1819,7 +1819,7 @@ async function finishAllSets(page, kg, reps) {
       const pc = await tp(page, () => window.__tp.planCheck());
       const pcTxt = await page.textContent("#planCheck");
       ok("Buddy-Check findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Unter dem Richtwert von 10–20") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
-      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("bei 2 Terminen pro Woche"));
+      ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("2 Termine pro Woche"));
       await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
       ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
       await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
@@ -2217,7 +2217,43 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("36. Konsole");
+    section("36. Tricks und kürzere Anleitung");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Mix", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-curl", sets: 3, rmin: 8, rmax: 12, rest: 60 },
+        { id: "i3", exId: "hs-seatcurl", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const { ctx, page } = await open({ plan, hints: { units: true } });
+      const tr = await tp(page, () => { const T = window.__tp, ids = id => T.tricksFor(T.ex(id), null).map(k => k.id);
+        const it = (exId, rest = 60, sets = 3) => ({ exId, rest, sets: Array.from({ length: sets }, () => ({})) });
+        return { chest: ids("hs-chest"), curl: ids("hs-curl"), legext: ids("hs-legext"), seat: T.tricksFor(T.ex("hs-seatcurl"), null).find(k => k.id === "stretch").s,
+          now: [T.trickNow(it("hs-chest", 90), 0).id, T.trickNow(it("hs-curl"), 1).id, T.trickNow(it("hs-curl"), 2).id, T.trickNow(it("hs-seatcurl", 60, 2), 1).id],
+          restLong: T.tricksFor(T.ex("hs-chest"), { rest: 180 }).some(k => k.id === "rest"), src: !!(T.SOURCES.schoenfeld2018 && T.SOURCES.sodal2023) }; });
+      ok("Tricks passen zum Gerät: Grundübung mit Pausen-Trick, Isolation am Oberkörper mit Fokus, Steckgewicht mit Drop-Satz", tr.chest.includes("rest") && !tr.chest.includes("focus") && !tr.chest.includes("drop")
+        && tr.curl.includes("focus") && !tr.curl.includes("rest") && tr.legext.every(id => id !== "focus") && tr.src, JSON.stringify(tr));
+      ok("Beinbeuger sitzend: Dehnungs-Trick mit Studienergebnis (+14 % statt +9 %)", tr.seat.includes("+14 % statt +9 %"));
+      ok("Kein Pausen-Trick, wenn die Pause schon 3 Minuten ist", !tr.restLong);
+      ok("Trick je Satz: 1. Satz ohne Notiz → Einstellung merken; Mitte → Fokus; letzter Satz → Limit; letzter Satz am Steckgewicht → Drop-Satz",
+        JSON.stringify(tr.now) === JSON.stringify(["setup", "focus", "limit", "drop"]), JSON.stringify(tr.now));
+      await page.click("[data-a=start]");
+      ok("Training: ein Trick für den aktuellen Satz", (await page.textContent("#trickNow")).includes("Sitzeinstellung notieren"));
+      ok("360 px: Training mit Trick ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("#trickNow");
+      ok("Antippen: alle Tricks des Geräts, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Iso-Lateral Chest Press") && await page.isVisible(".sheet details[data-trick=setup][open]")
+        && (await page.$$(".sheet details[open]")).length === 1);
+      await page.click(".sheet details[data-trick=limit] summary");
+      ok("Trick aufklappen zeigt Begründung und Quelle", (await page.textContent(".sheet details[data-trick=limit]")).includes("Robinson") && await page.isVisible(".sheet details[data-trick=limit] .srcs"));
+      await page.keyboard.press("Escape");
+      await page.click(".tool[data-a=openDevInfo]");
+      ok("Gerät & Technik: So geht's und Tricks", (await page.textContent(".sheet")).includes("So geht's") && await page.isVisible("#devTricks") && (await page.$$("#devTricks details")).length >= 3);
+      await page.click("text=Ausführliche Anleitung");
+      ok("Anleitung kurz: So geht's und Tricks sichtbar, Details eingeklappt", await page.isVisible("text=Tricks für mehr Wirkung") && !(await page.$(".sheet .gdet[open]")) && !(await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist.")));
+      await page.click(".sheet .gdet summary >> text=Häufige Fehler");
+      ok("„Häufige Fehler“ aufklappen zeigt Fehler mit Korrektur", await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."));
+      for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Anleitung ohne seitliches Scrollen`, await noOverflow(page)); }
+      await ctx.close();
+    }
+
+    section("37. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

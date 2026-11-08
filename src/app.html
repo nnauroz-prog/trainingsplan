@@ -318,6 +318,23 @@
   .sh-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
   .sh-head h2{font-size:26px}
   .sh-head .btn{flex:0 0 auto}
+  .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--accent-tint);color:var(--text);font-size:15px;text-align:left}
+  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
+  .trick .tt{flex:1;min-width:0}
+  .trick .chev{color:var(--text-3);flex:none}
+  .trks{display:grid;gap:var(--s2)}
+  .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
+  .trk>summary{list-style:none;cursor:pointer;display:grid;gap:2px}
+  .trk>summary::-webkit-details-marker,.gdet>summary::-webkit-details-marker{display:none}
+  .trk>summary span{font-size:14px;color:var(--text-2)}
+  .trk[open]{display:grid;gap:var(--s2)}
+  .trk p{margin:var(--s2) 0 0}
+  .gdets{display:grid;border-top:1px solid var(--hair)}
+  .gdet{border-bottom:1px solid var(--hair)}
+  .gdet>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:48px;font-weight:600}
+  .gdet>summary::after{content:"›";color:var(--text-3);font-size:20px;transition:transform .15s}
+  .gdet[open]>summary::after{transform:rotate(90deg)}
+  .gdet-in{display:grid;gap:var(--s3);padding-bottom:var(--s4)}
   .tiplist{margin:0;padding-left:20px;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -432,6 +449,8 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  schoenfeld2018: { t: "Schoenfeld BJ, Vigotsky A, Contreras B et al.: Differential effects of attentional focus strategies during long-term resistance training", j: "Eur J Sport Sci 2018;18(5):705–712", url: "https://pubmed.ncbi.nlm.nih.gov/29533715/" },
+  sodal2023: { t: "Sødal LK, Kristiansen E, Larsen S, van den Tillaar R: Effects of drop sets on skeletal muscle hypertrophy: a systematic review and meta-analysis", j: "Sports Med Open 2023;9:66", url: "https://doi.org/10.1186/s40798-023-00620-5" },
   teixeira2012: { t: "Teixeira PJ, Carraça EV, Markland D, Silva MN, Ryan RM: Exercise, physical activity, and self-determination theory: a systematic review", j: "Int J Behav Nutr Phys Act 2012;9:78", url: "https://doi.org/10.1186/1479-5868-9-78" },
   gollwitzer2006: { t: "Gollwitzer PM, Sheeran P: Implementation intentions and goal achievement: a meta-analysis of effects and processes", j: "Adv Exp Soc Psychol 2006;38:69–119", url: "https://doi.org/10.1016/S0065-2601(06)38002-1" },
   belanger2013: { t: "Bélanger-Gravel A, Godin G, Amireault S: A meta-analytic review of the effect of implementation intentions on physical activity", j: "Health Psychol Rev 2013;7(1):23–54", url: "https://doi.org/10.1080/17437199.2011.560095" },
@@ -1533,6 +1552,44 @@ function statsHtml(id) {
     ${pl ? `<p class="small" style="color:var(--warn)">${esc(plateauTxt(pl))}</p>` : ""}`;
 }
 // Ausführliche Anleitung (geteilt von Übungsseite und Bottom-Sheet)
+/* ================= Tricks: kleine Hebel mit Beleg ================= */
+// Nur Tricks, die eine Studie stützt (Quelle im Text) oder die rein praktisch sind (ohne Wirkungsversprechen).
+const UPPER = ["brust", "ruecken", "schultern", "bizeps", "trizeps"];
+function tricksFor(e, it) {
+  const T = [], comp = !!e.pattern && COMPOUND.has(e.pattern);
+  T.push({ id: "limit", t: "Nah ans Limit", short: "Erst aufhören, wenn kaum noch eine saubere Wdh. ginge",
+    s: "Je näher die Sätze am Muskelversagen endeten, desto größer war in einer Auswertung vieler Studien (2024) der Muskelzuwachs. Für die Kraft spielte es eine kleinere Rolle. Schätzungen der Reserve sind allerdings ungenau.", src: ["rir2024"] });
+  if (e.id === "hs-seatcurl") T.push({ id: "stretch", t: "Dehnung nutzen", short: "Oberkörper aufrecht, unten voll in die Dehnung",
+    s: "Im Sitzen ist der Beinbeuger stärker gedehnt als im Liegen. In einer kleinen Studie wuchs er so in 12 Wochen stärker (im Mittel +14 % statt +9 %).", src: ["curl2021"] });
+  else if (e.id === "hs-calf") T.push({ id: "stretch", t: "Dehnung nutzen", short: "Unten voll dehnen, oben kurz halten",
+    s: "Wadenheben im Stehen ließ den Zwillingswadenmuskel in einer kleinen Studie deutlich stärker wachsen als im Sitzen. Nutze den vollen Weg bis in die Dehnung.", src: ["calf2023"] });
+  else if (e.id === "hs-seatcalf") T.push({ id: "stretch", t: "Im Stehen ergänzen", short: "Unten voll in die Dehnung, nicht abfedern",
+    s: "Im Sitzen arbeitet vor allem der Schollenmuskel. Den Zwillingswadenmuskel trainierte Wadenheben im Stehen in einer kleinen Studie deutlich wirksamer; beim Schollenmuskel gab es keinen klaren Unterschied.", src: ["calf2023"] });
+  else T.push({ id: "stretch", t: "Dehnung mitnehmen", short: "Langsam bis in die Dehnung zurück, dort nicht abfedern",
+    s: "Nutze den vollen schmerzfreien Weg und kontrolliere besonders den gedehnten Teil. Erste, kleine Studien deuten darauf hin, dass Last in der Dehnung besonders wirksam ist.", src: ["curl2021", "calf2023"] });
+  if (!comp && UPPER.includes(e.muscle)) T.push({ id: "focus", t: "An den Muskel denken", short: `Bewusst den Muskel anspannen, nicht nur Gewicht bewegen`,
+    s: "In einer kleinen Studie mit Untrainierten wuchs der Bizeps stärker, wenn sie sich aufs Anspannen des Muskels konzentrierten (+12,4 % statt +6,9 % in 8 Wochen). Am Oberschenkel gab es keinen Unterschied.", src: ["schoenfeld2018"] });
+  if (comp && (!it || it.rest < 120)) T.push({ id: "rest", t: "Pause nicht zu knapp", short: "Bei dieser Grundübung lieber 2–3 Min. Pause",
+    s: "Mit 3 statt 1 Minute Pause legten trainierte Männer in 8 Wochen mehr Kraft und Muskeldicke zu – vermutlich, weil sie mit längerer Pause mehr schafften.", src: ["rest2016"] });
+  if (e.type === "stack") T.push({ id: "drop", t: "Drop-Satz spart Zeit", short: "Letzter Satz: danach leichter stecken, direkt weiter",
+    s: "Nach dem letzten Satz sofort leichter stecken und ohne Pause weitermachen, bis kurz vors Limit. In einer Meta-Analyse (5 Studien) wuchsen die Muskeln ähnlich wie mit normalen Sätzen, bei manchen Varianten in deutlich kürzerer Zeit. Die Datenlage ist klein. Den Drop-Teil nicht als eigenen Satz eintragen – sonst gilt die Einheit für den Buddy als uneinheitlich.", src: ["sodal2023"] });
+  T.push({ id: "setup", t: "Einstellung merken", short: "Sitzeinstellung notieren – nächstes Mal sofort richtig",
+    s: "Trag unter „Gerät & Technik“ ein, wie du das Gerät einstellst. Die Notiz steht dann oben in jeder Einheit.", src: [] });
+  return T;
+}
+// Der passende Trick für genau diesen Satz
+function trickNow(x, si) {
+  const e = ex(x.exId), T = tricksFor(e, x), by = id => T.find(k => k.id === id);
+  if (si === 0 && !state.notes[e.id]) return by("setup");
+  if (si === x.sets.length - 1) return by("drop") || by("limit");
+  if (si === 0) return by("rest") || by("stretch");
+  const mid = [by("focus"), by("stretch"), by("limit")].filter(Boolean);
+  return mid[(si - 1) % mid.length];
+}
+function tricksHtml(e, it, openId) {
+  return `<div class="trks">${tricksFor(e, it).filter(k => it || k.id !== "setup").map(k => `<details class="trk" data-trick="${k.id}" ${k.id === openId ? "open" : ""}><summary><b>${esc(k.t)}</b><span>${esc(k.short)}</span></summary>
+    <p class="small">${esc(k.s)}</p>${k.src.length ? srcList(k.src) : ""}</details>`).join("")}</div>`;
+}
 function guideHtml(id) {
   const e = ex(id), g = GUIDE[id];
   const colors = { [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) };
@@ -1545,14 +1602,18 @@ function guideHtml(id) {
     </div><div class="gfig">${figure(colors, e.name)}</div></div>`;
   if (!g) return `${head}${sec("Hinweis", `<p class="muted">Für eigene Geräte gibt es keine ausführliche Anleitung. Muskeln und Bewegungsmuster stammen aus deinen Angaben.</p>`)}`;
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
+  const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
   return `${head}
-    ${sec("Warum diese Übung", `<p>${esc(g.why)}</p>`)}
-    ${sec("Einstellen", ol(g.setup))}
-    ${sec("Ausführung", ol(g.steps))}
-    ${sec("Atmung", `<p>${esc(g.breath)}</p>`)}
-    ${sec("Häufige Fehler", `<ul class="glist mist">${g.mistakes.map(([f, k]) => `<li><b>${esc(f)}</b><span>${esc(k)}</span></li>`).join("")}</ul>`)}
-    ${sec("Sicherheit", ul([...g.safety, e.type === "plate" ? SAFE_PLATE : SAFE_PIN, SAFE_PAIN]))}
-    ${sec("Tipps", ul(g.tips))}
+    ${TIPS[id] ? sec("So geht's", `<ol class="tiplist">${TIPS[id].map(x => `<li>${esc(x)}</li>`).join("")}</ol>`) : ""}
+    ${sec("Tricks für mehr Wirkung", tricksHtml(e, null))}
+    <section class="gsec" id="gMore"><h2>Mehr zur Übung</h2><div class="gdets">
+    ${det("Warum diese Übung", `<p>${esc(g.why)}</p>`)}
+    ${det("Einstellen", ol(g.setup))}
+    ${det("Ausführung Schritt für Schritt", ol(g.steps))}
+    ${det("Atmung", `<p>${esc(g.breath)}</p>`)}
+    ${det("Häufige Fehler", `<ul class="glist mist">${g.mistakes.map(([f, k]) => `<li><b>${esc(f)}</b><span>${esc(k)}</span></li>`).join("")}</ul>`)}
+    ${det("Sicherheit", ul([...g.safety, e.type === "plate" ? SAFE_PLATE : SAFE_PIN, SAFE_PAIN]))}
+    ${det("Weitere Tipps", ul(g.tips))}</div></section>
     <section class="gsec gnote"><p class="small faint">${esc(MODEL_NOTE)} Anatomie und Ausführung entsprechen anerkanntem Fachwissen; Aussagen aus Studien sind mit Quelle angegeben.</p>
       ${srcs.length ? `<div class="cap">Quellen</div>${srcList(g.src)}` : ""}</section>`;
 }
@@ -2353,6 +2414,7 @@ function vTrain() {
     </div>
     <p class="error" id="setErr" role="alert" hidden></p>
     <p class="lastline">${lastTxt}${warm ? ` · Aufwärmen ca. ${kgTxt(warm)} × 10` : ""}</p>
+    ${(() => { const tr = trickNow(x, si); return tr ? `<button class="trick" data-a="openTricks" data-id="${tr.id}" id="trickNow"><span class="tk">Trick</span><span class="tt">${esc(tr.short)}</span><span class="chev">›</span></button>` : ""; })()}
     <div class="actions3">
       <button class="tool" data-a="openDevInfo">${ICON.gear}Gerät & Technik</button>
       <button class="tool" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>${ICON.swap}Gerät tauschen</button>
@@ -2368,6 +2430,7 @@ function devInfoSheet() {
     <div class="field"><label for="noteT">Deine Einstellung</label>
       <input id="noteT" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
+    <div class="field" id="devTricks"><label>Tricks für mehr Wirkung</label>${tricksHtml(e, x)}</div>
     <p class="small muted">${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="stack-sm">
       <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="train">Ausführliche Anleitung</button>
@@ -3600,10 +3663,10 @@ function planCheckHtml() {
   const time = K("time").map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${state.plan.minutes} Min. Zeitbudget</div></div>
       <button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`);
   return `<section class="section" id="planCheck"><h2>Buddy-Check</h2>
-    ${K("low").length && state.plan.level !== "fortgeschritten" ? `<p class="small" style="margin:0" id="begNote">Einsteiger-Pläne der App starten mit höchstens 3 Sätzen pro Übung (Startwert der App). Mehr Sätze oder Übungen kannst du an jedem Tag ergänzen oder mit „Fortgeschritten“ einen neuen Plan erstellen.</p>` : ""}
+    ${K("low").length && state.plan.level !== "fortgeschritten" ? `<p class="small" style="margin:0" id="begNote">Einsteiger-Pläne: höchstens 3 Sätze pro Übung (Startwert der App). Mehr kannst du jederzeit ergänzen.</p>` : ""}
     ${c.out.length ? grp(`Unter dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, low) + grp(`Über dem Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche:`, high) + grp("Länger als dein Zeitbudget:", time)
       : `<p class="small" style="margin:0">Alle großen Muskelgruppen liegen im Richtwert von ${c.tmin}–${c.tmax} Sätzen pro Woche${state.plan.minutes ? ", und jeder Tag passt in dein Zeitbudget" : ""}.</p>`}
-    <p class="small faint" style="margin:0">Gezählt wie unter „Fortschritt → Muskelbelastung“: Hauptmuskel voll, mittrainierte Muskeln halb, ${state.sched ? `bei ${state.sched.days.length} Terminen pro Woche` : "jeder Trainingstag einmal pro Woche"}.</p>
+    <p class="small faint" style="margin:0">Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}.</p>
     <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></section>`;
 }
 // Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
@@ -4552,6 +4615,7 @@ const A = {
   openRir: el => { rirTarget = { key: el.dataset.key, i: +el.dataset.i2 }; openSheet(rirSheet()); },
   setRir: el => { const x = S().list.find(l => l.key === rirTarget.key), t = x && x.sets[rirTarget.i]; if (!t) return closeSheet();
     if (el.dataset.v === "") delete t.rir; else t.rir = +el.dataset.v; save(); closeSheet(); render(); },
+  openTricks: el => { const s = S(), x = s.list[s.idx], e = ex(x.exId); openSheet(`${sheetHead("Tricks: " + esc(e.name))}${tricksHtml(e, x, el.dataset.id)}`); },
   advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
     x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
   advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
@@ -4606,7 +4670,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
