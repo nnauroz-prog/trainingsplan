@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v25)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v25")));
+      ok("Service Worker aktiv (Cache trainingsplan-v26)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v26")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2253,7 +2253,94 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("37. Konsole");
+    section("37. Hindernisse: warum ein Training ausfällt");
+    const mday = n => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+    const mwd = n => (new Date(Date.now() - n * 864e5).getDay() + 6) % 7;
+    const WDL = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const cm = await tp(page, () => window.__tp.cleanMisses([{ d: "2026-01-05", r: "zeit" }, { d: "2026-01-05", r: "lust" }, { d: "kaputt", r: "zeit" }, { d: "2026-01-06", r: "x" }, null, { d: "2026-01-07", r: "krank" }]));
+      ok("Gründe bereinigt: ungültige Daten und Gründe weg, ein Eintrag pro Tag", JSON.stringify(cm) === JSON.stringify([{ d: "2026-01-05", r: "zeit" }, { d: "2026-01-07", r: "krank" }]), JSON.stringify(cm));
+      await ctx.close();
+    }
+    {
+      // Termin vor 2 Tagen verpasst, danach kein Training → der Buddy fragt nach
+      const sched = { id: "s", days: [mwd(2)], time: "18:00", planB: "next", since: mday(20) + "T00:00:00.000Z" };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s")] });
+      ok("Buddy fragt: „Was war am … los?“ mit sechs Gründen", (await page.textContent("#missAsk")).includes(`Was war am ${WDL[mwd(2)]} los?`) && (await page.$$("#missAsk .chip")).length === 6);
+      ok("360 px: Frage ohne seitliches Scrollen", await noOverflow(page));
+      await page.click("#missAsk [data-a=missSkip]");
+      ok("„Nicht jetzt“: Frage weg, gemerkt", !(await page.$("#missAsk")) && (await stored(page)).missSkip === mday(2));
+      await tp(page, () => { window.__tp.state.missSkip = null; }); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
+      await page.click("#missAsk [data-a=missSet][data-r=zeit]");
+      const st = await stored(page);
+      ok("Grund gespeichert, Frage verschwindet", JSON.stringify(st.misses) === JSON.stringify([{ d: mday(2), r: "zeit" }]) && !(await page.$("#missAsk")));
+      await page.reload();
+      ok("Nach Neuladen keine zweite Frage zum selben Tag", !(await page.$("#missAsk")) && (await stored(page)).misses.length === 1);
+      await ctx.close();
+    }
+    {
+      // Am Folgetag nachgeholt → keine Frage
+      const sched = { id: "s", days: [mwd(2)], time: "18:00", planB: "next", since: mday(20) + "T00:00:00.000Z" };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 1, "s")] });
+      ok("Plan B hat geklappt (am Tag danach trainiert): keine Nachfrage", !(await page.$("#missAsk")) && (await tp(page, () => window.__tp.missToAsk())) === null);
+      await ctx.close();
+    }
+    {
+      // Heute absagen (Termin heute, Uhrzeit noch nicht erreicht)
+      const sched = { id: "s", days: [mwd(0)], time: "23:59", planB: "next", since: mday(20) + "T00:00:00.000Z" };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched, why: "Fit bleiben" });
+      ok("Am Termintag: „Heute fällt aus“ als Link", await page.isVisible("#buddy [data-a=missToday]"));
+      await page.click("#buddy [data-a=missToday]");
+      ok("Sheet mit den sechs Gründen", (await page.textContent(".sheet")).includes("Heute fällt aus") && (await page.$$(".sheet [data-a=missSet]")).length === 6);
+      await page.click(".sheet [data-a=missSet][data-r=krank]");
+      let b = await page.textContent("#buddy");
+      ok("Krank: Buddy wünscht gute Besserung, kein Plan B, kein Drängen", b.includes("Heute fällt aus.") && b.includes("gute Besserung") && !b.includes("Plan B") && !b.includes("Kurzversion") && !(await page.$("#missAsk")));
+      await page.click("#buddy [data-a=missUndo]");
+      ok("„Doch trainieren“: Absage zurückgenommen", (await stored(page)).misses.length === 0 && (await page.textContent("#buddy")).includes("Heute um 23:59"));
+      await page.click("#buddy [data-a=missToday]"); await page.click(".sheet [data-a=missSet][data-r=lust]");
+      b = await page.textContent("#buddy");
+      ok("Keine Lust: Buddy nennt dein Warum und bietet die Kurzversion an", b.includes("Keine Lust – kommt vor. Dein Warum: „Fit bleiben“.") && await page.isVisible("#buddy [data-a=openTime30]"));
+      ok("Heute kein Training gezählt, Absage gespeichert", (await stored(page)).misses[0].d === mday(0) && (await stored(page)).misses[0].r === "lust");
+      await ctx.close();
+    }
+    {
+      // Krank vor 2 Tagen ohne Termine: kein „Seit 10 Tagen kein Training“
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 10, "s")], misses: [{ d: mday(2), r: "krank" }] });
+      const b = await page.textContent("#buddy");
+      ok("Nach Krankheit: „Erst mal gesund werden“ statt Vorwurf", b.includes("Erst mal gesund werden.") && b.includes(WDL[mwd(2)]) && !b.includes("kein Training") && !(await page.$("#missAsk")));
+      await ctx.close();
+    }
+    {
+      // Ohne Termine, 8 Tage Pause: einmal pro Woche nachfragen
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 8, "s")] });
+      ok("Ohne Termine nach 8 Tagen: „Was hält dich gerade vom Training ab?“", (await page.textContent("#missAsk")).includes("Was hält dich gerade vom Training ab?"));
+      await page.click("#missAsk [data-a=missSet][data-r=zeit]");
+      const b = await page.textContent("#buddy");
+      ok("Antwort „Keine Zeit“: Buddy bietet heute die Kurzversion an", b.includes("Heute Pause.") && b.includes("Kurzversion") && await page.isVisible("#buddy [data-a=openTime30]") && (await stored(page)).misses[0].d === mday(0));
+      await ctx.close();
+    }
+    {
+      // Analyse: häufigstes Hindernis, Plan B passend; krank zählt nicht
+      const sched = { id: "s", days: [mwd(3)], time: "19:00", planB: "next", since: mday(40) + "T00:00:00.000Z" };
+      const misses = [{ d: mday(3), r: "zeit" }, { d: mday(10), r: "zeit" }, { d: mday(17), r: "lust" }, { d: mday(24), r: "krank" }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, sched, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 30, "s")], misses });
+      const L = await tp(page, () => window.__tp.insights().filter(x => x.id.startsWith("barrier")).map(x => [x.id, x.title, x.text, x.act[0].l]));
+      ok("Analyse: „Dein häufigstes Hindernis: Keine Zeit“, 2 von 4 Ausfällen (krank zählt nicht als Hindernis), Plan B Kurzversion", L.length === 1 && L[0][0] === "barrier:zeit" && L[0][2].includes("2 von 4 Ausfällen in 6 Wochen") && L[0][3] === "Plan B: Kurzversion", JSON.stringify(L));
+      const hits = await tp(page, () => { const T = window.__tp, a = T.schedHits(); const keep = T.state.misses; T.state.misses = []; const b = T.schedHits(); T.state.misses = keep; return [a, b]; });
+      const tot = h => Object.values(h).reduce((s, v) => s + v[1], 0);
+      ok("Termin-Treffer: der kranke Tag zählt nicht als verpasst", tot(hits[0]) === tot(hits[1]) - 1, JSON.stringify(hits));
+      await tp(page, () => { window.__tp.state.sched.planB = "short"; window.__tp.state.misses = [{ d: window.__tp.state.misses[0].d, r: "muede" }, { d: window.__tp.state.misses[1].d, r: "muede" }]; });
+      const L2 = await tp(page, () => window.__tp.insights().filter(x => x.id.startsWith("barrier")).map(x => x.text));
+      ok("Zu müde bei Abendtermin: Hinweis auf früheren Termin", L2.length === 1 && L2[0].includes("Dein Termin liegt um 19:00") && L2[0].includes("Kurzversion"), JSON.stringify(L2));
+      await tp(page, () => { window.__tp.state.misses = [{ d: window.__tp.state.misses[0].d, r: "krank" }, { d: window.__tp.state.misses[1].d, r: "weg" }]; });
+      ok("Nur krank und unterwegs: kein Hindernis-Hinweis", (await tp(page, () => window.__tp.insights().filter(x => x.id.startsWith("barrier")).length)) === 0);
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#histCoach");
+      ok("So denkt der Buddy: Regel „Hindernisse“", (await page.textContent("#coachRules")).includes("Krank, verletzt oder unterwegs zählt nicht als verpasst"));
+      await ctx.close();
+    }
+
+    section("38. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
