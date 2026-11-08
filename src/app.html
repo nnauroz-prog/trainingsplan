@@ -322,6 +322,7 @@
   .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
+  .ask{display:grid;gap:var(--s3);padding:var(--s3) 0 0}
   .trks{display:grid;gap:var(--s2)}
   .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
   .trk>summary{list-style:none;cursor:pointer;display:grid;gap:2px}
@@ -940,7 +941,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {} }; }
+function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1058,6 +1059,7 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
+  s.misses = cleanMisses(raw.misses); s.missSkip = /^\d{4}-\d{2}-\d{2}$/.test(raw.missSkip || "") ? raw.missSkip : null;
   s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
   // Wasser und Fasten sind optional; wer sie schon genutzt hat, behält sie eingeschaltet
   const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
@@ -3412,6 +3414,8 @@ function vWeek() {
   else if (weekOff === 0) hints.push(`Noch ${s.goal - s.n} ${s.goal - s.n === 1 ? "Training" : "Trainings"} bis zum Wochenziel.`);
   else hints.push(`${s.n} von ${s.goal} geplanten Trainings.`);
   if (s.prs.length) hints.push(`${s.prs.length} ${s.prs.length === 1 ? "neuer Bestwert" : "neue Bestwerte"} – mehr Gewicht als je zuvor an diesen Geräten.`);
+  const wm = (state.misses || []).filter(m => { const d = dateOf(m.d); return d >= s.mon && d < s.end && !trainedOn(d); });
+  if (wm.length) hints.push(`Ausgefallen: ${wm.map(m => `${WD[wdOf(dateOf(m.d))]} (${MISS_R[m.r]})`).join(", ")}.`);
   if (below.length) hints.push(`Unter dem Zielbereich von ${s.tmin}–${s.tmax} Sätzen: ${below.join(", ")}.`);
   if (none.length) hints.push(`Ohne Satz in dieser Woche, obwohl im Plan: ${none.join(", ")}.`);
   if (s.food && s.G && s.food.p < s.G.prot * 0.9) hints.push(`Eiweiß lag im Schnitt ${fmtK(s.G.prot - s.food.p)} g unter deinem Ziel von ${s.G.prot} g.`);
@@ -3440,6 +3444,10 @@ function vWeek() {
 
 /* ================= Ziele und „Dein Warum“ ================= */
 // Fortschritt aus den eigenen Daten; Schätzungen gehen vom bisherigen Tempo aus (laut ACSM hängt der Zuwachs vom Trainingsstand ab).
+function cleanMisses(a) {
+  return Array.isArray(a) ? a.filter(m => isObj(m) && /^\d{4}-\d{2}-\d{2}$/.test(m.d) && ["zeit", "muede", "lust", "krank", "weg", "sonst"].includes(m.r))
+    .map(m => ({ d: m.d, r: m.r })).filter((m, i, arr) => arr.findIndex(x => x.d === m.d) === i).slice(-60) : [];
+}
 function cleanGoals(a) {
   return Array.isArray(a) ? a.filter(isObj).map(g => {
     const base = { id: String(g.id || uid()), target: Math.round(+g.target * 100) / 100, start: Math.round(+g.start * 100) / 100,
@@ -3575,18 +3583,72 @@ function whenTxt(d) {
   const k = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 864e5);
   return `${k === 0 ? "heute" : k === 1 ? "morgen" : WD_LONG[wdOf(d)]} um ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}`;
 }
+/* ================= Hindernisse: warum ein Training ausfällt ================= */
+// Pläne, die Hindernisse einbeziehen, wirkten in Studien stärker (Bélanger-Gravel 2013). Darum fragt der Buddy einmal nach dem Grund
+// und passt Plan B daran an. Krank oder unterwegs zählt nicht als verpasster Termin.
+const MISS_R = { zeit: "Keine Zeit", muede: "Zu müde", lust: "Keine Lust", krank: "Krank oder verletzt", weg: "Unterwegs", sonst: "Anderes" };
+const missOn = d => (state.misses || []).find(m => m.d === d) || null;
+const dateOf = d => new Date(d + "T12:00");
+// Letzter Termin der letzten 7 Tage ohne Training (auch nicht am Folgetag), zu dem noch kein Grund vorliegt;
+// ohne Termine: nach 7 Tagen Pause einmal pro Woche
+function missToAsk() {
+  const s = state.sched, now = new Date(), today = dkey(now);
+  if (s) {
+    const since = new Date(s.since); since.setHours(0, 0, 0, 0);
+    for (let k = 1; k <= 7; k++) {
+      const d = new Date(now); d.setDate(now.getDate() - k); d.setHours(0, 0, 0, 0);
+      if (d < since) break;
+      if (!s.days.includes(wdOf(d))) continue;
+      const next = new Date(d); next.setDate(d.getDate() + 1);
+      if (trainedOn(d) || trainedOn(next)) return null;
+      const key = dkey(d);
+      return missOn(key) || state.missSkip === key ? null : { d: key, wd: wdOf(d), kind: "sched" };
+    }
+    return null;
+  }
+  const last = state.history[state.history.length - 1];
+  if (!last || (now - new Date(last.date)) / 864e5 < 7) return null;
+  const recent = (state.misses || []).some(m => (now - dateOf(m.d)) / 864e5 < 7) || (state.missSkip && (now - dateOf(state.missSkip)) / 864e5 < 7);
+  return recent ? null : { d: today, kind: "pause" };
+}
+function missAskHtml() {
+  const q = missToAsk(); if (!q) return "";
+  return `<div class="ask" id="missAsk"><p class="small" style="margin:0"><b>${q.kind === "sched" ? `Was war am ${WD_LONG[q.wd]} los?` : "Was hält dich gerade vom Training ab?"}</b> Ein Tipp genügt – der Buddy passt seinen Plan B daran an.</p>
+    <div class="chips wrap">${Object.entries(MISS_R).map(([k, l]) => `<button class="chip" data-a="missSet" data-d="${q.d}" data-r="${k}">${l}</button>`).join("")}</div>
+    <button class="link small faint" data-a="missSkip" data-d="${q.d}" style="justify-self:start">Nicht jetzt</button></div>`;
+}
+function missSheet() {
+  return `${sheetHead("Heute fällt aus", "Abbrechen")}
+    <p class="small muted" style="margin:0">Sag dem Buddy kurz, warum. Er plant dann passend weiter.</p>
+    <div class="group">${Object.entries(MISS_R).map(([k, l]) => `<button class="li" data-a="missSet" data-d="${dkey()}" data-r="${k}"><div class="grow t">${l}</div><span class="chev">›</span></button>`).join("")}</div>`;
+}
 function buddySays(day, thisWeek, goal, streak) {
   const now = new Date(), s = state.sched, H = state.history, last = H[H.length - 1], act = [];
   const min = day ? estMinutes(day) : 0, nx = nextSched(now), dn = day ? day.name : "Training";
   const goalTxt = thisWeek >= goal ? ` Wochenziel geschafft: ${thisWeek} von ${goal}.` : "";
   const short = () => act.push(["openTime30", "30-Min.-Version"]);
+  const eod = new Date(now); eod.setHours(23, 59, 59, 0); const nx2 = nextSched(eod);
+  const mToday = trainedOn(now) ? null : missOn(dkey(now));
+  const sick = !mToday && !trainedOn(now) && (state.misses || []).find(m => m.r === "krank" && (now - dateOf(m.d)) / 864e5 <= 3);
   let title, text;
   if (trainedOn(now)) {
     const t = H.filter(h => dkey(new Date(h.date)) === dkey(now)), lt = t[t.length - 1];
     title = "Heute erledigt";
     text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${goalTxt}${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
+  } else if (mToday) {
+    title = s && s.days.includes(wdOf(now)) ? "Heute fällt aus" : "Heute Pause";
+    const later = nx2 ? `Nächster Termin: ${whenTxt(nx2)} – ${dn}.` : `Morgen nachholen – ${dn}.`;
+    text = ({ krank: "Krank oder verletzt – gute Besserung. Trainiere erst wieder, wenn du dich fit fühlst, und steig dann etwas leichter ein.",
+      zeit: `Keine Zeit. ${later} Wenn 30 Minuten drin sind: die Kurzversion.`, muede: `Zu müde. ${later} Wenn du magst, reicht heute die Kurzversion.`,
+      lust: `Keine Lust – kommt vor.${state.why ? ` Dein Warum: „${state.why}“.` : ""} Kleinster Schritt: die Kurzversion. Sonst: ${later}`,
+      weg: `Unterwegs. ${nx2 ? `Nächster Termin: ${whenTxt(nx2)}.` : "Weiter, sobald du zurück bist."}`, sonst: later })[mToday.r];
+    if (["zeit", "muede", "lust"].includes(mToday.r)) short();
+    act.push(["missUndo", "Doch trainieren", "link small"]);
+  } else if (sick) {
+    title = "Erst mal gesund werden";
+    text = `Du warst krank oder verletzt (${WD_LONG[wdOf(dateOf(sick.d))]}). Trainiere erst wieder, wenn du dich fit fühlst – und steig dann etwas leichter ein.`;
   } else if (s && s.days.includes(wdOf(now))) {
-    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min. Den Termin hast du dir selbst gesetzt.${goalTxt}`; }
+    if (now < new Date(schedAt(now).getTime() + 90 * 60000)) { title = `Heute um ${s.time}: ${dn}`; text = `Ca. ${min} Min. Den Termin hast du dir selbst gesetzt.${goalTxt}`; act.push(["missToday", "Heute fällt aus", "link small"]); }
     else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
     else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
   } else if (s && missedThisWeek() !== null) {
@@ -3609,9 +3671,10 @@ function buddySays(day, thisWeek, goal, streak) {
   const gh = goalHint(trainedOn(now) ? null : day), pr = lastPR();
   if (gh) text += gh;
   else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) text += ` Zuletzt an der ${pr.name}: ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg.`;
-  if (state.why && last && !trainedOn(now) && (now - new Date(last.date)) / 864e5 >= 4) text += ` Dein Warum: „${state.why}“.`;
+  if (state.why && last && !trainedOn(now) && !mToday && (now - new Date(last.date)) / 864e5 >= 4) text += ` Dein Warum: „${state.why}“.`;
   return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
-    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l]) => `<button class="btn sm" data-a="${a}">${l}</button>`).join("")}
+    ${mToday || sick ? "" : missAskHtml()}
+    ${act.length || s ? `<div class="row wrap" style="gap:var(--s2);align-items:center">${act.map(([a, l, c]) => `<button class="${c || "btn sm"}" data-a="${a}">${l}</button>`).join("")}
       ${s ? `<button class="link small" data-a="openSched" id="buddySched">Termine: ${s.days.map(d => WD[d]).join(", ")} · ${s.time} ›</button>` : ""}</div>` : ""}</div>`;
 }
 let schedDraft = null;
@@ -3724,6 +3787,7 @@ function schedHits() {
   const per = {};
   for (let d = new Date(since > start ? since : start); d < mon; d.setDate(d.getDate() + 1)) {
     const w = wdOf(d); if (!s.days.includes(w)) continue;
+    const m = missOn(dkey(d)); if (m && (m.r === "krank" || m.r === "weg")) continue;
     const end = new Date(d); end.setDate(d.getDate() + (s.days.includes((w + 1) % 7) ? 1 : 2));
     const hit = state.history.some(h => { const t = new Date(h.date); return t >= d && t < end; });
     per[w] = per[w] || [0, 0]; per[w][1]++; if (hit) per[w][0]++;
@@ -3789,6 +3853,27 @@ function insights() {
           act: [{ a: "openSched", l: "Termine ändern", d: {} }], art: "termine" });
       }
     }
+  }
+  // 4b. Häufigstes Hindernis der letzten 6 Wochen (ohne krank/unterwegs, ohne Tage, an denen doch trainiert wurde)
+  const MS = (state.misses || []).filter(m => (now - dateOf(m.d)) / DAY <= 42 && !trainedOn(dateOf(m.d))), fix = MS.filter(m => !["krank", "weg"].includes(m.r));
+  if (fix.length >= 2) {
+    const cnt = {}; fix.forEach(m => { cnt[m.r] = (cnt[m.r] || 0) + 1; });
+    const [r, n] = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0];
+    const wds = {}; fix.filter(m => m.r === r).forEach(m => { const w = wdOf(dateOf(m.d)); wds[w] = (wds[w] || 0) + 1; });
+    const topWd = Object.entries(wds).sort((a, b) => b[1] - a[1])[0], base = `${n} von ${MS.length} Ausfällen in 6 Wochen: ${MISS_R[r]}.`;
+    let text, act, src = ["belanger2013"];
+    if (r === "zeit") {
+      if (state.sched && state.sched.planB !== "short") { text = `${base} Stell Plan B auf die Kurzversion: 30 Minuten statt ausfallen. Pläne, die Hindernisse einplanen, wirkten in Studien stärker.`; act = [{ a: "openSched", l: "Plan B: Kurzversion", d: {} }]; }
+      else if (topWd && +topWd[1] >= 2) { text = `${base} ${topWd[1]}× davon ${WD_ADV[+topWd[0]]}. Vielleicht passt ein anderer Tag besser.`; act = [{ a: "openSched", l: "Termine ändern", d: {} }]; }
+      else { text = `${base} An knappen Tagen reicht die Kurzversion – sie enthält die wichtigsten Übungen.`; act = [{ a: "openTime", l: "Heute kürzer", d: {} }]; }
+    } else if (r === "muede") {
+      text = `${base}${state.sched && state.sched.time >= "18:00" ? ` Dein Termin liegt um ${state.sched.time}. Ein früherer Termin oder ein freier Tag könnte besser passen.` : ""} Als Plan B bietet sich die Kurzversion an.`;
+      act = [{ a: "openSched", l: "Termine ändern", d: {} }];
+    } else if (r === "lust") {
+      text = `${base}${state.why ? ` Dein Warum: „${state.why}“.` : " Halte fest, warum du trainierst – der Buddy erinnert dich daran."}${(state.goals || []).some(g => !g.done) ? "" : " Ein konkretes Ziel macht den Fortschritt sichtbar."}`;
+      act = state.why ? [{ a: "goalAdd", l: "Ziel festlegen", d: {} }] : [{ a: "whyEdit", l: "Dein Warum", d: {} }]; src = ["teixeira2012"];
+    } else { text = `${base} Überleg, was dir an solchen Tagen helfen würde – und leg es als Plan B fest.`; act = [{ a: "openSched", l: "Plan B prüfen", d: {} }]; }
+    add({ id: "barrier:" + r, prio: 68, kind: "warn", title: `Dein häufigstes Hindernis: ${MISS_R[r]}`, text, act, art: "termine", src });
   }
   // 5. Trainingsdauer gegen das Zeitbudget (letzte 5 Trainings ohne Zeitanpassung)
   const dur = H.filter(h => h.durationSec > 0 && !h.adj).slice(-5);
@@ -3863,6 +3948,7 @@ const COACH_RULES = [
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt der Buddy ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, meldet sich der Buddy."],
   ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],
+  ["Hindernisse", "Fällt ein Termin aus, fragt der Buddy einmal nach dem Grund. Krank, verletzt oder unterwegs zählt nicht als verpasst. Ab 2 Ausfällen in 6 Wochen nennt er dein häufigstes Hindernis und schlägt einen passenden Plan B vor – Pläne für Hindernisse wirkten in Studien stärker."],
   ["Trainingsdauer", "Durchschnitt deiner letzten 5 Trainings gegen dein Zeitbudget."],
   ["Ernährung", "Gewichtstrend der letzten 4 Wochen gegen die Zielrate deines Ernährungsziels; Eiweiß der letzten Woche (nur Tage mit Einträgen) gegen 1,6 g pro kg Körpergewicht."],
   ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."]];
@@ -3881,7 +3967,7 @@ function vCoach() {
     <section class="section" id="coachRules"><h2>So denkt der Buddy</h2>
       <div class="group">${COACH_RULES.map(([t, s]) => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join("")}</div>
       <p class="small faint" style="margin:0">Alles wird im Gerät aus deinen Einträgen berechnet. Der Buddy ändert deinen Plan nie ohne deine Bestätigung.</p>
-      ${srcList(["acsm2009", "freq2019", "helms2014", "iraki2019", "morton2018"])}</section>
+      ${srcList(["acsm2009", "freq2019", "belanger2013", "helms2014", "iraki2019", "morton2018"])}</section>
   </div>`;
 }
 function coachPlanSheet(n) {
@@ -4390,6 +4476,10 @@ const A = {
   coachKeep: () => { state.prevPlan = null; save(); render(); },
   coachMinutes: el => { state.plan.minutes = +el.dataset.m; save(); render(); },
   coachDay: el => { state.selDay = el.dataset.id; save(); go("home"); },
+  missSet: el => { state.misses = cleanMisses([...(state.misses || []).filter(m => m.d !== el.dataset.d), { d: el.dataset.d, r: el.dataset.r }]); save(); closeSheet(); render(); },
+  missSkip: el => { state.missSkip = el.dataset.d; save(); render(); },
+  missToday: () => openSheet(missSheet()),
+  missUndo: () => { state.misses = (state.misses || []).filter(m => m.d !== dkey()); save(); render(); },
   schedLearned: () => { const L = learnedSched(); if (!L) return; schedDraft = { days: L.days.slice(), time: L.time, planB: "next" }; openSheet(schedSheet()); },
   goalAdd: () => { const used = [...state.history].reverse().flatMap(h => h.exercises.map(x => x.exId)); goalDraft = { kind: "kraft", exId: used[0] || allEx()[0].id, target: null, date: null }; openSheet(goalSheet()); },
   goalEdit: el => { const g = state.goals.find(x => x.id === el.dataset.id); if (!g) return; goalDraft = JSON.parse(JSON.stringify(g)); openSheet(goalSheet()); },
@@ -4670,7 +4760,7 @@ document.addEventListener("keydown", ev => {
 })();
 document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
