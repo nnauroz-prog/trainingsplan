@@ -13,6 +13,7 @@
     /* Farben (dunkel = Standard) */
     --bg:#0D0E10; --raise:#16181B; --raise-2:#202328; --raise-3:#2A2E34;
     --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A1A7B0; --text-3:#6C727C;
+    --mbody:var(--text-2); --mgear:var(--raise-3); --mgear-line:var(--text-3);
     --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#FFFFFF;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#F5B740; --warn-tint:rgba(245,183,64,.12); --bad:#F2554F;
     --fig:#24272C; --muscle:#363A41; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.6);
@@ -242,6 +243,18 @@
   .glist.srcs{font-size:14px;gap:var(--s2)}
   .glist.srcs a{color:var(--text)}
   .ghead{display:grid;grid-template-columns:minmax(0,1fr) clamp(96px, 30vw, 140px);gap:var(--s4);align-items:start}
+  .motion{display:block;width:100%;height:auto}
+  .gmot{display:grid;gap:var(--s2);background:var(--raise);border-radius:var(--r-lg);padding:var(--s3)}
+  .gmot .motion{max-width:340px;margin:0 auto}
+  .sheet .gmot{background:var(--raise-2)}
+  .next-mot{margin:var(--s2) 0;padding:var(--s2)}
+  .next-mot .motion{max-width:220px}
+  .thumbbox{width:52px;flex:0 0 52px;background:var(--raise-2);border-radius:10px;padding:2px}
+  .ex-top{display:flex;align-items:flex-start;gap:var(--s3)}
+  .mot-btn{flex:0 0 88px;width:88px;background:var(--raise);border-radius:14px;padding:4px}
+  @media (max-height:700px){ .mot-btn{flex-basis:60px;width:60px;padding:2px;border-radius:10px} }
+  .hero-mot{display:grid;gap:4px;justify-items:center;width:clamp(110px, 34vw, 150px)}
+  .hero-mot .mcap{text-align:center;line-height:1.2}
   .gmus{display:grid;gap:var(--s4)}
   .gmus .glist{font-size:15px}
   .gnote{border-top:1px solid var(--hair);padding-top:var(--s4)}
@@ -2008,16 +2021,212 @@ const GENERIC_TIPS = new Set([ISO, ONEARM, ROW1, "Große Muskeln vertragen grö�
   "Breite und klassische Brustpresse gehören zum selben Bewegungsmuster (horizontales Drücken). Für Abwechslung kannst du sie über die Wochen tauschen.",
   "Den gedehnten Teil der Bewegung (Bein fast gestreckt) bewusst mitnehmen.",
   "Die Fußposition verändert die Verteilung der Arbeit: Weiter unten auf der Platte beugt sich das Knie stärker und die Oberschenkelvorderseite arbeitet mehr; weiter oben wird die Hüfte stärker gebeugt und das Gesäß arbeitet mehr."]);
+/* ================= Bewegungsanimation ================= */
+// Eigene, schematische Zeichnung: Figur am Gerät, Start- und Endhaltung je Gerät aus Gelenkwinkeln.
+// Winkel in Grad: 0 = nach vorn (rechts), 90 = nach unten, -90 = nach oben, 180 = nach hinten.
+// Ablauf je Wiederholung (4 s): kurz halten, zügig hin (1,2 s), kurz halten, langsam zurück (2 s).
+const MSEG = { t: 46, ua: 26, fa: 24, th: 40, sh: 38, ft: 12 };
+const mRad = d => d * Math.PI / 180, mDir = (a, l) => [Math.cos(mRad(a)) * l, Math.sin(mRad(a)) * l];
+const mAdd = (p, q) => [p[0] + q[0], p[1] + q[1]];
+const SEATED = { t: -96, th: -4, sh: 82, ft: 0 };
+// Vorlagen
+const mPress = (A, B, o = {}) => ({ A: Object.assign({}, SEATED, o.base, A), B: Object.assign({}, B), hl: o.hl || ["chest"], gear: ["seat", "back", "handle"] });
+const mPull = (A, B, o = {}) => ({ A: Object.assign({}, SEATED, { t: -92 }, o.base, A), B: Object.assign({}, B), hl: ["t"], gear: o.gear || ["seat", "chestpad", "handle"] });
+const MOTION = {
+  // Drücken (sitzend)
+  "hs-chest": mPress({ ua: 158, fa: -8 }, { ua: 8, fa: 2 }),
+  "hs-widechest": mPress({ ua: 162, fa: -2 }, { ua: 6, fa: 4 }),
+  "hs-decline": mPress({ ua: 152, fa: 12 }, { ua: 24, fa: 22 }),
+  "hs-incline": mPress({ ua: 150, fa: -40 }, { ua: -30, fa: -32 }, { base: { t: -104 } }),
+  "hs-shoulder": mPress({ ua: 104, fa: -82 }, { ua: -84, fa: -88 }, { hl: ["sho"], base: { t: -94 } }),
+  "hs-dip": mPress({ ua: 136, fa: 52 }, { ua: 98, fa: 93 }, { hl: ["ua"], base: { t: -93 } }),
+  // Ziehen
+  "hs-row": mPull({ ua: 2, fa: 0 }, { ua: 165, fa: 6 }),
+  "hs-lowrow": mPull({ ua: 26, fa: 22 }, { ua: 140, fa: 32 }),
+  "hs-dyrow": mPull({ ua: 16, fa: 12 }, { ua: 150, fa: 18 }),
+  "hs-highrow": mPull({ ua: -48, fa: -50 }, { ua: 124, fa: -38 }, { gear: ["seat", "thighpad", "handle"] }),
+  "hs-pulldown": mPull({ ua: -97, fa: -92 }, { ua: 100, fa: -78 }, { base: { t: -94 }, gear: ["seat", "thighpad", "handle"] }),
+  // Arme
+  "hs-curl": { A: Object.assign({}, SEATED, { t: -88, ua: 46, fa: 52 }), B: { fa: -112 }, hl: ["ua"], gear: ["seat", "armpad", "handle"] },
+  "hs-triext": { A: Object.assign({}, SEATED, { t: -90, ua: 40, fa: -118 }), B: { fa: 42 }, hl: ["ua"], gear: ["seat", "back", "armpad", "handle"] },
+  "lf-pushdown": { anchor: "ank", at: [74, 108], A: { t: -86, th: 92, sh: 88, ft: 0, ua: 97, fa: -14 }, B: { fa: 91 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [96, 6] },
+  // Schultern: Vorder- und Draufsicht
+  "hs-lateral": { v: "front", A: { ua: 98, fa: 94 }, B: { ua: 2, fa: 4 }, hl: ["sho"] },
+  "hs-fly": { v: "top", A: { ua: 10, fa: -20 }, B: { ua: -95, fa: -125 }, hl: ["chest"] },
+  "hs-reardelt": { v: "top", A: { ua: -95, fa: -125 }, B: { ua: 8, fa: 2 }, hl: ["sho"], pad: true },
+  "lf-abductor": { v: "top", legs: true, A: { th: -86 }, B: { th: -60 }, hl: ["hip"] },
+  // Beine
+  "hs-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  "hs-vsquat": { anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 87, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-hack": { anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
+  "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
+  "hs-kneelcurl": { at: [74, 58], A: { t: -24, hd: 14, th: 100, sh: 122, ft: 40, th2: 95, sh2: 178, ua: 100, fa: 56 }, B: { sh: -116, ft: -30 }, hl: ["th"], gear: ["chestpad2", "kneepad", "heelpad"] },
+  "lf-legcurl": { at: [80, 62], A: { t: 2, hd: -10, th: 166, sh: 176, ft: 90, ua: 62, fa: 2 }, B: { sh: -96, ft: 175 }, hl: ["th"], gear: ["bench", "heelpad"] },
+  "hs-hipthrust": { anchor: "ank", at: [122, 104], A: { t: -160, hd: 0, th: -45, sh: 95, ft: 0, ua: 140, fa: 120 }, B: { t: 180, th: -5 }, hl: ["hip"], gear: ["floor", "benchpad", "hippad"] },
+  "hs-calf": { anchor: "toe", at: [96, 100], A: { t: -90, th: 90, sh: 90, ft: -12, ua: 70, fa: -112 }, B: { ft: 40 }, hl: ["sh"], gear: ["step", "shopad"] },
+  "hs-seatcalf": { anchor: "toe", at: [104, 100], A: { t: -92, th: 2, sh: 90, ft: -15, ua: 60, fa: 0 }, B: { th: -10, ft: 35 }, hl: ["sh"], gear: ["step", "kneetop"] },
+  // Rumpf
+  "hs-ab": { A: Object.assign({}, SEATED, { t: -96, ua: 70, fa: -100 }), B: { t: -55, ua: 111, fa: -59 }, hl: ["t"], gear: ["seat", "handle"] }
+};
+// Gleiche Bewegung an mehreren Geräten
+Object.assign(MOTION, { "hs-lat": MOTION["hs-pulldown"], "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
+  "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
+  "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
+  "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"] });
+// Eigene Geräte: Bewegung über das Bewegungsmuster
+const PAT_MOT = { push_h: "hs-chest", push_i: "hs-incline", push_v: "hs-shoulder", fly: "hs-fly", pull_h: "hs-row", pull_v: "hs-pulldown", lateral: "hs-lateral", rear: "hs-reardelt",
+  bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor" };
+const motSpec = id => MOTION[id] || (PAT_MOT[ex(id).pattern] ? MOTION[PAT_MOT[ex(id).pattern]] : null);
+const motReduce = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
+const mEase = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+function motPhase(ms) { const c = (ms % 4000) / 4000; return c < .1 ? 0 : c < .4 ? mEase((c - .1) / .3) : c < .5 ? 1 : 1 - mEase((c - .5) / .5); }
+const mPose = (sp, p) => { const P = {}; for (const k in sp.A) { const b = sp.B[k] ?? sp.A[k]; P[k] = sp.A[k] + (b - sp.A[k]) * p; } return P; };
+const mF = n => Math.round(n * 10) / 10;
+const mLine = (a, b, w, c) => `<line x1="${mF(a[0])}" y1="${mF(a[1])}" x2="${mF(b[0])}" y2="${mF(b[1])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+const mDot = (a, r, c) => `<circle cx="${mF(a[0])}" cy="${mF(a[1])}" r="${r}" fill="${c}"/>`;
+const MB = "var(--mbody)", MH = "var(--accent)", MG = "var(--mgear)", MGL = "var(--mgear-line)";
+// Seitenansicht: Gelenke aus der Hüfte, dann so verschoben, dass der Ankerpunkt (Hüfte, Knöchel oder Fußballen) ruht
+function mJoints(sp, P) {
+  const j = { hip: [0, 0] }; j.sho = mAdd(j.hip, mDir(P.t, MSEG.t)); j.elb = mAdd(j.sho, mDir(P.ua, MSEG.ua)); j.hand = mAdd(j.elb, mDir(P.fa, MSEG.fa));
+  j.knee = mAdd(j.hip, mDir(P.th, MSEG.th)); j.ank = mAdd(j.knee, mDir(P.sh, MSEG.sh)); j.toe = mAdd(j.ank, mDir(P.ft || 0, MSEG.ft));
+  j.head = mAdd(j.sho, mDir(P.t + (P.hd || 0), 12));
+  if (P.th2 != null) { j.knee2 = mAdd(j.hip, mDir(P.th2, MSEG.th)); j.ank2 = mAdd(j.knee2, mDir(P.sh2, MSEG.sh)); }
+  const an = j[sp.anchor || "hip"], at = sp.at || [64, 84], off = [at[0] - an[0], at[1] - an[1]];
+  for (const k in j) j[k] = mAdd(j[k], off);
+  return j;
+}
+// Bildausschnitt: umfasst die ganze Bewegung mit Rand, Seitenverhältnis 4:3, Figur mittig
+function motBox(sp) {
+  if (sp._box) return sp._box;
+  if (sp.v) return (sp._box = "0 0 160 120");
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of [0, .25, .5, .75, 1]) { const j = mJoints(sp, mPose(sp, p));
+    for (const k in j) { const r = k === "head" ? 8 : 6; x0 = Math.min(x0, j[k][0] - r); x1 = Math.max(x1, j[k][0] + r); y0 = Math.min(y0, j[k][1] - r); y1 = Math.max(y1, j[k][1] + r); } }
+  if (sp.cable) { x0 = Math.min(x0, sp.cable[0] - 6); x1 = Math.max(x1, sp.cable[0] + 6); y0 = Math.min(y0, sp.cable[1] - 6); }
+  const at = sp.at || [64, 84]; if ((sp.gear || []).includes("seat")) y1 = Math.max(y1, at[1] + 14);
+  if ((sp.gear || []).includes("benchpad")) x0 = Math.min(x0, at[0] - 100);
+  const m = 8; x0 -= m; y0 -= m; x1 += m; y1 += m;
+  let w = x1 - x0, h = y1 - y0; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  if (w / h < 4 / 3) w = h * 4 / 3; else h = w * 3 / 4;
+  return (sp._box = `${mF(cx - w / 2)} ${mF(cy - h / 2)} ${mF(w)} ${mF(h)}`);
+}
+function motDraw(sp, p) {
+  const P = mPose(sp, p), hl = new Set(sp.hl || []), col = k => hl.has(k) ? MH : MB;
+  if (sp.v === "top") return motTop(sp, P, hl);
+  if (sp.v === "front") return motFront(sp, P, hl);
+  const j = mJoints(sp, P), at = sp.at || [64, 84];
+  const td = mDir(P.t, 1), back = [td[1], -td[0]], fwd = [-td[1], td[0]];
+  const along = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], sh = (q, n, d) => [q[0] + n[0] * d, q[1] + n[1] * d];
+  const G = sp.gear || [], g = [], gf = [];
+  // Gerät hinten (Sitz, Lehne, Polster) und vorn (Griffe, Plattform, Seil)
+  if (G.includes("seat")) g.push(`<rect x="${mF(j.hip[0] - 18)}" y="${mF(j.hip[1] + 5)}" width="34" height="6" rx="3" fill="${MG}"/>`);
+  if (G.includes("back")) g.push(mLine(sh(sh(j.hip, back, 8), td, -4), sh(sh(j.sho, back, 8), td, 6), 6, MG));
+  if (G.includes("chestpad")) g.push(mDot(sh(along(j.hip, j.sho, .62), fwd, 13), 6, MG));
+  if (G.includes("chestpad2")) g.push(mLine(sh(along(j.hip, j.sho, .25), [0, 1], 9), sh(along(j.hip, j.sho, 1.05), [0, 1], 9), 7, MG));
+  if (G.includes("thighpad")) g.push(mDot(sh(along(j.hip, j.knee, .8), [0, -1], 8), 5.5, MG));
+  if (G.includes("shinpad")) gf.push(mDot(sh(along(j.knee, j.ank, .88), mDir(P.sh - 90, 1), 0), 5, MG));
+  if (G.includes("heelpad")) gf.push(mDot(sh(along(j.knee, j.ank, .9), mDir(P.sh + 90, 1), 6), 5, MG));
+  if (G.includes("kneepad")) g.push(mDot(sh(j.knee2, [0, 1], 6), 6, MG));
+  if (G.includes("armpad")) g.push(mLine(sh(along(j.sho, j.elb, .15), mDir(P.ua + 90, 1), 6), sh(along(j.sho, j.elb, 1.1), mDir(P.ua + 90, 1), 6), 6, MG));
+  if (G.includes("shopad")) gf.push(mDot(sh(j.sho, [0, -1], 6), 5, MG));
+  if (G.includes("kneetop")) gf.push(mDot(sh(j.knee, [0, -1], 7), 5, MG));
+  if (G.includes("bench")) g.push(mLine(sh(j.hip, [0, 1], 8), sh(j.sho, [0, 1], 8), 7, MG), mLine(sh(j.hip, [0, 1], 8), sh(along(j.hip, j.knee, .7), [0, 1], 8), 7, MG));
+  if (G.includes("benchpad")) g.push(`<rect x="${mF(at[0] - 96)}" y="${mF(at[1] - 36)}" width="26" height="36" rx="3" fill="${MG}"/>`);
+  if (G.includes("hippad")) gf.push(mDot(sh(j.hip, [0, -1], 7), 5, MG));
+  if (G.includes("floor")) g.push(mLine([at[0] - 140, at[1] + 2], [at[0] + 80, at[1] + 2], 2, MGL));
+  if (G.includes("floorplat")) g.push(mLine(sh(j.ank, [0, 1], 4), sh(j.toe, [0, 1], 4), 4, MG), mLine([at[0] - 120, at[1] + 6], [at[0] + 80, at[1] + 6], 2, MGL));
+  if (G.includes("step")) g.push(`<rect x="${mF(at[0] - 6)}" y="${mF(at[1] + 3)}" width="22" height="9" rx="2" fill="${MG}"/>`);
+  if (G.includes("plat")) gf.push(mLine(sh(j.ank, mDir(P.ft || 0, 1), -6), sh(j.toe, mDir(P.ft || 0, 1), 6), 5, MGL));
+  if (G.includes("cable")) gf.push(mLine(sp.cable, j.hand, 1.5, MGL), mDot(sp.cable, 4, MGL));
+  if (G.includes("handle")) gf.push(mDot(j.hand, 3.6, MGL));
+  const W = { t: 11, th: 9, sh: 8, ft: 5, ua: 7, fa: 6 };
+  const body = [];
+  if (j.knee2) body.push(`<g opacity=".45">${mLine(j.hip, j.knee2, W.th, MB)}${mLine(j.knee2, j.ank2, W.sh, MB)}</g>`);
+  body.push(mLine(j.hip, j.sho, W.t, col("t")), mLine(j.hip, j.knee, W.th, col("th")), mLine(j.knee, j.ank, W.sh, col("sh")), mLine(j.ank, j.toe, W.ft, MB));
+  if (hl.has("hip")) body.push(mDot(j.hip, 7, MH));
+  if (hl.has("chest")) body.push(mDot(sh(along(j.hip, j.sho, .78), fwd, 3), 5.5, MH));
+  body.push(mDot(j.head, 6.5, MB), mLine(j.sho, j.elb, W.ua, col("ua")), mLine(j.elb, j.hand, W.fa, col("fa")));
+  if (hl.has("sho")) body.push(mDot(j.sho, 5.5, MH));
+  return g.join("") + body.join("") + gf.join("");
+}
+// Draufsicht: Butterfly, hintere Schulter (Arme) und Abduktoren (Beine). Vorn = oben.
+function motTop(sp, P, hl) {
+  const c = [80, sp.legs ? 52 : 70], s = 15, out = [];
+  const mir = a => 180 - a;
+  out.push(`<rect x="${c[0] - 26}" y="${c[1] + 6}" width="52" height="7" rx="3" fill="${MG}"/>`);
+  if (sp.pad) out.push(`<rect x="${c[0] - 14}" y="${c[1] - 20}" width="28" height="6" rx="3" fill="${MG}"/>`);
+  if (sp.legs) {
+    const hR = [c[0] + 8, c[1] + 2], hL = [c[0] - 8, c[1] + 2];
+    out.push(`<rect x="${c[0] - 24}" y="${c[1] - 6}" width="48" height="56" rx="8" fill="${MG}" opacity=".6"/>`);
+    for (const [h, a] of [[hR, P.th], [hL, mir(P.th)]]) { const k = mAdd(h, mDir(a, 40)); out.push(mLine(h, k, 10, MB), mDot(mAdd(k, mDir(a, 4)), 6, MGL)); }
+    out.push(mLine([c[0] - s, c[1] + 4], [c[0] + s, c[1] + 4], 12, MB), mDot([c[0], c[1] + 4], 6.5, MB));
+    if (hl.has("hip")) out.push(mDot(hR, 6, MH), mDot(hL, 6, MH));
+    return out.join("");
+  }
+  const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]];
+  for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
+    const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 22));
+    out.push(mLine(sp0, e, 7, hl.has("ua") ? MH : MB), mLine(e, h, 6, MB), mDot(h, 3.6, MGL));
+  }
+  out.push(mLine(sL, sR, 12, MB));
+  if (hl.has("chest")) out.push(`<ellipse cx="${c[0]}" cy="${c[1] - 5}" rx="11" ry="4" fill="${MH}"/>`);
+  if (hl.has("sho")) out.push(mDot(sR, 5.5, MH), mDot(sL, 5.5, MH));
+  out.push(mDot([c[0], c[1] - 3], 7, MB));
+  return out.join("");
+}
+// Vorderansicht: Seitheben
+function motFront(sp, P, hl) {
+  const c = [80, 40], s = 14, out = [], mir = a => 180 - a;
+  const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]], hR = [c[0] + 8, c[1] + 42], hL = [c[0] - 8, c[1] + 42];
+  out.push(`<rect x="${c[0] - 22}" y="${c[1] + 46}" width="44" height="7" rx="3" fill="${MG}"/>`);
+  out.push(mLine(hR, [hR[0] + 3, hR[1] + 16], 9, MB), mLine([hR[0] + 3, hR[1] + 16], [hR[0] + 4, hR[1] + 50], 8, MB));
+  out.push(mLine(hL, [hL[0] - 3, hL[1] + 16], 9, MB), mLine([hL[0] - 3, hL[1] + 16], [hL[0] - 4, hL[1] + 50], 8, MB));
+  out.push(`<path d="M${sL[0]} ${sL[1]} L${sR[0]} ${sR[1]} L${hR[0]} ${hR[1]} L${hL[0]} ${hL[1]} Z" fill="${MB}" stroke="${MB}" stroke-width="6" stroke-linejoin="round"/>`);
+  for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
+    const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 20));
+    out.push(mLine(sp0, e, 7, MB), mLine(e, h, 6, MB), mDot(e, 4.5, MG));
+  }
+  if (hl.has("sho")) out.push(mDot(sR, 6, MH), mDot(sL, 6, MH));
+  out.push(mDot([c[0], c[1] - 13], 7, MB));
+  return out.join("");
+}
+// SVG für Anleitung, Training und Listen. anim: läuft (außer bei „Bewegung reduzieren“, dann Start blass + Ende kräftig)
+function motionSvg(id, o = {}) {
+  const sp = motSpec(id); if (!sp) return "";
+  const still = !o.anim || motReduce();
+  const inner = o.anim && still ? `<g opacity=".3">${motDraw(sp, 0)}</g>${motDraw(sp, 1)}` : motDraw(sp, o.anim ? 0 : (o.p ?? 1));
+  return `<svg class="motion${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(ex(id).name)}"><g class="mfig">${inner}</g></svg>`;
+}
+// Eine Schleife für alle sichtbaren Animationen; stoppt von selbst, wenn keine mehr da ist
+let motRAF = null, motLast = 0;
+function motTick(ts) {
+  const els = document.querySelectorAll("svg.motion[data-anim]");
+  if (!els.length || document.hidden) { motRAF = null; return; }
+  if (ts - motLast > 33) { motLast = ts; const p = motPhase(ts);
+    els.forEach(el => {
+      if (el.dataset.cycle) { const L = el.dataset.cycle.split(","), i = Math.floor(ts / 8000) % L.length;
+        if (el.dataset.m !== L[i]) { el.dataset.m = L[i]; const s2 = motSpec(L[i]); if (s2) el.setAttribute("viewBox", motBox(s2));
+          const cap = el.parentElement && el.parentElement.querySelector(".mcap"); if (cap) cap.textContent = `${i + 1}/${L.length} · ${ex(L[i]).name}`; } }
+      const sp = motSpec(el.dataset.m), g = el.firstElementChild; if (sp && g) g.innerHTML = motDraw(sp, p); }); }
+  motRAF = requestAnimationFrame(motTick);
+}
+function motStart() { if (!motRAF && !motReduce() && document.querySelector("svg.motion[data-anim]")) motRAF = requestAnimationFrame(motTick); }
+// Neue Animationen im Dokument (Ansicht oder Sheet) starten die Schleife; zurück in der App ebenso
+new MutationObserver(() => motStart()).observe(document.documentElement, { childList: true, subtree: true });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) motStart(); });
+
 function guideHtml(id) {
   const e = ex(id), g = GUIDE[id];
-  const colors = { [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) };
   const sec = (title, inner) => `<section class="gsec"><h2>${title}</h2>${inner}</section>`;
   const ol = arr => `<ol class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ol>`;
   const ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  const head = `<div class="ghead"><div class="gmus">
+  const mot = motionSvg(id, { anim: true });
+  const head = `${mot ? `<div class="gmot" id="gMotion">${mot}<p class="small faint" style="margin:0;text-align:center">Schema der Bewegung · zügig hin, etwa 2 Sekunden zurück · orange: arbeitet vor allem</p></div>` : ""}
+    <div class="gmus">
       <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
       ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
-    </div><div class="gfig">${figure(colors, e.name)}</div></div>`;
+    </div>`;
   if (!g) return `${head}${sec("Hinweis", `<p class="muted">Für eigene Geräte gibt es keine ausführliche Anleitung. Muskeln und Bewegungsmuster stammen aus deinen Angaben.</p>`)}`;
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
   const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
@@ -2051,7 +2260,7 @@ function vLib() {
     <div class="chips" id="libBrand">${[["alle", "Alle"], ["hs", BRAND.hs], ["lf", BRAND.lf]].map(([k, l]) => `<button class="chip ${libBrand === k ? "on" : ""}" data-a="libBrand" data-k="${k}">${l}</button>`).join("")}</div>
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
-        <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
+        <div class="thumbbox">${motionSvg(e.id, { cls: "thumb" })}</div>
         <div class="grow"><div class="t">${esc(e.name)}</div><div class="s">${esc(aboutOf(e))}${e.off ? " · nicht im Studio" : ""}</div></div>
         ${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}<span class="chev">›</span></button>`).join("")}</div></section>`).join("") || `<p class="muted">Nichts gefunden.</p>`}</div>
   </div>`;
@@ -2215,7 +2424,8 @@ function vHome() {
               <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
               ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
-        <div>${figure(workoutColors(day.items), "Muskeln in diesem Training")}</div>
+        ${(() => { const ids = day.items.map(i => i.exId).filter(id => motSpec(id)); if (!ids.length) return "<div></div>";
+          return `<div class="hero-mot">${motionSvg(ids[0], { anim: true }).replace('<svg class="motion"', `<svg class="motion" data-cycle="${ids.join(",")}"`)}<span class="mcap small faint">1/${ids.length} · ${esc(ex(ids[0]).name)}</span></div>`; })()}
       </div>
       ${nextReason ? `<p class="reason" style="color:var(--text)">${esc(why)}</p>` : buddySays(day, thisWeek, goal, streak)}
       <div class="stack-sm">
@@ -2899,6 +3109,7 @@ function vTrain() {
       ${(() => { const a = setAdvice(s); return a ? `<div class="ins ${a.up ? "good" : "warn"}" id="setAdv"><div class="t">${a.up ? "Mehr Gewicht?" : "Weniger Gewicht?"}</div><p class="small" style="margin:0">${esc(a.txt)}</p>
         <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="advApply">${kgTxt(a.kg)} kg übernehmen</button><button class="btn sm" data-a="advSkip">So lassen</button></div></div>` : ""; })()}
       <div class="next"><div class="cap">${sameEx ? "Nächster Satz" : "Nächste Übung"}</div>
+        ${!sameEx && motSpec(ne.id) ? `<div class="gmot next-mot">${motionSvg(ne.id, { anim: true })}</div>` : ""}
         <h2>${esc(ne.name)}</h2>
         <p class="small muted">Satz ${ni + 1} von ${nx.sets.length} · ${ns.kg !== null ? kgTxt(ns.kg) + " " + unitTxt(ne) : "Gewicht wählen"} × ${ns.reps}</p>
         ${state.notes[nx.exId] ? `<p class="small muted">Einstellung: <b style="color:var(--text)">${esc(state.notes[nx.exId])}</b></p>` : ""}</div>
@@ -2915,8 +3126,8 @@ function vTrain() {
   const lastTxt = lastSet ? `Letztes Mal ${lastSet.kg !== null ? kgTxt(lastSet.kg) : "–"} × ${lastSet.reps}` : "Noch keine Werte an diesem Gerät";
   $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
     <div class="ex-head">
-      <div class="label">Übung ${s.idx + 1} von ${s.list.length} · ${MUSCLES[e.muscle]}</div>
-      <h1>${esc(e.name)}</h1>
+      <div class="ex-top"><div class="grow"><div class="label">Übung ${s.idx + 1} von ${s.list.length} · ${MUSCLES[e.muscle]}</div>
+      <h1>${esc(e.name)}</h1></div>${motSpec(e.id) ? `<button class="mot-btn" data-a="openDevInfo" aria-label="Bewegungsablauf und Technik">${motionSvg(e.id, { anim: true, cls: "sm" })}</button>` : ""}</div>
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
       ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
       ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
@@ -2955,7 +3166,9 @@ function vTrain() {
 
 function devInfoSheet() {
   const s = S(), x = s.list[s.idx], e = ex(x.exId);
+  const mot = motionSvg(e.id, { anim: true });
   return `${sheetHead(esc(e.name))}
+    ${mot ? `<div class="gmot">${mot}</div>` : ""}
     <div class="field"><label for="noteT">Deine Einstellung</label>
       <input id="noteT" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
@@ -5488,7 +5701,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)

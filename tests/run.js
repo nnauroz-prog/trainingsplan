@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v44)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v44")));
+      ok("Service Worker aktiv (Cache trainingsplan-v45)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v45")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2550,13 +2550,10 @@ async function finishAllSets(page, kg, reps) {
       ok("Suche findet auch die Bezeichnung am Gerät (chest press → Brustpresse)", (await page.textContent("#app")).includes("Brustpresse"));
       await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=hs-row]");
       ok("Geräteseite: deutscher Name, darunter „Am Gerät steht: Iso-Lateral Row“", (await page.textContent(".head .title")) === "Rudern" && (await page.textContent("#exLabel")) === "Am Gerät steht: Iso-Lateral Row");
-      const fig = await page.$$eval(".gfig .fig path.m, .gfig .fig ellipse.m", e => e.length);
-      ok("Muskelkarte: Vorder- und Rückansicht mit einzelnen Muskelflächen", fig >= 30, String(fig));
-      const lit = await page.$$eval(".gfig .fig .m", e => e.filter(x => x.getAttribute("style")).length);
-      ok("Rudern: Rücken und mittrainierte Muskeln hervorgehoben", lit >= 6, String(lit));
+      ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel orange", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
       await page.click("[data-a=exBack]");
-      const thumbs = await page.$$eval("#app .li .fig", e => e.map(x => x.getAttribute("viewBox")));
-      ok("Vorschaubilder zeigen die passende Körperhälfte (Brust vorn oben, Rücken hinten oben, Beinbeuger hinten unten)", thumbs.includes("16 0 68 120") && thumbs.includes("126 0 68 120") && thumbs.includes("126 88 68 114"), thumbs.slice(0, 4).join(" | "));
+      const thumbs = await page.$$eval("#libList .thumbbox svg.motion", e => e.length);
+      ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 45 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
       for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Übungsliste mit Vorschaubildern ohne seitliches Scrollen`, await noOverflow(page)); }
       await ctx.close();
     }
@@ -3102,7 +3099,40 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("54. Konsole");
+    section("54. Bewegungsanimationen");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i2", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      const cov = await tp(page, () => { const T = window.__tp; return T.allEx().filter(e => !e.id.startsWith("c-")).filter(e => !T.motSpec(e.id)).map(e => e.id); });
+      ok("Alle 45 Geräte haben eine Bewegungsanimation", cov.length === 0, cov.join());
+      const cust = await tp(page, () => { const T = window.__tp; T.state.custom.push({ id: "c-k", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); return !!T.motSpec("c-k"); });
+      ok("Eigenes Gerät mit Bewegungsmuster bekommt die passende Animation", cust);
+      ok("„Heute“: Geräte des Tages nacheinander, mit Name", (await page.textContent(".hero-mot .mcap")).includes("1/2 · Brustpresse") && !!(await page.$(".hero-mot svg[data-cycle]")));
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const a1 = await page.$eval(".mot-btn svg .mfig", g => g.innerHTML); await page.waitForTimeout(700);
+      const a2 = await page.$eval(".mot-btn svg .mfig", g => g.innerHTML);
+      ok("Training: Animation neben dem Gerätenamen bewegt sich", a1 !== a2);
+      await page.click(".mot-btn");
+      ok("Antippen öffnet „Gerät & Technik“ mit großer Animation", !!(await page.$(".sheet .gmot svg.motion[data-anim]")));
+      await page.click(".sheet .sh-head [data-a=closeSheet]");
+      ok("360 px: Animation verdrängt die Eingabe nicht (kein seitliches Scrollen)", await noOverflow(page));
+      // Pause vor einem anderen Gerät: Bewegung der nächsten Übung
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      ok("Pause vor einem neuen Gerät zeigt dessen Bewegung", !!(await page.$("[data-a=skipRest]")) && !!(await page.$(".next-mot svg.motion[data-anim]")) && (await page.textContent(".next")).includes("Beinpresse"));
+      await ctx.close();
+    }
+    {
+      // „Bewegung reduzieren“: keine Animation, Start blass und Ende kräftig
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.emulateMedia({ reducedMotion: "reduce" }); await page.reload();
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-row]");
+      ok("Bewegung reduzieren: Anleitung zeigt Start und Ende ohne Animation", !(await page.$("svg.motion[data-anim]")) && (await page.$$("#gMotion svg g[opacity]")).length === 1);
+      await ctx.close();
+    }
+
+    section("55. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
