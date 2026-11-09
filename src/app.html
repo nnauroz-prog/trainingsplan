@@ -130,6 +130,10 @@
   .li .s{font-size:14px;color:var(--text-2);margin-top:1px}
   .chev{color:var(--text-3);font-size:20px;line-height:1}
   .plain-list>.li{padding-left:0;padding-right:0}
+  .hopen{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;min-height:44px}
+  .hopen .t,.hopen .s{display:block}.hopen .row{display:flex}
+  .hx-sets{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .hx-sets .set-pill{flex:0 0 auto;padding:0 12px;min-width:64px}
   .plain-list>.li+.li::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--hair)}
 
   /* ---------- Formular ---------- */
@@ -384,14 +388,14 @@ const MUSCLES = {
 const LIB = [
   ["hs-chest","Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Chest Press"],
   ["hs-incline","Schräge Brustpresse","brust",["schultern","trizeps"],"plate","Iso-Lateral Incline Press"],
-  ["hs-decline","Negativ-Brustpresse","brust",["trizeps"],"plate","Iso-Lateral Decline Press"],
-  ["hs-widechest","Brustpresse breit","brust",["schultern"],"plate","Iso-Lateral Wide Chest"],
+  ["hs-decline","Negativ-Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Decline Press"],
+  ["hs-widechest","Brustpresse breit","brust",["schultern","trizeps"],"plate","Iso-Lateral Wide Chest"],
   ["hs-fly","Butterfly","brust",["schultern"],"stack","Pec Fly"],
   ["hs-row","Rudern","ruecken",["bizeps","schultern"],"plate","Iso-Lateral Row"],
-  ["hs-lowrow","Rudern tief","ruecken",["bizeps"],"plate","Iso-Lateral Low Row"],
+  ["hs-lowrow","Rudern tief","ruecken",["bizeps","schultern"],"plate","Iso-Lateral Low Row"],
   ["hs-highrow","Rudern von oben","ruecken",["bizeps","schultern"],"plate","Iso-Lateral High Row"],
   ["hs-pulldown","Latziehen zur Brust","ruecken",["bizeps"],"plate","Iso-Lateral Front Lat Pulldown"],
-  ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps"],"plate","Iso-Lateral D.Y. Row"],
+  ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps","schultern"],"plate","Iso-Lateral D.Y. Row"],
   ["hs-lat","Latzug","ruecken",["bizeps"],"stack","Lat Pulldown"],
   ["hs-shoulder","Schulterpresse","schultern",["trizeps"],"plate","Iso-Lateral Shoulder Press"],
   ["hs-lateral","Seitheben","schultern",[],"plate","Lateral Raise"],
@@ -399,7 +403,7 @@ const LIB = [
   ["hs-curl","Armbeuger","bizeps",[],"plate","Biceps Curl"],
   ["hs-dip","Trizepsdrücken","trizeps",["brust","schultern"],"plate","Seated Dip"],
   ["hs-triext","Armstrecker","trizeps",[],"stack","Triceps Extension"],
-  ["hs-legpress","Beinpresse","beinev",["po","beineh"],"plate","Linear Leg Press"],
+  ["hs-legpress","Beinpresse","beinev",["po"],"plate","Linear Leg Press"],
   ["hs-isolegpress","Beinpresse getrennt","beinev",["po"],"plate","Iso-Lateral Leg Press"],
   ["hs-vsquat","V-Kniebeuge","beinev",["po"],"plate","V-Squat"],
   ["hs-hack","Hackenschmidt","beinev",["po"],"plate","Hack Squat"],
@@ -782,7 +786,7 @@ const GUIDE = {
     tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
   "hs-legpress": {
-    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    main: [M.quad, M.glut], sup: [M.add],
     why: "Grundübung für Oberschenkel und Gesäß. Der Rücken ist gestützt, deshalb lassen sich die Beine schwer trainieren, ohne dass der Rumpf das Gewicht balancieren muss.",
     setup: ["Rückenlehne so einstellen, dass du tief beugen kannst, ohne dass sich das Becken unten von der Lehne abrollt.", "Füße etwa schulterbreit mittig auf die Platte."],
     steps: ["Sicherung lösen, Beine leicht gebeugt.", "Kontrolliert absenken, die Knie zeigen in Richtung der Zehen.", "Über die ganze Fußsohle wegdrücken."],
@@ -792,7 +796,7 @@ const GUIDE = {
     tips: ["Die Fußposition verändert die Verteilung der Arbeit: Weiter unten auf der Platte beugt sich das Knie stärker und die Oberschenkelvorderseite arbeitet mehr; weiter oben wird die Hüfte stärker gebeugt und das Gesäß arbeitet mehr.", "Große Muskeln vertragen größere Gewichtsschritte."]
   },
   "hs-isolegpress": {
-    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    main: [M.quad, M.glut], sup: [M.add],
     why: "Beinpresse mit zwei unabhängigen Fußplatten für Oberschenkel und Gesäß.",
     setup: ["Rückenlehne so einstellen, dass das Becken unten an der Lehne bleibt.", "Je einen Fuß mittig auf eine Fußplatte, etwa hüftbreit."],
     steps: ["Beine leicht gebeugt, Rücken an der Lehne.", "Kontrolliert absenken, das Knie bleibt über der zweiten Zehe.", "Gleichmäßig über Ferse und Ballen zurückdrücken."],
@@ -943,7 +947,7 @@ const TEMPLATES = {
   2:[["Ganzkörper A",["hs-chest","hs-row","hs-legpress","hs-shoulder","hs-seatcurl","hs-ab"]],
      ["Ganzkörper B",["hs-incline","hs-pulldown","hs-hack","hs-hipthrust","hs-lateral","hs-dip","hs-calf"]]],
   3:[["Drücken",["hs-chest","hs-incline","hs-shoulder","hs-lateral","hs-dip"]],
-     ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl"]],
+     ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl","hs-kneelcurl"]],
      ["Beine",["hs-legpress","hs-hack","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]]],
   4:[["Oberkörper A",["hs-chest","hs-row","hs-shoulder","hs-pulldown","hs-curl","hs-dip"]],
      ["Unterkörper A",["hs-legpress","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]],
@@ -1191,7 +1195,7 @@ const MAJOR = ["brust", "ruecken", "schultern", "beinev", "beineh", "po"];
 // dann bei großen Muskelgruppen unter dem Richtwert ergänzen – nur, solange jeder Tag ins Zeitbudget passt
 // und kein anderer Muskel dadurch über den Richtwert rutscht (je Übung höchstens 3 Sätze für Einsteiger, 5 für Fortgeschrittene – Startwerte der App)
 function balanceVolume(plan) {
-  const [tmin, tmax] = volTarget(plan.goal), cap = plan.level === "fortgeschritten" ? 5 : 3;
+  const [tmin, tmax] = volTarget(plan.goal), cap = plan.level === "fortgeschritten" ? 5 : 3; let extra = 0;
   const fits = d => !plan.minutes || estimateSec(d.items) / 60 <= plan.minutes;
   for (let guard = 0; guard < 200; guard++) {
     const ms = muscleSets(plan);
@@ -1211,9 +1215,27 @@ function balanceVolume(plan) {
       }
       if (added) break;
     }
-    if (!added) break;
+    if (added) continue;
+    // Fortgeschrittene: Reicht die Satzgrenze nicht, eine weitere Übung für den Muskel ergänzen – nur wenn sie ins Zeitbudget passt
+    if (plan.level === "fortgeschritten" && extra < 2 && MAJOR.filter(m => ms[m] < tmin).sort((a, b) => ms[a] - ms[b]).some(m => addExerciseFor(plan, m, ms, fits, tmax))) { extra++; continue; }
+    break;
   }
   return plan;
+}
+function addExerciseFor(plan, m, ms, fits, tmax) {
+  const used = new Set(plan.days.flatMap(d => d.items.map(i => i.exId))), g = GOALS[plan.goal] || GOALS.aufbau;
+  const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && !used.has(x.id)).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
+  if (!e) return false;
+  // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
+  const LEG = ["beinev", "beineh", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
+  const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
+  for (const d of days) for (const sets of [3, 2]) {
+    const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
+    const ms2 = muscleSets(plan);
+    if (fits(d) && !Object.keys(ms2).some(k => ms2[k] > tmax && ms2[k] > ms[k])) return true;
+    d.items.pop();
+  }
+  return false;
 }
 
 /* ================= Hilfen ================= */
@@ -1834,7 +1856,7 @@ function tabOf(v) {
 }
 let homeNote = "";
 function go(v) {
-  view = v; if (v !== "home") homeNote = "";
+  view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = "";
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
@@ -2455,10 +2477,19 @@ function setError(t) {
   return "";
 }
 function showSetError(msg) { const el = byId("setErr"); if (el) { el.textContent = msg; el.hidden = !msg; } if (msg) buzz(60); }
+// Tippfehler-Schutz (Regel der App): mehr als doppelt so viel wie der bisher schwerste Satz am Gerät → einmal bestätigen
+let kgOk = null;
+function kgCheck(x, i) {
+  const u = x.u || unitOf(ex(x.exId)), kg = x.sets[i].kg;
+  const ref = Math.max(bestKg(x.exId, u) ?? 0, ...x.sets.filter(t => t.done && validSet(t)).map(t => t.kg));
+  if (!(ref > 0 && kg > 2 * ref) || (kgOk && kgOk.key === x.key && kgOk.i === i && kgOk.kg === kg)) return "";
+  kgOk = { key: x.key, i, kg };
+  return `${kgTxt(kg)} ${UNIT[u]}? Bisher höchstens ${kgTxt(ref)} kg. Stimmt der Wert, nochmal „Satz fertig“ tippen.`;
+}
 function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
-  const err = setError(x.sets[i]); if (err) return showSetError(err);
+  const err = setError(x.sets[i]) || kgCheck(x, i); if (err) return showSetError(err);
   x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i };
   const pr = livePr(x, i), isPR = !!pr, ts = x.sets[i];
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
@@ -4191,6 +4222,7 @@ const COACH_RULES = [
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
   ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt die App zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet die App in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
   ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. ohne Reserve – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
+  ["Tippfehler", "Mehr als doppelt so viel Gewicht wie dein bisher schwerster Satz am Gerät: Die App fragt einmal nach, bevor sie den Satz speichert (Regel der App). Korrigieren lässt sich jedes Training unter Fortschritt → Letzte Trainings."],
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt die App ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, gibt es einen Hinweis."],
   ["Termine", "Mit Terminen: welche Wochentage in den letzten 4 Wochen geklappt haben (am Tag selbst oder am Tag danach). Ohne Termine: an welchen Tagen und zu welcher Uhrzeit du tatsächlich trainierst (ab 6 Trainings in 6 Wochen)."],
@@ -4369,6 +4401,7 @@ function vHistory() {
 
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
+    ${histNote ? `<p class="note small" id="histNote" role="status" style="margin:0">${esc(histNote)}</p>` : ""}
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
     <section class="section">
@@ -4400,14 +4433,16 @@ function vHistory() {
           <button class="icon-btn" data-a="calMonth" data-d="1" aria-label="Nächster Monat" ${calOffset >= 0 ? "disabled" : ""}>›</button></div>${cal}`, calOffset !== 0) : ""}
       ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
-          <div class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></div>
-          <div class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</div>
-          ${state.health && !state.watch ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>`, false) : ""}
+          <button class="hopen" data-a="histOpen" data-id="${h.id}"><span class="grow">
+          <span class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></span>
+          <span class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</span></span><span class="chev">›</span></button>
+          ${state.health && !state.watch ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>
+        <p class="small faint" style="margin:0">Antippen zum Korrigieren oder Löschen.</p>`, logOpen) : ""}
     </div>
   </div>`;
 }
 
-let calOffset = 0, bwOpen = false;
+let calOffset = 0, bwOpen = false, logOpen = false, histNote = "";
 function weightCard() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
   const today = new Date().toISOString().slice(0, 10);
@@ -4446,6 +4481,40 @@ function weightCard() {
     ${state.health && todayEntry ? `<div id="bwHk"><button class="btn block" data-a="sendWeight">${todayEntry.hk ? HK_SENT : "In Apple Health eintragen"}</button>
       <p class="small faint">Übergibt ${kgTxt(todayEntry.kg)} kg an den Kurzbefehl „${HK_WEIGHT}“.</p></div>` : ""}
   </div>`;
+}
+
+/* Vergangenes Training korrigieren oder löschen. Bestwerte, Fortschritt, Ziele und Wochenrückblick rechnen
+   immer aus dem Verlauf und übernehmen die Korrektur dadurch von selbst. */
+let histEdit = null;
+const histRec = () => histEdit && state.history.find(h => h.id === histEdit.id);
+const nSets = n => `${n} ${n === 1 ? "Satz" : "Sätze"}`;
+const histSetCount = h => h.exercises.reduce((a, x) => a + x.sets.length, 0);
+// Weiterblättern im offenen Sheet ohne erneute Einblend-Animation
+const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; };
+function histSheet(h, msg = "") {
+  return `${sheetHead(esc(h.day), "Fertig")}
+    <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min. · ${nSets(histSetCount(h))}</p>
+    ${msg ? `<p class="small" id="histMsg" role="status" style="margin:0;color:var(--ok)">${esc(msg)}</p>` : ""}
+    <div class="plain-list" id="histEx">${h.exercises.map((x, xi) => `<div class="li" style="display:block">
+      <div class="row between"><span class="t ellipsis">${esc(x.name)}</span><span class="small faint">${UNIT[x.u] || ""}</span></div>
+      <div class="hx-sets">${x.sets.map((t, i) => `<button class="set-pill done" data-a="histSet" data-x="${xi}" data-i2="${i}" aria-label="${esc(x.name)}, Satz ${i + 1} ändern">${t.kg != null ? kgTxt(t.kg) : "–"}×${t.reps}</button>`).join("")}</div></div>`).join("")}</div>
+    <p class="small faint" style="margin:0">Satz antippen zum Korrigieren oder Löschen.</p>
+    <button class="btn block danger" data-a="histDel">Training löschen</button>`;
+}
+function histSetSheet() {
+  const h = histRec(), x = h.exercises[histEdit.x], t = x.sets[histEdit.i];
+  return `${sheetHead(`Satz ${histEdit.i + 1} · ${esc(x.name)}`, "Zurück", "histBack")}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">
+      <div class="field"><label for="hsKg">${UNIT[x.u] || "kg"}</label><input id="hsKg" inputmode="decimal" value="${t.kg != null ? kgTxt(t.kg) : ""}" autocomplete="off" enterkeyhint="next"></div>
+      <div class="field"><label for="hsReps">Wiederholungen</label><input id="hsReps" inputmode="numeric" value="${t.reps ?? ""}" autocomplete="off" enterkeyhint="done"></div></div>
+    <p class="error" id="hsErr" role="alert" hidden></p>
+    <div class="stack-sm"><button class="btn primary block xl" data-a="histSetSave">Speichern</button>
+      ${histSetCount(h) > 1 ? `<button class="btn block danger" data-a="histSetDel">Satz löschen</button>` : ""}</div>`;
+}
+// Nach jeder Änderung: Kraftziele, die nur durch den alten Wert erreicht waren, gelten wieder als offen.
+function histChanged() {
+  (state.goals || []).forEach(g => { if (g.kind === "kraft" && g.done && !goalStatus(g).reached) delete g.done; });
+  save(); logOpen = true; render(); logOpen = false;
 }
 
 function exChart(exId, u = unitOf(ex(exId))) {
@@ -4969,6 +5038,25 @@ const A = {
     if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
     save(); closeSheet(); render();
   },
+  histOpen: el => { histEdit = { id: el.dataset.id }; const h = histRec(); if (h) openSheet(histSheet(h)); },
+  histBack: () => { const h = histRec(); h ? sheetTo(histSheet(h)) : closeSheet(); },
+  histSet: el => { histEdit.x = +el.dataset.x; histEdit.i = +el.dataset.i2; if (histRec()?.exercises[histEdit.x]?.sets[histEdit.i]) sheetTo(histSetSheet()); },
+  histSetSave: () => { const h = histRec(), t = h?.exercises[histEdit.x]?.sets[histEdit.i]; if (!t) return closeSheet();
+    const kg = num(byId("hsKg").value), nv = { kg: kg === null ? null : Math.round(kg * 100) / 100, reps: num(byId("hsReps").value) };
+    const err = setError(nv); if (err) { const el = byId("hsErr"); el.textContent = err; el.hidden = false; return; }
+    const changed = t.kg !== nv.kg || t.reps !== nv.reps;
+    t.kg = nv.kg; t.reps = nv.reps; if (changed) histChanged();
+    sheetTo(histSheet(h, changed ? `Satz ${histEdit.i + 1} gespeichert: ${kgTxt(t.kg)} × ${t.reps}.` : "")); },
+  histSetDel: () => { const h = histRec(), x = h?.exercises[histEdit.x]; if (!x?.sets[histEdit.i] || histSetCount(h) < 2) return closeSheet();
+    x.sets.splice(histEdit.i, 1); if (!x.sets.length) h.exercises.splice(histEdit.x, 1);
+    histChanged(); sheetTo(histSheet(h, `Satz gelöscht.`)); },
+  histDel: () => { const h = histRec(); if (!h) return closeSheet();
+    sheetTo(`${sheetHead("Training löschen?", "")}<p class="muted">„${esc(h.day)}“ vom ${fmtDay(h.date)} mit ${nSets(histSetCount(h))} wird gelöscht.</p>
+      ${h.hk ? `<p class="small muted">Der Eintrag in Apple Health bleibt und lässt sich nur dort löschen.</p>` : ""}
+      <button class="btn block" style="background:var(--bad);color:#fff" data-a="histDelDo">Löschen</button><button class="btn block" data-a="histBack">Abbrechen</button>`); },
+  histDelDo: () => { const h = histRec(); if (!h) return closeSheet();
+    state.history = state.history.filter(x => x !== h); histNote = `Training „${h.day}“ vom ${fmtDay(h.date)} gelöscht.`;
+    closeSheet(); histChanged(); },
   editSet: el => { const s = S(), x = s.list.find(l => l.key === el.dataset.key) || s.list[s.idx]; setEdit = { key: x.key, i: +el.dataset.i2, ...x.sets[+el.dataset.i2] }; openSheet(setSheet()); },
   setAdj: el => { const x = S().list.find(l => l.key === setEdit.key);
     if (el.dataset.k === "kg") setEdit.kg = Math.max(0, Math.round(((setEdit.kg ?? 0) + +el.dataset.d * ex(x.exId).step) * 100) / 100);
