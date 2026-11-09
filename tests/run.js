@@ -221,7 +221,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Nur heute: Übung im Training getauscht", (await page.textContent("h1")).includes("Schräge Brustpresse"));
       ok("Nur heute: Plan unverändert", (await stored(page)).plan.days[0].items[0].exId === "hs-chest");
       await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
-      ok("Nach dem ersten Satz kein Tausch mehr möglich", await page.isDisabled(".actions3 [data-a=openSwap]").catch(() => true));
+      ok("Nach dem ersten Satz kein Tausch mehr möglich (Knopf ausgeblendet)", !(await page.$(".actions3 [data-a=openSwap]")));
       await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
       const st = await stored(page);
       ok("Gespeichertes Training enthält das neue Gerät", st.history[0].exercises[0].exId === "hs-incline");
@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v41)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v41")));
+      ok("Service Worker aktiv (Cache trainingsplan-v42)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v42")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2974,7 +2974,53 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("51. Konsole");
+    section("51. Trainingsbereich");
+    {
+      const { ctx, page } = await open(undefined);
+      await page.evaluate(k => { const T = window.__tp, plan = T.generatePlan("aufbau", 3, "fortgeschritten", 60);
+        localStorage.setItem(k, JSON.stringify({ plan, hints: { units: true }, backupAt: new Date().toISOString(), sched: { days: [0, 2, 4], time: "18:00", planB: "next" } })); }, KEY);
+      await page.reload();
+      // Kein Sheet ragt bei 360 px über den Rand (waagerecht scrollbare Filterleisten ausgenommen)
+      const fits = () => page.evaluate(() => { const sh = document.querySelector(".sheet"); if (!sh) return false;
+        return sh.scrollWidth <= sh.clientWidth && ![...sh.querySelectorAll("*")].some(el => { const r = el.getBoundingClientRect(); return r.width && !el.closest(".chips") && (r.right > innerWidth + 0.5 || r.left < -0.5); }); });
+      const close = () => page.evaluate(() => { document.querySelector("#sheet-root").innerHTML = ""; });
+      const bad = [];
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Trainingstage: Übungsnamen dürfen zwei Zeilen nutzen", await page.$$eval(".day-row .s", e => e.every(x => x.classList.contains("clamp2"))));
+      await page.click("[data-a=openSched]"); if (!(await fits())) bad.push("Termine"); await close();
+      await page.click("[data-a=editDay]"); await page.click("[data-a=editItem]"); if (!(await fits())) bad.push("Übung bearbeiten");
+      const it = (await page.textContent(".sheet")).replace(/\s+/g, " ");
+      ok("Übung bearbeiten: Pause als 0:45 bis 3:00, „Deine Einstellung“", ["0:45", "1:00", "1:30", "2:00", "3:00"].every(x => it.includes(x)) && !/\d m\b/.test(it) && it.includes("Deine Einstellung") && !it.includes("Geräte-Einstellung"));
+      await close();
+      await page.click("[data-a=openPicker]"); if (!(await fits())) bad.push("Übung hinzufügen"); await close();
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]"); if (!(await fits())) bad.push("Meine Geräte");
+      await page.click(".sheet [data-a=editDev]"); if (!(await fits())) bad.push("Gerät"); await close();
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]");
+      await page.click(".actions3 [data-a=openSwap]"); if (!(await fits())) bad.push("Gerät tauschen"); await close();
+      await page.click(".tool[data-a=openDevInfo]"); if (!(await fits())) bad.push("Gerät & Technik"); await close();
+      if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=feel][data-f=l]");
+      const feel = await page.evaluate(() => { const on = getComputedStyle(document.querySelector(".seg.feel button.on")).backgroundColor, main = getComputedStyle(document.querySelector(".actionbar .btn.primary")).backgroundColor; return on !== main; });
+      ok("„Leicht / Passt / Schwer“: Auswahl neutral, Orange nur für die Hauptaktion", feel);
+      await page.click("text=Satz korrigieren"); if (!(await fits())) bad.push("Satz ändern"); await close();
+      await page.click("[data-a=openJump]"); if (!(await fits())) bad.push("Übungen");
+      const jl = await page.textContent(".sheet");
+      ok("Übungsliste: Hinweis einmal statt „antippen = jetzt“ in jeder Zeile", !jl.includes("antippen = jetzt") && jl.split("Übung antippen, um sie jetzt zu machen.").length === 2);
+      await page.click("[data-a=openTimeLive]"); if (!(await fits())) bad.push("Zeit anpassen"); await close();
+      await page.click("[data-a=skipRest]");
+      ok("Nach dem ersten Satz: „Gerät tauschen“ ausgeblendet statt ausgegraut", !(await page.$(".actions3 [data-a=openSwap]")) && !(await page.$("[disabled][data-a=openSwap]")));
+      await page.click(".tool[data-a=openDevInfo]");
+      ok("Gerät & Technik erklärt, warum nicht mehr getauscht werden kann", (await page.textContent("#noSwap")).includes("vor dem ersten Satz"));
+      await close();
+      await page.click("[data-a=askStop]"); if (!(await fits())) bad.push("Unterbrechen");
+      ok("360 px: alle Sheets im Trainingsbereich passen in die Breite", bad.length === 0, bad.join(", "));
+      await page.click("[data-a=stopSave]");
+      ok("Zusammenfassung: Dauer in „Min.“", /Dauer\s*\d+\s*Min\./.test((await page.textContent("#app")).replace(/\s+/g, " ")));
+      await ctx.close();
+    }
+
+    section("52. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

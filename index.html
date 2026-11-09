@@ -136,7 +136,6 @@
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:12px}
   .seg button{min-height:40px;border-radius:10px;font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
   .seg button.on{background:var(--seg-on);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.18)}
-  .seg.feel button.on{background:var(--accent);color:var(--on-accent)}
 
   /* ---------- Gruppierte Listen ---------- */
   .group{background:var(--raise);border-radius:var(--r-lg);overflow:hidden}
@@ -244,7 +243,7 @@
     .ex-head h1{font-size:30px}
   }
   .unit b{font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0}
-  .actions3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+  .actions3{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--s2)}
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
   .lastline{font-size:14px;color:var(--text-3)}
@@ -285,11 +284,14 @@
   /* ---------- Plan ---------- */
   .day-row .t{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1}
   .day-row .min{font-size:14px;color:var(--text-3);white-space:nowrap}
+  .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .idx{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--raise-2);font-size:13px;font-weight:700;color:var(--text-2);flex:0 0 auto}
   .mini-step{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center}
   .mini-step button{height:44px;border-radius:12px;background:var(--raise-2);font-size:22px;display:grid;place-items:center}
   .mini-step output{text-align:center;font-family:var(--display);font-size:28px;font-weight:700}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+  .grid3 .mini-step{grid-template-columns:1fr 1fr;row-gap:6px}
+  .grid3 .mini-step output{grid-column:1/-1;grid-row:1}
 
   /* ---------- Verlauf ---------- */
   .kpi{display:flex;align-items:baseline;gap:var(--s2)}
@@ -2381,7 +2383,7 @@ function vPlan() {
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
         <div class="grow"><div class="t">${esc(d.name)}</div>
-          <div class="s ellipsis">${d.items.map(it => esc(ex(it.exId).name)).join(" · ") || "Noch keine Übungen"}</div></div>
+          <div class="s clamp2">${d.items.map(it => esc(ex(it.exId).name)).join(" · ") || "Noch keine Übungen"}</div></div>
         <span class="min">${estMinutes(d)} Min.</span><span class="chev">›</span>
       </button>`).join("")}
       <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
@@ -2584,8 +2586,8 @@ function itemSheet() {
     <p class="small muted" style="margin-top:-8px">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="grid3">${ms("sets", "Sätze", 1)}${ms("rmin", "Wdh. von", 1)}${ms("rmax", "Wdh. bis", 1)}</div>
     <div class="field"><label>Pause</label><div class="seg">${[45, 60, 90, 120, 180].map(s =>
-      `<button data-a="draftRest" data-s="${s}" class="${draft.rest === s ? "on" : ""}">${s < 60 ? s + " s" : (s / 60).toString().replace(".", ",") + " m"}</button>`).join("")}</div></div>
-    <div class="field"><label for="noteIn">Geräte-Einstellung</label>
+      `<button data-a="draftRest" data-s="${s}" class="${draft.rest === s ? "on" : ""}" aria-label="${s < 60 ? s + " Sekunden" : String(s / 60).replace(".", ",") + " Minuten"}">${fmtTime(s)}</button>`).join("")}</div></div>
+    <div class="field"><label for="noteIn">Deine Einstellung</label>
       <input id="noteIn" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     <div class="stack-sm">
       <button class="btn primary block xl" data-a="saveItem">Speichern</button>
@@ -2919,7 +2921,7 @@ function vTrain() {
     ${(() => { const tr = warmPending ? null : trickNow(x, si); return tr ? `<button class="trick" data-a="openTricks" data-id="${tr.id}" id="trickNow"><span class="tk">Trick</span><span class="tt">${esc(tr.short)}</span><span class="chev">›</span></button>` : ""; })()}
     <div class="actions3">
       <button class="tool" data-a="openDevInfo">${ICON.gear}Gerät & Technik</button>
-      <button class="tool" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>${ICON.swap}Gerät tauschen</button>
+      ${x.sets.some(t => t.done) ? "" : `<button class="tool" data-a="openSwap">${ICON.swap}Gerät tauschen</button>`}
       <button class="tool" data-a="openJump">${ICON.list.replace('width="20" height="20" ', "")}Übungen</button>
     </div>
     <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="doneSet">Satz fertig</button></div></div>
@@ -2936,7 +2938,7 @@ function devInfoSheet() {
     <p class="small muted">${e.label && e.label !== e.name ? `Am Gerät steht: ${esc(labelOf(e))}<br>` : ""}${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="stack-sm">
       <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="train">Ausführliche Anleitung</button>
-      <button class="btn block" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>Gerät tauschen</button>
+      ${x.sets.some(t => t.done) ? `<p class="small faint" id="noSwap" style="margin:0;text-align:center">Tauschen geht vor dem ersten Satz an diesem Gerät.</p>` : `<button class="btn block" data-a="openSwap">Gerät tauschen</button>`}
       <button class="btn block" data-a="editDev" data-id="${e.id}" data-ret="train">Gerät bearbeiten</button>
     </div>`;
 }
@@ -2948,9 +2950,10 @@ function jumpSheet() {
     <div class="group">${s.list.map((x, i) => { const d = x.sets.filter(t => t.done).length, fin = d === x.sets.length;
     return `<div class="li">
       <button class="grow" data-a="jump" data-i2="${i}" ${fin ? "disabled" : ""} style="text-align:left;min-height:44px">
-        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : fin ? "" : " · antippen = jetzt"}</div></button>
+        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : ""}</div></button>
       ${!fin && i !== s.list.length - 1 ? `<button class="btn sm" data-a="moveEnd" data-i2="${i}">Später</button>` : fin ? `<span class="badge up">Fertig</span>` : ""}
     </div>`; }).join("")}</div>
+    <p class="small faint" style="margin:0">Übung antippen, um sie jetzt zu machen.</p>
     ${curOpen ? `<div class="stack-sm"><button class="btn block danger" data-a="endEx">${esc(ex(cur.exId).name)} beenden</button><p class="small faint" style="text-align:center">Offene Sätze dieser Übung werden übersprungen.</p></div>` : ""}`;
 }
 function afterListChange(prefer) {
@@ -4613,7 +4616,7 @@ function vSummary() {
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
       <div><div class="cap">${esc(r.day)} · beendet${r.adj ? " · zeitlich angepasst" : ""}</div><div class="title">Stark gemacht.</div></div></div>
     <div class="grid3">
-      <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> min</span></div></div>
+      <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div></div>
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
       <div class="stat"><div class="cap">Volumen</div><div class="num">${fmtVol(sm.volume)}</div></div>
     </div>
@@ -4715,7 +4718,7 @@ function vHistory() {
       ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
           <button class="hopen" data-a="histOpen" data-id="${h.id}"><span class="grow">
-          <span class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} min</span></span>
+          <span class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min.</span></span>
           <span class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</span></span><span class="chev">›</span></button>
           ${state.health && !state.watch ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>
         <p class="small faint" style="margin:0">Antippen zum Korrigieren oder Löschen.</p>`, logOpen) : ""}
