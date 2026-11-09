@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v40)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v40")));
+      ok("Service Worker aktiv (Cache trainingsplan-v41)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v41")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -422,7 +422,7 @@ async function finishAllSets(page, kg, reps) {
       const rank = id => tp(page, id => { const r = window.__tp.rankAlternatives(id, new Set([id]));
         return { direct: r.direct.map(a => a.e.id), other: r.other.map(a => a.e.id), why: Object.fromEntries(r.direct.concat(r.other).map(a => [a.e.id, a.why])) }; }, id);
       const pats = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.pattern]));
-      ok("Alle 28 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 28 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
+      ok("Alle 45 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 45 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
       let r = await rank("hs-chest");
       ok("Brustpresse: direkte Alternativen nur horizontales Drücken", r.direct.length > 0 && r.direct.every(id => ["hs-decline", "hs-widechest"].includes(id)), r.direct.join());
       ok("Bevorzugtes passendes Gerät steht oben", r.direct[0] === "hs-decline");
@@ -934,12 +934,12 @@ async function finishAllSets(page, kg, reps) {
         const txt = JSON.stringify([T.GUIDE, T.ARTICLES]);
         if (/TODO|lorem|xxx/i.test(txt)) bad.push("Platzhalter");
         return { n: ids.length, bad, arts: T.ARTICLES.length }; });
-      ok("Alle 28 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 28 && !chk.bad.length, chk.bad.join("; "));
+      ok("Alle 45 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 45 && !chk.bad.length, chk.bad.join("; "));
       ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
       ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
       // Bibliothek
       await page.click("[data-a=tab][data-v=lib]");
-      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 29);
+      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 46);
       await page.fill("#libQ", "Brust");
       const brust = await tp(page, () => window.__tp.allEx().filter(e => e.name.toLowerCase().includes("brust") || e.muscle === "brust").length);
       ok("Suche filtert (Name oder Muskel)", (await page.$$("#libList [data-a=openEx]")).length === brust && brust >= 5);
@@ -2235,14 +2235,14 @@ async function finishAllSets(page, kg, reps) {
         { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-curl", sets: 3, rmin: 8, rmax: 12, rest: 60 },
         { id: "i3", exId: "hs-seatcurl", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
       const { ctx, page } = await open({ plan, hints: { units: true } });
-      const tr = await tp(page, () => { const T = window.__tp, devs = T.allEx().filter(e => e.id.startsWith("hs-")), all = devs.flatMap(e => T.tricksFor(e).map(k => ({ id: e.id, t: k.t, short: k.short, s: k.s })));
+      const tr = await tp(page, () => { const T = window.__tp, devs = T.allEx().filter(e => !e.id.startsWith("c-")), all = devs.flatMap(e => T.tricksFor(e).map(k => ({ id: e.id, t: k.t, short: k.short, s: k.s })));
         const dup = f => Object.entries(all.reduce((a, k) => { (a[k[f]] = a[k[f]] || []).push(k.id); return a; }, {})).filter(([, v]) => v.length > 1).map(([k, v]) => `${k} (${v.join(", ")})`);
         const it = (exId, sets = 3) => ({ exId, sets: Array.from({ length: sets }, () => ({})) });
         return { n: devs.map(e => T.tricksFor(e).length), dupT: dup("t"), dupShort: dup("short"), dupS: dup("s"), gen: T.GEN_TRICKS.map(k => k.t),
           generic: all.filter(k => ["Nah ans Limit", "Dehnung mitnehmen", "Pause nicht zu knapp", "Einstellung merken", "Drop-Satz spart Zeit"].includes(k.t)).length,
           seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s, seatWhy: T.GUIDE["hs-seatcurl"].why, incWhy: T.GUIDE["hs-incline"].why,
           now: [T.trickNow(it("hs-chest"), 0).t, T.trickNow(it("hs-chest"), 1).t, T.trickNow(it("hs-chest"), 2).t], custom: T.tricksFor({ id: "c-x" }).length }; });
-      ok("Jedes der 28 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 28 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
+      ok("Jedes der 45 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 45 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
       ok("Kein Trick steht bei zwei Geräten (Titel, Kurztext und Erklärung jeweils einmalig)", !tr.dupT.length && !tr.dupShort.length && !tr.dupS.length, [...tr.dupT, ...tr.dupShort, ...tr.dupS].join(" | "));
       ok("Allgemeine Grundsätze nicht mehr bei den Geräten, sondern einmal gesammelt", tr.generic === 0 && tr.gen.includes("Nah ans Limit") && tr.gen.includes("Drop-Satz am Steckgewicht"));
       ok("Studienbelege einmal pro Seite: Armbeuger im Trick (+12,4 %), Beinbeuger sitzend und Schräge Brustpresse unter „Warum“ statt doppelt im Trick", tr.curl.includes("+12,4 %") && tr.seatWhy.includes("Studie") && tr.incWhy.includes("45°") && !tr.seat.includes("%") && !tr.inc.includes("45°"));
@@ -2251,14 +2251,14 @@ async function finishAllSets(page, kg, reps) {
         const words = s => new Set(s.toLowerCase().replace(/[^a-zäöüß ]/g, " ").split(/\s+/).filter(w => w.length > 3 && !STOP.has(w)).map(w => w.replace(/(en|er|es|e|n|s)$/, "")));
         const sim = (a, b) => { const A = words(a), B = words(b); let i = 0; A.forEach(w => B.has(w) && i++); return i / Math.max(1, Math.min(A.size, B.size)); };
         const out = [];
-        for (const e of T.allEx().filter(x => x.id.startsWith("hs-"))) { const g = T.GUIDE[e.id];
+        for (const e of T.allEx().filter(x => !x.id.startsWith("c-"))) { const g = T.GUIDE[e.id];
           const items = [...(T.TIPS[e.id] || []), g.why, ...g.setup, ...g.steps, ...g.mistakes.map(([f, k]) => f + " – " + k), ...g.tips.filter(x => !T.GENERIC_TIPS.has(x))];
           T.tricksFor(e).forEach(k => items.forEach(s => { const v = sim(k.short + " " + k.s, s); if (v >= 0.7) out.push(`${e.id}: ${k.t} ~ ${s.slice(0, 60)}`); })); }
         return out; });
       ok("Kein Trick wiederholt, was auf derselben Geräteseite schon steht", ov.length === 0, ov.slice(0, 4).join(" | "));
       ok("Eigene Geräte ohne erfundene Tricks", tr.custom === 0);
       const ab = await tp(page, () => Object.values(window.__tp.ABOUT_X));
-      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (28, keine doppelt)", ab.length === 28 && new Set(ab).size === 28);
+      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (45, keine doppelt)", ab.length === 45 && new Set(ab).size === 45);
       await page.click("[data-a=tab][data-v=lib]");
       const subs = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()));
       ok("Übungsliste: keine Beschreibung doppelt", subs.length >= 28 && new Set(subs).size === subs.length, subs.slice(0, 6).join(" | "));
@@ -2538,8 +2538,8 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [{ id: "h", dayId: "d1", day: "Push", date: new Date(Date.now() - 2 * 864e5).toISOString(), durationSec: 1800,
         exercises: [{ exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 10 }] }] }] });
-      const L = await tp(page, () => window.__tp.allEx().filter(e => e.id.startsWith("hs-")).map(e => [e.id, e.name, e.label]));
-      ok("Alle 28 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 28 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
+      const L = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.name, e.label]));
+      ok("Alle 45 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 45 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
       ok("Gewicht pro Seite bleibt an der Gerätebezeichnung (Brustpresse: pro Seite, Beinpresse: insgesamt)", await tp(page, () => window.__tp.unitOf(window.__tp.ex("hs-chest")) === "s" && window.__tp.unitOf(window.__tp.ex("hs-legpress")) === "t" && window.__tp.unitOf(window.__tp.ex("hs-legext")) === "s"));
       const st = await tp(page, () => window.__tp.state);
       ok("Gespeicherte Einträge auf Deutsch umgestellt (Gerät und Trainingstag „Push“ → „Drücken“)", st.history[0].exercises[0].name === "Brustpresse" && st.history[0].day === "Drücken");
@@ -2931,7 +2931,50 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("50. Konsole");
+    section("50. Life Fitness");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const lf = await tp(page, () => window.__tp.allEx().filter(e => e.brand === "lf").map(e => ({ id: e.id, off: e.off })));
+      ok("17 Life-Fitness-Geräte, ab Werk „nicht im Studio“", lf.length === 17 && lf.every(e => e.off));
+      const gp = await tp(page, () => [2, 3, 4].flatMap(n => ["einsteiger", "fortgeschritten"].flatMap(l => window.__tp.generatePlan("aufbau", n, l, 60).days.flatMap(d => d.items.map(i => i.exId)))));
+      ok("Plan-Assistent nimmt sie erst, wenn sie im Studio sind", !gp.some(id => id.startsWith("lf-")));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("#libBrand [data-k=lf]");
+      const subs = await page.$$eval("#libList .li .s", e => e.map(x => x.textContent.trim()));
+      ok("Übungen: Filter „Life Fitness“ zeigt nur diese, mit Marke in der Zeile", subs.length === 17 && subs.every(s => s.startsWith("Life Fitness · ") && s.includes("nicht im Studio")));
+      await page.click("#libBrand [data-k=alle]"); await page.fill("#libQ", "pushdown");
+      ok("Suche „pushdown“ findet Trizepsdrücken am Kabel", (await page.textContent("#libList")).includes("Trizepsdrücken am Kabel"));
+      await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=lf-tripress]");
+      const pg = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Geräteseite: „Am Gerät steht: Life Fitness Triceps Press“, Griffarten erklärt", (await page.textContent("#exLabel")) === "Am Gerät steht: Life Fitness Triceps Press" && pg.includes("Dip-Griffe"));
+      ok("360 px: kein seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=exBack]"); await page.click("[data-a=openEx][data-id=lf-pushdown]");
+      await page.$$eval("details", d => d.forEach(x => x.open = true));
+      const pd = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Trizepsdrücken am Kabel: Studie über Kopf vs. Arm am Körper mit Quelle", pd.includes("+20 % statt +14 %") && pd.includes("Maeo"));
+      // Meine Geräte: Filter und alle auf einmal ins Studio
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]");
+      await page.click(".sheet [data-a=devFilt][data-k=lf]");
+      ok("Meine Geräte: Filter „Life Fitness“ mit „Alle ins Studio“", (await page.$$(".sheet .group .li")).length === 17 && await page.isVisible("#devBulk"));
+      await page.click("#devBulk [data-v=on]");
+      ok("Alle ins Studio", !(await tp(page, () => window.__tp.allEx().some(e => e.brand === "lf" && e.off))));
+      await page.reload();
+      ok("Bleibt nach dem Neuladen gespeichert", !(await tp(page, () => window.__tp.allEx().some(e => e.brand === "lf" && e.off))));
+      // Gleiche Übungsart der anderen Marke: zuerst als Alternative, nie doppelt im Plan
+      const r = await tp(page, () => window.__tp.rankAlternatives("hs-seatcurl", new Set(["hs-seatcurl"])));
+      ok("Alternative zum Beinbeuger sitzend: der von Life Fitness zuerst", r.direct[0].e.id === "lf-seatcurl" && r.direct[0].why.startsWith("Gleiche Übungsart am Gerät von Life Fitness"));
+      const twins = await tp(page, () => { const T = window.__tp, out = [];
+        for (const n of [2, 3, 4]) for (const l of ["einsteiger", "fortgeschritten"]) for (const m of [45, 60, 90]) {
+          const ids = T.generatePlan("aufbau", n, l, m).days.flatMap(d => d.items.map(i => T.ex(i.exId)));
+          ids.forEach((a, i) => ids.slice(i + 1).forEach(b => { if (a.id !== b.id && (a.twin === b.id || b.twin === a.id)) out.push(a.id + "+" + b.id); })); }
+        return out; });
+      ok("Kein Plan enthält dieselbe Übungsart von beiden Marken", twins.length === 0, twins.slice(0, 4).join());
+      await page.evaluate(() => { window.__tp.state.dev["hs-dip"] = { off: true }; });
+      const slot = await tp(page, () => window.__tp.generatePlan("aufbau", 3, "einsteiger", 60).days[0].items.map(i => i.exId));
+      ok("Trizepsdrücken von Hammer Strength fehlt: Plan nimmt das von Life Fitness", slot.includes("lf-tripress") && !slot.includes("hs-dip"), slot.join());
+      await ctx.close();
+    }
+
+    section("51. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
