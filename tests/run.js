@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v38)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v38")));
+      ok("Service Worker aktiv (Cache trainingsplan-v39)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v39")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2789,7 +2789,79 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("48. Konsole");
+    section("48. Vergangenes Training korrigieren, Tippfehler-Schutz");
+    {
+      const day = (id, daysAgo, exs, extra) => Object.assign({ id, dayId: "d1", day: "Drücken", date: new Date(Date.now() - daysAgo * 864e5).toISOString(), durationSec: 3000, exercises: exs }, extra || {});
+      const H = [day("a1", 6, [{ exId: "hs-chest", name: "Brustpresse", u: "s", sets: [{ kg: 40, reps: 10 }, { kg: 40, reps: 9 }] }, { exId: "hs-fly", name: "Butterfly", u: "b", sets: [{ kg: 30, reps: 12 }] }]),
+        day("a2", 2, [{ exId: "hs-chest", name: "Brustpresse", u: "s", sets: [{ kg: 400, reps: 10, rir: 2 }, { kg: 42.5, reps: 9 }] }], { hk: true })];
+      const goals = [{ id: "g1", kind: "kraft", exId: "hs-chest", u: "s", start: 40, target: 50, done: new Date().toISOString() }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: H, goals, health: true });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary");
+      ok("Letzte Trainings: Eintrag lässt sich öffnen", !!(await page.$("#discLog [data-a=histOpen][data-id=a2]")) && (await page.textContent("#discLog")).includes("Antippen zum Korrigieren oder Löschen"));
+      ok("Health-Knopf bleibt in der Liste", !!(await page.$("#discLog [data-a=sendHealth][data-id=a2]")));
+      await page.click("#discLog [data-a=histOpen][data-id=a2]");
+      const sh = (await page.textContent(".sheet")).replace(/\s+/g, " ");
+      ok("Sheet zeigt Übung, Gewichtsangabe und Sätze als „400×10“", sh.includes("Brustpresse") && sh.includes("kg pro Seite") && sh.includes("400×10") && sh.includes("42,5×9") && sh.includes("2 Sätze"));
+      await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="0"]');
+      ok("Satz öffnen: Eingabefelder mit den gespeicherten Werten", (await page.inputValue("#hsKg")) === "400" && (await page.inputValue("#hsReps")) === "10");
+      await page.fill("#hsKg", "0"); await page.click("[data-a=histSetSave]");
+      ok("Ungültiges Gewicht: Fehlermeldung, nichts gespeichert", (await page.textContent("#hsErr")).includes("größer als 0") && (await stored(page)).history[1].exercises[0].sets[0].kg === 400);
+      await page.fill("#hsKg", "40"); await page.fill("#hsReps", "10,5"); await page.click("[data-a=histSetSave]");
+      ok("Halbe Wiederholung wird abgelehnt", (await page.textContent("#hsErr")).includes("Wiederholungen"));
+      await page.fill("#hsReps", "10"); await page.click("[data-a=histSetSave]");
+      let st = await stored(page), s0 = st.history[1].exercises[0].sets[0];
+      ok("Korrektur gespeichert, Reserve bleibt erhalten", s0.kg === 40 && s0.reps === 10 && s0.rir === 2 && (await page.textContent("#histMsg")).includes("Satz 1 gespeichert: 40 × 10"));
+      ok("Ziel, das nur der Tippfehler erreicht hatte, ist wieder offen", !st.goals[0].done);
+      ok("Bestwert neu berechnet, Liste bleibt aufgeklappt", (await page.textContent(".section .group")).includes("42,5 kg pro Seite × 9") && await page.evaluate(() => document.getElementById("discLog").open));
+      await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="0"]'); await page.click("[data-a=histSetSave]");
+      ok("Unverändert speichern: keine Meldung", !(await page.$("#histMsg")));
+      await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="1"]'); await page.click("[data-a=histSetDel]");
+      st = await stored(page);
+      ok("Satz löschen", st.history[1].exercises[0].sets.length === 1 && (await page.textContent("#histMsg")).includes("Satz gelöscht"));
+      await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="0"]');
+      ok("Letzter Satz eines Trainings: kein „Satz löschen“, dafür „Training löschen“", !(await page.$("[data-a=histSetDel]")));
+      ok("360 px: kein seitliches Scrollen", await noOverflow(page));
+      await page.click("[data-a=histBack]"); await page.click("[data-a=histDel]");
+      const dt = (await page.textContent(".sheet")).replace(/\s+/g, " ");
+      ok("Löschen fragt nach, nennt Tag, Datum, Sätze und Apple Health", dt.includes("„Drücken“ vom") && dt.includes("1 Satz") && dt.includes("Apple Health bleibt"));
+      await page.click(".sheet [data-a=histBack]");
+      ok("Abbrechen führt zurück zum Training", (await page.textContent(".sheet")).includes("Training löschen") && (await stored(page)).history.length === 2);
+      await page.click("[data-a=histDel]"); await page.click("[data-a=histDelDo]");
+      st = await stored(page);
+      ok("Training gelöscht, Hinweis oben", st.history.length === 1 && st.history[0].id === "a1" && (await page.textContent("#histNote")).includes("gelöscht") && !(await page.$(".sheet")));
+      ok("Zähler und Liste aktualisiert", (await page.textContent(".head .cap")).includes("1 Training") && (await page.textContent("#discLog summary")).includes("1 Eintrag"));
+      await page.click('#discLog [data-a=histOpen][data-id=a1]'); await page.click('.sheet [data-a=histSet][data-x="1"][data-i2="0"]'); await page.click("[data-a=histSetDel]");
+      st = await stored(page);
+      ok("Letzten Satz einer Übung löschen entfernt die Übung", st.history[0].exercises.length === 1 && st.history[0].exercises[0].exId === "hs-chest");
+      await page.click(".sheet .sh-head [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=home]");
+      await page.click("[data-a=tab][data-v=history]");
+      ok("Hinweis verschwindet beim Wechsel der Ansicht", !(await page.$("#histNote")));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=tab][data-v=wissen]"); await page.click("#wissenCoach");
+      ok("Regel steht unter „So entscheidet die App“", (await page.textContent("#coachRules")).includes("Mehr als doppelt so viel Gewicht"));
+      await ctx.close();
+    }
+    {
+      // Tippfehler-Schutz im Training (Regel der App)
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 0 }, { id: "i2", exId: "hs-fly", sets: 1, rmin: 8, rmax: 12, rest: 0 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const isDone = i => tp(page, i => window.__tp.state.session.list[0].sets[i].done, i);
+      await page.fill("#kgIn", "400"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      ok("Mehr als doppelt so viel wie bisher: Nachfrage, Satz noch offen", (await page.textContent("#setErr")).includes("400 kg pro Seite? Bisher höchstens 40 kg") && !(await isDone(0)));
+      await page.fill("#kgIn", "40"); await page.click("[data-a=doneSet]");
+      ok("Korrigiert auf 40: ohne Nachfrage gespeichert", await isDone(0));
+      await page.fill("#kgIn", "85"); await page.fill("#repsIn", "5"); await page.click("[data-a=doneSet]");
+      ok("85 kg: Nachfrage", !(await isDone(1)));
+      await page.click("[data-a=doneSet]");
+      ok("Zweites Tippen bestätigt", await isDone(1));
+      await page.fill("#kgIn", "85"); await page.fill("#repsIn", "5"); await page.click("[data-a=doneSet]");
+      ok("Gleiches Gewicht im nächsten Satz: keine erneute Nachfrage", await isDone(2));
+      await page.fill("#kgIn", "200"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      ok("Erstes Mal an einem Gerät: keine Nachfrage (kein Vergleichswert)", !(await page.$("[data-a=doneSet]")) || !(await page.textContent("#setErr").catch(() => "")).includes("Bisher"));
+      await ctx.close();
+    }
+
+    section("49. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
