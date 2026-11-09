@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v46)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v46")));
+      ok("Service Worker aktiv (Cache trainingsplan-v47)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v47")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3125,11 +3125,36 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
     {
+      // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
+        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: chest.includes('fill="var(--accent)" fill-opacity="0.4"'), plate: chest.includes('r="9" fill="var(--mgear)"'),
+          lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
+          press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
+          downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
+      ok("Muskeln: Hauptmuskel leuchtet, mittrainierte Muskeln blass", m.glow && m.sec);
+      ok("Gerät: Scheiben am Hebel bei Scheibengeräten, Steckgewicht mit Plattenstapel statt Scheiben", m.plate && !m.lfPlate && m.lfStack);
+      ok("Tempo: Drücken zügig hin, langsam zurück; Kniebeugen erst langsam runter, dann zügig hoch", m.press === "start,con,turn,ecc" && m.squat === "start,ecc,turn,con" && m.downSpecs, m.press + " | " + m.squat);
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      const cues = new Set(); for (let i = 0; i < 10; i++) { cues.add((await page.textContent("#gMotion .mcue-t")).trim()); await page.waitForTimeout(420); }
+      ok("Anleitung: Hinweis wechselt mit der Phase (Drücken · ausatmen, Langsam zurück · einatmen)", [...cues].some(c => c.startsWith("Drücken · zügig · ausatmen")) && [...cues].some(c => c.startsWith("Langsam zurück · 2 s · einatmen")), [...cues].join(" | "));
+      await page.click("#gMotion [data-a=motPlay]");
+      const s1 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML); await page.waitForTimeout(500); const s2 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML);
+      ok("Pause hält die Bewegung an, Knopf heißt dann „Abspielen“", s1 === s2 && (await page.textContent("#gMotion [data-a=motPlay]")) === "Abspielen");
+      await page.$eval("#gMotion .mscrub", r => { r.value = "250"; r.dispatchEvent(new Event("input", { bubbles: true })); }); await page.waitForTimeout(200);
+      ok("Schieberegler zeigt die Bewegung Schritt für Schritt", (await page.textContent("#gMotion .mcue-t")).startsWith("Drücken") && (await page.$eval("#gMotion svg .mfig", g => g.innerHTML)) !== s2);
+      await page.click("#gMotion [data-a=motPlay]"); await page.click("#gMotion [data-a=motSlow]");
+      ok("Zeitlupe lässt sich ein- und ausschalten", (await page.getAttribute("#gMotion [data-a=motSlow]", "aria-pressed")) === "true");
+      await page.setViewportSize({ width: 360, height: 740 });
+      ok("360 px: Hinweis und Steuerung passen in die Breite", await noOverflow(page));
+      await ctx.close();
+    }
+    {
       // „Bewegung reduzieren“: keine Animation, Start blass und Ende kräftig
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       await page.emulateMedia({ reducedMotion: "reduce" }); await page.reload();
       await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-row]");
-      ok("Bewegung reduzieren: Anleitung zeigt Start und Ende ohne Animation", !(await page.$("svg.motion[data-anim]")) && (await page.$$("#gMotion svg g[opacity]")).length === 1);
+      ok("Bewegung reduzieren: Anleitung zeigt Start und Ende ohne Animation, ohne Tempo-Steuerung", !(await page.$("svg.motion[data-anim]")) && (await page.$$("#gMotion svg g[opacity]")).length === 1 && !(await page.$("#gMotion .mctl")));
       await ctx.close();
     }
 
