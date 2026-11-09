@@ -284,6 +284,15 @@
   /* ---------- Plan ---------- */
   .day-row .t{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1}
   .day-row .min{font-size:14px;color:var(--text-3);white-space:nowrap}
+  .pick-row{padding:0 var(--s2) 0 0;min-height:60px}
+  .pick-main,.dev-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0;text-align:left;padding:var(--s3) 0 var(--s3) var(--s4);min-height:60px}
+  .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
+  .dev-main{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
+  .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
+  .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
+  .pick-box svg{width:16px;height:16px}
+  .dev-row{padding:0 var(--s2) 0 0}
+  .dev-check{flex:0 0 48px;height:48px;display:grid;place-items:center}
   .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .idx{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--raise-2);font-size:13px;font-weight:700;color:var(--text-2);flex:0 0 auto}
   .mini-step{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center}
@@ -2378,7 +2387,8 @@ function vPlan() {
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
-      <div class="t">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button></div>
+      <div class="t">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="openDevs" id="devsRow"><div class="grow"><div class="s">Geräte in deinem Studio</div><div class="t">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? ` · ${allEx().filter(e => e.fav).length} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
     <div class="group">${p.days.map((d, i) => `
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
@@ -2460,39 +2470,48 @@ function gapList(gaps) {
 function curDay() { return state.plan?.days.find(d => d.id === state.editDay) || null; }
 function vDay() {
   const d = curDay(); if (!d) return go("plan");
+  const ses = state.session, mine = ses && ses.dayId === d.id;
   $app.innerHTML = `<div class="page">
     <div class="head">
       <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Training</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
       <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
-      <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${nEx(d.items.length)} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
+      <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${d.items.length === 1 ? "Gerät" : "Geräte"} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
     </div>
-    ${d.items.length ? `<div class="group">${d.items.map((it, i) => { const e = ex(it.exId); return `
+    ${d.items.length ? (ses ? `<button class="btn primary block xl" data-a="${ses.paused ? "resumeT" : "toTrain"}" id="dayStart">${mine ? "Training fortsetzen" : "Laufendes Training fortsetzen"}</button>`
+      : `<button class="btn primary block xl" data-a="startDay" id="dayStart">${ICON.play} ${esc(d.name)} starten</button>`) : ""}
+    ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2><span class="small muted">Antippen zum Ändern</span></div>
+      <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it); return `
       <div class="li">
         <span class="idx">${i + 1}</span>
         <div class="grow" data-a="editItem" data-i2="${i}" style="cursor:pointer">
-          <div class="t">${esc(e.name)}</div>
-          <div class="s">${MUSCLES[e.muscle]} · ${it.sets} × ${repsTxt(it)} · ${it.rest} s</div>
+          <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}</div>
+          <div class="s">${en.recKg !== null ? entryLine(en) : `${it.sets} × ${repsTxt(it)} Wdh. · Gewicht beim ersten Mal wählen`} · Pause ${fmtTime(it.rest)}</div>
         </div>
         <button class="icon-btn plain" data-a="moveItem" data-i2="${i}" ${i === 0 ? "disabled" : ""} aria-label="${esc(e.name)} nach oben">${ICON.up}</button>
-      </div>`; }).join("")}</div>` : `<p class="muted">Noch keine Übungen. Füge die Geräte hinzu, die du nutzt.</p>`}
-    <button class="btn block" data-a="openPicker">+ Übung hinzufügen</button>
+      </div>`; }).join("")}</div>
+      <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p></section>`
+      : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
+    <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
   </div>`;
 }
 
 /* Geräteverwaltung */
 let devFilter = "alle", devDraft = null, devRet = "list";
 function devListHtml() {
-  const all = allEx(), list = all.filter(e => devFilter === "alle" || (devFilter === "fav" ? e.fav : BRAND[devFilter] ? e.brand === devFilter : e.muscle === devFilter));
+  const all = allEx(), list = all.filter(e => devFilter === "alle" || (devFilter === "fav" ? e.fav : BRAND[devFilter] ? e.brand === devFilter && !isCustom(e) : e.muscle === devFilter));
+  const groups = [["hs", BRAND.hs], ["lf", BRAND.lf], ["c", "Eigene Geräte"]].map(([k, l]) => [l, list.filter(e => brandOf(e) === k)]).filter(([, a]) => a.length);
+  const row = e => `<div class="li dev-row">
+      <button class="dev-main" data-a="editDev" data-id="${e.id}" data-ret="list">
+        <span class="t" style="${e.off ? "opacity:.5" : ""}">${esc(e.name)}${e.fav ? ` <span class="badge fav">Bevorzugt</span>` : ""}</span>
+        <span class="s ellipsis">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</span></button>
+      <button class="dev-check${e.off ? "" : " on"}" data-a="devToggle" data-id="${e.id}" aria-pressed="${!e.off}" aria-label="${esc(e.name)} in meinem Studio"><span class="pick-box" aria-hidden="true">${e.off ? "" : ICON.check}</span></button></div>`;
   return `${sheetHead("Meine Geräte", "Fertig", "devsDone")}
-    <p class="small muted">${all.filter(e => !e.off).length} von ${all.length} im Studio · ${all.filter(e => e.fav).length} bevorzugt</p>
+    <p class="small muted" style="margin:0" id="devCount">${all.filter(e => !e.off).length} von ${all.length} im Studio${all.some(e => e.fav) ? ` · ${all.filter(e => e.fav).length} bevorzugt` : ""}. Häkchen = steht in deinem Studio.</p>
     <div class="chips">${[["alle", "Alle"], ["fav", "Bevorzugt"], ["hs", BRAND.hs], ["lf", BRAND.lf], ...Object.entries(MUSCLES)].map(([k, l]) =>
       `<button class="chip ${devFilter === k ? "on" : ""}" data-a="devFilt" data-k="${k}">${l}</button>`).join("")}</div>
     ${BRAND[devFilter] ? `<div class="row wrap" id="devBulk" style="gap:8px"><button class="btn sm" data-a="devBulk" data-v="on">Alle ins Studio</button><button class="btn sm quiet" data-a="devBulk" data-v="off">Alle nicht im Studio</button></div>` : ""}
-    ${list.length ? `<div class="group">${list.map(e => `<button class="li" data-a="editDev" data-id="${e.id}" data-ret="list">
-      <div class="grow"><div class="t" style="${e.off ? "opacity:.45" : ""}">${esc(e.name)}</div>
-        <div class="s ellipsis">${esc(aboutOf(e))} · ${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</div></div>
-      <div style="display:grid;gap:4px;justify-items:end">${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}${e.off ? `<span class="badge">Nicht im Studio</span>` : e.id.startsWith("c-") ? `<span class="badge">Eigenes</span>` : ""}</div></button>`).join("")}</div>`
+    ${groups.length ? groups.map(([l, a]) => `<section class="stack" style="gap:var(--s2)"><div class="cap">${l}</div><div class="group">${a.map(row).join("")}</div></section>`).join("")
       : `<p class="muted">${devFilter === "fav" ? "Noch keine bevorzugten Geräte. Öffne ein Gerät und stelle „Bevorzugt“ auf Ja." : "Keine Geräte."}</p>`}
     <button class="btn block" data-a="newDev" data-ret="list">+ Eigenes Gerät anlegen</button>`;
 }
@@ -2541,38 +2560,46 @@ function otherUnitCount(d) { const u = draftUnit(d); let n = 0; state.history.fo
 function hasHistoryOtherUnit(d) { return otherUnitCount(d) > 0; }
 function devBack(savedId) {
   if (devRet === "list") return openSheet(devListHtml());
-  if (devRet === "pick") { if (savedId) { addToDay(savedId); closeSheet(); } else openSheet(pickerHtml()); return; }
+  if (devRet === "pick") { if (savedId) addToDay(savedId); openSheet(pickerHtml()); return; }
   if (devRet === "train") { render(); return openSheet(devInfoSheet()); }
   closeSheet(); render();
 }
 
 /* Übungsauswahl */
-let pickFilter = "alle", pickQuery = "";
+let pickFilter = "alle", pickQuery = "", pickMuscle = "alle", pickAll = false;
+const isCustom = e => e.id.startsWith("c-");
+const brandOf = e => isCustom(e) ? "c" : e.brand;
+// Gerät hinzufügen: Geräte deines Studios nach Marke, Bezeichnung am Gerät sichtbar; Antippen nimmt es in den Tag auf oder heraus
 function pickerHtml() {
-  const q = pickQuery.toLowerCase();
-  const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && findEx(e, q));
-  const list = match.filter(e => !e.off).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0)), hidden = match.length - list.length;
-  return `${sheetHead("Übung hinzufügen")}
-    <input id="pickQ" data-i="pickQ" placeholder="Suchen, z. B. Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
-    <div class="chips">${[["alle", "Alle"], ...Object.entries(MUSCLES)].map(([k, l]) =>
+  const q = pickQuery.toLowerCase(), d = curDay(), inDay = new Set(d ? d.items.map(i => i.exId) : []), order = Object.keys(MUSCLES);
+  const all = allEx(), hasCustom = all.some(isCustom);
+  const match = all.filter(e => (pickFilter === "alle" || brandOf(e) === pickFilter) && (pickMuscle === "alle" || e.muscle === pickMuscle) && findEx(e, q))
+    .sort((a, b) => order.indexOf(a.muscle) - order.indexOf(b.muscle) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name, "de"));
+  const shown = match.filter(e => !e.off || pickAll || inDay.has(e.id)), hidden = match.length - shown.length;
+  const groups = [["hs", BRAND.hs], ["lf", BRAND.lf], ["c", "Eigene Geräte"]].map(([k, l]) => [l, shown.filter(e => brandOf(e) === k)]).filter(([, a]) => a.length);
+  const row = e => { const on = inDay.has(e.id);
+    return `<div class="li pick-row${on ? " on" : ""}">
+      <button class="pick-main" data-a="pick" data-id="${e.id}" aria-pressed="${on}"><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
+        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]}${e.off ? " · nicht im Studio" : ""}</span></span></button>
+      <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
+  return `${sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
+    <p class="small muted" style="margin:0" id="pickCount">${inDay.size ? `${inDay.size} ${inDay.size === 1 ? "Gerät" : "Geräte"} im Tag · ` : ""}Antippen nimmt ein Gerät auf oder wieder heraus.</p>
+    <input id="pickQ" data-i="pickQ" placeholder="Gerät suchen, z. B. Chest Press oder Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
+    <div class="chips">${[["alle", "Alle Geräte"], ["hs", BRAND.hs], ["lf", BRAND.lf], ...(hasCustom ? [["c", "Eigene"]] : [])].map(([k, l]) =>
       `<button class="chip ${pickFilter === k ? "on" : ""}" data-a="pickFilter" data-k="${k}">${l}</button>`).join("")}</div>
-    ${list.length ? `<div class="group" id="pickList">${list.map(e => `
-      <div class="li" style="padding-right:var(--s2)"><button class="row grow" data-a="pick" data-id="${e.id}" style="text-align:left;gap:var(--s3)">
-        <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
-        <div class="grow"><div class="row wrap" style="gap:6px"><span class="t">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
-          <div class="s">${brandPre(e)}${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""} · ${e.id.startsWith("c-") ? "eigenes Gerät" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "insgesamt"}</div></div>
-        <span class="badge added" hidden></span></button>
-        <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button>
-      </div>`).join("")}</div>` : `<p class="muted" id="pickList">Nichts gefunden.</p>`}
-    ${hidden ? `<p class="small faint">${hidden} ${hidden === 1 ? "Gerät ist" : "Geräte sind"} als „nicht im Studio“ ausgeblendet.</p>` : ""}
+    <select id="pickMuscle" data-i="pickMuscle" aria-label="Nach Muskel filtern"><option value="alle">Alle Muskeln</option>${Object.entries(MUSCLES).map(([k, l]) => `<option value="${k}" ${pickMuscle === k ? "selected" : ""}>${l}</option>`).join("")}</select>
+    <div id="pickList" class="stack" style="gap:var(--s4)">${groups.map(([l, a]) => `<section class="stack" style="gap:var(--s2)"><div class="cap">${l}</div><div class="group">${a.map(row).join("")}</div></section>`).join("") || `<p class="muted" style="margin:0">Nichts gefunden.</p>`}</div>
+    ${hidden || pickAll ? `<button class="link small" data-a="pickAll" style="justify-self:start">${pickAll ? "Nur Geräte im Studio zeigen" : `${hidden} ${hidden === 1 ? "Gerät" : "Geräte"} nicht im Studio – anzeigen`}</button>` : ""}
     <button class="btn block" data-a="newDev" data-ret="pick">+ Eigenes Gerät anlegen</button>`;
 }
-function openPicker() { pickQuery = ""; pickFilter = "alle"; openSheet(pickerHtml()); }
-function refreshPicker() {
-  const focus = document.activeElement?.id === "pickQ";
-  const pos = focus ? document.activeElement.selectionStart : 0;
-  $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + pickerHtml();
-  if (focus) { const i = byId("pickQ"); i.focus(); i.setSelectionRange(pos, pos); }
+function openPicker(muscle) { pickQuery = ""; pickFilter = "alle"; pickMuscle = muscle && MUSCLES[muscle] ? muscle : "alle"; pickAll = false; openSheet(pickerHtml()); }
+function refreshPicker() { sheetKeep(pickerHtml()); }
+// Offenes Sheet neu zeichnen: Scrollposition und Fokus im Suchfeld bleiben erhalten
+function sheetKeep(html) {
+  const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html);
+  const act = document.activeElement, fid = act && act.id && sh.contains(act) ? act.id : null, pos = fid && act.selectionStart != null ? act.selectionStart : null, top = sh.scrollTop;
+  lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = top;
+  if (fid) { const i = byId(fid); if (i) { i.focus(); if (pos != null && i.setSelectionRange) try { i.setSelectionRange(pos, pos); } catch (e) {} } }
 }
 
 /* Übung bearbeiten */
@@ -5170,7 +5197,7 @@ const A = {
   openTime30: () => { timeSel = 30; openSheet(timeSheet()); },
   checkFix: el => {
     const d = [...state.plan.days].sort((a, b) => estMinutes(a) - estMinutes(b))[0]; if (!d) return;
-    state.editDay = d.id; save(); go("day"); pickQuery = ""; pickFilter = el.dataset.m; openSheet(pickerHtml());
+    state.editDay = d.id; save(); go("day"); openPicker(el.dataset.m);
   },
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
   voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
@@ -5230,6 +5257,9 @@ const A = {
   showWhy: el => openSheet(`${sheetHead("Warum dieses Gewicht?")}<p>${esc(el.dataset.why)}</p><p class="small faint">Berechnet aus deinen letzten gültigen Sätzen an diesem Gerät. Du kannst jederzeit abweichen.</p>`),
   start: () => { const d = nextDay(); if (d) startTraining(d); },
   editDay: el => { state.editDay = el.dataset.id; go("day"); },
+  // Genau diesen Tag trainieren (nicht nur den nächsten aus „Heute“)
+  startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
+  toTrain: () => { if (state.session) go("train"); },
   addDay: () => { const d = { id: uid(), name: "Tag " + (state.plan.days.length + 1), items: [] }; state.plan.days.push(d); save(); state.editDay = d.id; go("day"); },
   delDay: () => openSheet(`<h2>Tag löschen?</h2><p class="muted">„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.</p>
     <button class="btn block" style="background:var(--bad);color:#fff" data-a="confirmDelDay">Löschen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
@@ -5244,13 +5274,20 @@ const A = {
   delItem: () => { curDay().items.splice(draft._i, 1); save(); closeSheet(); vDay(); },
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
-  pick: el => { addToDay(el.dataset.id); const bd = el.querySelector(".badge.added"); if (bd) { bd.textContent = "Hinzugefügt"; bd.className = "badge up added"; bd.hidden = false; } },
+  pickAll: () => { pickAll = !pickAll; refreshPicker(); },
+  // Antippen: Gerät in den Tag aufnehmen oder wieder herausnehmen. Wer ein Gerät einplant, hat es im Studio.
+  pick: el => { const id = el.dataset.id, d = curDay(); if (!d) return; const i = d.items.findIndex(x => x.exId === id);
+    if (i >= 0) d.items.splice(i, 1);
+    else { const g = GOALS[state.plan.goal] || GOALS.aufbau; d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });
+      if (ex(id).off) state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: false }); }
+    save(); vDay(); refreshPicker(); },
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
   devsDone: () => { closeSheet(); render(); },
-  devFilt: el => { devFilter = el.dataset.k; openSheet(devListHtml()); },
+  devFilt: el => { devFilter = el.dataset.k; sheetKeep(devListHtml()); },
+  devToggle: el => { const id = el.dataset.id, off = !ex(id).off; state.dev[id] = Object.assign({}, state.dev[id] || {}, { off }); save(); sheetKeep(devListHtml()); },
   devBulk: el => { const off = el.dataset.v === "off";
     LIB.filter(e => e.brand === devFilter).forEach(e => { state.dev[e.id] = Object.assign({}, state.dev[e.id] || {}, { off }); });
-    save(); openSheet(devListHtml()); },
+    save(); sheetKeep(devListHtml()); },
   libBrand: el => { libBrand = el.dataset.k; render(); },
   editDev: el => { const e = ex(el.dataset.id); devRet = el.dataset.ret || "list";
     devDraft = { id: e.id, name: e.name, muscle: e.muscle, sec: e.sec.slice(), type: e.type, load: e.load, step: e.step, off: !!e.off, fav: !!e.fav, pattern: e.pattern, note: state.notes[e.id] || "" };
@@ -5409,6 +5446,7 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
+  else if (k === "pickMuscle") { pickMuscle = MUSCLES[el.value] ? el.value : "alle"; refreshPicker(); }
   else if (k === "gEx") { goalDraft.exId = el.value; goalDraft.target = null; goalRefresh(); }
   else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
   else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }

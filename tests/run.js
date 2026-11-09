@@ -203,10 +203,10 @@ async function finishAllSets(page, kg, reps) {
       const st = await stored(page);
       ok("Bestehender Plan bleibt unverändert", st.plan.days[0].items[0].exId === "hs-chest");
       ok("Historie bleibt unverändert", st.history[0].exercises[0].exId === "hs-chest" && st.history[0].exercises[0].sets.length === 3);
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("[data-a=pickFilter][data-k=brust]");
-      const picks = await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id));
-      ok("Übungsauswahl blendet das Gerät aus", !picks.includes("hs-chest") && picks.length > 0);
-      await ctx.close();
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.selectOption("#pickMuscle", "brust");
+      const picks = await page.$$eval(".sheet [data-a=pick]", a => a.map(x => ({ id: x.dataset.id, on: x.getAttribute("aria-pressed") === "true", t: x.textContent })));
+      const chest = picks.find(x => x.id === "hs-chest");
+      ok("Geräteauswahl: nicht vorhandenes Gerät nur sichtbar, weil es schon im Tag ist (mit Hinweis)", !!chest && chest.on && chest.t.includes("nicht im Studio") && picks.length > 1 && picks.every(x => x.id === "hs-chest" || !x.t.includes("nicht im Studio")));      await ctx.close();
     }
 
     // ===== 6. Gerätetausch im laufenden Training =====
@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v42)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v42")));
+      ok("Service Worker aktiv (Cache trainingsplan-v43)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v43")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -990,7 +990,10 @@ async function finishAllSets(page, kg, reps) {
       await page.click(".sheet [data-a=guideBack]");
       ok("Zurück führt zur Übungsauswahl", await page.isVisible("#pickQ"));
       await page.click(".sheet [data-a=pick][data-id=hs-lowrow]");
-      ok("Hinzufügen funktioniert weiter (mit Bestätigung)", (await page.textContent(".sheet [data-a=pick][data-id=hs-lowrow]")).includes("Hinzugefügt") && (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-lowrow"));
+      ok("Antippen nimmt das Gerät in den Tag auf (Häkchen)", (await page.getAttribute(".sheet [data-a=pick][data-id=hs-lowrow]", "aria-pressed")) === "true" && (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-lowrow"));
+      await page.click(".sheet [data-a=pick][data-id=hs-lowrow]");
+      ok("Erneutes Antippen nimmt es wieder heraus", (await page.getAttribute(".sheet [data-a=pick][data-id=hs-lowrow]", "aria-pressed")) === "false" && !(await stored(page)).plan.days[0].items.some(i => i.exId === "hs-lowrow"));
+      await page.click(".sheet [data-a=pick][data-id=hs-lowrow]");
       await page.keyboard.press("Escape");
       // Übung im Plan
       await page.click("[data-a=editItem] >> nth=0"); await page.click(".sheet [data-a=openGuideSheet]");
@@ -1735,8 +1738,8 @@ async function finishAllSets(page, kg, reps) {
       ok("Wochenrückblick über „Diese Woche“ erreichbar", await page.isVisible("#homeWeek"));
       await page.click("[data-a=tab][data-v=plan]");
       const plan = await page.textContent("#app");
-      ok("„Training“: Plan und Erholung, keine Einstellungen oder Bibliothek dazwischen", (await page.textContent(".head")).includes("Training") && !!(await page.$("#app [data-a=showRec]"))
-        && !(await page.$("#app [data-a=openDevs]")) && !(await page.$("#app [data-a=exportData]")) && !plan.includes("Übungen & Wissen"));
+      ok("„Training“: Plan, Geräte im Studio und Erholung, keine Datensicherung oder Bibliothek dazwischen", (await page.textContent(".head")).includes("Training") && !!(await page.$("#app [data-a=showRec]"))
+        && !!(await page.$("#app #devsRow")) && !(await page.$("#app [data-a=exportData]")) && !plan.includes("Übungen & Wissen"));
       await page.click("[data-a=openSettings]");
       const set = await page.textContent("#app");
       ok("Zahnrad öffnet alle Einstellungen an einem Ort", ["Geräte verwalten", "Wasser zählen", "Intervallfasten", "Apple Health", "Apple Watch", "Neuen Plan erstellen", "Sicherung erstellen", "Sicherung wiederherstellen"].every(s => set.includes(s))
@@ -1826,7 +1829,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Planprüfung findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Planprüfung") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
       ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("2 Termine pro Woche"));
       await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
-      ok("„Übung hinzufügen“ öffnet den Tag mit der Übungsauswahl für Rücken", await page.isVisible("#pickQ") && await page.$eval(".sheet [data-a=pickFilter][data-k=ruecken]", b => b.classList.contains("on")));
+      ok("„Übung hinzufügen“ öffnet den Tag mit der Geräteauswahl für Rücken", await page.isVisible("#pickQ") && (await page.$eval("#pickMuscle", s => s.value)) === "ruecken");
       await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
       ok("Übung landet im Plan", (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-row"));
       // Artikel
@@ -3020,7 +3023,53 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("52. Konsole");
+    section("52. Geräte auswählen, Tag gezielt starten");
+    {
+      const H = [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: H, dev: { "lf-pushdown": { off: false } } });
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("Tab „Training“: Geräte im Studio direkt erreichbar", (await page.textContent("#devsRow")).includes("von 45"));
+      await page.click("[data-a=editDay]");
+      const day = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Trainingstag: „Test starten“ und je Gerät das Gewicht fürs nächste Mal", (await page.textContent("#dayStart")).includes("Test starten") && day.includes("2 × 42,5 kg pro Seite") && day.includes("Pause"));
+      // Geräteauswahl
+      await page.click("[data-a=openPicker]");
+      const caps = await page.$$eval("#pickList .cap", e => e.map(x => x.textContent));
+      ok("Geräteauswahl: nach Marke gruppiert, Bezeichnung am Gerät sichtbar", caps.join() === "Hammer Strength,Life Fitness" && (await page.textContent(".sheet [data-a=pick][data-id=hs-row]")).includes("Iso-Lateral Row"));
+      ok("Bereits im Tag: mit Häkchen", (await page.getAttribute(".sheet [data-a=pick][data-id=hs-chest]", "aria-pressed")) === "true");
+      await page.fill("#pickQ", "pushdown");
+      ok("Suche „pushdown“ findet das Kabelgerät", (await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id))).join() === "lf-pushdown");
+      await page.fill("#pickQ", ""); await page.click(".sheet [data-a=pickFilter][data-k=lf]");
+      ok("Filter „Life Fitness“: nur Geräte dieser Marke", (await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id))).every(id => id.startsWith("lf-")));
+      await page.click(".sheet [data-a=pickAll]");
+      ok("Nicht vorhandene Geräte lassen sich einblenden", (await page.$$(".sheet [data-a=pick]")).length === 17 && (await page.textContent(".sheet [data-a=pick][data-id=lf-legcurl]")).includes("nicht im Studio"));
+      await page.click(".sheet [data-a=pick][data-id=lf-legcurl]");
+      let st = await stored(page);
+      ok("Einplanen eines nicht vorhandenen Geräts nimmt es ins Studio auf", st.dev["lf-legcurl"].off === false && st.plan.days[0].items.some(i => i.exId === "lf-legcurl"));
+      await page.click(".sheet .sh-head [data-a=closeSheet]");
+      ok("Tag zeigt das neue Gerät, „Gewicht beim ersten Mal wählen“", (await page.textContent("#dayItems")).includes("Beinbeuger liegend") && (await page.textContent("#dayItems")).includes("Gewicht beim ersten Mal wählen"));
+      // Meine Geräte: Häkchen direkt in der Liste, Liste bleibt an ihrer Stelle
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("#devsRow");
+      await page.$eval(".sheet [data-a=devToggle][data-id=hs-legext]", el => el.scrollIntoView({ block: "center" }));
+      const top = await page.evaluate(() => document.querySelector(".sheet").scrollTop);
+      await page.click(".sheet [data-a=devToggle][data-id=hs-legext]");
+      ok("Meine Geräte: ein Tipp aufs Häkchen nimmt das Gerät aus dem Studio", (await stored(page)).dev["hs-legext"].off === true && (await page.getAttribute(".sheet [data-a=devToggle][data-id=hs-legext]", "aria-pressed")) === "false");
+      ok("Liste springt dabei nicht nach oben", Math.abs((await page.evaluate(() => document.querySelector(".sheet").scrollTop)) - top) < 2);
+      await page.click(".sheet [data-a=devToggle][data-id=hs-legext]");
+      ok("Zweiter Tipp nimmt es wieder auf", (await stored(page)).dev["hs-legext"].off === false);
+      await page.click(".sheet [data-a=devsDone]");
+      // Genau diesen Tag starten
+      await page.click("[data-a=editDay]"); await page.click("#dayStart");
+      ok("„Test starten“ startet genau diesen Tag", !!(await page.$("[data-a=doneSet]")) && (await tp(page, () => window.__tp.state.session.dayId)) === "d1");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]");
+      ok("Läuft schon ein Training: „Training fortsetzen“ statt neu starten", (await page.textContent("#dayStart")).includes("fortsetzen"));
+      await page.click("#dayStart");
+      ok("Fortsetzen führt ins Training", !!(await page.$("[data-a=doneSet]")) && !(await tp(page, () => window.__tp.state.session.paused)));
+      await ctx.close();
+    }
+
+    section("53. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
