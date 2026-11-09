@@ -1543,6 +1543,13 @@ function muscleSets(plan, per = 1) {
 }
 const volTarget = goal => goal === "aufbau" ? [10, 20] : [6, 12];
 const MAJOR = ["brust", "ruecken", "schultern", "beinev", "beineh", "po"];
+const LEG_M = ["beinev", "beineh", "innen", "po", "waden"];
+// Fehlt eine große Muskelgruppe: was das heißt und welche Geräte dafür passen
+const MISS_HINT = { brust: ["die Brust", "Brustpresse oder Butterfly"], ruecken: ["den Rücken", "Rudern oder Latzug"], schultern: ["die Schultern", "Schulterpresse oder Seitheben"],
+  beinev: ["die Oberschenkelvorderseite", "Beinpresse oder Beinstrecker"], beineh: ["die Oberschenkelrückseite", "Beinbeuger – sitzend, liegend oder kniend"], po: ["den Po", "Hüftheben oder Abduktoren"] };
+// Tag für eine fehlende Übung: einer, der schon dieselbe Körperregion trainiert (Beine oder Oberkörper), sonst der kürzeste
+const dayFor = (plan, m) => { const leg = LEG_M.includes(m), fit = d => d.items.some(i => LEG_M.includes(ex(i.exId).muscle) === leg) ? 0 : 1;
+  return [...plan.days].sort((a, b) => fit(a) - fit(b) || estimateSec(a.items) - estimateSec(b.items))[0]; };
 // Neuer Plan nach derselben Zählung wie der Buddy-Check: erst Sätze bei Muskeln über dem Richtwert streichen (je Übung mind. 2),
 // dann bei großen Muskelgruppen unter dem Richtwert ergänzen – nur, solange jeder Tag ins Zeitbudget passt
 // und kein anderer Muskel dadurch über den Richtwert rutscht (je Übung höchstens 3 Sätze für Einsteiger, 5 für Fortgeschrittene – Startwerte der App)
@@ -1579,7 +1586,7 @@ function addExerciseFor(plan, m, ms, fits, tmax) {
   const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && ![...used].some(u => sameKind(x, ex(u)))).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
   if (!e) return false;
   // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
-  const LEG = ["beinev", "beineh", "innen", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
+  const same = d => d.items.some(i => LEG_M.includes(ex(i.exId).muscle) === LEG_M.includes(m));
   const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
   for (const d of days) for (const sets of [3, 2]) {
     const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
@@ -4930,8 +4937,9 @@ function insights() {
   });
   // 9. Muskelgruppe fehlt komplett im Plan
   const miss = planCheck().out.filter(x => x.kind === "low" && x.v === 0).map(x => x.m);
-  if (miss.length) add({ id: "miss:" + miss.join(","), prio: 35, kind: "tip", title: `${joinDe(miss.map(m => MUSCLES[m]))} ${miss.length > 1 ? "fehlen" : "fehlt"} in deinem Plan`,
-    text: "Keine Übung trainiert diese Muskelgruppe – weder als Hauptmuskel noch mit.", act: [{ a: "checkFix", l: "+ Übung", d: { m: miss[0] } }], art: "volumen", src: ["vol2017"] });
+  if (miss.length) add({ id: "miss:" + miss.join(","), prio: 35, kind: "tip", title: `Im Plan ${miss.length > 1 ? "fehlen" : "fehlt"}: ${joinDe(miss.map(m => MUSCLES[m]))}`,
+    text: `Keine deiner Übungen trainiert ${joinDe(miss.map(m => MISS_HINT[m][0]))}.${miss.length === 1 ? ` Passend: ${MISS_HINT[miss[0]][1]}.` : ""}`,
+    act: [{ a: "checkFix", l: "+ Gerät wählen", d: { m: miss[0] } }], art: "volumen", src: ["vol2017"] });
   // 10. Was gut läuft: mehr Gewicht als zu Beginn der letzten 8 Wochen
   const since = now - 56 * DAY, by = {};
   H.forEach(h => { if (+new Date(h.date) < since) return; h.exercises.forEach(x => { const v = x.sets.filter(validSet); if (!v.length) return;
@@ -5646,7 +5654,7 @@ const A = {
   schedDel: () => { state.sched = null; save(); closeSheet(); render(); },
   openTime30: () => { timeSel = 30; openSheet(timeSheet()); },
   checkFix: el => {
-    const d = [...state.plan.days].sort((a, b) => estMinutes(a) - estMinutes(b))[0]; if (!d) return;
+    const d = dayFor(state.plan, el.dataset.m); if (!d) return;
     state.editDay = d.id; save(); go("day"); openPicker(el.dataset.m);
   },
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },

@@ -3211,7 +3211,22 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("57. Konsole");
+    section("57. Fehlende Muskelgruppe verständlich");
+    {
+      const I = (id, exId, sets) => ({ id, exId, sets, rmin: 8, rmax: 12, rest: 60 });
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "o", name: "Oberkörper", items: [I("o1", "hs-chest", 2), I("o2", "hs-row", 2), I("o3", "hs-shoulder", 2)] },
+        { id: "u", name: "Tag 2", items: [I("u1", "hs-legpress", 4), I("u2", "hs-legext", 4), I("u3", "hs-calf", 4)] }] };
+      const { ctx, page } = await open({ plan });
+      const home = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Karte: „Im Plan fehlt: Beine hinten“, sagt was das ist und welches Gerät passt", home.includes("Im Plan fehlt: Beine hinten") && home.includes("Keine deiner Übungen trainiert die Oberschenkelrückseite. Passend: Beinbeuger – sitzend, liegend oder kniend.") && !home.includes("weder als Hauptmuskel"), home.slice(0, 300));
+      await page.click("[data-a=checkFix][data-m=beineh]");
+      const st = await tp(page, () => ({ day: window.__tp.state.editDay }));
+      ok("„+ Gerät wählen“ öffnet den Beintag (nicht den kürzeren Oberkörper-Tag) mit Beinbeugern", st.day === "u" && (await page.$eval("#pickMuscle", s => s.value)) === "beineh" && (await page.textContent(".sheet")).includes("Beinbeuger sitzend"));
+      await ctx.close();
+    }
+
+    section("58. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
