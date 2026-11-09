@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v35)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v35")));
+      ok("Service Worker aktiv (Cache trainingsplan-v37)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v37")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1790,7 +1790,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const cs = await tp(page, () => { const c = window.__tp.cleanSched; return [c({ days: [4, 0, 0, 9], time: "18:30" }), c({ days: [], time: "18:00" }), c({ days: [1], time: "25:00" })]; });
       ok("Termine bereinigt (Tage sortiert, doppelte und ungültige entfernt)", JSON.stringify(cs[0].days) === "[0,4]" && cs[0].planB === "next" && cs[1] === null && cs[2] === null);
-      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Lass uns feste Trainingstage ausmachen") && await page.isVisible("#buddy [data-a=openSched]"));
+      ok("Ohne Termine: Buddy schlägt feste Trainingstage vor", (await page.textContent("#buddy")).includes("Noch keine festen Trainingstage") && await page.isVisible("#buddy [data-a=openSched]"));
       await page.click("#buddy [data-a=openSched]");
       ok("Vorschlag passt zum Plan (1 Trainingstag)", (await page.$$("#schedDays .chip.on")).length === 1 && (await page.textContent(".sheet")).includes("1 Trainingstag pro Woche"));
       // heute und morgen auswählen, 23:59
@@ -2186,7 +2186,7 @@ async function finishAllSets(page, kg, reps) {
       const t = await page.textContent("#setAdv");
       ok("15 Wdh. (Ziel 8–12): „Mehr Gewicht?“ mit 42,5 kg für den letzten Satz", t.includes("Mehr Gewicht?") && t.includes("15 Wdh. bei 40 kg – über deinem Ziel von 8–12") && t.includes("Für den letzten Satz: 42,5 kg pro Seite (+2,5 kg)"), t.replace(/\s+/g, " "));
       const said = await tp(page, () => window.__tp.said);
-      ok("Sprachbegleitung nennt den Vorschlag", said[said.length - 1] === "Pause, 60 Sekunden. Vorschlag: mehr Gewicht, 42,5 Kilo.", said[said.length - 1]);
+      ok("Sprachbegleitung nennt Bestwert (15 statt höchstens 10 Wdh.) und Vorschlag", said[said.length - 2] === "Neuer Bestwert: 15 Wiederholungen mit 40 Kilo." && said[said.length - 1] === "Vorschlag: mehr Gewicht, 42,5 Kilo.", said.slice(-2).join(" | "));
       ok("360 px: Pause mit Vorschlag ohne seitliches Scrollen", await noOverflow(page));
       await page.click("[data-a=advApply]");
       let sets = await tp(page, () => window.__tp.state.session.list[0].sets.map(x => x.kg));
@@ -2409,7 +2409,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=warmDone]");
       ok("„Aufgewärmt“ blendet den Schritt aus und merkt es in der Sitzung", !(await page.$("#warmup")) && (await stored(page)).session.warmDone === true);
       await page.fill("#kgIn", "42,5"); await page.fill("#repsIn", "11"); await page.click("[data-a=doneSet]");
-      ok("Pause: derselbe Satz vom letzten Mal zum Vergleich (40 × 12 · heute mehr)", (await page.textContent("#vsLast")) === "Letztes Mal Satz 1: 40 × 12 · heute mehr");
+      ok("Pause: derselbe Satz vom letzten Mal zum Vergleich (40 × 12), darüber der Bestwert statt „heute mehr“", (await page.textContent("#vsLast")) === "Letztes Mal Satz 1: 40 × 12" && (await page.textContent("#livePr")).includes("42,5 kg pro Seite – mehr Gewicht als je zuvor"));
       const th = await page.textContent("#timeHint");
       ok("Zeitbudget 15 Min. deutlich überschritten: Angebot zu kürzen, mit Zahlen", th.includes("über deinem Zeitbudget") && th.includes("Geplant 15 Min.") && th.includes("Auf 15 Min. kürzen"), th.replace(/\s+/g, " "));
       ok("360 px: Pause mit Vergleich und Zeit-Hinweis ohne seitliches Scrollen", await noOverflow(page));
@@ -2509,7 +2509,7 @@ async function finishAllSets(page, kg, reps) {
       const st = await stored(page);
       ok("Plan und Termine in einem Schritt (Mo, Mi, Fr um 07:30, Plan B: nächster Tag)", st.plan.days.length === 3 && JSON.stringify(st.sched.days) === "[0,2,4]" && st.sched.time === "07:30" && st.sched.planB === "next");
       const b = await page.textContent("#buddy");
-      ok("„Heute“ fragt nicht noch einmal nach Trainingstagen", !b.includes("Lass uns feste Trainingstage ausmachen") && (await page.textContent("#buddySched")).includes("Mo, Mi, Fr · 07:30"));
+      ok("„Heute“ fragt nicht noch einmal nach Trainingstagen", !b.includes("Noch keine festen Trainingstage") && (await page.textContent("#buddySched")).includes("Mo, Mi, Fr · 07:30"));
       ok("Neuer Nutzer: kein Hinweis „Gewicht pro Seite“, keine Erholung, keine Artikelzeile", !(await page.$("[data-a=hintUnitsOpen]")) && !(await page.$("[data-a=showRec]")) && !(await page.$("#homeArt")));
       await page.click("[data-a=tab][data-v=plan]");
       const pc = await page.textContent("#planCheck");
@@ -2764,7 +2764,32 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("47. Konsole");
+    section("47. Bestwert sofort im Training");
+    {
+      const H2 = (d, exs) => ({ id: "q" + d, dayId: "d1", day: "Test", date: new Date(Date.now() - d * 864e5).toISOString(), durationSec: 2400, exercises: exs });
+      const X = (exId, u, kg, reps) => ({ exId, name: exId, u, sets: reps.map(r => ({ kg, reps: r })) });
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [
+        { id: "i1", exId: "hs-chest", sets: 4, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-fly", sets: 1, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const { ctx, page } = await open({ plan, voice: true, backupAt: new Date().toISOString(),
+        history: [H2(14, [X("hs-chest", "s", 40, [10, 9, 9])]), H2(7, [X("hs-chest", "s", 40, [11, 10, 9])])] });
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const set = async (kg, r) => { await page.fill("#kgIn", String(kg)); await page.fill("#repsIn", String(r)); await page.click("[data-a=doneSet]"); };
+      await set(40, 12);
+      ok("Pause nach 40 × 12: „Neuer Bestwert: 12 Wdh. mit 40 kg pro Seite – vorher höchstens 11.“", (await page.textContent("#livePr")).includes("Neuer Bestwert: 12 Wdh. mit 40 kg pro Seite – vorher höchstens 11."));
+      ok("Keine Dopplung mit „heute mehr“ in der Zeile darunter", !(await page.textContent("#vsLast")).includes("heute mehr"));
+      ok("Sprachbegleitung sagt den Wiederholungsrekord an", (await tp(page, () => window.__tp.said || [])).includes("Neuer Bestwert: 12 Wiederholungen mit 40 Kilo."));
+      await page.click("[data-a=skipRest]"); await set(40, 12);
+      ok("Gleiche Leistung im zweiten Satz: kein zweiter Bestwert", !(await page.$("#livePr")) && (await page.textContent("#vsLast")).includes("heute mehr"));
+      await page.click("[data-a=skipRest]"); await set(42.5, 8);
+      ok("Mehr Gewicht: „Neuer Bestwert: 42,5 kg pro Seite – mehr Gewicht als je zuvor.“", (await page.textContent("#livePr")).includes("Neuer Bestwert: 42,5 kg pro Seite – mehr Gewicht als je zuvor."));
+      await page.click("[data-a=skipRest]"); await set(42.5, 7);
+      ok("Weniger Wiederholungen mit demselben Gewicht: kein Bestwert", !(await page.$("#livePr")));
+      await page.click("[data-a=skipRest]"); await set(30, 10);
+      ok("Erstes Mal an einem Gerät: kein Bestwert-Vergleich", !(await tp(page, () => (window.__tp.said || []).some(s => s.includes("30 Kilo")))));
+      await ctx.close();
+    }
+
+    section("48. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
