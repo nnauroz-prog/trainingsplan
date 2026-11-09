@@ -66,7 +66,8 @@ async function open(data, opts = {}) {
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
   // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
-  page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && (m.location().url || "").includes("openfoodfacts.org"))) allErrors.push(m.text()); });
+  // Der Testserver hat keine Server-Funktion: /api/food antwortet mit 404, die App nimmt dann die alte Schnittstelle
+  page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && /openfoodfacts\.org|\/api\/food/.test(m.location().url || ""))) allErrors.push(m.text()); });
   await page.goto(URL);
   return { ctx, page };
 }
@@ -362,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v45)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v45")));
+      ok("Service Worker aktiv (Cache trainingsplan-v46)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v46")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -422,7 +423,7 @@ async function finishAllSets(page, kg, reps) {
       const rank = id => tp(page, id => { const r = window.__tp.rankAlternatives(id, new Set([id]));
         return { direct: r.direct.map(a => a.e.id), other: r.other.map(a => a.e.id), why: Object.fromEntries(r.direct.concat(r.other).map(a => [a.e.id, a.why])) }; }, id);
       const pats = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.pattern]));
-      ok("Alle 45 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 45 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
+      ok("Alle 52 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 52 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
       let r = await rank("hs-chest");
       ok("Brustpresse: direkte Alternativen nur horizontales Drücken", r.direct.length > 0 && r.direct.every(id => ["hs-decline", "hs-widechest"].includes(id)), r.direct.join());
       ok("Bevorzugtes passendes Gerät steht oben", r.direct[0] === "hs-decline");
@@ -934,12 +935,12 @@ async function finishAllSets(page, kg, reps) {
         const txt = JSON.stringify([T.GUIDE, T.ARTICLES]);
         if (/TODO|lorem|xxx/i.test(txt)) bad.push("Platzhalter");
         return { n: ids.length, bad, arts: T.ARTICLES.length }; });
-      ok("Alle 45 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 45 && !chk.bad.length, chk.bad.join("; "));
+      ok("Alle 52 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 52 && !chk.bad.length, chk.bad.join("; "));
       ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
       ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
       // Bibliothek
       await page.click("[data-a=tab][data-v=lib]");
-      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 46);
+      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 53);
       await page.fill("#libQ", "Brust");
       const brust = await tp(page, () => window.__tp.allEx().filter(e => e.name.toLowerCase().includes("brust") || e.muscle === "brust").length);
       ok("Suche filtert (Name oder Muskel)", (await page.$$("#libList [data-a=openEx]")).length === brust && brust >= 5);
@@ -2245,7 +2246,7 @@ async function finishAllSets(page, kg, reps) {
           generic: all.filter(k => ["Nah ans Limit", "Dehnung mitnehmen", "Pause nicht zu knapp", "Einstellung merken", "Drop-Satz spart Zeit"].includes(k.t)).length,
           seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s, seatWhy: T.GUIDE["hs-seatcurl"].why, incWhy: T.GUIDE["hs-incline"].why,
           now: [T.trickNow(it("hs-chest"), 0).t, T.trickNow(it("hs-chest"), 1).t, T.trickNow(it("hs-chest"), 2).t], custom: T.tricksFor({ id: "c-x" }).length }; });
-      ok("Jedes der 45 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 45 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
+      ok("Jedes der 52 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 52 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
       ok("Kein Trick steht bei zwei Geräten (Titel, Kurztext und Erklärung jeweils einmalig)", !tr.dupT.length && !tr.dupShort.length && !tr.dupS.length, [...tr.dupT, ...tr.dupShort, ...tr.dupS].join(" | "));
       ok("Allgemeine Grundsätze nicht mehr bei den Geräten, sondern einmal gesammelt", tr.generic === 0 && tr.gen.includes("Nah ans Limit") && tr.gen.includes("Drop-Satz am Steckgewicht"));
       ok("Studienbelege einmal pro Seite: Armbeuger im Trick (+12,4 %), Beinbeuger sitzend und Schräge Brustpresse unter „Warum“ statt doppelt im Trick", tr.curl.includes("+12,4 %") && tr.seatWhy.includes("Studie") && tr.incWhy.includes("45°") && !tr.seat.includes("%") && !tr.inc.includes("45°"));
@@ -2261,7 +2262,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Kein Trick wiederholt, was auf derselben Geräteseite schon steht", ov.length === 0, ov.slice(0, 4).join(" | "));
       ok("Eigene Geräte ohne erfundene Tricks", tr.custom === 0);
       const ab = await tp(page, () => Object.values(window.__tp.ABOUT_X));
-      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (45, keine doppelt)", ab.length === 45 && new Set(ab).size === 45);
+      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (52, keine doppelt)", ab.length === 52 && new Set(ab).size === 52);
       await page.click("[data-a=tab][data-v=lib]");
       const subs = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()));
       ok("Übungsliste: keine Beschreibung doppelt", subs.length >= 28 && new Set(subs).size === subs.length, subs.slice(0, 6).join(" | "));
@@ -2542,7 +2543,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [{ id: "h", dayId: "d1", day: "Push", date: new Date(Date.now() - 2 * 864e5).toISOString(), durationSec: 1800,
         exercises: [{ exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 10 }] }] }] });
       const L = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.name, e.label]));
-      ok("Alle 45 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 45 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
+      ok("Alle 52 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 52 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
       ok("Gewicht pro Seite bleibt an der Gerätebezeichnung (Brustpresse: pro Seite, Beinpresse: insgesamt)", await tp(page, () => window.__tp.unitOf(window.__tp.ex("hs-chest")) === "s" && window.__tp.unitOf(window.__tp.ex("hs-legpress")) === "t" && window.__tp.unitOf(window.__tp.ex("hs-legext")) === "s"));
       const st = await tp(page, () => window.__tp.state);
       ok("Gespeicherte Einträge auf Deutsch umgestellt (Gerät und Trainingstag „Push“ → „Drücken“)", st.history[0].exercises[0].name === "Brustpresse" && st.history[0].day === "Drücken");
@@ -2553,7 +2554,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel orange", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
       await page.click("[data-a=exBack]");
       const thumbs = await page.$$eval("#libList .thumbbox svg.motion", e => e.length);
-      ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 45 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
+      ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 52 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
       for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Übungsliste mit Vorschaubildern ohne seitliches Scrollen`, await noOverflow(page)); }
       await ctx.close();
     }
@@ -2935,12 +2936,12 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const lf = await tp(page, () => window.__tp.allEx().filter(e => e.brand === "lf").map(e => ({ id: e.id, off: e.off })));
-      ok("17 Life-Fitness-Geräte, ab Werk „nicht im Studio“", lf.length === 17 && lf.every(e => e.off));
+      ok("19 Life-Fitness-Geräte, ab Werk „nicht im Studio“", lf.length === 19 && lf.every(e => e.off));
       const gp = await tp(page, () => [2, 3, 4].flatMap(n => ["einsteiger", "fortgeschritten"].flatMap(l => window.__tp.generatePlan("aufbau", n, l, 60).days.flatMap(d => d.items.map(i => i.exId)))));
       ok("Plan-Assistent nimmt sie erst, wenn sie im Studio sind", !gp.some(id => id.startsWith("lf-")));
       await page.click("[data-a=tab][data-v=lib]"); await page.click("#libBrand [data-k=lf]");
       const subs = await page.$$eval("#libList .li .s", e => e.map(x => x.textContent.trim()));
-      ok("Übungen: Filter „Life Fitness“ zeigt nur diese, mit Marke in der Zeile", subs.length === 17 && subs.every(s => s.startsWith("Life Fitness · ") && s.includes("nicht im Studio")));
+      ok("Übungen: Filter „Life Fitness“ zeigt nur diese, mit Marke in der Zeile", subs.length === 19 && subs.every(s => s.startsWith("Life Fitness · ") && s.includes("nicht im Studio")));
       await page.click("#libBrand [data-k=alle]"); await page.fill("#libQ", "pushdown");
       ok("Suche „pushdown“ findet Trizepsdrücken am Kabel", (await page.textContent("#libList")).includes("Trizepsdrücken am Kabel"));
       await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=lf-tripress]");
@@ -2954,7 +2955,7 @@ async function finishAllSets(page, kg, reps) {
       // Meine Geräte: Filter und alle auf einmal ins Studio
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=openDevs]");
       await page.click(".sheet [data-a=devFilt][data-k=lf]");
-      ok("Meine Geräte: Filter „Life Fitness“ mit „Alle ins Studio“", (await page.$$(".sheet .group .li")).length === 17 && await page.isVisible("#devBulk"));
+      ok("Meine Geräte: Filter „Life Fitness“ mit „Alle ins Studio“", (await page.$$(".sheet .group .li")).length === 19 && await page.isVisible("#devBulk"));
       await page.click("#devBulk [data-v=on]");
       ok("Alle ins Studio", !(await tp(page, () => window.__tp.allEx().some(e => e.brand === "lf" && e.off))));
       await page.reload();
@@ -3025,7 +3026,7 @@ async function finishAllSets(page, kg, reps) {
       const H = [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")];
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: H, dev: { "lf-pushdown": { off: false } } });
       await page.click("[data-a=tab][data-v=plan]");
-      ok("Tab „Training“: Geräte im Studio direkt erreichbar", (await page.textContent("#devsRow")).includes("von 45"));
+      ok("Tab „Training“: Geräte im Studio direkt erreichbar", (await page.textContent("#devsRow")).includes("von 52"));
       await page.click("[data-a=editDay]");
       const day = (await page.textContent("#app")).replace(/\s+/g, " ");
       ok("Trainingstag: „Test starten“ und je Gerät das Gewicht fürs nächste Mal", (await page.textContent("#dayStart")).includes("Test starten") && day.includes("2 × 42,5 kg pro Seite") && day.includes("Pause"));
@@ -3039,7 +3040,7 @@ async function finishAllSets(page, kg, reps) {
       await page.fill("#pickQ", ""); await page.click(".sheet [data-a=pickFilter][data-k=lf]");
       ok("Filter „Life Fitness“: nur Geräte dieser Marke", (await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id))).every(id => id.startsWith("lf-")));
       await page.click(".sheet [data-a=pickAll]");
-      ok("Nicht vorhandene Geräte lassen sich einblenden", (await page.$$(".sheet [data-a=pick]")).length === 17 && (await page.textContent(".sheet [data-a=pick][data-id=lf-legcurl]")).includes("nicht im Studio"));
+      ok("Nicht vorhandene Geräte lassen sich einblenden", (await page.$$(".sheet [data-a=pick]")).length === 19 && (await page.textContent(".sheet [data-a=pick][data-id=lf-legcurl]")).includes("nicht im Studio"));
       await page.click(".sheet [data-a=pick][data-id=lf-legcurl]");
       let st = await stored(page);
       ok("Einplanen eines nicht vorhandenen Geräts nimmt es ins Studio auf", st.dev["lf-legcurl"].off === false && st.plan.days[0].items.some(i => i.exId === "lf-legcurl"));
@@ -3104,7 +3105,7 @@ async function finishAllSets(page, kg, reps) {
       const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i2", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 60 }] }] };
       const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
       const cov = await tp(page, () => { const T = window.__tp; return T.allEx().filter(e => !e.id.startsWith("c-")).filter(e => !T.motSpec(e.id)).map(e => e.id); });
-      ok("Alle 45 Geräte haben eine Bewegungsanimation", cov.length === 0, cov.join());
+      ok("Alle 52 Geräte haben eine Bewegungsanimation", cov.length === 0, cov.join());
       const cust = await tp(page, () => { const T = window.__tp; T.state.custom.push({ id: "c-k", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); return !!T.motSpec("c-k"); });
       ok("Eigenes Gerät mit Bewegungsmuster bekommt die passende Animation", cust);
       ok("„Heute“: Geräte des Tages nacheinander, mit Name", (await page.textContent(".hero-mot .mcap")).includes("1/2 · Brustpresse") && !!(await page.$(".hero-mot svg[data-cycle]")));
@@ -3132,7 +3133,100 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("55. Konsole");
+    section("55. Lebensmittel: Supermärkte, Marken, Fast Food");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const fd = await tp(page, () => { const T = window.__tp, bad = [];
+        T.FAST_DB.forEach(([id, n, k, p, c, f]) => { if (!Number.isInteger(id) || !n || ![k, p, c, f].every(v => typeof v === "number" && v >= 0) || p + c + f > 100.5) bad.push(id); });
+        const bm = T.FAST_DB.find(r => r[0] === 170720);
+        return { n: T.FAST_DB.length, bad, bm, q1: T.offQuery("skyr lidl"), q2: T.offQuery("ja! milch rewe"), q3: T.offQuery("sucuk") }; });
+      ok("34 Fast-Food-Produkte aus USDA, alle vollständig", fd.n === 34 && !fd.bad.length, fd.bad.join());
+      ok("Stichprobe Big Mac wie USDA SR Legacy (257 kcal, 11,8 E, 20,1 K, 15 F je 100 g; 1 Stück = 219 g)", JSON.stringify(fd.bm.slice(2, 6)) === "[257,11.8,20.1,15]" && fd.bm[7][1] === 219);
+      ok("„Skyr Lidl“ sucht Skyr bei Lidl-Eigenmarken (Milbona, Pilos …)", fd.q1.startsWith("skyr brands_tags:(") && fd.q1.includes("milbona") && fd.q1.includes("pilos") && !/\blidl brands/.test(fd.q1));
+      ok("„ja! milch rewe“: Rewe-Marken als Filter, „ja“ nicht doppelt im Suchtext", fd.q2.startsWith("milch brands_tags:(") && fd.q2.includes(" OR ja OR ") && fd.q3 === "sucuk");
+      let asked = [];
+      await page.route("**/api/food**", route => { asked.push(decodeURIComponent(route.request().url()));
+        route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ hits: [
+          { code: "1", product_name: "Sucuk", brands: ["Yayla"], countries_tags: ["en:germany"], nutriments: { "energy-kcal_100g": 377, proteins_100g: 15, carbohydrates_100g: 0.5, fat_100g: 35 } },
+          { code: "2", product_name: "Sucuk", brands: ["Yayla"], countries_tags: ["en:germany"], nutriments: { "energy-kcal_100g": 377, proteins_100g: 15, carbohydrates_100g: 0.5, fat_100g: 35 } },
+          { code: "3", product_name: "Sucuk Spezial", brands: ["Ausland"], countries_tags: ["en:russia"], nutriments: { "energy-kcal_100g": 300, proteins_100g: 20, carbohydrates_100g: 1, fat_100g: 24 } },
+          { code: "4", product_name: "Sucuk am Stück", brands: ["Kamar"], nutriments: { "energy-kcal_100g": 372, proteins_100g: 18, carbohydrates_100g: 0.7, fat_100g: 33 } },
+          { code: "5", product_name: "Ohne Werte", nutriments: {} }] }) }); });
+      await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=foodAdd][data-m=m]");
+      ok("Hinweis: Fast Food und Supermarkt-Suche", (await page.textContent("#foodRes")).includes("34 Fast-Food-Produkte") && (await page.textContent("#foodRes")).includes("Skyr Lidl"));
+      await page.fill("#foodQ", "mcdonalds");
+      ok("„mcdonalds“ findet die McDonald's-Produkte lokal (Schreibweise egal)", (await page.$$eval("#foodRes [data-a=foodPick] .t", e => e.map(x => x.textContent))).filter(t => t.includes("McDonald's")).length === 12);
+      await page.fill("#foodQ", "big mac");
+      const bigmac = (await page.textContent("#foodRes")).replace(/\s+/g, " ");
+      ok("„big mac“ findet den Big Mac mit kcal, Eiweiß, Kohlenhydraten und Fett", bigmac.includes("Big Mac (McDonald's)") && bigmac.includes("257 kcal · E 11,8 · K 20,1 · F 15 g je 100 g"));
+      await page.click("#foodRes [data-a=foodPick]");
+      ok("Big Mac: Portion vorausgewählt (219 g → 563 kcal), Hinweis auf US-Rezeptur", (await page.inputValue("#amtG")) === "219" && (await page.textContent("#amtOut")).replace(/\s+/g, "").includes("kcal563") && (await page.textContent(".sheet")).includes("US-Rezeptur"));
+      await page.keyboard.press("Escape"); await page.click("[data-a=foodAdd][data-m=m]");
+      asked = []; await page.fill("#foodQ", "sucuk");
+      await page.waitForSelector("#offRes [data-a=foodPick]", { timeout: 5000 }).catch(() => {});
+      const rows = await page.$$eval("#offRes [data-a=foodPick]", e => e.map(x => x.textContent.replace(/\s+/g, " ").trim()));
+      ok("Online-Suche startet beim Tippen von selbst (über /api/food)", asked.some(u => u.includes("/api/food?q=sucuk")));
+      ok("Gleiches Produkt nur einmal, ohne unvollständige, Ausland zuletzt", rows.length === 3 && rows[0].includes("Yayla") && rows[1].includes("Kamar") && rows[2].includes("Ausland"), rows.join(" | "));
+      asked = []; await page.fill("#foodQ", "skyr lidl"); await page.waitForTimeout(900);
+      ok("„Skyr Lidl“: Anfrage mit Lidl-Eigenmarken", asked.some(u => u.includes("brands_tags:(lidl OR milbona")));
+      await ctx.close();
+      const swSrc = require("fs").readFileSync(require("path").join(__dirname, "..", "sw.js"), "utf8");
+      ok("Service Worker speichert Suchergebnisse nicht zwischen (/api/ immer aus dem Netz)", swSrc.includes('url.pathname.startsWith("/api/")'));
+      const api = require(require("path").join(__dirname, "..", "api", "food.js"));
+      const res = await new Promise(resolve => { const r = { setHeader() {}, status(c) { this.c = c; return this; }, json(o) { resolve({ c: this.c, o }); } }; api({ query: { q: "x" } }, r); });
+      ok("Server-Funktion lehnt zu kurze Suchbegriffe ab, ohne Open Food Facts zu fragen", res.c === 400);
+    }
+
+    section("56. Mehr Beingeräte");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const lg = await tp(page, () => { const T = window.__tp, E = id => { const e = T.ex(id); return [e.name, e.muscle, e.type, e.label, e.brand, e.twin || "", !!e.off, e.pattern, T.unitOf(e)].join("|"); };
+        const ids = ["hs-beltsquat", "hs-smith", "hs-legcurl", "hs-abductor", "hs-adductor", "lf-adductor", "lf-smith"];
+        const fig = T.figure({ innen: "red" }, "x", "innen");
+        return { rows: Object.fromEntries(ids.map(id => [id, E(id)])), twins: ["lf-legcurl", "lf-abductor"].map(id => T.ex(id).twin), innen: T.MUSCLES.innen,
+          glute: T.ex("hs-hipthrust").label, mot: ids.every(id => !!T.motSpec(id)), figOk: fig.includes('style="fill:red"') && fig.includes("viewBox=\"16 88"),
+          check: T.planCheck().out.some(x => x.m === "innen") };
+      });
+      ok("Neue Beingeräte von Hammer Strength (im Studio) und Life Fitness (zunächst nicht im Studio)", JSON.stringify(lg.rows) === JSON.stringify({
+        "hs-beltsquat": "Hüftgurt-Kniebeuge|beinev|plate|Belt Squat|hs||false|squat|t",
+        "hs-smith": "Kniebeuge Multipresse|beinev|plate|Smith Machine|hs||false|squat|t",
+        "hs-legcurl": "Beinbeuger liegend|beineh|plate|Iso-Lateral Leg Curl|hs||false|knee_flex|s",
+        "hs-abductor": "Abduktoren|po|stack|Hip Abduction|hs||false|abd|b",
+        "hs-adductor": "Adduktoren|innen|stack|Hip Adduction|hs||false|add|b",
+        "lf-adductor": "Adduktoren|innen|stack|Hip Adduction|lf|hs-adductor|true|add|b",
+        "lf-smith": "Kniebeuge Multipresse|beinev|plate|Signature Series Smith Machine|lf|hs-smith|true|squat|t" }), JSON.stringify(lg.rows));
+      ok("Gleiche Übungsart bei beiden Marken verknüpft (Beinbeuger liegend, Abduktoren)", lg.twins.join() === "hs-legcurl,hs-abductor");
+      ok("Neue Muskelgruppe „Beine innen“ mit eigener Fläche in der Muskelkarte, ohne Pflicht in der Planprüfung", lg.innen === "Beine innen" && lg.figOk && !lg.check);
+      ok("Hüftheben heißt am Gerät „Glute Drive“, alle neuen Geräte haben eine Bewegungsanimation", lg.glute === "Glute Drive" && lg.mot);
+      await page.click("[data-a=tab][data-v=lib]");
+      await page.fill("#libQ", "hip thrust");
+      ok("Suche „hip thrust“ findet das Hüftheben", (await page.$$eval("#libList [data-a=openEx]", e => e.map(x => x.dataset.id))).join() === "hs-hipthrust");
+      await page.fill("#libQ", "multipresse");
+      ok("Suche „Multipresse“ findet beide Multipressen", (await page.$$eval("#libList [data-a=openEx]", e => e.map(x => x.dataset.id))).sort().join() === "hs-smith,lf-smith");
+      await page.fill("#libQ", "beine innen");
+      ok("Suche nach der Muskelgruppe „Beine innen“ zeigt die Adduktoren", (await page.$$eval("#libList [data-a=openEx]", e => e.map(x => x.dataset.id))).sort().join() === "hs-adductor,lf-adductor");
+      await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=hs-beltsquat]");
+      const g = (await page.textContent(".page")).replace(/\s+/g, " ");
+      ok("Hüftgurt-Kniebeuge: Anleitung mit Gurt, Bezeichnung am Gerät, Animation", g.includes("Belt Squat") && g.includes("Gurt eng um die Hüfte") && !!(await page.$("#gMotion svg.motion")));
+      await ctx.close();
+    }
+
+    section("57. Fehlende Muskelgruppe verständlich");
+    {
+      const I = (id, exId, sets) => ({ id, exId, sets, rmin: 8, rmax: 12, rest: 60 });
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "o", name: "Oberkörper", items: [I("o1", "hs-chest", 2), I("o2", "hs-row", 2), I("o3", "hs-shoulder", 2)] },
+        { id: "u", name: "Tag 2", items: [I("u1", "hs-legpress", 4), I("u2", "hs-legext", 4), I("u3", "hs-calf", 4)] }] };
+      const { ctx, page } = await open({ plan });
+      const home = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Karte: „Im Plan fehlt: Beine hinten“, sagt was das ist und welches Gerät passt", home.includes("Im Plan fehlt: Beine hinten") && home.includes("Keine deiner Übungen trainiert die Oberschenkelrückseite. Passend: Beinbeuger – sitzend, liegend oder kniend.") && !home.includes("weder als Hauptmuskel"), home.slice(0, 300));
+      await page.click("[data-a=checkFix][data-m=beineh]");
+      const st = await tp(page, () => ({ day: window.__tp.state.editDay }));
+      ok("„+ Gerät wählen“ öffnet den Beintag (nicht den kürzeren Oberkörper-Tag) mit Beinbeugern", st.day === "u" && (await page.$eval("#pickMuscle", s => s.value)) === "beineh" && (await page.textContent(".sheet")).includes("Beinbeuger sitzend"));
+      await ctx.close();
+    }
+
+    section("58. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

@@ -1,6 +1,6 @@
 // Offline-Unterstützung: App-Seite zuerst aus dem Netz (damit Updates sofort ankommen),
 // bei schlechtem Empfang nach 3 s aus dem Speicher. Schriften und Symbole aus dem Speicher.
-const CACHE = "trainingsplan-v45";
+const CACHE = "trainingsplan-v46";
 const CORE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -39,6 +39,7 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.origin === location.origin && url.pathname.startsWith("/api/")) return; // Suche immer frisch aus dem Netz
   if (req.mode === "navigate" || (url.origin === location.origin && url.pathname.endsWith(".html"))) {
     e.respondWith(networkFirst(req));
   } else if (url.origin === location.origin || url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {

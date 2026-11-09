@@ -13,7 +13,7 @@
     /* Farben (dunkel = Standard) */
     --bg:#0D0E10; --raise:#16181B; --raise-2:#202328; --raise-3:#2A2E34;
     --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A1A7B0; --text-3:#6C727C;
-    --mbody:var(--text-2); --mgear:var(--raise-3); --mgear-line:var(--text-3);
+    --mbody:var(--text-2); --mbody2:var(--text-3); --mgear:var(--raise-3); --mgear-line:var(--text-3);
     --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#FFFFFF;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#F5B740; --warn-tint:rgba(245,183,64,.12); --bad:#F2554F;
     --fig:#24272C; --muscle:#363A41; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.6);
@@ -284,6 +284,7 @@
   .pick-main,.dev-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0;text-align:left;padding:var(--s3) 0 var(--s3) var(--s4);min-height:60px}
   .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
   .dev-main{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
+  .dev-main>.t,.dev-main>.s{max-width:100%}
   .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
   .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
   .pick-box svg{width:16px;height:16px}
@@ -406,7 +407,7 @@
 /* ================= Daten ================= */
 const MUSCLES = {
   brust:"Brust", ruecken:"Rücken", schultern:"Schultern", bizeps:"Bizeps", trizeps:"Trizeps",
-  bauch:"Bauch", beinev:"Beine vorn", beineh:"Beine hinten", po:"Po", waden:"Waden"
+  bauch:"Bauch", beinev:"Beine vorn", beineh:"Beine hinten", innen:"Beine innen", po:"Po", waden:"Waden"
 };
 // [id, Name, Hauptmuskel, Nebenmuskeln, Gerätetyp, Bezeichnung am Gerät, Marke, gleiche Übungsart bei der anderen Marke]
 const BRAND = { hs: "Hammer Strength", lf: "Life Fitness" };
@@ -432,10 +433,15 @@ const LIB = [
   ["hs-isolegpress","Beinpresse getrennt","beinev",["po"],"plate","Iso-Lateral Leg Press"],
   ["hs-vsquat","V-Kniebeuge","beinev",["po"],"plate","V-Squat"],
   ["hs-hack","Hackenschmidt","beinev",["po"],"plate","Hack Squat"],
+  ["hs-beltsquat","Hüftgurt-Kniebeuge","beinev",["po"],"plate","Belt Squat"],
+  ["hs-smith","Kniebeuge Multipresse","beinev",["po"],"plate","Smith Machine"],
   ["hs-legext","Beinstrecker","beinev",[],"plate","Iso-Lateral Leg Extension"],
   ["hs-kneelcurl","Beinbeuger kniend","beineh",[],"plate","Iso-Lateral Kneeling Leg Curl"],
+  ["hs-legcurl","Beinbeuger liegend","beineh",[],"plate","Iso-Lateral Leg Curl"],
   ["hs-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl"],
-  ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Hip Thrust"],
+  ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Glute Drive"],
+  ["hs-abductor","Abduktoren","po",[],"stack","Hip Abduction"],
+  ["hs-adductor","Adduktoren","innen",[],"stack","Hip Adduction"],
   ["hs-calf","Wadenheben stehend","waden",[],"plate","Standing Calf Raise"],
   ["hs-seatcalf","Wadenheben sitzend","waden",[],"plate","Seated Calf Raise"],
   ["hs-ab","Bauchmaschine","bauch",[],"stack","Ab Crunch"],
@@ -454,8 +460,10 @@ const LIB = [
   ["lf-legpress","Beinpresse","beinev",["po"],"stack","Leg Press","lf","hs-legpress"],
   ["lf-legext","Beinstrecker","beinev",[],"stack","Leg Extension","lf","hs-legext"],
   ["lf-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl","lf","hs-seatcurl"],
-  ["lf-legcurl","Beinbeuger liegend","beineh",[],"stack","Leg Curl","lf"],
-  ["lf-abductor","Abduktoren","po",[],"stack","Hip Abductor","lf"],
+  ["lf-legcurl","Beinbeuger liegend","beineh",[],"stack","Leg Curl","lf","hs-legcurl"],
+  ["lf-abductor","Abduktoren","po",[],"stack","Hip Abductor","lf","hs-abductor"],
+  ["lf-adductor","Adduktoren","innen",[],"stack","Hip Adduction","lf","hs-adductor"],
+  ["lf-smith","Kniebeuge Multipresse","beinev",["po"],"plate","Signature Series Smith Machine","lf","hs-smith"],
   ["lf-ab","Bauchmaschine","bauch",[],"stack","Abdominal","lf","hs-ab"]
 ].map(([id, name, muscle, sec, type, label, brand = "hs", twin]) =>
   Object.assign({ id, name, muscle, sec, type, label, brand }, twin ? { twin } : {}, brand === "lf" ? { off: true } : {}));
@@ -483,6 +491,7 @@ const PATTERNS = {
   knee_flex:{ label: "Kniebeugung", rel: [] },
   calf:     { label: "Wadenheben", rel: [] },
   abd:      { label: "Hüftabspreizen", rel: [] },
+  add:      { label: "Beine zusammenführen", rel: [] },
   core:     { label: "Rumpfbeugung", rel: [] }
 };
 const LIB_PATTERN = {
@@ -492,9 +501,11 @@ const LIB_PATTERN = {
   "hs-triext": "tri", "hs-dip": "dip", "hs-legpress": "squat", "hs-isolegpress": "squat", "hs-vsquat": "squat",
   "hs-hack": "squat", "hs-hipthrust": "hinge", "hs-legext": "knee_ext", "hs-kneelcurl": "knee_flex",
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
+  "hs-beltsquat": "squat", "hs-smith": "squat", "hs-legcurl": "knee_flex", "hs-abductor": "abd", "hs-adductor": "add",
   "lf-chest": "push_h", "lf-shoulder": "push_v", "lf-pulldown": "pull_v", "lf-row": "pull_h", "lf-fly": "fly", "lf-reardelt": "rear",
   "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-legpress": "squat",
-  "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core"
+  "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core",
+  "lf-adductor": "add", "lf-smith": "squat"
 };
 LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
 
@@ -652,6 +663,7 @@ const M = {
   quad: "Vierköpfiger Oberschenkelmuskel (M. quadriceps femoris)",
   glut: "Großer Gesäßmuskel (M. gluteus maximus)",
   add: "Großer Adduktor (M. adductor magnus)",
+  addG: "Adduktoren (M. adductor magnus, longus und brevis, M. gracilis, M. pectineus)",
   gmed: "Mittlerer und kleiner Gesäßmuskel (M. gluteus medius, M. gluteus minimus)",
   tfl: "Spanner der Oberschenkelbinde (M. tensor fasciae latae)",
   ham: "Hintere Oberschenkelmuskulatur (M. biceps femoris, M. semitendinosus, M. semimembranosus)",
@@ -879,6 +891,26 @@ const GUIDE = {
     safety: ["Zum Aussteigen zuerst den Sicherungshebel einlegen, dann die Schultern entlasten."],
     tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
+  "hs-beltsquat": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Kniebeuge mit Hüftgurt: Das Gewicht hängt an der Hüfte statt auf den Schultern. Die Beine arbeiten schwer, Schultern und Wirbelsäule tragen keine Last von oben.",
+    setup: ["Gurt eng um die Hüfte legen und sicher einhängen.", "Je einen Fuß auf eine Plattform, etwa schulterbreit, Zehen leicht nach außen."],
+    steps: ["Griffe fassen und aufrecht hinstellen, der Gurt ist gespannt.", "Hüfte nach hinten-unten sinken lassen, die Knie folgen den Zehen.", "Über Ferse und Ballen hochdrücken, bis du wieder aufrecht stehst."],
+    breath: BREATH_LEG,
+    mistakes: [["Oberkörper kippt weit nach vorn", "Brust aufrecht halten, die Griffe geben Gleichgewicht."], ["Knie fallen nach innen", "Knie in Richtung der Fußspitzen schieben."], ["Mit den Armen hochziehen", "Die Griffe nur halten – die Beine drücken das Gewicht."]],
+    safety: ["Vor dem ersten Satz prüfen: Gurt fest geschlossen, Haken sicher eingehängt."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-smith": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Kniebeuge mit geführter Stange: Die Schienen halten die Stange in der Bahn, du musst sie nicht balancieren. Die Bahn läuft laut Hersteller 7° schräg.",
+    setup: ["Stange knapp unter Schulterhöhe einhängen, sodass du sie aus leicht gebeugten Knien abheben kannst.", "Stange auf den oberen Rücken, nicht auf den Nacken. Füße etwa schulterbreit, ein Stück vor der Stange."],
+    steps: ["Stange durch Drehen aus den Haken lösen.", "Kontrolliert in die Hocke, so tief, wie der Rücken gerade bleibt.", "Gleichmäßig hochdrücken, die Stange bleibt auf dem oberen Rücken."],
+    breath: BREATH_LEG,
+    mistakes: [["Stange drückt in den Nacken", "Stange tiefer auf den oberen Rücken legen, Schulterblätter zusammenziehen."], ["Knie knicken nach innen", "Knie über die Fußmitte führen."], ["Unterer Rücken rundet sich", "Nur so tief, wie der untere Rücken gerade bleibt."]],
+    safety: ["Falls vorhanden: Sicherheitsanschläge knapp unter die tiefste Position stellen.", "Zum Ablegen die Stange drehen, bis sie sicher in den Haken liegt."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "hs-legext": {
     main: [M.quad], sup: [],
     why: "Kniestrecken isoliert: Alle vier Köpfe des Quadrizeps arbeiten, ohne dass Hüfte oder Rumpf mithelfen.",
@@ -899,6 +931,16 @@ const GUIDE = {
     safety: ["Mit leichtem Gewicht beginnen, bis die Position sitzt."],
     tips: [ISO, "Den gedehnten Teil der Bewegung (Bein fast gestreckt) bewusst mitnehmen."]
   },
+  "hs-legcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Beinbeugen im Liegen mit Scheiben, jede Seite für sich. Die Polster steigen zur Hüfte hin an – laut Hersteller, damit der untere Rücken nicht ins Hohlkreuz gerät.",
+    setup: ["Bäuchlings auflegen, die Hüfte auf dem höchsten Punkt der Polster.", "Kniegelenk auf Höhe der Drehachse, die Kniescheiben frei; Rollen knapp oberhalb der Fersen."],
+    steps: ["Griffe fassen, Hüfte bleibt auf dem Polster.", "Fersen zum Gesäß ziehen, oben kurz halten.", "Langsam strecken, bis die Beine fast gerade sind."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Hüfte hebt ab", "Gewicht reduzieren, die Hüfte bleibt auf der Polsterspitze."], ["Ein Bein zieht schneller", "Beide Seiten im selben Tempo – oder bewusst einbeinig trainieren."], ["Beine fallen zurück", "Beine kontrolliert zurückführen, die Hebel nicht fallen lassen."]],
+    safety: ["Erst absteigen, wenn beide Hebel unten aufliegen."],
+    tips: [ISO, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "hs-seatcurl": {
     main: [M.ham], sup: [M.gastro],
     why: "Beinbeugen im Sitzen. Durch die gebeugte Hüfte ist die hintere Oberschenkelmuskulatur stärker gedehnt als im Liegen. In einer Studie wuchs sie mit dem Beinbeuger im Sitzen in 12 Wochen stärker als im Liegen (+14 % statt +9 %). Die Studie war klein und mit Untrainierten.",
@@ -913,12 +955,32 @@ const GUIDE = {
   "hs-hipthrust": {
     main: [M.glut], sup: [M.ham, M.add, M.quad],
     why: "Hüftstrecken gegen Widerstand mit Schwerpunkt Gesäß. Die größte Last liegt typischerweise oben bei gestreckter Hüfte – bei Kniebeuge und Beinpresse ist sie unten am größten.",
-    setup: ["Rückenpolster so einstellen, dass die Hüfte unten frei absinken kann.", "Füße hüftbreit, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
+    setup: ["Oberen Rücken an das Rückenpolster, das breite Hüftpolster quer über die Hüfte.", "Füße hüftbreit auf die schräge Fußplatte, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
     steps: ["Kinn leicht zur Brust, Bauch anspannen.", "Hüfte nach oben drücken, bis sie gestreckt ist, und oben kurz halten.", "Hüfte kontrolliert absinken lassen."],
     breath: BREATH_LEG,
     mistakes: [["Hohlkreuz oben", "Becken leicht einrollen, Rippen unten lassen."], ["Oben nicht ganz gestreckt", "Bis zur vollen Hüftstreckung drücken."], ["Schwung aus dem Absenken", "Unten kurz ruhig werden, dann drücken."]],
     safety: ["Bei Beschwerden im unteren Rücken weniger Gewicht und nur bis zur geraden Linie Schulter–Hüfte–Knie heben."],
     tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-abductor": {
+    main: [M.gmed], sup: [M.tfl],
+    why: "Beine im Sitzen nach außen drücken, für den mittleren und kleinen Gesäßmuskel. Die Startposition lässt sich laut Hersteller in 10°-Schritten einstellen.",
+    setup: ["Startposition so einstellen, dass die Beine zu Beginn fast geschlossen sind.", "Knie außen an die Polster, Füße auf die Fußstützen."],
+    steps: ["Gesäß an die Lehne schieben, Hände an die Griffe.", "Knie nach außen drücken, außen kurz halten.", "Langsam zusammenführen, bevor das Gewicht aufsetzt."],
+    breath: "Beim Öffnen ausatmen, beim Schließen einatmen.",
+    mistakes: [["Oberkörper lehnt sich vor", "Rücken an der Lehne lassen, sonst ändert sich der Winkel in der Hüfte."], ["Kurze, schnelle Bewegungen", "Den ganzen Weg gehen und außen kurz halten."], ["Beine schnappen zu", "Das Schließen bremsen."]],
+    safety: ["Bei Schmerzen an der Außenseite der Hüfte den Weg verkürzen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-adductor": {
+    main: [M.addG], sup: [],
+    why: "Beine gegen Widerstand schließen. Das trainiert die Adduktoren an der Innenseite der Oberschenkel. Sie ziehen das Bein zur Körpermitte und arbeiten auch bei Beinpresse und Kniebeuge mit.",
+    setup: ["Startposition so wählen, dass du an der Innenseite der Oberschenkel eine Dehnung spürst, die nicht zieht.", "Polster an die Innenseite der Knie, Füße auf die Fußstützen."],
+    steps: ["Aufrecht an die Lehne setzen, Griffe seitlich fassen.", "Beine gleichmäßig schließen und kurz halten.", "Langsam öffnen bis zur Startposition, ohne dass das Gewicht aufsetzt."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Startposition zu weit", "Mit kleinerer Öffnung beginnen und sie über die Wochen erweitern."], ["Beine klappen auf", "Beim Öffnen bremsen, die Polster bleiben an den Knien."], ["Becken rutscht nach vorn", "Gesäß ganz hinten, der Rücken bleibt an der Lehne."]],
+    safety: ["Leistenbeschwerden: Startposition enger stellen und das Gewicht senken."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
   "hs-calf": {
     main: [M.gastro, M.sol], sup: [],
@@ -1116,6 +1178,26 @@ const GUIDE = {
     safety: ["Bei Hüft- oder Leistenschmerzen nur so weit öffnen, wie es schmerzfrei bleibt."],
     tips: ["Sit/Stand-Modell: auch im Stehen nutzbar.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
+  "lf-adductor": {
+    main: [M.addG], sup: [],
+    why: "Adduktoren mit Steckgewicht. Die Startposition rastet laut Hersteller in 10°-Schritten ein; Kniepolster und zwei Fußpositionen sollen die Belastung am Knie verringern.",
+    setup: ["Startposition über die Raste einstellen – zuerst eine kleine Öffnung.", "Innenseite der Knie an die Polster, eine der beiden Fußpositionen wählen."],
+    steps: ["Aufrecht sitzen, Griffe fassen.", "Knie zusammenführen, bis sich die Polster fast berühren.", "Kontrolliert zurück in die Startposition."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Schwung aus dem Oberkörper", "Oberkörper ruhig an der Lehne, nur die Beine arbeiten."], ["Schließen mit Ruck", "Gleichmäßig schließen und kurz halten."], ["Gewicht schlägt auf", "Vor dem Aufsetzen wieder schließen."]],
+    safety: ["Bei Schmerzen in der Leiste den Satz beenden."],
+    tips: ["Die gewählte Raste unter „Deine Einstellung“ notieren.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-smith": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Multipresse der Signature-Serie: Die Stange läuft laut Hersteller auf einer 7° schrägen Bahn und wird im Rahmen durch ein Gegengewicht ausgeglichen.",
+    setup: ["Ablagehöhe so wählen, dass die Stange knapp unter den Schultern liegt.", "Füße schulterbreit und leicht vor der Stange, die Stange quer über den oberen Rücken."],
+    steps: ["Griffe fest, Stange aus den Haken drehen.", "Gleichmäßig beugen, die Knie zeigen zu den Zehen.", "Aus der Tiefe kräftig nach oben schieben, die Fersen bleiben unten."],
+    breath: BREATH_LEG,
+    mistakes: [["Fersen heben ab", "Füße etwas weiter nach vorn setzen."], ["Hohlkreuz oben", "Oben aufrichten, ohne das Becken nach vorn zu schieben."], ["Halbe Wiederholungen", "Eine Tiefe wählen, die du jedes Mal erreichst, und dabei bleiben."]],
+    safety: ["Vor dem ersten Satz die Sicherheitsanschläge passend zur Tiefe einstellen, falls vorhanden.", "Stange immer erst sicher einhaken, dann loslassen."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "lf-ab": {
     main: [M.rect], sup: [M.obl],
     why: "Einrollen gegen Widerstand im Sitzen, vor allem für den geraden Bauchmuskel. Der Widerstand lässt sich genau dosieren.",
@@ -1157,10 +1239,15 @@ const TIPS = {
   "hs-isolegpress":["Je ein Fuß mittig auf eine Platte","Kontrolliert tief, Knie über der zweiten Zehe","Oben Knie leicht gebeugt lassen"],
   "hs-vsquat":["Schultern unter die Polster, Füße leicht vor dem Körper","Tief beugen, Rücken bleibt am Polster","Über die ganze Fußsohle hochdrücken"],
   "hs-hack":["Rücken flach ans Polster, Füße schulterbreit","Tief gehen, Knie Richtung Zehen","Fersen bleiben auf der Plattform"],
+  "hs-beltsquat":["Gurt eng um die Hüfte, Füße schulterbreit","Hüfte nach hinten-unten sinken lassen","Oberkörper aufrecht, Griffe nur halten"],
+  "hs-smith":["Stange auf den oberen Rücken, Füße leicht vorn","Kontrolliert tief, Rücken gerade","Zum Ablegen Stange in die Haken drehen"],
   "hs-legext":["Knie auf Höhe der Drehachse, Polster über dem Knöchel","Beine ganz strecken, oben kurz halten","Langsam ablassen, nicht fallen lassen"],
   "hs-kneelcurl":["Stützknie aufs Polster, Rolle über der Ferse","Ferse zum Po ziehen","Hüfte bleibt am Polster, langsam zurück"],
+  "hs-legcurl":["Hüfte auf den höchsten Punkt der Polster","Fersen zum Gesäß, beide Seiten gleich schnell","Langsam strecken, Hüfte bleibt liegen"],
   "hs-seatcurl":["Knie auf Drehachse, Oberschenkelpolster fest","Fersen nach unten-hinten ziehen","Langsam zurück, nicht abfedern"],
   "hs-hipthrust":["Oberer Rücken am Polster, Füße hüftbreit","Hüfte hochdrücken, oben Gesäß fest anspannen","Kein Hohlkreuz, Kinn leicht zur Brust"],
+  "hs-abductor":["Start: Beine fast geschlossen","Knie nach außen, außen kurz halten","Rücken bleibt an der Lehne"],
+  "hs-adductor":["Polster innen an den Knien","Beine schließen, kurz halten","Langsam öffnen bis zur Dehnung"],
   "hs-calf":["Fußballen auf die Kante, Schultern unter die Polster","Ganz hoch auf die Zehen, kurz halten","Unten voll dehnen"],
   "hs-seatcalf":["Polster fest auf die Oberschenkel, Ballen auf die Kante","Fersen ganz hoch drücken","Langsam tief in die Dehnung"],
   "hs-ab":["Füße einhaken, Griffe fassen","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"],
@@ -1180,6 +1267,8 @@ const TIPS = {
   "lf-seatcurl":["Kniegelenk neben dem Drehpunkt","Fersen unter den Sitz ziehen","Gleichmäßig strecken"],
   "lf-legcurl":["Knie knapp über die Polsterkante hinaus","Fersen zum Gesäß","Becken bleibt unten"],
   "lf-abductor":["Polster außen an den Knien","Knie nach außen drücken, kurz halten","Langsam schließen"],
+  "lf-adductor":["Raste: zuerst kleine Öffnung","Knie zusammenführen","Kontrolliert zurück"],
+  "lf-smith":["Stange knapp unter den Schultern einhängen","Gleichmäßig beugen, Knie zu den Zehen","Fersen bleiben unten"],
   "lf-ab":["Drehpunkt auf Höhe der Bauchmitte","Brustkorb zum Becken einrollen","Langsam aufrichten"]
 };
 
@@ -1437,6 +1526,13 @@ function muscleSets(plan, per = 1) {
 }
 const volTarget = goal => goal === "aufbau" ? [10, 20] : [6, 12];
 const MAJOR = ["brust", "ruecken", "schultern", "beinev", "beineh", "po"];
+const LEG_M = ["beinev", "beineh", "innen", "po", "waden"];
+// Fehlt eine große Muskelgruppe: was das heißt und welche Geräte dafür passen
+const MISS_HINT = { brust: ["die Brust", "Brustpresse oder Butterfly"], ruecken: ["den Rücken", "Rudern oder Latzug"], schultern: ["die Schultern", "Schulterpresse oder Seitheben"],
+  beinev: ["die Oberschenkelvorderseite", "Beinpresse oder Beinstrecker"], beineh: ["die Oberschenkelrückseite", "Beinbeuger – sitzend, liegend oder kniend"], po: ["den Po", "Hüftheben oder Abduktoren"] };
+// Tag für eine fehlende Übung: einer, der schon dieselbe Körperregion trainiert (Beine oder Oberkörper), sonst der kürzeste
+const dayFor = (plan, m) => { const leg = LEG_M.includes(m), fit = d => d.items.some(i => LEG_M.includes(ex(i.exId).muscle) === leg) ? 0 : 1;
+  return [...plan.days].sort((a, b) => fit(a) - fit(b) || estimateSec(a.items) - estimateSec(b.items))[0]; };
 // Neuer Plan nach derselben Zählung wie der Buddy-Check: erst Sätze bei Muskeln über dem Richtwert streichen (je Übung mind. 2),
 // dann bei großen Muskelgruppen unter dem Richtwert ergänzen – nur, solange jeder Tag ins Zeitbudget passt
 // und kein anderer Muskel dadurch über den Richtwert rutscht (je Übung höchstens 3 Sätze für Einsteiger, 5 für Fortgeschrittene – Startwerte der App)
@@ -1473,7 +1569,7 @@ function addExerciseFor(plan, m, ms, fits, tmax) {
   const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && ![...used].some(u => sameKind(x, ex(u)))).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
   if (!e) return false;
   // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
-  const LEG = ["beinev", "beineh", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
+  const same = d => d.items.some(i => LEG_M.includes(ex(i.exId).muscle) === LEG_M.includes(m));
   const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
   for (const d of days) for (const sets of [3, 2]) {
     const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
@@ -1795,6 +1891,7 @@ const FIG = (() => {
     P("bauch", "M41.9,57.2 C38.3,60.2 36.3,66.2 36.1,73 C36,80 37.7,85.6 41.9,90.4 Z"),
     P(null, "M36.6,91.4 C38.6,96.4 43,100.6 49.2,103.2 L49.2,92.4 C45.6,92.2 41.6,91.8 36.6,91.4 Z"),
     P("beinev", "M34.9,98.2 C31.1,110 29.9,124 30.7,137 C31.3,143 34.5,147.5 39.9,148 C44.7,147.6 47.5,142.5 48.3,134 C49.1,121 48.3,108.6 45.7,101.6 C42.5,99.8 38.5,98.6 34.9,98.2 Z"),
+    P("innen", "M45.9,102.4 C48.3,108.8 49.2,118 48.9,126.6 C48.7,130.6 48.3,133.6 47.7,136 C45.7,127.8 44.3,119 44,110.6 C44,106.8 44.7,104.2 45.9,102.4 Z"),
     E(null, 39.6, 151.6, 5, 3.1),
     P("waden", "M33.7,156 C31.5,165 31.3,175 33.1,186 L37.9,186.5 C39.9,176 40.7,166 39.5,156.5 C37.7,155.1 35.5,155 33.7,156 Z"),
     P(null, "M32.8,188.6 C31.2,193 31.8,197.6 36.2,198 C39.6,198 40.2,194 38.8,188.6 Z")];
@@ -1822,7 +1919,7 @@ function figure(colors, label, one) {
   const half = arr => arr.map(draw).join("");
   const center = `<ellipse cx="50" cy="14" rx="8.6" ry="10.6" class="base"/><path d="M45.6,22.4 L54.4,22.4 L54.6,31 C51.6,32.4 48.4,32.4 45.4,31 Z" class="base"/>`;
   const view = (arr, dx) => `<g transform="translate(${dx},0)">${center}${half(arr)}<g transform="translate(100,0) scale(-1,1)">${half(arr)}</g></g>`;
-  if (one) { const back = BACK_M.includes(one), low = ["beinev", "beineh", "po", "waden"].includes(one);
+  if (one) { const back = BACK_M.includes(one), low = ["beinev", "beineh", "innen", "po", "waden"].includes(one);
     return `<svg class="fig" viewBox="${back ? 126 : 16} ${low ? 88 : 0} 68 ${low ? 114 : 120}" role="img" aria-label="${esc(label || "Muskeln")}">${back ? view(FIG.back, 110) : view(FIG.front, 0)}</svg>`; }
   return `<svg class="fig" viewBox="12 0 186 202" role="img" aria-label="${esc(label || "Muskeln")}">${view(FIG.front, 0)}${view(FIG.back, 110)}</svg>`;
 }
@@ -1942,10 +2039,15 @@ const TRICK_X = {
   "hs-isolegpress": [["Einbeinig testen", "Ab und zu einbeinig: schwächeres Bein erkennen", "Mit getrennten Seiten siehst du, ob ein Bein weniger schafft. Dann einbeinig trainieren: das schwächere Bein zuerst, das andere macht dieselbe Wiederholungszahl."]],
   "hs-vsquat": [["Fußstellung steuert", "Füße weiter vorn: weniger Kniebeugung", "Weiter vorn aufgesetzte Füße verringern die Kniebeugung und geben dem Gesäß mehr Anteil; weiter hinten arbeitet die Oberschenkelvorderseite stärker."]],
   "hs-hack": [["Gestützte Tiefe nutzen", "Tief gehen, solange es schmerzfrei ist", "Weil der Rücken gestützt ist, erlaubt die Maschine eine tiefe Beugung. Dort arbeitet die Oberschenkelvorderseite in der Dehnung."]],
+  "hs-beltsquat": [["Gleicher Einhängepunkt", "Den Gurt immer am selben Punkt einhängen", "Laut Hersteller gibt es vier Einhängepunkte mit unterschiedlicher Übersetzung. Wechselst du, sind deine Gewichte nicht mehr vergleichbar."]],
+  "hs-smith": [["Nur Scheiben zählen", "Das Stangengewicht nicht mitrechnen", "Wie schwer sich die leere Stange anfühlt, hängt vom Modell ab. Trägst du nur die Scheiben ein, bleiben deine Werte an derselben Multipresse vergleichbar."]],
   "hs-legext": [["Nicht vorbeugen", "Rücken an der Lehne, nicht nach vorn beugen", "Der gerade Schenkelmuskel zieht auch über die Hüfte. Beugst du dich vor, ist er verkürzt; mit dem Rücken an der Lehne bleibt er stärker gedehnt."]],
   "hs-kneelcurl": [["Unten fast strecken", "Unten das Knie fast ganz strecken", "Mit fast gestrecktem Knie ist der hintere Oberschenkel gedehnt. Wer unten früh umkehrt, verschenkt diesen Teil der Bewegung."]],
+  "hs-legcurl": [["Kleine Schritte", "Gewichtsschritt auf 1,25 kg pro Seite stellen", "Die Beinbeuger sind meist schwächer als die Beinstrecker. Mit kleinen Scheiben verlierst du beim Steigern weniger Wiederholungen. Den Schritt änderst du unter „Gerät bearbeiten“."]],
   "hs-seatcurl": [["Gebeugte Hüfte nutzen", "Oberkörper aufrecht oder leicht vorgeneigt", "Lehnst du dich weit zurück, streckt sich die Hüfte und der hintere Oberschenkel verliert die Dehnung, die diese Maschine besonders macht."]],
   "hs-hipthrust": [["Druck über die Fersen", "Über die Fersen hochdrücken, Zehen locker", "Drückst du über die Fersen, streckt vor allem das Gesäß die Hüfte. Über die Fußballen übernimmt die Oberschenkelvorderseite mehr."]],
+  "hs-abductor": [["Ganzer Weg", "Bis zur größten Öffnung drücken, die du kontrollierst", "Halbe Wiederholungen in der Mitte trainieren nur einen Teil des Bewegungswegs. Kannst du außen nicht kurz halten, ist das Gewicht zu hoch."]],
+  "hs-adductor": [["Nach den großen Übungen", "Adduktoren erst nach Beinpresse oder Kniebeuge", "Bei Beinpresse und Kniebeuge arbeiten die Adduktoren mit. Trainierst du sie vorher einzeln, sind sie bei den großen Übungen schon müde."]],
   "hs-calf": [["Großzehenballen belasten", "Druck über den Großzehenballen, Fuß gerade", "Rollt der Fuß beim Hochdrücken auf die Außenkante, steht das Sprunggelenk schief. Druck über den Großzehenballen hält es gerade."]],
   "hs-seatcalf": [["Unterschenkel senkrecht", "Knie direkt über den Fußballen ausrichten", "Stehen die Unterschenkel senkrecht unter dem Polster, geht die Last direkt in die Wade. Sitzt du zu weit vorn oder hinten, verschiebt sich der Hebel."]],
   "hs-ab": [["Einrollen statt klappen", "Rippen zum Becken ziehen", "Der gerade Bauchmuskel rollt die Wirbelsäule ein. Klappst du nur in der Hüfte, arbeiten vor allem die Hüftbeuger."],
@@ -1966,6 +2068,8 @@ const TRICK_X = {
   "lf-seatcurl": [["Griffe als Halt", "Mit den Griffen das Polster nach unten ziehen", "Hältst du dich an den Griffen auf dem Oberschenkelpolster fest, bleiben die Oberschenkel liegen und die Beuger arbeiten ohne Ausweichen."]],
   "lf-legcurl": [["Oberkörper flach", "Oberkörper flach auf den abgewinkelten Brustteil legen", "Laut Hersteller entlastet der Knick an der Hüfte den unteren Rücken. Stützt du dich auf die Arme hoch, gerät der untere Rücken leichter ins Hohlkreuz."]],
   "lf-abductor": [["Becken bleibt still", "Gesäß fest auf dem Sitz, nur die Beine bewegen sich", "Hebt sich eine Gesäßhälfte, drückst du aus dem Rumpf statt aus der Hüfte. Ruhig sitzend arbeiten die seitlichen Gesäßmuskeln."]],
+  "lf-adductor": [["Bei einer Fußposition bleiben", "Eine der zwei Fußpositionen wählen und beibehalten", "Laut Hersteller sollen Kniepolster und Fußpositionen das Knie entlasten. Bleibst du bei einer Position, sind deine Gewichte vergleichbar."]],
+  "lf-smith": [["Gegengewicht beachten", "Gewichte nicht mit anderen Multipressen vergleichen", "Laut Hersteller gleicht ein Gegengewicht im Rahmen die Stange aus. Dieselben Scheiben fühlen sich deshalb an einer anderen Multipresse oder mit freier Hantel anders an."]],
   "lf-ab": [["Becken bleibt hinten", "Gesäß bleibt am Sitz, der Oberkörper rollt sich ein", "Kippt der Oberkörper aus der Hüfte nach vorn, statt sich einzurollen, arbeiten die Hüftbeuger stärker mit und der Bauch weniger."]]
 };
 // Wofür das Gerät da ist – eine eigene Zeile je Gerät (aus der Anleitung „Warum diese Übung“)
@@ -1976,6 +2080,8 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "hs-lateral": "Seitlicher Deltamuskel, prägt die Schulterbreite", "hs-reardelt": "Hintere Schulter und Muskeln zwischen den Schulterblättern", "hs-curl": "Bizeps isoliert, die Oberarme liegen auf",
   "hs-dip": "Drücken nach unten, vor allem für den Trizeps", "hs-triext": "Trizeps isoliert, alle drei Köpfe", "hs-legpress": "Grundübung für Oberschenkel und Gesäß",
   "hs-isolegpress": "Beinpresse mit getrennten Fußplatten", "hs-vsquat": "Geführte Kniebeuge mit Schulterpolstern", "hs-hack": "Geführte Kniebeuge, betont die Oberschenkelvorderseite",
+  "hs-beltsquat": "Kniebeuge mit Hüftgurt statt Hantel", "hs-smith": "Geführte Stange, Kniebeuge ohne Balancieren", "hs-legcurl": "Liegend mit Scheiben, Seiten getrennt",
+  "hs-abductor": "Seitliches Gesäß, Startposition einstellbar", "hs-adductor": "Innenseite der Oberschenkel, Beine schließen",
   "hs-legext": "Oberschenkelvorderseite isoliert", "hs-kneelcurl": "Hinterer Oberschenkel, ein Bein nach dem anderen", "hs-seatcurl": "Hinterer Oberschenkel in gedehnter Position",
   "hs-hipthrust": "Gesäß, größte Last bei gestreckter Hüfte", "hs-calf": "Waden, vor allem der Zwillingswadenmuskel", "hs-seatcalf": "Waden, vor allem der Schollenmuskel", "hs-ab": "Gerader Bauchmuskel gegen Widerstand",
   "lf-chest": "Arme laufen nach vorn zusammen", "lf-shoulder": "Drücken über Kopf, zwei Griffpaare", "lf-pulldown": "Zwei getrennte Zugarme statt Stange",
@@ -1983,11 +2089,14 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "lf-lateral": "Seitliche Schulter, Arme getrennt", "lf-curl": "Bizeps am Armpolster, Griffe drehen mit", "lf-tripress": "Trizeps mit Dip- oder Druckgriffen",
   "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
   "lf-legext": "Quadrizeps isoliert, Startwinkel verstellbar", "lf-seatcurl": "Griffe am Oberschenkelpolster", "lf-legcurl": "Bank an der Hüfte abgewinkelt",
-  "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen" };
+  "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen",
+  "lf-adductor": "Adduktoren, Startposition in 10°-Schritten", "lf-smith": "Multipresse mit ausgeglichener Stange" };
 const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"));
 const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
 // Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
-const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction" };
+const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
+  "hs-hipthrust": "Hip Thrust", "hs-beltsquat": "Hüftgurt, Gürtel", "hs-smith": "Multipresse, Kniebeuge", "lf-smith": "Multipresse, Smith Machine", "hs-legcurl": "Prone Leg Curl, Lying Leg Curl",
+  "hs-abductor": "Hip Abductor, Abduktion", "hs-adductor": "Hip Adductor, Adduktion, Oberschenkel innen", "lf-adductor": "Hip Adductor, Adduktion, Oberschenkel innen" };
 const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
 // Gilt für alle Geräte: einmal, nicht bei jeder Übung
 const GEN_TRICKS = [
@@ -2055,9 +2164,12 @@ const MOTION = {
   "hs-fly": { v: "top", A: { ua: 10, fa: -20 }, B: { ua: -95, fa: -125 }, hl: ["chest"] },
   "hs-reardelt": { v: "top", A: { ua: -95, fa: -125 }, B: { ua: 8, fa: 2 }, hl: ["sho"], pad: true },
   "lf-abductor": { v: "top", legs: true, A: { th: -86 }, B: { th: -60 }, hl: ["hip"] },
+  "hs-adductor": { v: "top", legs: true, inner: true, A: { th: -56 }, B: { th: -86 }, hl: ["th"] },
   // Beine
   "hs-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   "hs-vsquat": { anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 87, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-beltsquat": { anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -102, th: 14, sh: 112, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
+  "hs-smith": { anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 137, fa: -59 }, B: { t: -71, th: 10, sh: 108, ua: 162, fa: -34 }, hl: ["th"], gear: ["smith"] },
   "hs-hack": { anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
   "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
@@ -2073,10 +2185,11 @@ const MOTION = {
 Object.assign(MOTION, { "hs-lat": MOTION["hs-pulldown"], "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
   "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
   "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
-  "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"] });
+  "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
+  "lf-adductor": MOTION["hs-adductor"], "lf-smith": MOTION["hs-smith"] });
 // Eigene Geräte: Bewegung über das Bewegungsmuster
 const PAT_MOT = { push_h: "hs-chest", push_i: "hs-incline", push_v: "hs-shoulder", fly: "hs-fly", pull_h: "hs-row", pull_v: "hs-pulldown", lateral: "hs-lateral", rear: "hs-reardelt",
-  bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor" };
+  bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor", add: "hs-adductor" };
 const motSpec = id => MOTION[id] || (PAT_MOT[ex(id).pattern] ? MOTION[PAT_MOT[ex(id).pattern]] : null);
 const motReduce = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
 const mEase = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
@@ -2104,98 +2217,134 @@ function motBox(sp) {
   for (const p of [0, .25, .5, .75, 1]) { const j = mJoints(sp, mPose(sp, p));
     for (const k in j) { const r = k === "head" ? 8 : 6; x0 = Math.min(x0, j[k][0] - r); x1 = Math.max(x1, j[k][0] + r); y0 = Math.min(y0, j[k][1] - r); y1 = Math.max(y1, j[k][1] + r); } }
   if (sp.cable) { x0 = Math.min(x0, sp.cable[0] - 6); x1 = Math.max(x1, sp.cable[0] + 6); y0 = Math.min(y0, sp.cable[1] - 6); }
-  const at = sp.at || [64, 84]; if ((sp.gear || []).includes("seat")) y1 = Math.max(y1, at[1] + 14);
+  const at = sp.at || [64, 84]; let fl = -Infinity;
+  for (const p of [0, .5, 1]) { const jj = mJoints(sp, mPose(sp, p)); fl = Math.max(fl, jj.toe[1], jj.ank[1]); }
+  if ((sp.gear || []).includes("seat")) fl = Math.max(fl, at[1] + 30);
+  sp._floor = fl + 4; y1 = Math.max(y1, sp._floor + 2); x0 -= 20;
   if ((sp.gear || []).includes("benchpad")) x0 = Math.min(x0, at[0] - 100);
   const m = 8; x0 -= m; y0 -= m; x1 += m; y1 += m;
   let w = x1 - x0, h = y1 - y0; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
   if (w / h < 4 / 3) w = h * 4 / 3; else h = w * 3 / 4;
   return (sp._box = `${mF(cx - w / 2)} ${mF(cy - h / 2)} ${mF(w)} ${mF(h)}`);
 }
-function motDraw(sp, p) {
-  const P = mPose(sp, p), hl = new Set(sp.hl || []), col = k => hl.has(k) ? MH : MB;
+// Gliedmaße als sich verjüngende Form (Kapsel): breit am rumpfnahen Gelenk, schmaler zum Ende
+function mCap(a, b, w1, w2, c, op) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, h1 = w1 / 2, h2 = w2 / 2;
+  const o = op != null && op < 1 ? ` opacity="${op}"` : "";
+  return `<g${o} fill="${c}"><path d="M${mF(a[0] + nx * h1)} ${mF(a[1] + ny * h1)} L${mF(b[0] + nx * h2)} ${mF(b[1] + ny * h2)} L${mF(b[0] - nx * h2)} ${mF(b[1] - ny * h2)} L${mF(a[0] - nx * h1)} ${mF(a[1] - ny * h1)} Z"/>`
+    + `<circle cx="${mF(a[0])}" cy="${mF(a[1])}" r="${mF(h1)}"/><circle cx="${mF(b[0])}" cy="${mF(b[1])}" r="${mF(h2)}"/></g>`;
+}
+const MB2 = "var(--mbody2)";
+function motDraw(sp, p, dev) {
+  const P = mPose(sp, p), hl = new Set(sp.hl || []);
   if (sp.v === "top") return motTop(sp, P, hl);
   if (sp.v === "front") return motFront(sp, P, hl);
   const j = mJoints(sp, P), at = sp.at || [64, 84];
   const td = mDir(P.t, 1), back = [td[1], -td[0]], fwd = [-td[1], td[0]];
   const along = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f], sh = (q, n, d) => [q[0] + n[0] * d, q[1] + n[1] * d];
-  const G = sp.gear || [], g = [], gf = [];
-  // Gerät hinten (Sitz, Lehne, Polster) und vorn (Griffe, Plattform, Seil)
-  if (G.includes("seat")) g.push(`<rect x="${mF(j.hip[0] - 18)}" y="${mF(j.hip[1] + 5)}" width="34" height="6" rx="3" fill="${MG}"/>`);
-  if (G.includes("back")) g.push(mLine(sh(sh(j.hip, back, 8), td, -4), sh(sh(j.sho, back, 8), td, 6), 6, MG));
-  if (G.includes("chestpad")) g.push(mDot(sh(along(j.hip, j.sho, .62), fwd, 13), 6, MG));
-  if (G.includes("chestpad2")) g.push(mLine(sh(along(j.hip, j.sho, .25), [0, 1], 9), sh(along(j.hip, j.sho, 1.05), [0, 1], 9), 7, MG));
-  if (G.includes("thighpad")) g.push(mDot(sh(along(j.hip, j.knee, .8), [0, -1], 8), 5.5, MG));
+  const G = sp.gear || [], g = [], gf = [], box = motBox(sp).split(" ").map(Number);
+  const floorY = sp._floor;
+  // Boden mit weichem Schatten
+  g.push(`<rect x="${mF(box[0])}" y="${mF(floorY)}" width="${mF(box[2])}" height="1.5" fill="${MGL}" opacity=".5"/>`, `<ellipse cx="${mF(at[0] + 4)}" cy="${mF(floorY + 1)}" rx="${mF(box[2] * .28)}" ry="2.6" fill="${MGL}" opacity=".18"/>`);
+  // Gewichtsblock bei Geräten mit Steckgewicht: die oberen Platten heben sich mit der Bewegung
+  if (dev === "stack") { const x = box[0] + 6, y = floorY, lift = p * 9;
+    g.push(`<rect x="${mF(x)}" y="${mF(y - 44)}" width="12" height="44" rx="2" fill="none" stroke="${MGL}" stroke-width="1" opacity=".55"/>`);
+    for (let i = 0; i < 6; i++) g.push(`<rect x="${mF(x + 1.5)}" y="${mF(y - 6 - i * 6 - (i >= 4 ? lift : 0))}" width="9" height="4.6" rx="1" fill="${i >= 4 ? MH : MG}" opacity="${i >= 4 ? .75 : 1}"/>`); }
+  const post = (q, len) => mLine([q[0], q[1]], [q[0], q[1] + len], 3, MGL);
+  if (G.includes("seat")) { const sx = j.hip[0] - 1, sy = at[1] + 8; g.push(post([sx, sy], Math.max(4, floorY - sy - 1)), `<rect x="${mF(sx - 15)}" y="${mF(floorY - 2)}" width="30" height="3" rx="1.5" fill="${MGL}"/>`, `<rect x="${mF(j.hip[0] - 18)}" y="${mF(j.hip[1] + 4)}" width="34" height="7" rx="3.5" fill="${MG}"/>`); }
+  if (G.includes("back")) { const b0 = sh(sh(j.hip, back, 9), td, -2), b1 = sh(sh(j.sho, back, 9), td, 8); g.push(mCap(b0, b1, 8, 8, MG)); }
+  if (G.includes("chestpad")) gf.push(`<ellipse cx="${mF(sh(along(j.hip, j.sho, .62), fwd, 13)[0])}" cy="${mF(sh(along(j.hip, j.sho, .62), fwd, 13)[1])}" rx="4.5" ry="8" fill="${MG}"/>`);
+  if (G.includes("chestpad2")) g.push(mCap(sh(along(j.hip, j.sho, .25), [0, 1], 9), sh(along(j.hip, j.sho, 1.05), [0, 1], 9), 7, 7, MG));
+  if (G.includes("thighpad")) gf.push(mDot(sh(along(j.hip, j.knee, .8), [0, -1], 8), 5.5, MG));
   if (G.includes("shinpad")) gf.push(mDot(sh(along(j.knee, j.ank, .88), mDir(P.sh - 90, 1), 0), 5, MG));
   if (G.includes("heelpad")) gf.push(mDot(sh(along(j.knee, j.ank, .9), mDir(P.sh + 90, 1), 6), 5, MG));
   if (G.includes("kneepad")) g.push(mDot(sh(j.knee2, [0, 1], 6), 6, MG));
-  if (G.includes("armpad")) g.push(mLine(sh(along(j.sho, j.elb, .15), mDir(P.ua + 90, 1), 6), sh(along(j.sho, j.elb, 1.1), mDir(P.ua + 90, 1), 6), 6, MG));
-  if (G.includes("shopad")) gf.push(mDot(sh(j.sho, [0, -1], 6), 5, MG));
+  if (G.includes("armpad")) g.push(mCap(sh(along(j.sho, j.elb, .15), mDir(P.ua + 90, 1), 6.5), sh(along(j.sho, j.elb, 1.1), mDir(P.ua + 90, 1), 6.5), 6, 6, MG));
+  if (G.includes("shopad")) gf.push(mDot(sh(j.sho, [0, -1], 6.5), 5, MG));
   if (G.includes("kneetop")) gf.push(mDot(sh(j.knee, [0, -1], 7), 5, MG));
-  if (G.includes("bench")) g.push(mLine(sh(j.hip, [0, 1], 8), sh(j.sho, [0, 1], 8), 7, MG), mLine(sh(j.hip, [0, 1], 8), sh(along(j.hip, j.knee, .7), [0, 1], 8), 7, MG));
-  if (G.includes("benchpad")) g.push(`<rect x="${mF(at[0] - 96)}" y="${mF(at[1] - 36)}" width="26" height="36" rx="3" fill="${MG}"/>`);
+  if (G.includes("bench")) { g.push(mCap(sh(j.hip, [0, 1], 9), sh(j.sho, [0, 1], 9), 7, 7, MG), mCap(sh(j.hip, [0, 1], 9), sh(along(j.hip, j.knee, .7), [0, 1], 9), 7, 7, MG));
+    g.push(post(sh(along(j.hip, j.sho, .5), [0, 1], 12), Math.max(4, floorY - j.hip[1] - 13))); }
+  if (G.includes("benchpad")) g.push(`<rect x="${mF(at[0] - 96)}" y="${mF(at[1] - 36)}" width="26" height="36" rx="4" fill="${MG}"/>`);
   if (G.includes("hippad")) gf.push(mDot(sh(j.hip, [0, -1], 7), 5, MG));
-  if (G.includes("floor")) g.push(mLine([at[0] - 140, at[1] + 2], [at[0] + 80, at[1] + 2], 2, MGL));
-  if (G.includes("floorplat")) g.push(mLine(sh(j.ank, [0, 1], 4), sh(j.toe, [0, 1], 4), 4, MG), mLine([at[0] - 120, at[1] + 6], [at[0] + 80, at[1] + 6], 2, MGL));
+  if (G.includes("floorplat")) g.push(mCap(sh(j.ank, [0, 1], 4.5), sh(j.toe, [0, 1], 4.5), 4, 4, MG));
   if (G.includes("step")) g.push(`<rect x="${mF(at[0] - 6)}" y="${mF(at[1] + 3)}" width="22" height="9" rx="2" fill="${MG}"/>`);
-  if (G.includes("plat")) gf.push(mLine(sh(j.ank, mDir(P.ft || 0, 1), -6), sh(j.toe, mDir(P.ft || 0, 1), 6), 5, MGL));
-  if (G.includes("cable")) gf.push(mLine(sp.cable, j.hand, 1.5, MGL), mDot(sp.cable, 4, MGL));
-  if (G.includes("handle")) gf.push(mDot(j.hand, 3.6, MGL));
-  const W = { t: 11, th: 9, sh: 8, ft: 5, ua: 7, fa: 6 };
+  if (G.includes("plat")) gf.push(mCap(sh(j.ank, mDir(P.ft || 0, 1), -7), sh(j.toe, mDir(P.ft || 0, 1), 7), 5, 5, MGL));
+  if (G.includes("belt")) { g.push(`<line x1="${mF(j.hip[0])}" y1="${mF(j.hip[1])}" x2="${mF(j.hip[0])}" y2="${mF(floorY - 3)}" stroke="${MGL}" stroke-width="1.6" stroke-dasharray="2.2 1.6"/>`, mCap([at[0] - 52, floorY - 3], [at[0] + 18, floorY - 3], 3.2, 3.2, MG), mDot([at[0] - 52, floorY - 3], 3.4, MGL));
+    gf.push(`<ellipse cx="${mF(j.hip[0])}" cy="${mF(j.hip[1])}" rx="8.5" ry="4.2" fill="none" stroke="${MGL}" stroke-width="2.2" transform="rotate(${mF(P.t + 90)} ${mF(j.hip[0])} ${mF(j.hip[1])})"/>`); }
+  if (G.includes("smith")) { const a = mJoints(sp, mPose(sp, 0)).hand, b = mJoints(sp, mPose(sp, 1)).hand, d = [a[0] - b[0], a[1] - b[1]], k = (floorY - b[1]) / (d[1] || 1), top = box[1] + 2, k2 = (top - b[1]) / (d[1] || 1);
+    g.push(mLine([b[0] + d[0] * k2, top], [b[0] + d[0] * k, floorY], 2.4, MGL));
+    gf.push(mDot(j.hand, 4.4, MGL), mDot(j.hand, 1.8, MG)); }
+  if (G.includes("cable")) gf.push(mLine(sp.cable, j.hand, 1.4, MGL), mDot(sp.cable, 4.2, MGL));
+  if (G.includes("handle")) gf.push(mDot(j.hand, 3.8, MGL));
+  // Bewegungsweg des arbeitenden Endes (Hand, Fuß oder Hüfte) als feine Punktlinie
+  const tip = sp._tip ?? (sp._tip = (() => { const a = mJoints(sp, mPose(sp, 0)), b = mJoints(sp, mPose(sp, 1)); let best = "hand", d = -1;
+    for (const k of ["hand", "ank", "hip", "toe"]) { const v = Math.hypot(a[k][0] - b[k][0], a[k][1] - b[k][1]); if (v > d) { d = v; best = k; } } return best; })());
+  const path = [0, .2, .4, .6, .8, 1].map(q => mJoints(sp, mPose(sp, q))[tip]);
+  g.push(`<polyline points="${path.map(q => `${mF(q[0])},${mF(q[1])}`).join(" ")}" fill="none" stroke="${MH}" stroke-width="1.2" stroke-dasharray="1.5 3" stroke-linecap="round" opacity=".55"/>`);
+  // Körper: abgewandte Seite leicht versetzt und dunkler, dann Rumpf, Kopf, zugewandte Seite
+  const far = q => [q[0] - 2.5, q[1] - 1.6], hc = (k, near) => hl.has(k) ? MH : near ? MB : MB2, ho = (k, near) => hl.has(k) && !near ? .55 : 1;
   const body = [];
-  if (j.knee2) body.push(`<g opacity=".45">${mLine(j.hip, j.knee2, W.th, MB)}${mLine(j.knee2, j.ank2, W.sh, MB)}</g>`);
-  body.push(mLine(j.hip, j.sho, W.t, col("t")), mLine(j.hip, j.knee, W.th, col("th")), mLine(j.knee, j.ank, W.sh, col("sh")), mLine(j.ank, j.toe, W.ft, MB));
-  if (hl.has("hip")) body.push(mDot(j.hip, 7, MH));
-  if (hl.has("chest")) body.push(mDot(sh(along(j.hip, j.sho, .78), fwd, 3), 5.5, MH));
-  body.push(mDot(j.head, 6.5, MB), mLine(j.sho, j.elb, W.ua, col("ua")), mLine(j.elb, j.hand, W.fa, col("fa")));
-  if (hl.has("sho")) body.push(mDot(j.sho, 5.5, MH));
+  const leg = (near, kn, an, to) => { const f = near ? q => q : far; body.push(mCap(f(j.hip), f(kn), 11, 8, hc("th", near), ho("th", near)), mCap(f(kn), f(an), 8, 5.5, hc("sh", near), ho("sh", near)), mCap(f(an), f(to), 4.6, 3.6, near ? MB : MB2)); };
+  const arm = near => { const f = near ? q => q : far; body.push(mCap(f(j.sho), f(j.elb), 7.6, 6, hc("ua", near), ho("ua", near)), mCap(f(j.elb), f(j.hand), 6, 4.4, hc("fa", near), ho("fa", near))); };
+  if (j.knee2) body.push(`<g opacity=".7">${mCap(far(j.hip), far(j.knee2), 11, 8, MB2)}${mCap(far(j.knee2), far(j.ank2), 8, 5.5, MB2)}</g>`);
+  else leg(false, j.knee, j.ank, j.toe);
+  arm(false);
+  body.push(mCap(j.hip, j.sho, 12, 14.5, hc("t", true)));
+  if (hl.has("chest")) body.push(`<ellipse cx="${mF(sh(along(j.hip, j.sho, .78), fwd, 3.5)[0])}" cy="${mF(sh(along(j.hip, j.sho, .78), fwd, 3.5)[1])}" rx="4.6" ry="6.4" fill="${MH}"/>`);
+  if (hl.has("hip")) body.push(mDot(j.hip, 7.2, MH));
+  body.push(mCap(j.sho, j.head, 5, 4.6, MB), mDot(j.head, 7.2, MB));
+  leg(true, j.knee, j.ank, j.toe);
+  arm(true);
+  if (hl.has("sho")) body.push(mDot(j.sho, 5.4, MH));
   return g.join("") + body.join("") + gf.join("");
 }
 // Draufsicht: Butterfly, hintere Schulter (Arme) und Abduktoren (Beine). Vorn = oben.
 function motTop(sp, P, hl) {
-  const c = [80, sp.legs ? 52 : 70], s = 15, out = [];
-  const mir = a => 180 - a;
-  out.push(`<rect x="${c[0] - 26}" y="${c[1] + 6}" width="52" height="7" rx="3" fill="${MG}"/>`);
-  if (sp.pad) out.push(`<rect x="${c[0] - 14}" y="${c[1] - 20}" width="28" height="6" rx="3" fill="${MG}"/>`);
+  const c = [80, sp.legs ? 52 : 70], s = 15, out = [], mir = a => 180 - a;
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 8}" rx="40" ry="5" fill="${MGL}" opacity=".15"/>`, `<rect x="${c[0] - 26}" y="${c[1] + 6}" width="52" height="8" rx="4" fill="${MG}"/>`);
+  if (sp.pad) out.push(`<rect x="${c[0] - 14}" y="${c[1] - 21}" width="28" height="7" rx="3.5" fill="${MG}"/>`);
   if (sp.legs) {
     const hR = [c[0] + 8, c[1] + 2], hL = [c[0] - 8, c[1] + 2];
-    out.push(`<rect x="${c[0] - 24}" y="${c[1] - 6}" width="48" height="56" rx="8" fill="${MG}" opacity=".6"/>`);
-    for (const [h, a] of [[hR, P.th], [hL, mir(P.th)]]) { const k = mAdd(h, mDir(a, 40)); out.push(mLine(h, k, 10, MB), mDot(mAdd(k, mDir(a, 4)), 6, MGL)); }
-    out.push(mLine([c[0] - s, c[1] + 4], [c[0] + s, c[1] + 4], 12, MB), mDot([c[0], c[1] + 4], 6.5, MB));
+    out.push(`<rect x="${c[0] - 24}" y="${c[1] - 6}" width="48" height="56" rx="10" fill="${MG}" opacity=".6"/>`);
+    for (const [h, a, sd] of [[hR, P.th, 1], [hL, mir(P.th), -1]]) { const k = mAdd(h, mDir(a, 40)), pd = mAdd(mAdd(h, mDir(a, 34)), mDir(a + sd * (sp.inner ? -90 : 90), 10));
+      out.push(mCap(h, k, 12, 9, hl.has("th") ? MH : MB), mDot(pd, 5.5, MGL)); }
+    out.push(mCap([c[0] - s, c[1] + 4], [c[0] + s, c[1] + 4], 13, 13, MB), mDot([c[0], c[1] + 4], 7.2, MB));
     if (hl.has("hip")) out.push(mDot(hR, 6, MH), mDot(hL, 6, MH));
     return out.join("");
   }
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]];
   for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 22));
-    out.push(mLine(sp0, e, 7, hl.has("ua") ? MH : MB), mLine(e, h, 6, MB), mDot(h, 3.6, MGL));
+    out.push(mCap(sp0, e, 8, 6.2, hl.has("ua") ? MH : MB), mCap(e, h, 6.2, 4.6, MB), mDot(h, 3.8, MGL));
   }
-  out.push(mLine(sL, sR, 12, MB));
-  if (hl.has("chest")) out.push(`<ellipse cx="${c[0]}" cy="${c[1] - 5}" rx="11" ry="4" fill="${MH}"/>`);
-  if (hl.has("sho")) out.push(mDot(sR, 5.5, MH), mDot(sL, 5.5, MH));
-  out.push(mDot([c[0], c[1] - 3], 7, MB));
+  out.push(mCap(sL, sR, 13, 13, MB));
+  if (hl.has("chest")) out.push(`<ellipse cx="${c[0]}" cy="${c[1] - 5}" rx="11" ry="4.4" fill="${MH}"/>`);
+  if (hl.has("sho")) out.push(mDot(sR, 5.6, MH), mDot(sL, 5.6, MH));
+  out.push(mDot([c[0], c[1] - 3], 7.4, MB));
   return out.join("");
 }
 // Vorderansicht: Seitheben
 function motFront(sp, P, hl) {
   const c = [80, 40], s = 14, out = [], mir = a => 180 - a;
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]], hR = [c[0] + 8, c[1] + 42], hL = [c[0] - 8, c[1] + 42];
-  out.push(`<rect x="${c[0] - 22}" y="${c[1] + 46}" width="44" height="7" rx="3" fill="${MG}"/>`);
-  out.push(mLine(hR, [hR[0] + 3, hR[1] + 16], 9, MB), mLine([hR[0] + 3, hR[1] + 16], [hR[0] + 4, hR[1] + 50], 8, MB));
-  out.push(mLine(hL, [hL[0] - 3, hL[1] + 16], 9, MB), mLine([hL[0] - 3, hL[1] + 16], [hL[0] - 4, hL[1] + 50], 8, MB));
-  out.push(`<path d="M${sL[0]} ${sL[1]} L${sR[0]} ${sR[1]} L${hR[0]} ${hR[1]} L${hL[0]} ${hL[1]} Z" fill="${MB}" stroke="${MB}" stroke-width="6" stroke-linejoin="round"/>`);
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 96}" rx="34" ry="3" fill="${MGL}" opacity=".15"/>`, `<rect x="${c[0] - 22}" y="${c[1] + 46}" width="44" height="8" rx="4" fill="${MG}"/>`);
+  for (const [h, dx] of [[hR, 1], [hL, -1]]) out.push(mCap(h, [h[0] + 3 * dx, h[1] + 16], 11, 9, MB2), mCap([h[0] + 3 * dx, h[1] + 16], [h[0] + 4 * dx, h[1] + 50], 8, 5.5, MB2));
+  out.push(`<path d="M${sL[0] - 2} ${sL[1]} Q${c[0]} ${c[1] - 5} ${sR[0] + 2} ${sR[1]} L${hR[0] + 1} ${hR[1]} Q${c[0]} ${hR[1] + 3} ${hL[0] - 1} ${hL[1]} Z" fill="${MB}" stroke="${MB}" stroke-width="5" stroke-linejoin="round"/>`);
+  out.push(mCap([c[0], c[1] - 2], [c[0], c[1] - 12], 5.5, 5, MB));
   for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 20));
-    out.push(mLine(sp0, e, 7, MB), mLine(e, h, 6, MB), mDot(e, 4.5, MG));
+    out.push(mCap(sp0, e, 8, 6.2, MB), mCap(e, h, 6.2, 4.6, MB), mDot(e, 4.8, MG));
   }
-  if (hl.has("sho")) out.push(mDot(sR, 6, MH), mDot(sL, 6, MH));
-  out.push(mDot([c[0], c[1] - 13], 7, MB));
+  if (hl.has("sho")) out.push(mDot(sR, 6.2, MH), mDot(sL, 6.2, MH));
+  out.push(mDot([c[0], c[1] - 14], 7.6, MB));
   return out.join("");
 }
 // SVG für Anleitung, Training und Listen. anim: läuft (außer bei „Bewegung reduzieren“, dann Start blass + Ende kräftig)
 function motionSvg(id, o = {}) {
   const sp = motSpec(id); if (!sp) return "";
   const still = !o.anim || motReduce();
-  const inner = o.anim && still ? `<g opacity=".3">${motDraw(sp, 0)}</g>${motDraw(sp, 1)}` : motDraw(sp, o.anim ? 0 : (o.p ?? 1));
+  const dev = ex(id).type;
+  const inner = o.anim && still ? `<g opacity=".3">${motDraw(sp, 0, dev)}</g>${motDraw(sp, 1, dev)}` : motDraw(sp, o.anim ? 0 : (o.p ?? 1), dev);
   return `<svg class="motion${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(ex(id).name)}"><g class="mfig">${inner}</g></svg>`;
 }
 // Eine Schleife für alle sichtbaren Animationen; stoppt von selbst, wenn keine mehr da ist
@@ -2208,7 +2357,7 @@ function motTick(ts) {
       if (el.dataset.cycle) { const L = el.dataset.cycle.split(","), i = Math.floor(ts / 8000) % L.length;
         if (el.dataset.m !== L[i]) { el.dataset.m = L[i]; const s2 = motSpec(L[i]); if (s2) el.setAttribute("viewBox", motBox(s2));
           const cap = el.parentElement && el.parentElement.querySelector(".mcap"); if (cap) cap.textContent = `${i + 1}/${L.length} · ${ex(L[i]).name}`; } }
-      const sp = motSpec(el.dataset.m), g = el.firstElementChild; if (sp && g) g.innerHTML = motDraw(sp, p); }); }
+      const sp = motSpec(el.dataset.m), g = el.firstElementChild; if (sp && g) g.innerHTML = motDraw(sp, p, ex(el.dataset.m).type); }); }
   motRAF = requestAnimationFrame(motTick);
 }
 function motStart() { if (!motRAF && !motReduce() && document.querySelector("svg.motion[data-anim]")) motRAF = requestAnimationFrame(motTick); }
@@ -3560,6 +3709,45 @@ const FOOD_DB = [
 [172241, "Balsamico-Essig", "sonst", 88, 0.49, 17, 0, null],  // Vinegar, balsamic
 [170317, "Käsepizza (TK), gebacken", "sonst", 268, 10.4, 29, 12.3, 2.2],  // Pizza, cheese topping, regular crust, frozen, cooked
 ];
+// Fast Food aus USDA SR Legacy: [FDC-ID, Name, kcal, Eiweiß, Kohlenhydrate, Fett, Ballaststoffe je 100 g, Portion].
+// US-Rezepturen – in Deutschland können Rezeptur und Portionsgröße abweichen; das steht beim Eintrag dabei.
+const FAST_DB = [
+[170720, "Big Mac (McDonald's)", 257, 11.8, 20.1, 15.0, 1.6, ["1 Big Mac", 219]],  // McDONALD'S, BIG MAC
+[170320, "Cheeseburger (McDonald's)", 263, 13.0, 27.8, 11.8, 1.1, ["1 Cheeseburger", 119]],  // McDONALD'S, Cheeseburger
+[170717, "Hamburger (McDonald's)", 264, 12.9, 30.3, 10.1, 1.3, ["1 Hamburger", 95]],  // McDONALD'S, Hamburger
+[172065, "Double Cheeseburger (McDonald's)", 282, 15.5, 18.8, 16.1, 0.8, ["1 Double Cheeseburger", 155]],  // McDONALD'S, Double Cheeseburger
+[170719, "Quarter Pounder mit Käse (McDonald's)", 258, 14.6, 20.0, 14.2, 1.4, ["1 Quarter Pounder mit Käse", 199]],  // McDONALD'S, QUARTER POUNDER with Cheese
+[173305, "McChicken (McDonald's)", 273, 10.4, 28.0, 13.2, 1.3, ["1 McChicken", 131]],  // McDONALD'S, McCHICKEN Sandwich
+[173297, "Chicken McNuggets (McDonald's)", 302, 15.8, 15.1, 19.8, null, ["6 Chicken McNuggets", 95]],  // McDONALD'S, Chicken McNUGGETS
+[170721, "Pommes (McDonald's)", 323, 3.41, 42.6, 15.5, 3.9, ["1 mittlere Portion", 117]],  // McDONALD'S, french fries
+[170319, "Filet-o-Fish (McDonald's)", 282, 11.3, 26.4, 14.6, 1.4, ["1 Filet-o-Fish", 134]],  // McDONALD'S, FILET-O-FISH
+[173304, "McFlurry Oreo (McDonald's)", 165, 3.97, 25.6, 5.66, 0.1, ["1 McFlurry (US-Größe 355 ml)", 337]],  // McDONALD'S, McFLURRY with OREO cookies
+[173307, "Egg McMuffin (McDonald's)", 228, 13.6, 21.7, 9.66, 1.1, ["1 Egg McMuffin", 126]],  // McDONALD'S, Egg McMUFFIN
+[173298, "Hash Brown (McDonald's)", 271, 2.48, 28.6, 16.3, 2.8, ["1 Hash Brown", 53]],  // McDONALD'S, Hash Brown
+[170727, "Whopper (Burger King)", 233, 10.7, 18.6, 12.8, 1.8, ["1 Whopper", 291]],  // BURGER KING, WHOPPER, no cheese
+[170728, "Whopper mit Käse (Burger King)", 250, 11.2, 16.7, 15.3, 1.0, ["1 Whopper mit Käse", 316]],  // BURGER KING, WHOPPER, with cheese
+[170730, "Double Whopper mit Käse (Burger King)", 266, 14.5, 13.5, 17.1, 1.6, ["1 Double Whopper mit Käse", 399]],  // BURGER KING, DOUBLE WHOPPER, with cheese
+[170329, "Cheeseburger (Burger King)", 286, 14.6, 23.7, 14.8, 1.0, ["1 Cheeseburger", 133]],  // BURGER KING, Cheeseburger
+[170327, "Pommes (Burger King)", 280, 3.23, 38.7, 12.5, 2.9, ["1 mittlere Portion", 117]],  // BURGER KING, french fries
+[170771, "Onion Rings (Burger King)", 417, 3.86, 43.6, 25.2, 2.7, ["1 mittlere Portion", 117]],  // BURGER KING, Onion Rings
+[170731, "Chicken Strips (Burger King)", 292, 18.2, 20.5, 15.2, 1.3, ["5 Chicken Strips", 173]],  // BURGER KING, Chicken Strips
+[170744, "Hähnchenbrust Original Recipe (KFC)", 231, 21.9, 6.28, 13.1, null],  // KFC, Fried Chicken, ORIGINAL RECIPE, Breast, meat and skin with breading
+[170745, "Unterschenkel Original Recipe (KFC)", 239, 22.3, 5.39, 14.2, null],  // KFC, Fried Chicken, ORIGINAL RECIPE, Drumstick, meat and skin with breading
+[170346, "Oberschenkel Original Recipe (KFC)", 269, 18.9, 8.46, 17.7, 0.0],  // KFC, Fried Chicken, ORIGINAL RECIPE, Thigh, meat and skin with breading
+[170347, "Flügel Original Recipe (KFC)", 297, 21.7, 9.93, 18.9, 0.0],  // KFC, Fried Chicken, ORIGINAL RECIPE, Wing, meat and skin with breading
+[170737, "Popcorn Chicken (KFC)", 351, 17.7, 21.2, 21.7, 1.0, ["10 Stück", 56]],  // KFC, Popcorn Chicken
+[170341, "Crispy Strips (KFC)", 274, 20.2, 13.7, 15.4, 1.4, ["1 Strip", 47]],  // KFC, Crispy Chicken Strips
+[170340, "Coleslaw (KFC)", 144, 0.91, 15.6, 8.64, 2.0, ["1 kleine Packung", 112]],  // KFC, Coleslaw
+[170314, "Sub Hähnchenbrust (Subway, Weißbrot, Salat, Tomate)", 157, 10.8, 21.4, 3.15, 1.2, ["1 Sub, 15 cm", 198]],  // SUBWAY, oven roasted chicken sub on white bread with lettuce and tomato
+[170316, "Sub Thunfisch (Subway, Weißbrot, Salat, Tomate)", 221, 12.3, 16.0, 12.0, 0.7, ["1 Sub, 15 cm", 237]],  // SUBWAY, tuna sub on white bread with lettuce and tomato
+[170705, "Sub Chicken Teriyaki (Subway, Weißbrot)", 155, 10.9, 22.5, 2.37, 1.2, ["1 Sub, 15 cm", 228]],  // SUBWAY, sweet onion chicken teriyaki sub on white bread with lettuce, tomato and sweet onion sauce
+[170310, "Sub Steak & Cheese (Subway, Weißbrot)", 183, 12.3, 21.5, 5.34, 1.2, ["1 Sub, 15 cm", 201]],  // SUBWAY, steak & cheese sub on white bread with American cheese, lettuce and tomato
+[170711, "Sub Putenbrust (Subway, Weißbrot, Salat, Tomate)", 147, 9.12, 22.4, 2.31, 1.3, ["1 Sub, 15 cm", 184]],  // SUBWAY, turkey breast sub on white bread with lettuce and tomato
+[173292, "Pizza Käse (Pizzakette, normaler Boden)", 266, 11.4, 33.3, 9.69, 2.3, ["1 Stück", 107]],  // Fast Food, Pizza Chain, 14" pizza, cheese topping, regular crust
+[173295, "Pizza Peperoni-Salami (Pizzakette, normaler Boden)", 282, 11.7, 32.0, 11.9, 2.3, ["1 Stück", 111]],  // Fast Food, Pizza Chain, 14" pizza, pepperoni topping, regular crust
+[173294, "Pizza Käse (Pizzakette, dünner Boden)", 302, 12.8, 31.2, 14.0, 2.5, ["1 Stück", 76]],  // Fast Food, Pizza Chain, 14" pizza, cheese topping, thin crust
+];
+const FAST_SUB = "USDA FoodData Central · Fast Food, US-Rezeptur – in Deutschland teils anders";
 const FOOD_CAT = { getreide: "Getreide & Beilagen", fleisch: "Fleisch & Fisch", eiweiss: "Eier, Hülsenfrüchte & Tofu", milch: "Milch & Käse",
   obst: "Obst", gemuese: "Gemüse", nuss: "Nüsse, Samen & Öle", suess: "Süßes", getraenke: "Getränke", sonst: "Saucen" };
 const MEALS = [["f", "Frühstück", "Früh"], ["m", "Mittagessen", "Mittag"], ["a", "Abendessen", "Abend"], ["s", "Snacks", "Snack"]];
@@ -3679,6 +3867,9 @@ function trendHtml(G) {
 const foodPool = new Map();
 FOOD_DB.forEach(([id, n, cat, k, p, c, f, fib, por]) => foodPool.set("u:" + id,
   { key: "u:" + id, n, k, p, c, f, fib, por: por || null, src: "usda:" + id, sub: "USDA FoodData Central · " + FOOD_CAT[cat] }));
+FAST_DB.forEach(([id, n, k, p, c, f, fib, por]) => foodPool.set("u:" + id, { key: "u:" + id, n, k, p, c, f, fib, por: por || null, src: "usda:" + id, sub: FAST_SUB }));
+// Suche unempfindlich gegen Apostroph, Bindestrich und Leerzeichen („mcdonalds“ findet „McDonald's“, „big mac“ den Big Mac)
+const foodNorm = s => String(s).toLowerCase().replace(/[’'`´.\-\s]/g, "");
 function poolOwn(x) { const key = "m:" + x.id; foodPool.set(key, { key, n: x.n, k: x.k, p: x.p, c: x.c, f: x.f, fib: x.fib ?? null, por: x.por || null, src: "own:" + x.id, sub: "Eigenes Lebensmittel" }); return key; }
 function offFood(p) {
   const nu = isObj(p.nutriments) ? p.nutriments : {};
@@ -3714,7 +3905,7 @@ function recentKeys() {
 let foodDay = null, foodCtx = { m: "f", d: null, q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }, nutrDraft = null;
 function foodRows(keys) {
   return keys.map(k => { const x = foodPool.get(k); return `<button class="li" data-a="foodPick" data-k="${esc(k)}">
-    <div class="grow"><div class="t">${esc(x.n)}</div><div class="s">${fmtK(x.k)} kcal · ${fmtN(x.p)} g Eiweiß je 100 g${x.brand ? " · " + esc(x.brand) : ""}</div></div><span class="chev">›</span></button>`; }).join("");
+    <div class="grow"><div class="t">${esc(x.n)}</div><div class="s">${fmtK(x.k)} kcal · E ${fmtN(x.p)} · K ${fmtN(x.c)} · F ${fmtN(x.f)} g je 100 g${x.brand ? " · " + esc(x.brand) : ""}</div></div><span class="chev">›</span></button>`; }).join("");
 }
 function mealsKcal(x) { return x.items.reduce((a, e) => a + entryVals(e).k, 0); }
 function mealRows(list) {
@@ -3729,9 +3920,10 @@ function foodResults() {
     const rec = recentKeys(), own = state.myFoods.map(poolOwn);
     return mealRows(state.meals) + (rec.length ? `<section class="section"><h2>Zuletzt verwendet</h2><div class="group">${foodRows(rec)}</div></section>` : "")
       + (own.length ? `<section class="section"><h2>Eigene Lebensmittel</h2><div class="group">${foodRows(own)}</div></section>` : "")
-      + `<p class="small faint">${FOOD_DB.length} Grundnahrungsmittel mit Werten aus der USDA-Datenbank. Für Markenprodukte die Online-Suche oder den Barcode nutzen.</p>`;
+      + `<p class="small faint">${FOOD_DB.length} Grundnahrungsmittel und ${FAST_DB.length} Fast-Food-Produkte mit Werten aus der USDA-Datenbank. Beim Tippen sucht die App zusätzlich online in Open Food Facts – auch nach Supermarkt-Eigenmarken, z. B. „Skyr Lidl“.</p>`;
   }
-  const keys = [...state.myFoods.filter(x => x.n.toLowerCase().includes(q)).map(poolOwn), ...FOOD_DB.filter(r => r[1].toLowerCase().includes(q)).map(r => "u:" + r[0])].slice(0, 40);
+  const nq = foodNorm(q), hit = n => foodNorm(n).includes(nq);
+  const keys = [...state.myFoods.filter(x => hit(x.n)).map(poolOwn), ...FOOD_DB.filter(r => hit(r[1])).map(r => "u:" + r[0]), ...FAST_DB.filter(r => hit(r[1])).map(r => "u:" + r[0])].slice(0, 40);
   const ms = state.meals.filter(x => x.n.toLowerCase().includes(q));
   return mealRows(ms) + (keys.length ? `<div class="group">${foodRows(keys)}</div>` : ms.length ? "" : `<p class="small muted">Kein Grundnahrungsmittel gefunden. Probier die Online-Suche.</p>`);
 }
@@ -3739,7 +3931,7 @@ function offHtml() {
   if (foodCtx.off === null) return foodCtx.offMsg ? `<p class="small muted" id="offMsg">${esc(foodCtx.offMsg)}</p>` : "";
   return foodCtx.off.length ? `<section class="section"><h2>Online · Packungsangaben</h2><div class="group">${foodRows(foodCtx.off)}</div>
     <p class="small faint">Quelle: Open Food Facts. Die Angaben haben Nutzer von Packungen übernommen – vergleiche sie im Zweifel mit deiner Packung.</p></section>`
-    : `<p class="small muted" id="offMsg">Online nichts mit vollständigen Nährwerten gefunden.</p>`;
+    : `<p class="small muted" id="offMsg">Online nichts Passendes mit vollständigen Nährwerten gefunden.</p>`;
 }
 function offBtnHtml() { const q = foodCtx.q.trim(); return `<button class="btn block" data-a="offSearch" id="offBtn" ${q.length >= 2 ? "" : "disabled"}>${q.length >= 2 ? `Online nach „${esc(q)}“ suchen` : "Online-Suche: Suchbegriff eingeben"}</button>`; }
 function foodAddSheet() {
@@ -3813,7 +4005,28 @@ async function fetchJSON(url, ms = 12000) {
   finally { clearTimeout(t); }
 }
 const OFF_FIELDS = "code,product_name,product_name_de,brands,nutriments,serving_quantity";
-const offSearchUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
+// Supermärkte → Eigenmarken (Schreibweise wie in Open Food Facts). „Skyr Lidl“ sucht Skyr bei Milbona, Pilos usw.
+const STORE_BRANDS = {
+  lidl: ["lidl", "milbona", "pilos", "freeway", "crownfield", "chef-select", "solevita", "snack-day", "fin-carre", "favorina", "vitasia", "kania", "alesto", "combino", "baresa", "nixe", "sondey", "bellarom", "dulano", "trattoria-alfredo"],
+  aldi: ["aldi", "aldi-nord", "aldi-sud", "milsani", "moser-roth", "gutbio", "golden-bridge", "lyttos", "rio-d-oro", "choco-changer", "cucina-nobile", "knusperone", "goldahren"],
+  rewe: ["rewe", "ja", "rewe-beste-wahl", "rewe-bio", "rewe-feine-welt"],
+  edeka: ["edeka", "gut-gunstig", "edeka-bio", "edeka-herzstucke"],
+  kaufland: ["kaufland", "k-classic", "k-bio"],
+  penny: ["penny", "naturgut"], netto: ["netto"], dm: ["dm", "dmbio"], rossmann: ["rossmann", "enerbio"]
+};
+function offQuery(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean), key = w => w.replace(/[^a-zäöü]/g, "");
+  const stores = words.filter(w => STORE_BRANDS[key(w)]), rest = words.filter(w => !STORE_BRANDS[key(w)]).join(" ").replace(/[+\-!(){}[\]^"~*?:\\/&|]/g, " ").trim();
+  if (!stores.length) return rest;
+  const tags = [...new Set(stores.flatMap(w => STORE_BRANDS[key(w)]))];
+  // Eigenmarken-Namen (z. B. „ja!“ bei Rewe) stecken schon im Filter und würden sonst jede Zutatenliste treffen
+  const text = rest.split(" ").filter(w => w && !tags.includes(w)).join(" ");
+  return `${text ? text + " " : ""}brands_tags:(${tags.join(" OR ")})`;
+}
+// Suche über die eigene Vercel-Funktion (/api/food), weil search.openfoodfacts.org keine Browser-Anfragen anderer Seiten erlaubt
+const offSearchUrl = q => `/api/food?q=${encodeURIComponent(offQuery(q))}`;
+const offLegacyUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
+let offTimer = null;
 const offProductUrl = code => `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${OFF_FIELDS}`;
 const offErr = search => navigator.onLine === false ? "Keine Internetverbindung. Grundnahrungsmittel und eigene Lebensmittel funktionieren auch offline."
   : "Open Food Facts ist gerade nicht erreichbar oder ausgelastet. Bitte in einer Minute erneut versuchen." + (search ? " Die Barcode-Abfrage nutzt eine andere Schnittstelle und funktioniert oft trotzdem." : "");
@@ -4707,8 +4920,9 @@ function insights() {
   });
   // 9. Muskelgruppe fehlt komplett im Plan
   const miss = planCheck().out.filter(x => x.kind === "low" && x.v === 0).map(x => x.m);
-  if (miss.length) add({ id: "miss:" + miss.join(","), prio: 35, kind: "tip", title: `${joinDe(miss.map(m => MUSCLES[m]))} ${miss.length > 1 ? "fehlen" : "fehlt"} in deinem Plan`,
-    text: "Keine Übung trainiert diese Muskelgruppe – weder als Hauptmuskel noch mit.", act: [{ a: "checkFix", l: "+ Übung", d: { m: miss[0] } }], art: "volumen", src: ["vol2017"] });
+  if (miss.length) add({ id: "miss:" + miss.join(","), prio: 35, kind: "tip", title: `Im Plan ${miss.length > 1 ? "fehlen" : "fehlt"}: ${joinDe(miss.map(m => MUSCLES[m]))}`,
+    text: `Keine deiner Übungen trainiert ${joinDe(miss.map(m => MISS_HINT[m][0]))}.${miss.length === 1 ? ` Passend: ${MISS_HINT[miss[0]][1]}.` : ""}`,
+    act: [{ a: "checkFix", l: "+ Gerät wählen", d: { m: miss[0] } }], art: "volumen", src: ["vol2017"] });
   // 10. Was gut läuft: mehr Gewicht als zu Beginn der letzten 8 Wochen
   const since = now - 56 * DAY, by = {};
   H.forEach(h => { if (+new Date(h.date) < since) return; h.exercises.forEach(x => { const v = x.sets.filter(validSet); if (!v.length) return;
@@ -5312,10 +5526,25 @@ const A = {
     const box = () => byId("offRes");
     foodCtx.off = null; foodCtx.offMsg = "Suche läuft …"; if (box()) box().innerHTML = offHtml();
     try {
-      const r = await fetchJSON(offSearchUrl(q), 20000), seen = new Set();
+      // Neue Suchschnittstelle (schnell); fällt sie aus, die alte. In Deutschland verkaufte Produkte zuerst.
+      let list;
+      try { if (!/^https?:$/.test(location.protocol)) throw new Error("ohne Server");
+        const r = await fetchJSON(offSearchUrl(q), 12000); if (!Array.isArray(r.hits)) throw new Error("Format");
+        // Nur Produkte, die ausdrücklich nur in anderen Ländern verkauft werden, rutschen nach unten; fehlende Länderangabe ist neutral
+        const away = x => { const c = x.countries_tags || []; return c.length && !c.includes("en:germany") ? 1 : 0; };
+        list = r.hits.slice().sort((a, b) => away(a) - away(b)); }
+      catch (e1) { const r = await fetchJSON(offLegacyUrl(q), 20000); list = Array.isArray(r.products) ? r.products : []; }
+      const seen = new Set();
       // Doppelte Produkte (gleicher Barcode) nur einmal; der erste Treffer zählt
-      const uniq = (Array.isArray(r.products) ? r.products : []).filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
-      foodCtx.off = uniq.map(offFood).filter(Boolean).slice(0, 20); foodCtx.offMsg = "";
+      const uniq = list.filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
+      let keys = uniq.map(offFood).filter(Boolean);
+      // Gleiches Produkt unter mehreren Barcodes nur einmal (Name, Marke und kcal gleich)
+      const sig = new Set(); keys = keys.filter(k => { const x = foodPool.get(k), s = foodNorm(x.n) + "|" + foodNorm(x.brand || "") + "|" + x.k; if (sig.has(s)) return false; sig.add(s); return true; });
+      // Alle Suchwörter müssen in Name oder Marke vorkommen (Supermarkt-Namen sind schon Filter); passt nichts, bleibt die Trefferliste
+      const words = q.toLowerCase().split(/\s+/).map(w => foodNorm(w.replace(/[^a-z0-9äöüß]/g, ""))).filter(w => w.length >= 2 && !STORE_BRANDS[w]);
+      const fits = keys.filter(k => { const x = foodPool.get(k), hay = foodNorm(x.n + " " + (x.brand || "")); return words.every(w => hay.includes(w)); });
+      const nq = foodNorm(q), local = [...FOOD_DB, ...FAST_DB].some(r => foodNorm(r[1]).includes(nq)) || state.myFoods.some(x => foodNorm(x.n).includes(nq));
+      foodCtx.off = (fits.length ? fits : local ? [] : keys).slice(0, 25); foodCtx.offMsg = "";
     }
     catch (e) { foodCtx.off = null; foodCtx.offMsg = offErr(true); }
     if (foodCtx.q.trim() === q && box()) box().innerHTML = offHtml();
@@ -5408,7 +5637,7 @@ const A = {
   schedDel: () => { state.sched = null; save(); closeSheet(); render(); },
   openTime30: () => { timeSel = 30; openSheet(timeSheet()); },
   checkFix: el => {
-    const d = [...state.plan.days].sort((a, b) => estMinutes(a) - estMinutes(b))[0]; if (!d) return;
+    const d = dayFor(state.plan, el.dataset.m); if (!d) return;
     state.editDay = d.id; save(); go("day"); openPicker(el.dataset.m);
   },
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
@@ -5664,7 +5893,9 @@ document.addEventListener("input", ev => {
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "pickMuscle") { pickMuscle = MUSCLES[el.value] ? el.value : "alle"; refreshPicker(); }
   else if (k === "gEx") { goalDraft.exId = el.value; goalDraft.target = null; goalRefresh(); }
-  else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
+  else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = "";
+    // Online-Suche startet von selbst, sobald eine kurze Tipp-Pause entsteht
+    clearTimeout(offTimer); if (el.value.trim().length >= 3 && navigator.onLine !== false) offTimer = setTimeout(() => { if (byId("offRes") && foodCtx.q === el.value) A.offSearch(); }, 600); }
   else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }
   else if (k === "nutrIn") { readNutrInputs(); byId("nutrOut").innerHTML = nutrOutHtml(); }
   else if (k === "ownIn") ownHint();
@@ -5701,7 +5932,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, FAST_DB, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
