@@ -301,6 +301,7 @@
   .pick-main,.dev-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0;text-align:left;padding:var(--s3) 0 var(--s3) var(--s4);min-height:60px}
   .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
   .dev-main{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
+  .dev-main>.t,.dev-main>.s{max-width:100%}
   .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
   .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
   .pick-box svg{width:16px;height:16px}
@@ -423,7 +424,7 @@
 /* ================= Daten ================= */
 const MUSCLES = {
   brust:"Brust", ruecken:"Rücken", schultern:"Schultern", bizeps:"Bizeps", trizeps:"Trizeps",
-  bauch:"Bauch", beinev:"Beine vorn", beineh:"Beine hinten", po:"Po", waden:"Waden"
+  bauch:"Bauch", beinev:"Beine vorn", beineh:"Beine hinten", innen:"Beine innen", po:"Po", waden:"Waden"
 };
 // [id, Name, Hauptmuskel, Nebenmuskeln, Gerätetyp, Bezeichnung am Gerät, Marke, gleiche Übungsart bei der anderen Marke]
 const BRAND = { hs: "Hammer Strength", lf: "Life Fitness" };
@@ -449,10 +450,15 @@ const LIB = [
   ["hs-isolegpress","Beinpresse getrennt","beinev",["po"],"plate","Iso-Lateral Leg Press"],
   ["hs-vsquat","V-Kniebeuge","beinev",["po"],"plate","V-Squat"],
   ["hs-hack","Hackenschmidt","beinev",["po"],"plate","Hack Squat"],
+  ["hs-beltsquat","Hüftgurt-Kniebeuge","beinev",["po"],"plate","Belt Squat"],
+  ["hs-smith","Kniebeuge Multipresse","beinev",["po"],"plate","Smith Machine"],
   ["hs-legext","Beinstrecker","beinev",[],"plate","Iso-Lateral Leg Extension"],
   ["hs-kneelcurl","Beinbeuger kniend","beineh",[],"plate","Iso-Lateral Kneeling Leg Curl"],
+  ["hs-legcurl","Beinbeuger liegend","beineh",[],"plate","Iso-Lateral Leg Curl"],
   ["hs-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl"],
-  ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Hip Thrust"],
+  ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Glute Drive"],
+  ["hs-abductor","Abduktoren","po",[],"stack","Hip Abduction"],
+  ["hs-adductor","Adduktoren","innen",[],"stack","Hip Adduction"],
   ["hs-calf","Wadenheben stehend","waden",[],"plate","Standing Calf Raise"],
   ["hs-seatcalf","Wadenheben sitzend","waden",[],"plate","Seated Calf Raise"],
   ["hs-ab","Bauchmaschine","bauch",[],"stack","Ab Crunch"],
@@ -471,8 +477,10 @@ const LIB = [
   ["lf-legpress","Beinpresse","beinev",["po"],"stack","Leg Press","lf","hs-legpress"],
   ["lf-legext","Beinstrecker","beinev",[],"stack","Leg Extension","lf","hs-legext"],
   ["lf-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl","lf","hs-seatcurl"],
-  ["lf-legcurl","Beinbeuger liegend","beineh",[],"stack","Leg Curl","lf"],
-  ["lf-abductor","Abduktoren","po",[],"stack","Hip Abductor","lf"],
+  ["lf-legcurl","Beinbeuger liegend","beineh",[],"stack","Leg Curl","lf","hs-legcurl"],
+  ["lf-abductor","Abduktoren","po",[],"stack","Hip Abductor","lf","hs-abductor"],
+  ["lf-adductor","Adduktoren","innen",[],"stack","Hip Adduction","lf","hs-adductor"],
+  ["lf-smith","Kniebeuge Multipresse","beinev",["po"],"plate","Signature Series Smith Machine","lf","hs-smith"],
   ["lf-ab","Bauchmaschine","bauch",[],"stack","Abdominal","lf","hs-ab"]
 ].map(([id, name, muscle, sec, type, label, brand = "hs", twin]) =>
   Object.assign({ id, name, muscle, sec, type, label, brand }, twin ? { twin } : {}, brand === "lf" ? { off: true } : {}));
@@ -500,6 +508,7 @@ const PATTERNS = {
   knee_flex:{ label: "Kniebeugung", rel: [] },
   calf:     { label: "Wadenheben", rel: [] },
   abd:      { label: "Hüftabspreizen", rel: [] },
+  add:      { label: "Beine zusammenführen", rel: [] },
   core:     { label: "Rumpfbeugung", rel: [] }
 };
 const LIB_PATTERN = {
@@ -509,9 +518,11 @@ const LIB_PATTERN = {
   "hs-triext": "tri", "hs-dip": "dip", "hs-legpress": "squat", "hs-isolegpress": "squat", "hs-vsquat": "squat",
   "hs-hack": "squat", "hs-hipthrust": "hinge", "hs-legext": "knee_ext", "hs-kneelcurl": "knee_flex",
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
+  "hs-beltsquat": "squat", "hs-smith": "squat", "hs-legcurl": "knee_flex", "hs-abductor": "abd", "hs-adductor": "add",
   "lf-chest": "push_h", "lf-shoulder": "push_v", "lf-pulldown": "pull_v", "lf-row": "pull_h", "lf-fly": "fly", "lf-reardelt": "rear",
   "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-legpress": "squat",
-  "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core"
+  "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core",
+  "lf-adductor": "add", "lf-smith": "squat"
 };
 LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
 
@@ -669,6 +680,7 @@ const M = {
   quad: "Vierköpfiger Oberschenkelmuskel (M. quadriceps femoris)",
   glut: "Großer Gesäßmuskel (M. gluteus maximus)",
   add: "Großer Adduktor (M. adductor magnus)",
+  addG: "Adduktoren (M. adductor magnus, longus und brevis, M. gracilis, M. pectineus)",
   gmed: "Mittlerer und kleiner Gesäßmuskel (M. gluteus medius, M. gluteus minimus)",
   tfl: "Spanner der Oberschenkelbinde (M. tensor fasciae latae)",
   ham: "Hintere Oberschenkelmuskulatur (M. biceps femoris, M. semitendinosus, M. semimembranosus)",
@@ -896,6 +908,26 @@ const GUIDE = {
     safety: ["Zum Aussteigen zuerst den Sicherungshebel einlegen, dann die Schultern entlasten."],
     tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
+  "hs-beltsquat": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Kniebeuge mit Hüftgurt: Das Gewicht hängt an der Hüfte statt auf den Schultern. Die Beine arbeiten schwer, Schultern und Wirbelsäule tragen keine Last von oben.",
+    setup: ["Gurt eng um die Hüfte legen und sicher einhängen.", "Je einen Fuß auf eine Plattform, etwa schulterbreit, Zehen leicht nach außen."],
+    steps: ["Griffe fassen und aufrecht hinstellen, der Gurt ist gespannt.", "Hüfte nach hinten-unten sinken lassen, die Knie folgen den Zehen.", "Über Ferse und Ballen hochdrücken, bis du wieder aufrecht stehst."],
+    breath: BREATH_LEG,
+    mistakes: [["Oberkörper kippt weit nach vorn", "Brust aufrecht halten, die Griffe geben Gleichgewicht."], ["Knie fallen nach innen", "Knie in Richtung der Fußspitzen schieben."], ["Mit den Armen hochziehen", "Die Griffe nur halten – die Beine drücken das Gewicht."]],
+    safety: ["Vor dem ersten Satz prüfen: Gurt fest geschlossen, Haken sicher eingehängt."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-smith": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Kniebeuge mit geführter Stange: Die Schienen halten die Stange in der Bahn, du musst sie nicht balancieren. Die Bahn läuft laut Hersteller 7° schräg.",
+    setup: ["Stange knapp unter Schulterhöhe einhängen, sodass du sie aus leicht gebeugten Knien abheben kannst.", "Stange auf den oberen Rücken, nicht auf den Nacken. Füße etwa schulterbreit, ein Stück vor der Stange."],
+    steps: ["Stange durch Drehen aus den Haken lösen.", "Kontrolliert in die Hocke, so tief, wie der Rücken gerade bleibt.", "Gleichmäßig hochdrücken, die Stange bleibt auf dem oberen Rücken."],
+    breath: BREATH_LEG,
+    mistakes: [["Stange drückt in den Nacken", "Stange tiefer auf den oberen Rücken legen, Schulterblätter zusammenziehen."], ["Knie knicken nach innen", "Knie über die Fußmitte führen."], ["Unterer Rücken rundet sich", "Nur so tief, wie der untere Rücken gerade bleibt."]],
+    safety: ["Falls vorhanden: Sicherheitsanschläge knapp unter die tiefste Position stellen.", "Zum Ablegen die Stange drehen, bis sie sicher in den Haken liegt."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "hs-legext": {
     main: [M.quad], sup: [],
     why: "Kniestrecken isoliert: Alle vier Köpfe des Quadrizeps arbeiten, ohne dass Hüfte oder Rumpf mithelfen.",
@@ -916,6 +948,16 @@ const GUIDE = {
     safety: ["Mit leichtem Gewicht beginnen, bis die Position sitzt."],
     tips: [ISO, "Den gedehnten Teil der Bewegung (Bein fast gestreckt) bewusst mitnehmen."]
   },
+  "hs-legcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Beinbeugen im Liegen mit Scheiben, jede Seite für sich. Die Polster steigen zur Hüfte hin an – laut Hersteller, damit der untere Rücken nicht ins Hohlkreuz gerät.",
+    setup: ["Bäuchlings auflegen, die Hüfte auf dem höchsten Punkt der Polster.", "Kniegelenk auf Höhe der Drehachse, die Kniescheiben frei; Rollen knapp oberhalb der Fersen."],
+    steps: ["Griffe fassen, Hüfte bleibt auf dem Polster.", "Fersen zum Gesäß ziehen, oben kurz halten.", "Langsam strecken, bis die Beine fast gerade sind."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Hüfte hebt ab", "Gewicht reduzieren, die Hüfte bleibt auf der Polsterspitze."], ["Ein Bein zieht schneller", "Beide Seiten im selben Tempo – oder bewusst einbeinig trainieren."], ["Beine fallen zurück", "Beine kontrolliert zurückführen, die Hebel nicht fallen lassen."]],
+    safety: ["Erst absteigen, wenn beide Hebel unten aufliegen."],
+    tips: [ISO, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "hs-seatcurl": {
     main: [M.ham], sup: [M.gastro],
     why: "Beinbeugen im Sitzen. Durch die gebeugte Hüfte ist die hintere Oberschenkelmuskulatur stärker gedehnt als im Liegen. In einer Studie wuchs sie mit dem Beinbeuger im Sitzen in 12 Wochen stärker als im Liegen (+14 % statt +9 %). Die Studie war klein und mit Untrainierten.",
@@ -930,12 +972,32 @@ const GUIDE = {
   "hs-hipthrust": {
     main: [M.glut], sup: [M.ham, M.add, M.quad],
     why: "Hüftstrecken gegen Widerstand mit Schwerpunkt Gesäß. Die größte Last liegt typischerweise oben bei gestreckter Hüfte – bei Kniebeuge und Beinpresse ist sie unten am größten.",
-    setup: ["Rückenpolster so einstellen, dass die Hüfte unten frei absinken kann.", "Füße hüftbreit, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
+    setup: ["Oberen Rücken an das Rückenpolster, das breite Hüftpolster quer über die Hüfte.", "Füße hüftbreit auf die schräge Fußplatte, so weit vorn, dass die Unterschenkel oben etwa senkrecht stehen."],
     steps: ["Kinn leicht zur Brust, Bauch anspannen.", "Hüfte nach oben drücken, bis sie gestreckt ist, und oben kurz halten.", "Hüfte kontrolliert absinken lassen."],
     breath: BREATH_LEG,
     mistakes: [["Hohlkreuz oben", "Becken leicht einrollen, Rippen unten lassen."], ["Oben nicht ganz gestreckt", "Bis zur vollen Hüftstreckung drücken."], ["Schwung aus dem Absenken", "Unten kurz ruhig werden, dann drücken."]],
     safety: ["Bei Beschwerden im unteren Rücken weniger Gewicht und nur bis zur geraden Linie Schulter–Hüfte–Knie heben."],
     tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-abductor": {
+    main: [M.gmed], sup: [M.tfl],
+    why: "Beine im Sitzen nach außen drücken, für den mittleren und kleinen Gesäßmuskel. Die Startposition lässt sich laut Hersteller in 10°-Schritten einstellen.",
+    setup: ["Startposition so einstellen, dass die Beine zu Beginn fast geschlossen sind.", "Knie außen an die Polster, Füße auf die Fußstützen."],
+    steps: ["Gesäß an die Lehne schieben, Hände an die Griffe.", "Knie nach außen drücken, außen kurz halten.", "Langsam zusammenführen, bevor das Gewicht aufsetzt."],
+    breath: "Beim Öffnen ausatmen, beim Schließen einatmen.",
+    mistakes: [["Oberkörper lehnt sich vor", "Rücken an der Lehne lassen, sonst ändert sich der Winkel in der Hüfte."], ["Kurze, schnelle Bewegungen", "Den ganzen Weg gehen und außen kurz halten."], ["Beine schnappen zu", "Das Schließen bremsen."]],
+    safety: ["Bei Schmerzen an der Außenseite der Hüfte den Weg verkürzen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "hs-adductor": {
+    main: [M.addG], sup: [],
+    why: "Beine gegen Widerstand schließen. Das trainiert die Adduktoren an der Innenseite der Oberschenkel. Sie ziehen das Bein zur Körpermitte und arbeiten auch bei Beinpresse und Kniebeuge mit.",
+    setup: ["Startposition so wählen, dass du an der Innenseite der Oberschenkel eine Dehnung spürst, die nicht zieht.", "Polster an die Innenseite der Knie, Füße auf die Fußstützen."],
+    steps: ["Aufrecht an die Lehne setzen, Griffe seitlich fassen.", "Beine gleichmäßig schließen und kurz halten.", "Langsam öffnen bis zur Startposition, ohne dass das Gewicht aufsetzt."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Startposition zu weit", "Mit kleinerer Öffnung beginnen und sie über die Wochen erweitern."], ["Beine klappen auf", "Beim Öffnen bremsen, die Polster bleiben an den Knien."], ["Becken rutscht nach vorn", "Gesäß ganz hinten, der Rücken bleibt an der Lehne."]],
+    safety: ["Leistenbeschwerden: Startposition enger stellen und das Gewicht senken."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
   "hs-calf": {
     main: [M.gastro, M.sol], sup: [],
@@ -1133,6 +1195,26 @@ const GUIDE = {
     safety: ["Bei Hüft- oder Leistenschmerzen nur so weit öffnen, wie es schmerzfrei bleibt."],
     tips: ["Sit/Stand-Modell: auch im Stehen nutzbar.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
+  "lf-adductor": {
+    main: [M.addG], sup: [],
+    why: "Adduktoren mit Steckgewicht. Die Startposition rastet laut Hersteller in 10°-Schritten ein; Kniepolster und zwei Fußpositionen sollen die Belastung am Knie verringern.",
+    setup: ["Startposition über die Raste einstellen – zuerst eine kleine Öffnung.", "Innenseite der Knie an die Polster, eine der beiden Fußpositionen wählen."],
+    steps: ["Aufrecht sitzen, Griffe fassen.", "Knie zusammenführen, bis sich die Polster fast berühren.", "Kontrolliert zurück in die Startposition."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Schwung aus dem Oberkörper", "Oberkörper ruhig an der Lehne, nur die Beine arbeiten."], ["Schließen mit Ruck", "Gleichmäßig schließen und kurz halten."], ["Gewicht schlägt auf", "Vor dem Aufsetzen wieder schließen."]],
+    safety: ["Bei Schmerzen in der Leiste den Satz beenden."],
+    tips: ["Die gewählte Raste unter „Deine Einstellung“ notieren.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-smith": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Multipresse der Signature-Serie: Die Stange läuft laut Hersteller auf einer 7° schrägen Bahn und wird im Rahmen durch ein Gegengewicht ausgeglichen.",
+    setup: ["Ablagehöhe so wählen, dass die Stange knapp unter den Schultern liegt.", "Füße schulterbreit und leicht vor der Stange, die Stange quer über den oberen Rücken."],
+    steps: ["Griffe fest, Stange aus den Haken drehen.", "Gleichmäßig beugen, die Knie zeigen zu den Zehen.", "Aus der Tiefe kräftig nach oben schieben, die Fersen bleiben unten."],
+    breath: BREATH_LEG,
+    mistakes: [["Fersen heben ab", "Füße etwas weiter nach vorn setzen."], ["Hohlkreuz oben", "Oben aufrichten, ohne das Becken nach vorn zu schieben."], ["Halbe Wiederholungen", "Eine Tiefe wählen, die du jedes Mal erreichst, und dabei bleiben."]],
+    safety: ["Vor dem ersten Satz die Sicherheitsanschläge passend zur Tiefe einstellen, falls vorhanden.", "Stange immer erst sicher einhaken, dann loslassen."],
+    tips: ["Große Muskeln vertragen größere Gewichtsschritte.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
   "lf-ab": {
     main: [M.rect], sup: [M.obl],
     why: "Einrollen gegen Widerstand im Sitzen, vor allem für den geraden Bauchmuskel. Der Widerstand lässt sich genau dosieren.",
@@ -1174,10 +1256,15 @@ const TIPS = {
   "hs-isolegpress":["Je ein Fuß mittig auf eine Platte","Kontrolliert tief, Knie über der zweiten Zehe","Oben Knie leicht gebeugt lassen"],
   "hs-vsquat":["Schultern unter die Polster, Füße leicht vor dem Körper","Tief beugen, Rücken bleibt am Polster","Über die ganze Fußsohle hochdrücken"],
   "hs-hack":["Rücken flach ans Polster, Füße schulterbreit","Tief gehen, Knie Richtung Zehen","Fersen bleiben auf der Plattform"],
+  "hs-beltsquat":["Gurt eng um die Hüfte, Füße schulterbreit","Hüfte nach hinten-unten sinken lassen","Oberkörper aufrecht, Griffe nur halten"],
+  "hs-smith":["Stange auf den oberen Rücken, Füße leicht vorn","Kontrolliert tief, Rücken gerade","Zum Ablegen Stange in die Haken drehen"],
   "hs-legext":["Knie auf Höhe der Drehachse, Polster über dem Knöchel","Beine ganz strecken, oben kurz halten","Langsam ablassen, nicht fallen lassen"],
   "hs-kneelcurl":["Stützknie aufs Polster, Rolle über der Ferse","Ferse zum Po ziehen","Hüfte bleibt am Polster, langsam zurück"],
+  "hs-legcurl":["Hüfte auf den höchsten Punkt der Polster","Fersen zum Gesäß, beide Seiten gleich schnell","Langsam strecken, Hüfte bleibt liegen"],
   "hs-seatcurl":["Knie auf Drehachse, Oberschenkelpolster fest","Fersen nach unten-hinten ziehen","Langsam zurück, nicht abfedern"],
   "hs-hipthrust":["Oberer Rücken am Polster, Füße hüftbreit","Hüfte hochdrücken, oben Gesäß fest anspannen","Kein Hohlkreuz, Kinn leicht zur Brust"],
+  "hs-abductor":["Start: Beine fast geschlossen","Knie nach außen, außen kurz halten","Rücken bleibt an der Lehne"],
+  "hs-adductor":["Polster innen an den Knien","Beine schließen, kurz halten","Langsam öffnen bis zur Dehnung"],
   "hs-calf":["Fußballen auf die Kante, Schultern unter die Polster","Ganz hoch auf die Zehen, kurz halten","Unten voll dehnen"],
   "hs-seatcalf":["Polster fest auf die Oberschenkel, Ballen auf die Kante","Fersen ganz hoch drücken","Langsam tief in die Dehnung"],
   "hs-ab":["Füße einhaken, Griffe fassen","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"],
@@ -1197,6 +1284,8 @@ const TIPS = {
   "lf-seatcurl":["Kniegelenk neben dem Drehpunkt","Fersen unter den Sitz ziehen","Gleichmäßig strecken"],
   "lf-legcurl":["Knie knapp über die Polsterkante hinaus","Fersen zum Gesäß","Becken bleibt unten"],
   "lf-abductor":["Polster außen an den Knien","Knie nach außen drücken, kurz halten","Langsam schließen"],
+  "lf-adductor":["Raste: zuerst kleine Öffnung","Knie zusammenführen","Kontrolliert zurück"],
+  "lf-smith":["Stange knapp unter den Schultern einhängen","Gleichmäßig beugen, Knie zu den Zehen","Fersen bleiben unten"],
   "lf-ab":["Drehpunkt auf Höhe der Bauchmitte","Brustkorb zum Becken einrollen","Langsam aufrichten"]
 };
 
@@ -1490,7 +1579,7 @@ function addExerciseFor(plan, m, ms, fits, tmax) {
   const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && ![...used].some(u => sameKind(x, ex(u)))).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
   if (!e) return false;
   // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
-  const LEG = ["beinev", "beineh", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
+  const LEG = ["beinev", "beineh", "innen", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
   const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
   for (const d of days) for (const sets of [3, 2]) {
     const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
@@ -1812,6 +1901,7 @@ const FIG = (() => {
     P("bauch", "M41.9,57.2 C38.3,60.2 36.3,66.2 36.1,73 C36,80 37.7,85.6 41.9,90.4 Z"),
     P(null, "M36.6,91.4 C38.6,96.4 43,100.6 49.2,103.2 L49.2,92.4 C45.6,92.2 41.6,91.8 36.6,91.4 Z"),
     P("beinev", "M34.9,98.2 C31.1,110 29.9,124 30.7,137 C31.3,143 34.5,147.5 39.9,148 C44.7,147.6 47.5,142.5 48.3,134 C49.1,121 48.3,108.6 45.7,101.6 C42.5,99.8 38.5,98.6 34.9,98.2 Z"),
+    P("innen", "M45.9,102.4 C48.3,108.8 49.2,118 48.9,126.6 C48.7,130.6 48.3,133.6 47.7,136 C45.7,127.8 44.3,119 44,110.6 C44,106.8 44.7,104.2 45.9,102.4 Z"),
     E(null, 39.6, 151.6, 5, 3.1),
     P("waden", "M33.7,156 C31.5,165 31.3,175 33.1,186 L37.9,186.5 C39.9,176 40.7,166 39.5,156.5 C37.7,155.1 35.5,155 33.7,156 Z"),
     P(null, "M32.8,188.6 C31.2,193 31.8,197.6 36.2,198 C39.6,198 40.2,194 38.8,188.6 Z")];
@@ -1839,7 +1929,7 @@ function figure(colors, label, one) {
   const half = arr => arr.map(draw).join("");
   const center = `<ellipse cx="50" cy="14" rx="8.6" ry="10.6" class="base"/><path d="M45.6,22.4 L54.4,22.4 L54.6,31 C51.6,32.4 48.4,32.4 45.4,31 Z" class="base"/>`;
   const view = (arr, dx) => `<g transform="translate(${dx},0)">${center}${half(arr)}<g transform="translate(100,0) scale(-1,1)">${half(arr)}</g></g>`;
-  if (one) { const back = BACK_M.includes(one), low = ["beinev", "beineh", "po", "waden"].includes(one);
+  if (one) { const back = BACK_M.includes(one), low = ["beinev", "beineh", "innen", "po", "waden"].includes(one);
     return `<svg class="fig" viewBox="${back ? 126 : 16} ${low ? 88 : 0} 68 ${low ? 114 : 120}" role="img" aria-label="${esc(label || "Muskeln")}">${back ? view(FIG.back, 110) : view(FIG.front, 0)}</svg>`; }
   return `<svg class="fig" viewBox="12 0 186 202" role="img" aria-label="${esc(label || "Muskeln")}">${view(FIG.front, 0)}${view(FIG.back, 110)}</svg>`;
 }
@@ -1959,10 +2049,15 @@ const TRICK_X = {
   "hs-isolegpress": [["Einbeinig testen", "Ab und zu einbeinig: schwächeres Bein erkennen", "Mit getrennten Seiten siehst du, ob ein Bein weniger schafft. Dann einbeinig trainieren: das schwächere Bein zuerst, das andere macht dieselbe Wiederholungszahl."]],
   "hs-vsquat": [["Fußstellung steuert", "Füße weiter vorn: weniger Kniebeugung", "Weiter vorn aufgesetzte Füße verringern die Kniebeugung und geben dem Gesäß mehr Anteil; weiter hinten arbeitet die Oberschenkelvorderseite stärker."]],
   "hs-hack": [["Gestützte Tiefe nutzen", "Tief gehen, solange es schmerzfrei ist", "Weil der Rücken gestützt ist, erlaubt die Maschine eine tiefe Beugung. Dort arbeitet die Oberschenkelvorderseite in der Dehnung."]],
+  "hs-beltsquat": [["Gleicher Einhängepunkt", "Den Gurt immer am selben Punkt einhängen", "Laut Hersteller gibt es vier Einhängepunkte mit unterschiedlicher Übersetzung. Wechselst du, sind deine Gewichte nicht mehr vergleichbar."]],
+  "hs-smith": [["Nur Scheiben zählen", "Das Stangengewicht nicht mitrechnen", "Wie schwer sich die leere Stange anfühlt, hängt vom Modell ab. Trägst du nur die Scheiben ein, bleiben deine Werte an derselben Multipresse vergleichbar."]],
   "hs-legext": [["Nicht vorbeugen", "Rücken an der Lehne, nicht nach vorn beugen", "Der gerade Schenkelmuskel zieht auch über die Hüfte. Beugst du dich vor, ist er verkürzt; mit dem Rücken an der Lehne bleibt er stärker gedehnt."]],
   "hs-kneelcurl": [["Unten fast strecken", "Unten das Knie fast ganz strecken", "Mit fast gestrecktem Knie ist der hintere Oberschenkel gedehnt. Wer unten früh umkehrt, verschenkt diesen Teil der Bewegung."]],
+  "hs-legcurl": [["Kleine Schritte", "Gewichtsschritt auf 1,25 kg pro Seite stellen", "Die Beinbeuger sind meist schwächer als die Beinstrecker. Mit kleinen Scheiben verlierst du beim Steigern weniger Wiederholungen. Den Schritt änderst du unter „Gerät bearbeiten“."]],
   "hs-seatcurl": [["Gebeugte Hüfte nutzen", "Oberkörper aufrecht oder leicht vorgeneigt", "Lehnst du dich weit zurück, streckt sich die Hüfte und der hintere Oberschenkel verliert die Dehnung, die diese Maschine besonders macht."]],
   "hs-hipthrust": [["Druck über die Fersen", "Über die Fersen hochdrücken, Zehen locker", "Drückst du über die Fersen, streckt vor allem das Gesäß die Hüfte. Über die Fußballen übernimmt die Oberschenkelvorderseite mehr."]],
+  "hs-abductor": [["Ganzer Weg", "Bis zur größten Öffnung drücken, die du kontrollierst", "Halbe Wiederholungen in der Mitte trainieren nur einen Teil des Bewegungswegs. Kannst du außen nicht kurz halten, ist das Gewicht zu hoch."]],
+  "hs-adductor": [["Nach den großen Übungen", "Adduktoren erst nach Beinpresse oder Kniebeuge", "Bei Beinpresse und Kniebeuge arbeiten die Adduktoren mit. Trainierst du sie vorher einzeln, sind sie bei den großen Übungen schon müde."]],
   "hs-calf": [["Großzehenballen belasten", "Druck über den Großzehenballen, Fuß gerade", "Rollt der Fuß beim Hochdrücken auf die Außenkante, steht das Sprunggelenk schief. Druck über den Großzehenballen hält es gerade."]],
   "hs-seatcalf": [["Unterschenkel senkrecht", "Knie direkt über den Fußballen ausrichten", "Stehen die Unterschenkel senkrecht unter dem Polster, geht die Last direkt in die Wade. Sitzt du zu weit vorn oder hinten, verschiebt sich der Hebel."]],
   "hs-ab": [["Einrollen statt klappen", "Rippen zum Becken ziehen", "Der gerade Bauchmuskel rollt die Wirbelsäule ein. Klappst du nur in der Hüfte, arbeiten vor allem die Hüftbeuger."],
@@ -1983,6 +2078,8 @@ const TRICK_X = {
   "lf-seatcurl": [["Griffe als Halt", "Mit den Griffen das Polster nach unten ziehen", "Hältst du dich an den Griffen auf dem Oberschenkelpolster fest, bleiben die Oberschenkel liegen und die Beuger arbeiten ohne Ausweichen."]],
   "lf-legcurl": [["Oberkörper flach", "Oberkörper flach auf den abgewinkelten Brustteil legen", "Laut Hersteller entlastet der Knick an der Hüfte den unteren Rücken. Stützt du dich auf die Arme hoch, gerät der untere Rücken leichter ins Hohlkreuz."]],
   "lf-abductor": [["Becken bleibt still", "Gesäß fest auf dem Sitz, nur die Beine bewegen sich", "Hebt sich eine Gesäßhälfte, drückst du aus dem Rumpf statt aus der Hüfte. Ruhig sitzend arbeiten die seitlichen Gesäßmuskeln."]],
+  "lf-adductor": [["Bei einer Fußposition bleiben", "Eine der zwei Fußpositionen wählen und beibehalten", "Laut Hersteller sollen Kniepolster und Fußpositionen das Knie entlasten. Bleibst du bei einer Position, sind deine Gewichte vergleichbar."]],
+  "lf-smith": [["Gegengewicht beachten", "Gewichte nicht mit anderen Multipressen vergleichen", "Laut Hersteller gleicht ein Gegengewicht im Rahmen die Stange aus. Dieselben Scheiben fühlen sich deshalb an einer anderen Multipresse oder mit freier Hantel anders an."]],
   "lf-ab": [["Becken bleibt hinten", "Gesäß bleibt am Sitz, der Oberkörper rollt sich ein", "Kippt der Oberkörper aus der Hüfte nach vorn, statt sich einzurollen, arbeiten die Hüftbeuger stärker mit und der Bauch weniger."]]
 };
 // Wofür das Gerät da ist – eine eigene Zeile je Gerät (aus der Anleitung „Warum diese Übung“)
@@ -1993,6 +2090,8 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "hs-lateral": "Seitlicher Deltamuskel, prägt die Schulterbreite", "hs-reardelt": "Hintere Schulter und Muskeln zwischen den Schulterblättern", "hs-curl": "Bizeps isoliert, die Oberarme liegen auf",
   "hs-dip": "Drücken nach unten, vor allem für den Trizeps", "hs-triext": "Trizeps isoliert, alle drei Köpfe", "hs-legpress": "Grundübung für Oberschenkel und Gesäß",
   "hs-isolegpress": "Beinpresse mit getrennten Fußplatten", "hs-vsquat": "Geführte Kniebeuge mit Schulterpolstern", "hs-hack": "Geführte Kniebeuge, betont die Oberschenkelvorderseite",
+  "hs-beltsquat": "Kniebeuge mit Hüftgurt statt Hantel", "hs-smith": "Geführte Stange, Kniebeuge ohne Balancieren", "hs-legcurl": "Liegend mit Scheiben, Seiten getrennt",
+  "hs-abductor": "Seitliches Gesäß, Startposition einstellbar", "hs-adductor": "Innenseite der Oberschenkel, Beine schließen",
   "hs-legext": "Oberschenkelvorderseite isoliert", "hs-kneelcurl": "Hinterer Oberschenkel, ein Bein nach dem anderen", "hs-seatcurl": "Hinterer Oberschenkel in gedehnter Position",
   "hs-hipthrust": "Gesäß, größte Last bei gestreckter Hüfte", "hs-calf": "Waden, vor allem der Zwillingswadenmuskel", "hs-seatcalf": "Waden, vor allem der Schollenmuskel", "hs-ab": "Gerader Bauchmuskel gegen Widerstand",
   "lf-chest": "Arme laufen nach vorn zusammen", "lf-shoulder": "Drücken über Kopf, zwei Griffpaare", "lf-pulldown": "Zwei getrennte Zugarme statt Stange",
@@ -2000,11 +2099,14 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "lf-lateral": "Seitliche Schulter, Arme getrennt", "lf-curl": "Bizeps am Armpolster, Griffe drehen mit", "lf-tripress": "Trizeps mit Dip- oder Druckgriffen",
   "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
   "lf-legext": "Quadrizeps isoliert, Startwinkel verstellbar", "lf-seatcurl": "Griffe am Oberschenkelpolster", "lf-legcurl": "Bank an der Hüfte abgewinkelt",
-  "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen" };
+  "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen",
+  "lf-adductor": "Adduktoren, Startposition in 10°-Schritten", "lf-smith": "Multipresse mit ausgeglichener Stange" };
 const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"));
 const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
 // Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
-const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction" };
+const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
+  "hs-hipthrust": "Hip Thrust", "hs-beltsquat": "Hüftgurt, Gürtel", "hs-smith": "Multipresse, Kniebeuge", "lf-smith": "Multipresse, Smith Machine", "hs-legcurl": "Prone Leg Curl, Lying Leg Curl",
+  "hs-abductor": "Hip Abductor, Abduktion", "hs-adductor": "Hip Adductor, Adduktion, Oberschenkel innen", "lf-adductor": "Hip Adductor, Adduktion, Oberschenkel innen" };
 const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
 // Gilt für alle Geräte: einmal, nicht bei jeder Übung
 const GEN_TRICKS = [
@@ -2072,9 +2174,12 @@ const MOTION = {
   "hs-fly": { v: "top", A: { ua: 10, fa: -20 }, B: { ua: -95, fa: -125 }, hl: ["chest"] },
   "hs-reardelt": { v: "top", A: { ua: -95, fa: -125 }, B: { ua: 8, fa: 2 }, hl: ["sho"], pad: true },
   "lf-abductor": { v: "top", legs: true, A: { th: -86 }, B: { th: -60 }, hl: ["hip"] },
+  "hs-adductor": { v: "top", legs: true, inner: true, A: { th: -56 }, B: { th: -86 }, hl: ["th"] },
   // Beine
   "hs-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   "hs-vsquat": { anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 87, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-beltsquat": { anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -102, th: 14, sh: 112, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
+  "hs-smith": { anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 137, fa: -59 }, B: { t: -71, th: 10, sh: 108, ua: 162, fa: -34 }, hl: ["th"], gear: ["smith"] },
   "hs-hack": { anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
   "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
@@ -2090,10 +2195,11 @@ const MOTION = {
 Object.assign(MOTION, { "hs-lat": MOTION["hs-pulldown"], "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
   "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
   "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
-  "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"] });
+  "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
+  "lf-adductor": MOTION["hs-adductor"], "lf-smith": MOTION["hs-smith"] });
 // Eigene Geräte: Bewegung über das Bewegungsmuster
 const PAT_MOT = { push_h: "hs-chest", push_i: "hs-incline", push_v: "hs-shoulder", fly: "hs-fly", pull_h: "hs-row", pull_v: "hs-pulldown", lateral: "hs-lateral", rear: "hs-reardelt",
-  bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor" };
+  bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor", add: "hs-adductor" };
 const motSpec = id => MOTION[id] || (PAT_MOT[ex(id).pattern] ? MOTION[PAT_MOT[ex(id).pattern]] : null);
 const motReduce = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } };
 const mEase = x => x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
@@ -2173,6 +2279,11 @@ function motDraw(sp, p, dev) {
   if (G.includes("floorplat")) g.push(mCap(sh(j.ank, [0, 1], 4.5), sh(j.toe, [0, 1], 4.5), 4, 4, MG));
   if (G.includes("step")) g.push(`<rect x="${mF(at[0] - 6)}" y="${mF(at[1] + 3)}" width="22" height="9" rx="2" fill="${MG}"/>`);
   if (G.includes("plat")) gf.push(mCap(sh(j.ank, mDir(P.ft || 0, 1), -7), sh(j.toe, mDir(P.ft || 0, 1), 7), 5, 5, MGL));
+  if (G.includes("belt")) { g.push(`<line x1="${mF(j.hip[0])}" y1="${mF(j.hip[1])}" x2="${mF(j.hip[0])}" y2="${mF(floorY - 3)}" stroke="${MGL}" stroke-width="1.6" stroke-dasharray="2.2 1.6"/>`, mCap([at[0] - 52, floorY - 3], [at[0] + 18, floorY - 3], 3.2, 3.2, MG), mDot([at[0] - 52, floorY - 3], 3.4, MGL));
+    gf.push(`<ellipse cx="${mF(j.hip[0])}" cy="${mF(j.hip[1])}" rx="8.5" ry="4.2" fill="none" stroke="${MGL}" stroke-width="2.2" transform="rotate(${mF(P.t + 90)} ${mF(j.hip[0])} ${mF(j.hip[1])})"/>`); }
+  if (G.includes("smith")) { const a = mJoints(sp, mPose(sp, 0)).hand, b = mJoints(sp, mPose(sp, 1)).hand, d = [a[0] - b[0], a[1] - b[1]], k = (floorY - b[1]) / (d[1] || 1), top = box[1] + 2, k2 = (top - b[1]) / (d[1] || 1);
+    g.push(mLine([b[0] + d[0] * k2, top], [b[0] + d[0] * k, floorY], 2.4, MGL));
+    gf.push(mDot(j.hand, 4.4, MGL), mDot(j.hand, 1.8, MG)); }
   if (G.includes("cable")) gf.push(mLine(sp.cable, j.hand, 1.4, MGL), mDot(sp.cable, 4.2, MGL));
   if (G.includes("handle")) gf.push(mDot(j.hand, 3.8, MGL));
   // Bewegungsweg des arbeitenden Endes (Hand, Fuß oder Hüfte) als feine Punktlinie
@@ -2205,7 +2316,8 @@ function motTop(sp, P, hl) {
   if (sp.legs) {
     const hR = [c[0] + 8, c[1] + 2], hL = [c[0] - 8, c[1] + 2];
     out.push(`<rect x="${c[0] - 24}" y="${c[1] - 6}" width="48" height="56" rx="10" fill="${MG}" opacity=".6"/>`);
-    for (const [h, a] of [[hR, P.th], [hL, mir(P.th)]]) { const k = mAdd(h, mDir(a, 40)); out.push(mCap(h, k, 12, 9, MB), mDot(mAdd(k, mDir(a, 4)), 6, MGL)); }
+    for (const [h, a, sd] of [[hR, P.th, 1], [hL, mir(P.th), -1]]) { const k = mAdd(h, mDir(a, 40)), pd = mAdd(mAdd(h, mDir(a, 34)), mDir(a + sd * (sp.inner ? -90 : 90), 10));
+      out.push(mCap(h, k, 12, 9, hl.has("th") ? MH : MB), mDot(pd, 5.5, MGL)); }
     out.push(mCap([c[0] - s, c[1] + 4], [c[0] + s, c[1] + 4], 13, 13, MB), mDot([c[0], c[1] + 4], 7.2, MB));
     if (hl.has("hip")) out.push(mDot(hR, 6, MH), mDot(hL, 6, MH));
     return out.join("");
@@ -5829,7 +5941,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, FAST_DB, offQuery, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, FAST_DB, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
