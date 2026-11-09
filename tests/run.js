@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v37)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v37")));
+      ok("Service Worker aktiv (Cache trainingsplan-v38)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v38")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1854,7 +1854,7 @@ async function finishAllSets(page, kg, reps) {
       const bal = { goal: "aufbau", level: "einsteiger", minutes: null, days: [
         { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
         { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 10, rmin: 8, rmax: 12, rest: 90 }] },
-        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 5, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
+        { id: "c", name: "Beine", items: [{ id: "c1", exId: "hs-legpress", sets: 10, rmin: 8, rmax: 12, rest: 90 }, { id: "c2", exId: "hs-seatcurl", sets: 8, rmin: 8, rmax: 12, rest: 90 }, { id: "c3", exId: "hs-hipthrust", sets: 5, rmin: 8, rmax: 12, rest: 90 }] }] };
       const { ctx, page } = await open({ plan: bal });
       await page.click("[data-a=tab][data-v=plan]");
       ok("Ausgewogener Plan: Planprüfung bestätigt, nichts darunter", (await page.textContent("#planCheck")).includes("Alle großen Muskelgruppen sind dabei") && !(await page.$("#lowNote")));
@@ -2690,7 +2690,7 @@ async function finishAllSets(page, kg, reps) {
       // Planprüfung: Grund je Muskel – nur mittrainiert (mit „+ Übung“), Zeitbudget, Satzgrenze
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       await tp(page, () => { const T = window.__tp; T.state.sched = null; T.state.plan = T.generatePlan("aufbau", 3, "fortgeschritten", 90);
-        T.state.plan.days.forEach(d => d.items = d.items.filter(i => i.exId !== "hs-hipthrust")); });
+        T.state.plan.days.forEach(d => { d.items = d.items.filter(i => !["hs-hipthrust", "hs-kneelcurl"].includes(i.exId)); d.items.forEach(i => { if (i.exId === "hs-seatcurl") i.sets = 5; }); }); });
       await page.click("[data-a=tab][data-v=history]"); await page.click("[data-a=tab][data-v=plan]");
       let low = await page.textContent("#lowNote");
       ok("Ohne Hüftheben: Po mit Grund „nur mittrainiert“ (einmal) und „+ Übung für Po“", low.includes("Po 5.") && low.split("nur mittrainiert").length === 2 && low.includes("Po: nur mittrainiert, das zählt halb") && (await page.textContent("#planCheck [data-a=checkFix]")).includes("+ Übung für Po"));
@@ -2722,7 +2722,7 @@ async function finishAllSets(page, kg, reps) {
       await page.evaluate(() => { window.__tp.state.sched = null; });
       await page.click("#homeWeek"); await page.click("[data-a=weekNav][data-d='1']");
       const txt = (await page.textContent("#weekHints")).replace(/\s+/g, " ");
-      ok("Weniger als im Plan: „Beine hinten 7 statt 15“", txt.includes("Weniger Sätze als im Plan: Beine hinten 7 statt 15"), txt);
+      ok("Weniger als im Plan: „Beine hinten 4,5 statt 12,5“", txt.includes("Weniger Sätze als im Plan: Beine hinten 4,5 statt 12,5"), txt);
       ok("Bizeps, Trizeps und Waden werden nicht bemängelt (wie in der Planprüfung)", !/Bizeps|Trizeps|Waden/.test(txt));
       ok("Kein Satz „Unter dem Zielbereich“ mehr, der den eigenen Plan kritisiert", !txt.includes("Unter dem Zielbereich"));
       await ctx.close();

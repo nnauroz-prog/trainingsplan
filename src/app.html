@@ -384,14 +384,14 @@ const MUSCLES = {
 const LIB = [
   ["hs-chest","Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Chest Press"],
   ["hs-incline","Schräge Brustpresse","brust",["schultern","trizeps"],"plate","Iso-Lateral Incline Press"],
-  ["hs-decline","Negativ-Brustpresse","brust",["trizeps"],"plate","Iso-Lateral Decline Press"],
-  ["hs-widechest","Brustpresse breit","brust",["schultern"],"plate","Iso-Lateral Wide Chest"],
+  ["hs-decline","Negativ-Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Decline Press"],
+  ["hs-widechest","Brustpresse breit","brust",["schultern","trizeps"],"plate","Iso-Lateral Wide Chest"],
   ["hs-fly","Butterfly","brust",["schultern"],"stack","Pec Fly"],
   ["hs-row","Rudern","ruecken",["bizeps","schultern"],"plate","Iso-Lateral Row"],
-  ["hs-lowrow","Rudern tief","ruecken",["bizeps"],"plate","Iso-Lateral Low Row"],
+  ["hs-lowrow","Rudern tief","ruecken",["bizeps","schultern"],"plate","Iso-Lateral Low Row"],
   ["hs-highrow","Rudern von oben","ruecken",["bizeps","schultern"],"plate","Iso-Lateral High Row"],
   ["hs-pulldown","Latziehen zur Brust","ruecken",["bizeps"],"plate","Iso-Lateral Front Lat Pulldown"],
-  ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps"],"plate","Iso-Lateral D.Y. Row"],
+  ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps","schultern"],"plate","Iso-Lateral D.Y. Row"],
   ["hs-lat","Latzug","ruecken",["bizeps"],"stack","Lat Pulldown"],
   ["hs-shoulder","Schulterpresse","schultern",["trizeps"],"plate","Iso-Lateral Shoulder Press"],
   ["hs-lateral","Seitheben","schultern",[],"plate","Lateral Raise"],
@@ -399,7 +399,7 @@ const LIB = [
   ["hs-curl","Armbeuger","bizeps",[],"plate","Biceps Curl"],
   ["hs-dip","Trizepsdrücken","trizeps",["brust","schultern"],"plate","Seated Dip"],
   ["hs-triext","Armstrecker","trizeps",[],"stack","Triceps Extension"],
-  ["hs-legpress","Beinpresse","beinev",["po","beineh"],"plate","Linear Leg Press"],
+  ["hs-legpress","Beinpresse","beinev",["po"],"plate","Linear Leg Press"],
   ["hs-isolegpress","Beinpresse getrennt","beinev",["po"],"plate","Iso-Lateral Leg Press"],
   ["hs-vsquat","V-Kniebeuge","beinev",["po"],"plate","V-Squat"],
   ["hs-hack","Hackenschmidt","beinev",["po"],"plate","Hack Squat"],
@@ -782,7 +782,7 @@ const GUIDE = {
     tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   },
   "hs-legpress": {
-    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    main: [M.quad, M.glut], sup: [M.add],
     why: "Grundübung für Oberschenkel und Gesäß. Der Rücken ist gestützt, deshalb lassen sich die Beine schwer trainieren, ohne dass der Rumpf das Gewicht balancieren muss.",
     setup: ["Rückenlehne so einstellen, dass du tief beugen kannst, ohne dass sich das Becken unten von der Lehne abrollt.", "Füße etwa schulterbreit mittig auf die Platte."],
     steps: ["Sicherung lösen, Beine leicht gebeugt.", "Kontrolliert absenken, die Knie zeigen in Richtung der Zehen.", "Über die ganze Fußsohle wegdrücken."],
@@ -792,7 +792,7 @@ const GUIDE = {
     tips: ["Die Fußposition verändert die Verteilung der Arbeit: Weiter unten auf der Platte beugt sich das Knie stärker und die Oberschenkelvorderseite arbeitet mehr; weiter oben wird die Hüfte stärker gebeugt und das Gesäß arbeitet mehr.", "Große Muskeln vertragen größere Gewichtsschritte."]
   },
   "hs-isolegpress": {
-    main: [M.quad, M.glut], sup: [M.add, M.ham],
+    main: [M.quad, M.glut], sup: [M.add],
     why: "Beinpresse mit zwei unabhängigen Fußplatten für Oberschenkel und Gesäß.",
     setup: ["Rückenlehne so einstellen, dass das Becken unten an der Lehne bleibt.", "Je einen Fuß mittig auf eine Fußplatte, etwa hüftbreit."],
     steps: ["Beine leicht gebeugt, Rücken an der Lehne.", "Kontrolliert absenken, das Knie bleibt über der zweiten Zehe.", "Gleichmäßig über Ferse und Ballen zurückdrücken."],
@@ -943,7 +943,7 @@ const TEMPLATES = {
   2:[["Ganzkörper A",["hs-chest","hs-row","hs-legpress","hs-shoulder","hs-seatcurl","hs-ab"]],
      ["Ganzkörper B",["hs-incline","hs-pulldown","hs-hack","hs-hipthrust","hs-lateral","hs-dip","hs-calf"]]],
   3:[["Drücken",["hs-chest","hs-incline","hs-shoulder","hs-lateral","hs-dip"]],
-     ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl"]],
+     ["Ziehen",["hs-row","hs-pulldown","hs-highrow","hs-reardelt","hs-curl","hs-kneelcurl"]],
      ["Beine",["hs-legpress","hs-hack","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]]],
   4:[["Oberkörper A",["hs-chest","hs-row","hs-shoulder","hs-pulldown","hs-curl","hs-dip"]],
      ["Unterkörper A",["hs-legpress","hs-legext","hs-seatcurl","hs-hipthrust","hs-calf"]],
@@ -1191,7 +1191,7 @@ const MAJOR = ["brust", "ruecken", "schultern", "beinev", "beineh", "po"];
 // dann bei großen Muskelgruppen unter dem Richtwert ergänzen – nur, solange jeder Tag ins Zeitbudget passt
 // und kein anderer Muskel dadurch über den Richtwert rutscht (je Übung höchstens 3 Sätze für Einsteiger, 5 für Fortgeschrittene – Startwerte der App)
 function balanceVolume(plan) {
-  const [tmin, tmax] = volTarget(plan.goal), cap = plan.level === "fortgeschritten" ? 5 : 3;
+  const [tmin, tmax] = volTarget(plan.goal), cap = plan.level === "fortgeschritten" ? 5 : 3; let extra = 0;
   const fits = d => !plan.minutes || estimateSec(d.items) / 60 <= plan.minutes;
   for (let guard = 0; guard < 200; guard++) {
     const ms = muscleSets(plan);
@@ -1211,9 +1211,27 @@ function balanceVolume(plan) {
       }
       if (added) break;
     }
-    if (!added) break;
+    if (added) continue;
+    // Fortgeschrittene: Reicht die Satzgrenze nicht, eine weitere Übung für den Muskel ergänzen – nur wenn sie ins Zeitbudget passt
+    if (plan.level === "fortgeschritten" && extra < 2 && MAJOR.filter(m => ms[m] < tmin).sort((a, b) => ms[a] - ms[b]).some(m => addExerciseFor(plan, m, ms, fits, tmax))) { extra++; continue; }
+    break;
   }
   return plan;
+}
+function addExerciseFor(plan, m, ms, fits, tmax) {
+  const used = new Set(plan.days.flatMap(d => d.items.map(i => i.exId))), g = GOALS[plan.goal] || GOALS.aufbau;
+  const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && !used.has(x.id)).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
+  if (!e) return false;
+  // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
+  const LEG = ["beinev", "beineh", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
+  const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
+  for (const d of days) for (const sets of [3, 2]) {
+    const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
+    const ms2 = muscleSets(plan);
+    if (fits(d) && !Object.keys(ms2).some(k => ms2[k] > tmax && ms2[k] > ms[k])) return true;
+    d.items.pop();
+  }
+  return false;
 }
 
 /* ================= Hilfen ================= */
