@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v43)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v43")));
+      ok("Service Worker aktiv (Cache trainingsplan-v44)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v44")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3069,7 +3069,40 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("53. Konsole");
+    section("53. Gerät im Training dazunehmen");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await page.click("[data-a=openJump]");
+      ok("Übungsliste im Training: „+ Gerät dazunehmen“", await page.isVisible("#sesAddBtn"));
+      await page.click("#sesAddBtn");
+      const sh = (await page.textContent(".sheet")).replace(/\s+/g, " ");
+      ok("Geräteauswahl im Training: kommt nach der aktuellen Übung, „Nur heute“ voreingestellt", sh.includes("Gerät dazunehmen") && sh.includes("direkt nach der aktuellen Übung") && (await page.textContent("#pickPlanSeg .on")) === "Nur heute");
+      ok("Geräte, die schon im Training sind: mit Häkchen und gesperrt", await page.isDisabled(".sheet [data-a=pickSes][data-id=hs-chest]"));
+      await page.click(".sheet [data-a=pickAll]").catch(() => {});
+      await page.click(".sheet [data-a=pickSes][data-id=lf-pushdown]");
+      let s = await tp(page, () => window.__tp.state.session.list.map(l => l.exId));
+      ok("Neues Gerät steht direkt nach der aktuellen Übung", s[0] === "hs-chest" && s[1] === "lf-pushdown" && s.length === 4, s.join());
+      let st = await stored(page);
+      ok("Nur heute: Plan unverändert, Gerät aber ins Studio übernommen", !st.plan.days[0].items.some(i => i.exId === "lf-pushdown") && st.dev["lf-pushdown"].off === false);
+      ok("Zurück in der Übungsliste, neues Gerät sichtbar", (await page.textContent(".sheet")).includes("Trizepsdrücken am Kabel") && await page.isVisible("#sesAddBtn"));
+      // Auch in den Trainingstag übernehmen
+      await page.click("#sesAddBtn"); await page.click("#pickPlanSeg [data-v='1']");
+      await page.click(".sheet [data-a=pickSes][data-id=hs-row]");
+      st = await stored(page); s = await tp(page, () => window.__tp.state.session.list.map(l => ({ id: l.exId, item: l.itemId })));
+      const row = s.find(x => x.id === "hs-row"), planRow = st.plan.days[0].items.find(i => i.exId === "hs-row");
+      ok("„Auch in Test“: Gerät landet im Trainingstag und im Training", !!planRow && !!row && row.item === planRow.id && s[1].id === "hs-row");
+      ok("360 px: Auswahl im Training passt in die Breite", await (async () => { await page.click("#sesAddBtn"); const r = await page.evaluate(() => { const sh = document.querySelector(".sheet"); return sh.scrollWidth <= sh.clientWidth; }); await page.click(".sheet [data-a=pickSesBack]"); return r; })());
+      // Training mit dem neuen Gerät beenden: es steht im Verlauf
+      await page.click("[data-a=jump][data-i2='1']");
+      await page.fill("#kgIn", "50"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const h = (await stored(page)).history.at(-1);
+      ok("Gespeichert: das dazugenommene Gerät steht im Verlauf", h.exercises.some(x => x.exId === "hs-row" && x.sets[0].kg === 50));
+      await ctx.close();
+    }
+
+    section("54. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

@@ -2543,18 +2543,20 @@ function otherUnitCount(d) { const u = draftUnit(d); let n = 0; state.history.fo
 function hasHistoryOtherUnit(d) { return otherUnitCount(d) > 0; }
 function devBack(savedId) {
   if (devRet === "list") return openSheet(devListHtml());
-  if (devRet === "pick") { if (savedId) addToDay(savedId); openSheet(pickerHtml()); return; }
+  if (devRet === "pick") { if (savedId) { if (pickMode === "ses") { sesAdd(savedId); render(); return openSheet(jumpSheet()); } addToDay(savedId); } openSheet(pickerHtml()); return; }
   if (devRet === "train") { render(); return openSheet(devInfoSheet()); }
   closeSheet(); render();
 }
 
 /* Übungsauswahl */
-let pickFilter = "alle", pickQuery = "", pickMuscle = "alle", pickAll = false;
+let pickFilter = "alle", pickQuery = "", pickMuscle = "alle", pickAll = false, pickMode = "day", pickPlan = false;
 const isCustom = e => e.id.startsWith("c-");
 const brandOf = e => isCustom(e) ? "c" : e.brand;
 // Gerät hinzufügen: Geräte deines Studios nach Marke, Bezeichnung am Gerät sichtbar; Antippen nimmt es in den Tag auf oder heraus
 function pickerHtml() {
-  const q = pickQuery.toLowerCase(), d = curDay(), inDay = new Set(d ? d.items.map(i => i.exId) : []), order = Object.keys(MUSCLES);
+  const ses = pickMode === "ses" ? S() : null, sesDay = ses && state.plan?.days.find(x => x.id === ses.dayId);
+  const q = pickQuery.toLowerCase(), d = ses ? null : curDay(), order = Object.keys(MUSCLES);
+  const inDay = new Set(ses ? ses.list.map(l => l.exId) : d ? d.items.map(i => i.exId) : []);
   const all = allEx(), hasCustom = all.some(isCustom);
   const match = all.filter(e => (pickFilter === "alle" || brandOf(e) === pickFilter) && (pickMuscle === "alle" || e.muscle === pickMuscle) && findEx(e, q))
     .sort((a, b) => order.indexOf(a.muscle) - order.indexOf(b.muscle) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name, "de"));
@@ -2562,11 +2564,13 @@ function pickerHtml() {
   const groups = [["hs", BRAND.hs], ["lf", BRAND.lf], ["c", "Eigene Geräte"]].map(([k, l]) => [l, shown.filter(e => brandOf(e) === k)]).filter(([, a]) => a.length);
   const row = e => { const on = inDay.has(e.id);
     return `<div class="li pick-row${on ? " on" : ""}">
-      <button class="pick-main" data-a="pick" data-id="${e.id}" aria-pressed="${on}"><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
+      <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
         <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]}${e.off ? " · nicht im Studio" : ""}</span></span></button>
       <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
-  return `${sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
-    <p class="small muted" style="margin:0" id="pickCount">${inDay.size ? `${inDay.size} ${inDay.size === 1 ? "Gerät" : "Geräte"} im Tag · ` : ""}Antippen nimmt ein Gerät auf oder wieder heraus.</p>
+  return `${ses ? sheetHead("Gerät dazunehmen", "Zurück", "pickSesBack") : sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
+    ${ses ? `<p class="small muted" style="margin:0" id="pickCount">Kommt direkt nach der aktuellen Übung dran. Geräte mit Häkchen sind schon im Training.</p>
+      ${sesDay ? `<div class="seg" id="pickPlanSeg"><button data-a="pickPlan" data-v="0" class="${pickPlan ? "" : "on"}">Nur heute</button><button data-a="pickPlan" data-v="1" class="${pickPlan ? "on" : ""}">Auch in „${esc(sesDay.name)}“</button></div>` : ""}`
+      : `<p class="small muted" style="margin:0" id="pickCount">${inDay.size ? `${inDay.size} ${inDay.size === 1 ? "Gerät" : "Geräte"} im Tag · ` : ""}Antippen nimmt ein Gerät auf oder wieder heraus.</p>`}
     <input id="pickQ" data-i="pickQ" placeholder="Gerät suchen, z. B. Chest Press oder Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
     <div class="chips">${[["alle", "Alle Geräte"], ["hs", BRAND.hs], ["lf", BRAND.lf], ...(hasCustom ? [["c", "Eigene"]] : [])].map(([k, l]) =>
       `<button class="chip ${pickFilter === k ? "on" : ""}" data-a="pickFilter" data-k="${k}">${l}</button>`).join("")}</div>
@@ -2575,7 +2579,18 @@ function pickerHtml() {
     ${hidden || pickAll ? `<button class="link small" data-a="pickAll" style="justify-self:start">${pickAll ? "Nur Geräte im Studio zeigen" : `${hidden} ${hidden === 1 ? "Gerät" : "Geräte"} nicht im Studio – anzeigen`}</button>` : ""}
     <button class="btn block" data-a="newDev" data-ret="pick">+ Eigenes Gerät anlegen</button>`;
 }
-function openPicker(muscle) { pickQuery = ""; pickFilter = "alle"; pickMuscle = muscle && MUSCLES[muscle] ? muscle : "alle"; pickAll = false; openSheet(pickerHtml()); }
+function openPicker(muscle) { pickMode = "day"; pickQuery = ""; pickFilter = "alle"; pickMuscle = muscle && MUSCLES[muscle] ? muscle : "alle"; pickAll = false; openSheet(pickerHtml()); }
+// Im laufenden Training: Gerät direkt nach der aktuellen Übung einschieben, auf Wunsch auch in den Trainingstag übernehmen
+function sesAdd(exId) {
+  const s = S(); if (!s || s.list.some(l => l.exId === exId)) return;
+  const g = GOALS[state.plan?.goal] || GOALS.aufbau, day = pickPlan && state.plan?.days.find(x => x.id === s.dayId);
+  const it = { id: day ? uid() : null, exId, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest };
+  if (day && !day.items.some(i => i.exId === exId)) day.items.push(Object.assign({}, it));
+  if (ex(exId).off) state.dev[exId] = Object.assign({}, state.dev[exId] || {}, { off: false });
+  const en = makeEntry(it); delete en.ord;
+  s.list.splice(Math.min(s.list.length, s.idx + 1), 0, en);
+  save();
+}
 function refreshPicker() { sheetKeep(pickerHtml()); }
 // Offenes Sheet neu zeichnen: Scrollposition und Fokus im Suchfeld bleiben erhalten
 function sheetKeep(html) {
@@ -2964,6 +2979,7 @@ function jumpSheet() {
       ${!fin && i !== s.list.length - 1 ? `<button class="btn sm" data-a="moveEnd" data-i2="${i}">Später</button>` : fin ? `<span class="badge up">Fertig</span>` : ""}
     </div>`; }).join("")}</div>
     <p class="small faint" style="margin:0">Übung antippen, um sie jetzt zu machen.</p>
+    <button class="btn block" data-a="openPickerSes" id="sesAddBtn">+ Gerät dazunehmen</button>
     ${curOpen ? `<div class="stack-sm"><button class="btn block danger" data-a="endEx">${esc(ex(cur.exId).name)} beenden</button><p class="small faint" style="text-align:center">Offene Sätze dieser Übung werden übersprungen.</p></div>` : ""}`;
 }
 function afterListChange(prefer) {
@@ -5258,6 +5274,10 @@ const A = {
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
   pickAll: () => { pickAll = !pickAll; refreshPicker(); },
+  openPickerSes: () => { pickMode = "ses"; pickPlan = false; pickQuery = ""; pickFilter = "alle"; pickMuscle = "alle"; pickAll = false; sheetTo(pickerHtml()); },
+  pickSesBack: () => sheetTo(jumpSheet()),
+  pickPlan: el => { pickPlan = el.dataset.v === "1"; refreshPicker(); },
+  pickSes: el => { sesAdd(el.dataset.id); render(); sheetTo(jumpSheet()); },
   // Antippen: Gerät in den Tag aufnehmen oder wieder herausnehmen. Wer ein Gerät einplant, hat es im Studio.
   pick: el => { const id = el.dataset.id, d = curDay(); if (!d) return; const i = d.items.findIndex(x => x.exId === id);
     if (i >= 0) d.items.splice(i, 1);
