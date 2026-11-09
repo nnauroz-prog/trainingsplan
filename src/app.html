@@ -342,7 +342,6 @@
   .stat .num{font-size:34px}
   .nutgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
   .nutgrid .num{font-size:22px}
-  .nutgrid.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .addrow{color:var(--accent);font-weight:600;min-height:48px}
@@ -542,6 +541,8 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  efsaFat: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for fats", j: "EFSA Journal 2010;8(3):1461", url: "https://doi.org/10.2903/j.efsa.2010.1461" },
+  efsaCarb: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for carbohydrates and dietary fibre", j: "EFSA Journal 2010;8(3):1462", url: "https://doi.org/10.2903/j.efsa.2010.1462" },
   schoenfeld2018: { t: "Schoenfeld BJ, Vigotsky A, Contreras B et al.: Differential effects of attentional focus strategies during long-term resistance training", j: "Eur J Sport Sci 2018;18(5):705–712", url: "https://pubmed.ncbi.nlm.nih.gov/29533715/" },
   sodal2023: { t: "Sødal LK, Kristiansen E, Larsen S, van den Tillaar R: Effects of drop sets on skeletal muscle hypertrophy: a systematic review and meta-analysis", j: "Sports Med Open 2023;9:66", url: "https://doi.org/10.1186/s40798-023-00620-5" },
   teixeira2012: { t: "Teixeira PJ, Carraça EV, Markland D, Silva MN, Ryan RM: Exercise, physical activity, and self-determination theory: a systematic review", j: "Int J Behav Nutr Phys Act 2012;9:78", url: "https://doi.org/10.1186/1479-5868-9-78" },
@@ -4029,7 +4030,9 @@ const bmrOf = (n, kg) => 10 * kg + 6.25 * n.cm - 5 * n.age + (n.sex === "w" ? -1
 function calcGoals(n, kg) {
   if (!n || !(kg >= 30 && kg <= 300) || !(n.age >= 18 && n.age <= 100) || !(n.cm >= 120 && n.cm <= 230)) return null;
   const bmr = bmrOf(n, kg), tdee = bmr * n.pal, auto = Math.round(tdee * (1 + NGOAL[n.goal].adj) / 10) * 10;
-  return { kg, bmr: Math.round(bmr), tdee: Math.round(tdee), auto, kcal: n.kcal || auto, prot: Math.round(kg * 1.6), protHi: Math.round(kg * 2.2) };
+  const kcal = n.kcal || auto, prot = Math.round(kg * 1.6), fatLo = Math.round(kcal * .2 / 9), fatHi = Math.round(kcal * .35 / 9);
+  const rest = f => Math.max(0, Math.round((kcal - prot * 4 - f * 9) / 4));
+  return { kg, bmr: Math.round(bmr), tdee: Math.round(tdee), auto, kcal, prot, protHi: Math.round(kg * 2.2), fatLo, fatHi, carbLo: rest(fatHi), carbHi: rest(fatLo), fib: 25 };
 }
 function nutrGoals() { const w = lastWeight(); return w ? calcGoals(state.nutr, w.kg) : null; }
 function entryVals(e) {
@@ -4242,6 +4245,9 @@ function nutrOutHtml() {
     <div class="row between small"><span>Startwert für „${g.label}“${adj}</span><b>${fmtK(G.auto)} kcal</b></div>
     <div class="row between small"><span>Eiweiß (1,6 g je kg)</span><b>${G.prot} g</b></div>
     <p class="small faint" style="margin:0">Bis ${G.protHi} g (2,2 g je kg) für alle, die sichergehen wollen. Zielrate: ${g.rate}.</p>
+    <div class="row between small"><span>Fett (20–35 % der Kalorien)</span><b>${G.fatLo}–${G.fatHi} g</b></div>
+    <div class="row between small"><span>Kohlenhydrate (der Rest)</span><b>${G.carbLo}–${G.carbHi} g</b></div>
+    <div class="row between small"><span>Ballaststoffe</span><b>ab ${G.fib} g</b></div>
     ${d.kcal && d.kcal < G.bmr ? `<p class="small" style="color:var(--warn);margin:0">Dein eigenes Ziel liegt unter dem geschätzten Grundumsatz. So wenig nur mit fachlicher Begleitung.</p>` : ""}</div>`;
 }
 function nutrSheet() {
@@ -4265,10 +4271,13 @@ function nutrSheet() {
         <li>Abnehmen: Startwert 15 % unter dem Erhaltungsbedarf. Für Kraftsportler empfehlen Helms et al. etwa 0,5–1 % Körpergewicht pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Die 15 % sind ein Startwert dieser App.</li>
         <li>Aufbauen: Startwert 10 % über dem Erhaltungsbedarf. Iraki et al. nennen für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.</li>
         <li>Eiweiß: In einer Meta-Analyse von 49 Studien brachte mehr als etwa 1,6 g pro kg und Tag im Mittel keinen weiteren Zuwachs an fettfreier Masse; die obere Grenze des Vertrauensbereichs lag bei 2,2 g.</li>
+        <li>Fett: 20–35 % der Kalorien – der Referenzbereich der EFSA für Erwachsene (1 g Fett ≈ 9 kcal).</li>
+        <li>Kohlenhydrate: was nach Eiweiß (1,6 g je kg) und Fett vom Kalorienziel übrig bleibt, 4 kcal je g – Regel der App. Die EFSA nennt für die Allgemeinbevölkerung 45–60 % der Kalorien; mit viel Eiweiß kann der Anteil darunter liegen.</li>
+        <li>Ballaststoffe: 25 g pro Tag hält die EFSA bei Erwachsenen für ausreichend für eine normale Verdauung.</li>
         <li>Grenzen: Formeln schätzen. Mifflin-St Jeor lag in einer Übersichtsarbeit häufiger als andere Formeln innerhalb von 10 % des gemessenen Werts – bei Einzelnen kann die Abweichung größer sein. Dein Gewichtsverlauf zeigt nach zwei bis drei Wochen, ob das Ziel passt.</li>
         <li>Nicht gedacht für Schwangerschaft, Stillzeit, Jugendliche, Krankheiten mit besonderer Ernährung oder Essstörungen – dann bitte ärztlich oder ernährungsfachlich beraten lassen.</li>
       </ul>
-      <div class="cap">Quellen</div>${srcList(["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019", "morton2018"])}
+      <div class="cap">Quellen</div>${srcList(["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019", "morton2018", "efsaFat", "efsaCarb"])}
     </div></details>`;
 }
 function readNutrInputs() {
@@ -4281,8 +4290,13 @@ function vFood() {
   const today = dkey(), d = foodDay && foodDay < today ? foodDay : today, G = nutrGoals(), t = dayTotals(d), list = state.food[d] || [];
   const dl = d === today ? "Heute" : d === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : new Date(d + "T12:00").toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
   const bar = (v, goal, col) => `<div class="mtrack" style="height:10px"><div class="mfill" style="width:${Math.min(100, goal ? v / goal * 100 : 0)}%;background:${col}"></div></div>`;
-  const macro = `<div class="nutgrid${G ? " n3" : ""}">${(G ? [["Kohlenhydrate", t.c], ["Fett", t.f], ["Ballaststoffe", t.fib]] : [["Eiweiß", t.p], ["Kohlenh.", t.c], ["Fett", t.f], ["Ballastst.", t.fib]]).map(([l, v]) =>
+  const macro = `<div class="nutgrid">${[["Eiweiß", t.p], ["Kohlenh.", t.c], ["Fett", t.f], ["Ballastst.", t.fib]].map(([l, v]) =>
     `<div class="stat"><div class="cap">${l}</div><div class="num">${fmtN(v)}<span class="small muted"> g</span></div></div>`).join("")}</div>`;
+  // Bereich (z. B. Fett 20–35 % der Kalorien): markierte Zone, grün darin, Warnfarbe darüber
+  const range = (l, v, lo, hi) => { const top = hi * 1.2 || 1, pc = x => Math.min(100, x / top * 100);
+    return `<div class="row between small"><span>${l}</span><span><b>${fmtK(v)}</b> von ${lo}–${hi} g</span></div>
+      <div class="mtrack" style="height:10px"><div style="position:absolute;top:0;bottom:0;left:${pc(lo)}%;width:${pc(hi) - pc(lo)}%;background:var(--accent-soft);opacity:.45"></div>
+      <div class="mfill" style="width:${pc(v)}%;background:${v > hi ? "var(--warn)" : v >= lo ? "var(--ok)" : "var(--accent)"}"></div></div>`; };
   const left = G ? G.kcal - t.k : 0;
   const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
@@ -4296,7 +4310,8 @@ function vFood() {
       <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal gegessen</p>
       <div class="row between small" style="margin-top:var(--s3)"><span>Eiweiß</span><span><b>${fmtK(t.p)}</b> von ${G.prot} g</span></div>
       ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--accent)")}
-      ${macro}</section>`
+      <div class="stack-sm" id="macroRows">${range("Kohlenhydrate", t.c, G.carbLo, G.carbHi)}${range("Fett", t.f, G.fatLo, G.fatHi)}
+      <div class="row between small"><span>Ballaststoffe</span><span><b>${fmtK(t.fib)}</b> von ${G.fib} g</span></div>${bar(t.fib, G.fib, t.fib >= G.fib ? "var(--ok)" : "var(--accent)")}</div></section>`
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
@@ -4311,7 +4326,7 @@ function vFood() {
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
         <div class="group">${es.map(e => { const v = entryVals(e); return `<button class="li" data-a="foodEdit" data-id="${e.id}">
-          <div class="grow"><div class="t">${esc(e.n)}</div><div class="s">${e.g !== null ? fmtN(e.g) + " g · " : ""}${fmtN(v.p)} g Eiweiß</div></div>
+          <div class="grow"><div class="t">${esc(e.n)}</div><div class="s">${e.g !== null ? fmtN(e.g) + " g · " : ""}E ${fmtN(v.p)} · K ${fmtN(v.c)} · F ${fmtN(v.f)} g</div></div>
           <span class="small" style="font-weight:600;white-space:nowrap">${fmtK(v.k)} kcal</span></button>`; }).join("")}
           <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button>
           ${es.length >= 2 ? `<button class="li addrow" data-a="mealSaveOpen" data-m="${m}" style="color:var(--text-2);font-weight:500">Als Mahlzeit speichern</button>` : ""}
