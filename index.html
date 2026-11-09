@@ -401,7 +401,8 @@ const MUSCLES = {
   brust:"Brust", ruecken:"Rücken", schultern:"Schultern", bizeps:"Bizeps", trizeps:"Trizeps",
   bauch:"Bauch", beinev:"Beine vorn", beineh:"Beine hinten", po:"Po", waden:"Waden"
 };
-// [id, Name, Hauptmuskel, Nebenmuskeln, Gerätetyp] – Hammer Strength
+// [id, Name, Hauptmuskel, Nebenmuskeln, Gerätetyp, Bezeichnung am Gerät, Marke, gleiche Übungsart bei der anderen Marke]
+const BRAND = { hs: "Hammer Strength", lf: "Life Fitness" };
 const LIB = [
   ["hs-chest","Brustpresse","brust",["trizeps","schultern"],"plate","Iso-Lateral Chest Press"],
   ["hs-incline","Schräge Brustpresse","brust",["schultern","trizeps"],"plate","Iso-Lateral Incline Press"],
@@ -430,8 +431,30 @@ const LIB = [
   ["hs-hipthrust","Hüftheben","po",["beineh"],"plate","Hip Thrust"],
   ["hs-calf","Wadenheben stehend","waden",[],"plate","Standing Calf Raise"],
   ["hs-seatcalf","Wadenheben sitzend","waden",[],"plate","Seated Calf Raise"],
-  ["hs-ab","Bauchmaschine","bauch",[],"stack","Ab Crunch"]
-].map(([id,name,muscle,sec,type,label]) => ({ id, name, muscle, sec, type, label }));
+  ["hs-ab","Bauchmaschine","bauch",[],"stack","Ab Crunch"],
+  // Life Fitness (Steckgewicht): zunächst „nicht im Studio“, bis du sie unter „Meine Geräte“ einschaltest
+  ["lf-chest","Brustpresse","brust",["trizeps","schultern"],"stack","Chest Press","lf","hs-chest"],
+  ["lf-shoulder","Schulterpresse","schultern",["trizeps"],"stack","Shoulder Press","lf","hs-shoulder"],
+  ["lf-pulldown","Latzug","ruecken",["bizeps"],"stack","Pulldown","lf","hs-lat"],
+  ["lf-row","Rudern","ruecken",["bizeps","schultern"],"stack","Row","lf","hs-row"],
+  ["lf-fly","Butterfly","brust",["schultern"],"stack","Pectoral Fly / Rear Deltoid","lf","hs-fly"],
+  ["lf-reardelt","Hintere Schulter","schultern",["ruecken"],"stack","Pectoral Fly / Rear Deltoid","lf","hs-reardelt"],
+  ["lf-lateral","Seitheben","schultern",[],"stack","Lateral Raise","lf","hs-lateral"],
+  ["lf-curl","Armbeuger","bizeps",[],"stack","Biceps Curl","lf","hs-curl"],
+  ["lf-tripress","Trizepsdrücken","trizeps",["brust","schultern"],"stack","Triceps Press","lf","hs-dip"],
+  ["lf-triext","Armstrecker","trizeps",[],"stack","Triceps Extension","lf","hs-triext"],
+  ["lf-pushdown","Trizepsdrücken am Kabel","trizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-legpress","Beinpresse","beinev",["po"],"stack","Leg Press","lf","hs-legpress"],
+  ["lf-legext","Beinstrecker","beinev",[],"stack","Leg Extension","lf","hs-legext"],
+  ["lf-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl","lf","hs-seatcurl"],
+  ["lf-legcurl","Beinbeuger liegend","beineh",[],"stack","Leg Curl","lf"],
+  ["lf-abductor","Abduktoren","po",[],"stack","Hip Abductor","lf"],
+  ["lf-ab","Bauchmaschine","bauch",[],"stack","Abdominal","lf","hs-ab"]
+].map(([id, name, muscle, sec, type, label, brand = "hs", twin]) =>
+  Object.assign({ id, name, muscle, sec, type, label, brand }, twin ? { twin } : {}, brand === "lf" ? { off: true } : {}));
+const brandPre = e => e.brand === "lf" ? "Life Fitness · " : "";
+// Gleiche Übungsart (z. B. Beinbeuger sitzend von Hammer Strength und Life Fitness): nicht zweimal in einen Plan
+const sameKind = (a, b) => a.id === b.id || a.twin === b.id || b.twin === a.id || (!!a.twin && a.twin === b.twin);
 
 // Bewegungsmuster: Grundlage für fachlich passende Alternativen (nicht „identisch“, nur vergleichbar)
 // rel = verwandte Muster: gleicher Muskel, aber anderer Belastungsschwerpunkt
@@ -452,6 +475,7 @@ const PATTERNS = {
   knee_ext: { label: "Knieextension", rel: [] },
   knee_flex:{ label: "Kniebeugung", rel: [] },
   calf:     { label: "Wadenheben", rel: [] },
+  abd:      { label: "Hüftabspreizen", rel: [] },
   core:     { label: "Rumpfbeugung", rel: [] }
 };
 const LIB_PATTERN = {
@@ -460,7 +484,10 @@ const LIB_PATTERN = {
   "hs-pulldown": "pull_v", "hs-lat": "pull_v", "hs-lateral": "lateral", "hs-reardelt": "rear", "hs-curl": "bi",
   "hs-triext": "tri", "hs-dip": "dip", "hs-legpress": "squat", "hs-isolegpress": "squat", "hs-vsquat": "squat",
   "hs-hack": "squat", "hs-hipthrust": "hinge", "hs-legext": "knee_ext", "hs-kneelcurl": "knee_flex",
-  "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core"
+  "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
+  "lf-chest": "push_h", "lf-shoulder": "push_v", "lf-pulldown": "pull_v", "lf-row": "pull_h", "lf-fly": "fly", "lf-reardelt": "rear",
+  "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-legpress": "squat",
+  "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core"
 };
 LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
 
@@ -475,6 +502,7 @@ const SOURCES = {
   rir2024: { t: "Robinson et al.: Exploring the dose–response relationship between estimated resistance training proximity to failure, strength gain, and muscle hypertrophy", j: "Sports Med 2024;54:2209–2231", url: "https://doi.org/10.1007/s40279-024-02069-2" },
   rest2016: { t: "Schoenfeld et al.: Longer interset rest periods enhance muscle strength and hypertrophy in resistance-trained men", j: "J Strength Cond Res 2016", url: "https://pubmed.ncbi.nlm.nih.gov/26605807/" },
   health2022: { t: "Momma et al.: Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases", j: "Br J Sports Med 2022;56(13):755–763", url: "https://bjsm.bmj.com/content/56/13/755" },
+  tri2023: { t: "Maeo et al.: Triceps brachii hypertrophy is substantially greater after elbow extension training performed in the overhead versus neutral arm position", j: "Eur J Sport Sci 2023;23(7):1240–1250", url: "https://pubmed.ncbi.nlm.nih.gov/35819335/" },
   curl2021: { t: "Maeo et al.: Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths", j: "Med Sci Sports Exerc 2021;53(4):825–837", url: "https://pubmed.ncbi.nlm.nih.gov/33009197/" },
   calf2023: { t: "Kinoshita et al.: Triceps surae muscle hypertrophy is greater after standing versus seated calf-raise training", j: "Front Physiol 2023;14:1272106", url: "https://doi.org/10.3389/fphys.2023.1272106" },
   bench2020: { t: "Rodríguez-Ridao et al.: Effect of five bench inclinations on the electromyographic activity of the pectoralis major, anterior deltoid, and triceps brachii during the bench press exercise", j: "Int J Environ Res Public Health 2020;17(19):7339", url: "https://doi.org/10.3390/ijerph17197339" },
@@ -617,6 +645,8 @@ const M = {
   quad: "Vierköpfiger Oberschenkelmuskel (M. quadriceps femoris)",
   glut: "Großer Gesäßmuskel (M. gluteus maximus)",
   add: "Großer Adduktor (M. adductor magnus)",
+  gmed: "Mittlerer und kleiner Gesäßmuskel (M. gluteus medius, M. gluteus minimus)",
+  tfl: "Spanner der Oberschenkelbinde (M. tensor fasciae latae)",
   ham: "Hintere Oberschenkelmuskulatur (M. biceps femoris, M. semitendinosus, M. semimembranosus)",
   gastro: "Zwillingswadenmuskel (M. gastrocnemius)",
   sol: "Schollenmuskel (M. soleus)",
@@ -914,6 +944,180 @@ const GUIDE = {
     mistakes: [["Ziehen mit den Armen", "Die Arme halten nur, die Bewegung kommt aus dem Bauch."], ["Wippen mit Schwung", "Langsam und gleichmäßig."], ["Kopf zieht nach vorn", "Kopf in Verlängerung des Oberkörpers, der Brustkorb führt."]],
     safety: ["Bei Rückenbeschwerden mit leichtem Widerstand und kleinem Weg beginnen."],
     tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  // ---------- Life Fitness (Steckgewicht). Angaben zur Bauweise nach Herstellerangaben, v. a. Insignia-Serie ----------
+  "lf-chest": {
+    main: [M.pecS], sup: [M.dAnt, M.tri],
+    why: "Brustpresse mit Steckgewicht. Die beiden Arme bewegen sich unabhängig und laufen beim Drücken nach vorn zusammen.",
+    setup: ["Sitz so verstellen, dass die Griffe auf Höhe der mittleren Brust liegen.", "Startposition der Arme so wählen, dass die Brust zu Beginn spürbar gedehnt ist."],
+    steps: ["Rücken an die Lehne, Brust aufgerichtet.", "Beide Griffe gleichzeitig nach vorn schieben, bis die Arme fast gestreckt sind.", "Kontrolliert zurück, bis die Platten fast aufsetzen."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ein Arm eilt voraus", "Beide Griffe im selben Tempo führen."], ["Schultern ziehen zu den Ohren", "Schultern tief und hinten lassen."], ["Platten setzen zwischen den Wiederholungen auf", "Kurz vor dem Aufsetzen umkehren, die Spannung bleibt."]],
+    safety: ["Bei Schulterbeschwerden eine weiter vorn liegende Startposition wählen."],
+    tips: [ONEARM, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-shoulder": {
+    main: [M.dAnt], sup: [M.dLat, M.tri, M.trapU],
+    why: "Drücken über Kopf mit Steckgewicht. Zwei Griffpaare: neutral mit den Handflächen zueinander und im Obergriff.",
+    setup: ["Sitz so verstellen, dass die Griffe zu Beginn knapp über Schulterhöhe liegen.", "Griffpaar wählen und für die nächsten Einheiten beibehalten."],
+    steps: ["Bauch fest, unterer Rücken an der Lehne.", "Griffe nach oben führen, bis die Ellbogen fast gestreckt sind.", "Langsam zurück, bis die Hände wieder knapp über den Schultern sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Hohlkreuz beim Hochdrücken", "Rippen nach unten ziehen, der untere Rücken bleibt an der Lehne."], ["Oben in die gestreckten Ellbogen fallen", "Kurz vor dem Durchstrecken umkehren."], ["Kinn schiebt nach vorn", "Kopf gerade, in Verlängerung des Rumpfs."]],
+    safety: ["Bei Schulterbeschwerden nur so weit absenken, wie es schmerzfrei bleibt."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-pulldown": {
+    main: [M.lat], sup: [M.teres, M.bic, M.brach],
+    why: "Vertikales Ziehen für den breiten Rückenmuskel. Statt einer Stange gibt es zwei unabhängige Arme, deren Bahnen auseinanderlaufen.",
+    setup: ["Sitzhöhe so wählen, dass die Oberschenkel fest unter dem schrägen Polster liegen.", "Sind die Griffe im Sitzen nicht erreichbar, sie im Stehen fassen und dann unter das Polster setzen."],
+    steps: ["Brust aufgerichtet, Schultern weg von den Ohren.", "Griffe nach unten ziehen, bis die Hände etwa neben den Schultern sind.", "Langsam nach oben nachgeben, bis die Arme lang sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Weit zurücklehnen", "Oberkörper fast senkrecht, die Ellbogen nach unten zu den Hüften ziehen."], ["Ruckartiger Start", "Jede Wiederholung gleichmäßig beginnen, ohne Schwung aus dem Oberkörper."], ["Oben früh umkehren", "Oben die Arme lang werden lassen, damit der Rücken gedehnt wird."]],
+    safety: ["Die Griffe am Satzende kontrolliert nach oben führen, nicht loslassen."],
+    tips: [ONEARM, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-row": {
+    main: [M.lat, M.trapM, M.rhomb], sup: [M.dPost, M.bic],
+    why: "Rudern im Sitzen mit Brustpolster und Steckgewicht. Die beiden Arme bewegen sich unabhängig und laufen beim Ziehen auseinander. Das Brustpolster hält den Oberkörper ruhig.",
+    setup: ["Brustpolster so einstellen, dass du die Griffe mit gestreckten Armen gerade noch fassen kannst.", "Sitz so einstellen, dass die Griffe etwa auf Höhe des Brustbeins liegen."],
+    steps: ["Brust ans Polster, Arme lang.", "Griffe zum Körper ziehen, bis die Ellbogen hinter dem Rumpf sind.", "Arme langsam wieder nach vorn strecken, die Schulterblätter gehen mit."],
+    breath: BREATH_PULL,
+    mistakes: [["Brust hebt vom Polster ab", "Brust am Polster lassen – der Oberkörper bewegt sich nicht."], ["Schultern ziehen hoch", "Schultern beim Ziehen tief lassen."], ["Arme vorn nicht strecken", "Vorn ganz nachgeben, bis die Schulterblätter nach vorn gleiten."]],
+    safety: ["Mit leichtem Gewicht beginnen, bis Polster und Sitz passen."],
+    tips: ["Einarmig trainieren: Mit der freien Hand den festen Griff in der Mitte halten – das stabilisiert den Oberkörper.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-fly": {
+    main: [M.pec], sup: [M.dAnt],
+    why: "Brust isoliert: Die Arme schließen sich vor dem Körper, der Trizeps arbeitet kaum mit. Kombigerät, auch für die hintere Schulter.",
+    setup: ["Eine der fünf Startpositionen wählen – weiter hinten bedeutet mehr Dehnung.", "Sitz so verstellen, dass die Griffe etwa auf Brusthöhe liegen."],
+    steps: ["Ellbogen leicht gebeugt, Rücken an der Lehne.", "Griffe in einem Bogen vor der Brust zusammenführen.", "Langsam öffnen, bis die Platten fast aufliegen."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogenwinkel ändert sich", "Den leichten Knick im Ellbogen die ganze Bewegung über gleich lassen."], ["Schultern rollen nach vorn", "Schulterblätter an der Lehne halten, auch wenn die Griffe zusammenkommen."], ["Arme fallen zurück", "Das Öffnen 2–3 Sekunden bremsen."]],
+    safety: ["Mit einer vorderen Startposition beginnen und erst später mehr Dehnung wählen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-reardelt": {
+    main: [M.dPost], sup: [M.trapM, M.rhomb, M.rotAuss],
+    why: "Hintere Schulter am Butterfly-Kombigerät: mit der Brust zum Polster, die Arme gehen nach hinten auseinander.",
+    setup: ["Griffe bzw. Arme auf hintere Schulter umstellen, wie am Gerät abgebildet.", "Sitz so verstellen, dass die Griffe auf Schulterhöhe liegen; Brust ans Polster."],
+    steps: ["Arme fast gestreckt vor dem Körper.", "Griffe in einem weiten Bogen nach hinten führen, bis die Arme etwa seitlich vom Körper stehen.", "Langsam wieder nach vorn."],
+    breath: BREATH_PULL,
+    mistakes: [["Brust löst sich vom Polster", "Brust am Polster lassen, nur die Arme bewegen sich."], ["Arme stark beugen", "Arme fast gestreckt halten, der Ellbogen führt den Bogen."], ["Zu viel Gewicht, Schwung", "Leicht beginnen: Der hintere Deltamuskel ist klein."]],
+    safety: ["Nicht weiter nach hinten führen, als die Schulter vorn schmerzfrei bleibt."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-lateral": {
+    main: [M.dLat], sup: [M.supra, M.trapU],
+    why: "Seitliche Schulter isoliert. Die Oberarme heben die Gerätearme über Polster an, jede Seite für sich.",
+    setup: ["Sitz so verstellen, dass die Schultern auf einer Linie mit den Drehpunkten der Arme liegen.", "Arme seitlich an die Polster legen, Griffe nur leicht halten."],
+    steps: ["Aufrecht sitzen, Schultern tief.", "Arme seitlich anheben, bis sie etwa waagerecht sind.", "Langsam absenken, ohne dass das Gewicht aufsetzt."],
+    breath: "Beim Anheben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Schultern ziehen mit nach oben", "Schultern tief lassen – der Nacken soll nicht mitheben."], ["Arme über die Waagerechte", "Etwa auf Schulterhöhe umkehren."], ["Oberkörper schwingt mit", "Aufrecht sitzen bleiben und das Gewicht reduzieren."]],
+    safety: ["Bei Schmerzen beim Anheben nur bis knapp unter die Waagerechte gehen."],
+    tips: [ONEARM, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-curl": {
+    main: [M.bic, M.brach], sup: [M.brachrad],
+    why: "Bizeps isoliert am Armpolster. Die Griffe drehen sich mit und passen sich so der Unterarmlänge an; das Polster bringt den Ellbogen auf die Drehachse.",
+    setup: ["Sitz so verstellen, dass die Oberarme ganz auf dem Polster liegen und die Ellbogen auf Höhe der Drehachse.", "Griffe locker fassen – sie gleichen die Unterarmlänge selbst aus."],
+    steps: ["Arme fast gestreckt, Ellbogen auf dem Polster.", "Griffe zur Schulter beugen und kurz halten.", "Langsam strecken, bis die Arme fast gerade sind."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Ellbogen rutschen vom Polster", "Ellbogen bleiben während des ganzen Satzes am Polster."], ["Oberkörper geht beim Beugen zurück", "Brust an der Polsterkante lassen, Gewicht reduzieren."], ["Unten nur halb strecken", "Unten fast ganz strecken, ohne die Spannung abzugeben."]],
+    safety: ["Die Arme unten nicht ins Gelenk fallen lassen, sondern abbremsen."],
+    tips: [ONEARM, "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-tripress": {
+    main: [M.tri], sup: [M.pecS, M.dAnt],
+    why: "Drücken nach unten wie beim Dip, mit Steckgewicht. Zwei Griffarten: große drehbare Druckgriffe und klassische Dip-Griffe. Die schräge Rückenlehne stützt ohne Gurt.",
+    setup: ["Sitz so verstellen, dass die Griffe zu Beginn etwa auf Brusthöhe liegen.", "Griffart wählen: große Druckgriffe oder Dip-Griffe."],
+    steps: ["Rücken an die schräge Lehne, Schultern tief.", "Griffe nach unten drücken, bis die Ellbogen fast gestreckt sind.", "Langsam hochkommen lassen, bis die Ellbogen etwa rechtwinklig gebeugt sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Oberkörper beugt sich über die Griffe", "Rücken an der Lehne lassen – sie gibt den Halt."], ["Schultern wandern nach oben", "Hals lang, Schultern unten."], ["Arme schnellen nach oben", "Den Weg nach oben 2 Sekunden bremsen."]],
+    safety: ["Oben nur so weit nachgeben, wie die Schulter vorn schmerzfrei bleibt."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-triext": {
+    main: [M.tri], sup: [],
+    why: "Trizeps isoliert mit aufgelegten Oberarmen. Sitz und Armpolster sind schräg; die drehbaren Griffe gleichen unterschiedliche Unterarmlängen aus.",
+    setup: ["Sitz so verstellen, dass die Ellbogen auf Höhe der Drehachse liegen und die Oberarme schräg auf dem Polster.", "Oberarme ganz auflegen, Griffe locker fassen."],
+    steps: ["Ellbogen gebeugt, Oberarme liegen auf.", "Unterarme nach vorn-unten strecken, bis die Arme fast gerade sind.", "Langsam zurück, bis die Ellbogen wieder deutlich gebeugt sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Oberarme lösen sich vom Polster", "Oberarme flach liegen lassen, nur die Unterarme bewegen sich."], ["Mit Schwung aus dem Oberkörper", "Oberkörper ruhig halten, Gewicht reduzieren."], ["Ellbogen schlagen am Ende durch", "Die Streckung weich beenden."]],
+    safety: ["Bei Ellbogenschmerzen den gebeugten Teil der Bewegung verkürzen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-pushdown": {
+    main: [M.tri], sup: [],
+    why: "Trizepsdrücken am Kabelzug, die Oberarme bleiben am Körper. In einer Studie (12 Wochen, 21 Untrainierte) wuchs der Trizeps mit Strecken über Kopf stärker als mit dem Arm am Körper wie hier: +20 % statt +14 %, der lange Kopf +29 % statt +20 %. Gewachsen ist er in beiden Varianten.",
+    setup: ["Am Kabelzug (z. B. Dual Adjustable Pulley oder Cable Crossover) die Rolle ganz nach oben stellen und ein Seil oder eine kurze Stange einhängen.", "Nah vor den Zug stellen, Füße hüftbreit, Knie locker."],
+    steps: ["Oberarme seitlich am Körper, Ellbogen etwa rechtwinklig.", "Nach unten drücken, bis die Arme gestreckt sind.", "Langsam zurück, bis die Unterarme etwa waagerecht sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogen wandern nach vorn", "Ellbogen seitlich am Körper lassen – wandern sie nach vorn, helfen Rücken und Schulter mit."], ["Oberkörper lehnt sich über das Seil", "Aufrecht stehen und das Gewicht senken, bis sich nur die Unterarme bewegen."], ["Gewicht reißt die Hände hoch", "Den Rückweg bremsen, die Ellbogen bleiben dabei am Körper."]],
+    safety: ["Vor dem Satz prüfen, dass Karabiner und Griff fest eingehängt sind."],
+    tips: ["Mit Seil: unten die Enden leicht auseinanderziehen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."],
+    src: ["tri2023"]
+  },
+  "lf-legpress": {
+    main: [M.quad, M.glut], sup: [M.add],
+    why: "Beinpresse mit Steckgewicht. Rücken und Becken sind gestützt, der Rumpf muss nichts balancieren. Bei der neueren Arc Leg Press verläuft die Bahn in einem Bogen.",
+    setup: ["Sitzschlitten so einstellen, dass die Knie zu Beginn etwa rechtwinklig gebeugt sind.", "Füße hüftbreit in die Mitte der Fußplatte, Zehen leicht nach außen."],
+    steps: ["Griffe fassen, Rücken und Gesäß an der Lehne.", "Über die ganze Fußsohle drücken, bis die Beine fast gestreckt sind.", "Langsam beugen, bis das Gewicht fast aufliegt."],
+    breath: BREATH_LEG,
+    mistakes: [["Fersen heben ab", "Druck über die ganze Sohle, die Fersen bleiben auf der Platte."], ["Knie kippen beim Drücken zusammen", "Knie über den Füßen halten, als wolltest du die Platte leicht auseinanderschieben."], ["Gesäß rollt in der Beugung von der Lehne", "Sitzschlitten weiter nach hinten stellen, bis das Becken an der Lehne bleibt."]],
+    safety: ["Oben die Knie nicht durchdrücken, leicht gebeugt umkehren."],
+    tips: ["Arc Leg Press: Die zusätzliche Tiefe (Hebel am Gerät) zuerst mit leichtem Gewicht ausprobieren.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-legext": {
+    main: [M.quad], sup: [],
+    why: "Kniestrecken isoliert für den vierköpfigen Oberschenkelmuskel, mit verstellbarem Startwinkel.",
+    setup: ["Rückenpolster so verstellen, dass die Knie auf einer Linie mit dem Drehpunkt liegen.", "Schienbeinpolster auf den unteren Teil des Schienbeins, knapp oberhalb des Sprunggelenks."],
+    steps: ["Gesäß ganz hinten, Griffe fassen.", "Unterschenkel nach vorn-oben strecken, bis die Beine fast gerade sind.", "Langsam zurück bis kurz vor dem Aufsetzen."],
+    breath: BREATH_LEG,
+    mistakes: [["Schwung aus der Hüfte", "Oberschenkel bleiben am Sitz, nur die Unterschenkel bewegen sich."], ["Polster auf dem Fußrücken", "Polster höher auf das Schienbein setzen."], ["Unterschenkel fallen zurück", "Das Beugen 2–3 Sekunden bremsen."]],
+    safety: ["Bei Knieschmerzen den Startwinkel so einstellen, dass die Beine weniger stark gebeugt beginnen."],
+    tips: ["Einbeinig möglich: zeigt, ob ein Bein weniger schafft.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-seatcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Beinbeugen im Sitzen mit Steckgewicht. Die Griffe sitzen auf dem Oberschenkelpolster. Im Sitzen ist die Hüfte gebeugt und die hintere Oberschenkelmuskulatur stärker gedehnt als im Liegen. In einer kleinen Studie mit Untrainierten wuchs sie im Sitzen stärker.",
+    setup: ["Rückenpolster nach vorn oder hinten stellen, bis das Kniegelenk genau neben dem Drehpunkt des Geräts liegt.", "Oberschenkelpolster fest auf die Oberschenkel, das Unterschenkelpolster knapp oberhalb der Fersen."],
+    steps: ["Griffe am Oberschenkelpolster fassen, Beine fast gestreckt.", "Fersen nach unten unter den Sitz ziehen und kurz halten.", "Beine langsam nach vorn strecken."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Oberschenkel heben sich", "Oberschenkelpolster so fest stellen, dass die Beine liegen bleiben."], ["Oberkörper wirft sich zurück", "Aufrecht sitzen, die Griffe halten dich."], ["Beine schnellen nach vorn", "Das Strecken gleichmäßig bremsen."]],
+    safety: ["Bei einem Wadenkrampf den Satz beenden, das Bein strecken und die Zehen zum Schienbein ziehen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."],
+    src: ["curl2021"]
+  },
+  "lf-legcurl": {
+    main: [M.ham], sup: [M.gastro],
+    why: "Beinbeugen im Liegen. Hüft- und Brustteil der Bank sind gegeneinander abgewinkelt, das soll laut Hersteller den unteren Rücken entlasten. Im Liegen ist die hintere Oberschenkelmuskulatur weniger gedehnt als im Sitzen. Gibt es beide Geräte, spricht eine kleine Studie mit Untrainierten eher für den Beinbeuger im Sitzen.",
+    setup: ["Bäuchlings auflegen, Kniescheiben knapp über die Polsterkante hinaus, Knie auf Höhe der Drehachse.", "Rolle hinten auf die untere Wade, knapp oberhalb der Fersen."],
+    steps: ["Griffe vorn fassen, Becken aufs Polster.", "Fersen Richtung Gesäß ziehen und kurz halten.", "Beine langsam strecken, ohne dass das Gewicht aufsetzt."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Becken hebt sich", "Becken aufs Polster drücken und das Gewicht reduzieren."], ["Hohlkreuz", "Bauch leicht anspannen, das Becken bleibt flach."], ["Beine fallen zurück", "Das Strecken 2 Sekunden lang bremsen."]],
+    safety: ["Erst aufstehen, wenn das Gewicht abgelegt ist."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."],
+    src: ["curl2021"]
+  },
+  "lf-abductor": {
+    main: [M.gmed], sup: [M.tfl],
+    why: "Beine gegen Widerstand nach außen drücken. Das trainiert vor allem den mittleren und kleinen Gesäßmuskel an der Seite der Hüfte. Sie halten das Becken beim Gehen und im Stand auf einem Bein waagerecht.",
+    setup: ["Falls verstellbar: Startposition so wählen, dass die Beine zu Beginn fast geschlossen sind.", "Polster an die Außenseite der Knie, Füße auf die Fußstützen."],
+    steps: ["Rücken an die Lehne, Griffe fassen.", "Knie gleichmäßig nach außen drücken und kurz halten.", "Beine langsam schließen, ohne dass das Gewicht aufsetzt."],
+    breath: "Beim Öffnen ausatmen, beim Schließen einatmen.",
+    mistakes: [["Becken rutscht auf dem Sitz", "Gesäß ganz hinten, die Griffe halten dich."], ["Beine klappen zurück", "Das Schließen 2–3 Sekunden bremsen."], ["Oberkörper schaukelt", "Oberkörper ruhig an der Lehne lassen."]],
+    safety: ["Bei Hüft- oder Leistenschmerzen nur so weit öffnen, wie es schmerzfrei bleibt."],
+    tips: ["Sit/Stand-Modell: auch im Stehen nutzbar.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
+  },
+  "lf-ab": {
+    main: [M.rect], sup: [M.obl],
+    why: "Einrollen gegen Widerstand im Sitzen, vor allem für den geraden Bauchmuskel. Der Widerstand lässt sich genau dosieren.",
+    setup: ["Sitz so verstellen, dass der Drehpunkt etwa auf Höhe der Bauchmitte liegt.", "Arme an die Polster legen bzw. die Griffe fassen, wie am Gerät abgebildet."],
+    steps: ["Aufrecht an der Lehne, Bauch fest.", "Brustkorb Richtung Becken einrollen und kurz halten.", "Langsam aufrichten, bis der Rücken wieder an der Lehne ist."],
+    breath: "Beim Einrollen ausatmen, beim Aufrichten einatmen.",
+    mistakes: [["Arme drücken das Gewicht", "Arme ruhig halten, sie verbinden dich nur mit dem Gerät."], ["Gewicht reißt dich zurück", "Das Aufrichten genauso langsam wie das Einrollen."], ["Zu schwer, nur kleine Bewegung", "Gewicht senken, bis du ganz einrollen kannst."]],
+    safety: ["Bei akuten Rückenschmerzen aussetzen."],
+    tips: ["Kleine Gewichtsschritte wählen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."]
   }
 };
 const MODEL_NOTE = "Bauweise und Einstellungen unterscheiden sich je nach Modellgeneration. Maßgeblich sind die Hinweise am Gerät.";
@@ -952,7 +1156,24 @@ const TIPS = {
   "hs-hipthrust":["Oberer Rücken am Polster, Füße hüftbreit","Hüfte hochdrücken, oben Gesäß fest anspannen","Kein Hohlkreuz, Kinn leicht zur Brust"],
   "hs-calf":["Fußballen auf die Kante, Schultern unter die Polster","Ganz hoch auf die Zehen, kurz halten","Unten voll dehnen"],
   "hs-seatcalf":["Polster fest auf die Oberschenkel, Ballen auf die Kante","Fersen ganz hoch drücken","Langsam tief in die Dehnung"],
-  "hs-ab":["Füße einhaken, Griffe fassen","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"]
+  "hs-ab":["Füße einhaken, Griffe fassen","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"],
+  "lf-chest":["Griffe auf mittlerer Brusthöhe","Beide Arme im selben Tempo nach vorn","Zurück bis kurz vor dem Aufsetzen"],
+  "lf-shoulder":["Start knapp über Schulterhöhe","Nach oben drücken bis fast gestreckt","Unterer Rücken bleibt an der Lehne"],
+  "lf-pulldown":["Oberschenkel fest unter dem Polster","Griffe neben die Schultern ziehen","Oben die Arme lang werden lassen"],
+  "lf-row":["Brust ans Polster","Ellbogen hinter den Rumpf ziehen","Vorn ganz nachgeben"],
+  "lf-fly":["Startposition passend zur Dehnung","Griffe im Bogen zusammenführen","Ellbogenwinkel bleibt gleich"],
+  "lf-reardelt":["Brust am Polster","Arme im weiten Bogen nach hinten","Leicht beginnen"],
+  "lf-lateral":["Schultern auf Höhe der Drehpunkte","Bis etwa waagerecht anheben","Schultern bleiben tief"],
+  "lf-curl":["Ellbogen auf Höhe der Drehachse","Zur Schulter beugen, kurz halten","Unten fast ganz strecken"],
+  "lf-tripress":["Rücken an der schrägen Lehne","Bis fast gestreckt nach unten drücken","Hoch nur bis etwa rechtwinklig"],
+  "lf-triext":["Ellbogen in Linie mit der Drehachse","Unterarme nach vorn-unten strecken","Oberarme bleiben liegen"],
+  "lf-pushdown":["Rolle oben, Ellbogen am Körper","Nach unten strecken","Zurück bis Unterarme waagerecht"],
+  "lf-legpress":["Knie zu Beginn etwa rechtwinklig","Über die ganze Sohle drücken","Oben nicht durchstrecken"],
+  "lf-legext":["Polster knapp oberhalb des Sprunggelenks","Fast gerade strecken","Langsam zurück"],
+  "lf-seatcurl":["Kniegelenk neben dem Drehpunkt","Fersen unter den Sitz ziehen","Gleichmäßig strecken"],
+  "lf-legcurl":["Knie knapp über die Polsterkante hinaus","Fersen zum Gesäß","Becken bleibt unten"],
+  "lf-abductor":["Polster außen an den Knien","Knie nach außen drücken, kurz halten","Langsam schließen"],
+  "lf-ab":["Drehpunkt auf Höhe der Bauchmitte","Brustkorb zum Becken einrollen","Langsam aufrichten"]
 };
 
 const GOALS = {
@@ -1030,7 +1251,7 @@ function normalize(raw) {
     if (o.type === "plate" || o.type === "stack") d.type = o.type;
     if (o.load === "side" || o.load === "total") d.load = o.load;
     if (+o.step > 0 && +o.step <= 50) d.step = +o.step;
-    if (o.off === true) d.off = true;
+    if (typeof o.off === "boolean") d.off = o.off;   // false nötig: Life-Fitness-Geräte sind ab Werk „nicht im Studio“
     if (o.fav === true) d.fav = true;                 // unabhängig von „im Studio“
     s.dev[id] = d;
   }
@@ -1080,7 +1301,8 @@ function normalize(raw) {
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
       paused: +r.paused || null, advDone: typeof r.advDone === "string" ? r.advDone.slice(0, 80) : null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
-      timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null, timeHintOff: r.timeHintOff === true, warmDone: r.warmDone === true };
+      timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null, timeHintOff: r.timeHintOff === true, warmDone: r.warmDone === true,
+      lastAt: +r.lastAt > 0 ? +r.lastAt : null, autoPaused: r.autoPaused === true };
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
   // Zeitanpassung nur für das nächste Training (der Plan selbst bleibt unverändert)
@@ -1167,13 +1389,13 @@ const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stac
 // Volumen: bei „pro Seite“ zählen beide Seiten; Einheit kommt aus dem gespeicherten Eintrag
 const setVol = (entry, t) => validSet(t) ? t.kg * t.reps * ((entry.u || unitOf(ex(entry.exId))) === "s" ? 2 : 1) : 0;
 // Direkte Alternativen: gleiches Bewegungsmuster UND gleicher Hauptmuskel, verfügbar, noch nicht benutzt
-const directCands = (t, used) => allEx().filter(e => !e.off && !used.has(e.id) && e.id !== t.id && t.pattern && e.pattern === t.pattern && e.muscle === t.muscle);
+const directCands = (t, used) => allEx().filter(e => !e.off && ![...used].some(u => sameKind(e, ex(u))) && e.id !== t.id && t.pattern && e.pattern === t.pattern && e.muscle === t.muscle);
 // Gerät für einen Vorlagen-Platz wählen: bevorzugtes Gerät gleicher Bewegung vor Vorlage; fehlt die Vorlage,
 // nur gleiches Bewegungsmuster als Ersatz (sonst null, nie stillschweigend eine andere Bewegung)
 function pickForSlot(id, used) {
   const t = ex(id), cands = directCands(t, used), fav = cands.find(e => e.fav);
   if (!t.off && !used.has(id)) return t.fav || !fav ? id : fav.id;
-  const alt = fav || cands[0];
+  const alt = fav || cands.find(e => sameKind(e, t)) || cands[0];   // gleiche Übungsart der anderen Marke zuerst
   return alt ? alt.id : null;
 }
 
@@ -1241,7 +1463,7 @@ function balanceVolume(plan) {
 }
 function addExerciseFor(plan, m, ms, fits, tmax) {
   const used = new Set(plan.days.flatMap(d => d.items.map(i => i.exId))), g = GOALS[plan.goal] || GOALS.aufbau;
-  const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && !used.has(x.id)).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
+  const e = LIB.map(x => ex(x.id)).filter(x => x.muscle === m && !x.off && ![...used].some(u => sameKind(x, ex(u)))).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0))[0];
   if (!e) return false;
   // Bevorzugt ein Tag, der schon diese Körperregion trainiert, sonst der kürzeste
   const LEG = ["beinev", "beineh", "po", "waden"], same = d => d.items.some(i => LEG.includes(ex(i.exId).muscle) === LEG.includes(m));
@@ -1259,6 +1481,14 @@ function addExerciseFor(plan, m, ms, fits, tmax) {
 const $app = document.getElementById("app");
 const $tabs = document.getElementById("tabs");
 const $sheet = document.getElementById("sheet-root");
+// Vergessenes Training (Regel der App): 30 Minuten ohne Satz → beim nächsten Öffnen pausiert; das Training endet beim letzten Satz
+const IDLE_MS = 30 * 60000;
+function idlePause() { const s = state.session; if (!s || s.paused || !s.lastAt || Date.now() - s.lastAt <= IDLE_MS) return false;
+  Object.assign(s, { paused: s.lastAt, autoPaused: true, phase: "set" }); save(); return true; }
+const atTxt = ms => { const d = new Date(ms), days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ms).setHours(0, 0, 0, 0)) / 864e5);
+  return `${days === 0 ? "heute" : days === 1 ? "gestern" : d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })} ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`; };
+const sessionEnd = s => s.paused || (s.lastAt && Date.now() - s.lastAt > IDLE_MS ? s.lastAt : Date.now());
+idlePause();
 let view = state.session && !state.session.paused ? "train" : "home";
 let summary = null;
 let pickerCtx = null;
@@ -1651,7 +1881,7 @@ function progShort(x, e, si) {
 }
 
 /* ================= Übungsbibliothek & Wissen ================= */
-let libQuery = "", exDetail = null, exBack = "lib", artId = null, artBack = "wissen", guideRet = null;
+let libQuery = "", libBrand = "alle", exDetail = null, exBack = "lib", artId = null, artBack = "wissen", guideRet = null;
 // Persönliche Werte an einem Gerät (nur echte, gültige Sätze mit derselben Gewichtsangabe)
 function personalStats(id) {
   const u = unitOf(ex(id)), ss = compSessions(id, u);
@@ -1712,7 +1942,24 @@ const TRICK_X = {
   "hs-calf": [["Großzehenballen belasten", "Druck über den Großzehenballen, Fuß gerade", "Rollt der Fuß beim Hochdrücken auf die Außenkante, steht das Sprunggelenk schief. Druck über den Großzehenballen hält es gerade."]],
   "hs-seatcalf": [["Unterschenkel senkrecht", "Knie direkt über den Fußballen ausrichten", "Stehen die Unterschenkel senkrecht unter dem Polster, geht die Last direkt in die Wade. Sitzt du zu weit vorn oder hinten, verschiebt sich der Hebel."]],
   "hs-ab": [["Einrollen statt klappen", "Rippen zum Becken ziehen", "Der gerade Bauchmuskel rollt die Wirbelsäule ein. Klappst du nur in der Hüfte, arbeiten vor allem die Hüftbeuger."],
-    ["Ausatmen beim Einrollen", "Beim Einrollen kräftig ausatmen", "Kräftiges Ausatmen spannt die Bauchmuskeln zusätzlich an und erleichtert das volle Einrollen."]]
+    ["Ausatmen beim Einrollen", "Beim Einrollen kräftig ausatmen", "Kräftiges Ausatmen spannt die Bauchmuskeln zusätzlich an und erleichtert das volle Einrollen."]],
+  "lf-chest": [["Startposition statt Sitz", "Dehnung über die Startposition regeln, nicht über den Sitz", "Der Sitz bestimmt, wo die Griffe vor der Brust liegen. Wie weit die Arme hinten starten, stellst du getrennt ein – so passt beides."]],
+  "lf-shoulder": [["Griff bestimmt die Ellbogen", "Neutralgriff hält die Ellbogen weiter vorn", "Mit den Handflächen zueinander bleiben die Ellbogen eher vor dem Körper, im Obergriff gehen sie weiter zur Seite. Nimm den Griff, bei dem die Schulter ruhig bleibt."]],
+  "lf-pulldown": [["Bahn mitgehen lassen", "Die Griffe ihrer eigenen Bahn folgen lassen", "Jeder Arm läuft auf einer festen Bahn. Nur nach unten ziehen, die Hände weder zusammendrücken noch auseinanderziehen."]],
+  "lf-row": [["Polster vor dem Gewicht", "Erst das Brustpolster einstellen, dann das Gewicht", "Steht das Polster zu weit vorn, sind die Ellbogen schon am Start gebeugt und der Rücken wird nicht gedehnt; steht es zu weit hinten, musst du dich zum Fassen vorlehnen."]],
+  "lf-fly": [["Nicht die weiteste Position", "Die Dehnung soll deutlich sein, nicht maximal", "Die hinterste Startposition verlangt viel Beweglichkeit. Nur so weit öffnen, wie die Schulter vorn nicht zieht."]],
+  "lf-reardelt": [["Arme auf Schulterhöhe", "Die Arme auf Schulterhöhe nach hinten führen", "Sinken die Ellbogen ab, wird die Bewegung eher ein Rudern und der Rücken übernimmt. Auf Schulterhöhe bleibt die hintere Schulter die Hauptarbeiterin."]],
+  "lf-lateral": [["Ellbogen führen", "Mit den Oberarmen gegen die Polster nach oben drücken, nicht mit den Händen", "Die Kraft geht über die Oberarme ins Polster. Ziehen die Hände mit, spannen sich Unterarm und Nacken an."]],
+  "lf-curl": [["Handflächen nach oben", "Handflächen die ganze Zeit nach oben gedreht lassen", "Der Bizeps dreht den Unterarm auch nach außen. Mit nach oben gedrehten Handflächen arbeitet er voll mit; kippen die Hände nach innen, übernimmt der Oberarmspeichenmuskel mehr."]],
+  "lf-tripress": [["Griffart beibehalten", "Druck- oder Dip-Griff: einen wählen und dabei bleiben", "Beide trainieren vor allem den Trizeps. Wechselst du, sind die Gewichte nicht mehr vergleichbar – die App erkennt deinen Fortschritt dann schlechter."]],
+  "lf-triext": [["Handgelenke neutral", "Handgelenke gerade halten, nicht abknicken", "Knicken die Handgelenke ab, wird das Handgelenk belastet. Gerade gehalten geht die Kraft direkt in den Griff."]],
+  "lf-pushdown": [["Übersetzung beachten", "Die Zahl am Block ist oft nicht das Gewicht am Griff", "Viele Kabelzüge sind übersetzt, bei Life Fitness je nach Modell 2:1 oder 4:1. Am Griff kommt dann nur die Hälfte bzw. ein Viertel an. Gewichte deshalb nur am selben Zug vergleichen."]],
+  "lf-legpress": [["Im Sitzen einstellen", "Sitzschlitten im Sitzen verstellen und den Kniewinkel prüfen", "An der Arc Leg Press lässt sich der Sitzschlitten im Sitzen verstellen. So prüfst du den Kniewinkel in der Haltung, in der du gleich drückst."]],
+  "lf-legext": [["Gesäß an die Lehne", "Gesäß ganz nach hinten setzen", "Rutscht das Gesäß nach vorn, liegt das Knie nicht mehr am Drehpunkt. Dann rutscht das Polster am Schienbein entlang."]],
+  "lf-seatcurl": [["Griffe als Halt", "Mit den Griffen das Polster nach unten ziehen", "Hältst du dich an den Griffen auf dem Oberschenkelpolster fest, bleiben die Oberschenkel liegen und die Beuger arbeiten ohne Ausweichen."]],
+  "lf-legcurl": [["Oberkörper flach", "Oberkörper flach auf den abgewinkelten Brustteil legen", "Laut Hersteller entlastet der Knick an der Hüfte den unteren Rücken. Stützt du dich auf die Arme hoch, gerät der untere Rücken leichter ins Hohlkreuz."]],
+  "lf-abductor": [["Becken bleibt still", "Gesäß fest auf dem Sitz, nur die Beine bewegen sich", "Hebt sich eine Gesäßhälfte, drückst du aus dem Rumpf statt aus der Hüfte. Ruhig sitzend arbeiten die seitlichen Gesäßmuskeln."]],
+  "lf-ab": [["Becken bleibt hinten", "Gesäß bleibt am Sitz, der Oberkörper rollt sich ein", "Kippt der Oberkörper aus der Hüfte nach vorn, statt sich einzurollen, arbeiten die Hüftbeuger stärker mit und der Bauch weniger."]]
 };
 // Wofür das Gerät da ist – eine eigene Zeile je Gerät (aus der Anleitung „Warum diese Übung“)
 const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere Brust und vordere Schulter", "hs-decline": "Betont den unteren Brustanteil",
@@ -1723,8 +1970,18 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "hs-dip": "Drücken nach unten, vor allem für den Trizeps", "hs-triext": "Trizeps isoliert, alle drei Köpfe", "hs-legpress": "Grundübung für Oberschenkel und Gesäß",
   "hs-isolegpress": "Beinpresse mit getrennten Fußplatten", "hs-vsquat": "Geführte Kniebeuge mit Schulterpolstern", "hs-hack": "Geführte Kniebeuge, betont die Oberschenkelvorderseite",
   "hs-legext": "Oberschenkelvorderseite isoliert", "hs-kneelcurl": "Hinterer Oberschenkel, ein Bein nach dem anderen", "hs-seatcurl": "Hinterer Oberschenkel in gedehnter Position",
-  "hs-hipthrust": "Gesäß, größte Last bei gestreckter Hüfte", "hs-calf": "Waden, vor allem der Zwillingswadenmuskel", "hs-seatcalf": "Waden, vor allem der Schollenmuskel", "hs-ab": "Gerader Bauchmuskel gegen Widerstand" };
-const aboutOf = e => ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät");
+  "hs-hipthrust": "Gesäß, größte Last bei gestreckter Hüfte", "hs-calf": "Waden, vor allem der Zwillingswadenmuskel", "hs-seatcalf": "Waden, vor allem der Schollenmuskel", "hs-ab": "Gerader Bauchmuskel gegen Widerstand",
+  "lf-chest": "Arme laufen nach vorn zusammen", "lf-shoulder": "Drücken über Kopf, zwei Griffpaare", "lf-pulldown": "Zwei getrennte Zugarme statt Stange",
+  "lf-row": "Verstellbares Brustpolster, getrennte Arme", "lf-fly": "Brust isoliert, fünf Startpositionen", "lf-reardelt": "Am Butterfly-Kombigerät, Brust zum Polster",
+  "lf-lateral": "Seitliche Schulter, Arme getrennt", "lf-curl": "Bizeps am Armpolster, Griffe drehen mit", "lf-tripress": "Trizeps mit Dip- oder Druckgriffen",
+  "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
+  "lf-legext": "Quadrizeps isoliert, Startwinkel verstellbar", "lf-seatcurl": "Griffe am Oberschenkelpolster", "lf-legcurl": "Bank an der Hüfte abgewinkelt",
+  "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen" };
+const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"));
+const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
+// Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
+const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction" };
+const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
 // Gilt für alle Geräte: einmal, nicht bei jeder Übung
 const GEN_TRICKS = [
   { t: "Nah ans Limit", s: "In einer Auswertung vieler Studien (2024) wuchsen die Muskeln im Mittel mehr, je näher die Sätze am Muskelversagen endeten. Für die Kraft spielte das eine kleinere Rolle. Die eigene Reserve schätzt man oft ungenau.", src: ["rir2024"] },
@@ -1789,13 +2046,15 @@ function srcList(keys) {
 }
 function vLib() {
   const q = libQuery.toLowerCase();
-  const all = allEx().filter(e => !q || e.name.toLowerCase().includes(q) || (e.label || "").toLowerCase().includes(q) || MUSCLES[e.muscle].toLowerCase().includes(q));
-  const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
+  const all = allEx().filter(e => (libBrand === "alle" || e.brand === libBrand) && (findEx(e, q) || MUSCLES[e.muscle].toLowerCase().includes(q)));
+  // Geräte im Studio zuerst
+  const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m).sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0))]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">Wissen</div><div class="title">Übungen</div>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
     ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
+    <div class="chips" id="libBrand">${[["alle", "Alle"], ["hs", BRAND.hs], ["lf", BRAND.lf]].map(([k, l]) => `<button class="chip ${libBrand === k ? "on" : ""}" data-a="libBrand" data-k="${k}">${l}</button>`).join("")}</div>
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
         <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
@@ -1809,7 +2068,7 @@ function vEx() {
     <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
       <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
       <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
-      ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(e.label)}</p>` : ""}
+      ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
     <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
@@ -1947,8 +2206,9 @@ function vHome() {
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
-          <div class="metaline"><span><b>${dn}</b> von ${tot} Sätzen</span></div></div>
+          <div class="metaline"><span><b>${dn}</b> von ${tot} Sätzen</span>${dn && ses.lastAt ? `<span>letzter Satz ${atTxt(ses.lastAt)}</span>` : ""}</div></div>
         <div class="bar"><div style="width:${Math.round(dn / tot * 100)}%"></div></div>
+        ${ses.autoPaused ? `<p class="small muted" id="autoPaused" style="margin:0">Pausiert, weil über 30 Minuten kein Satz kam. Beim Beenden zählt die Zeit bis zum letzten Satz.</p>` : ""}
         <div class="stack-sm"><button class="btn primary xl block" data-a="resumeT">Fortsetzen</button>
           <button class="btn quiet sm block" data-a="askStop">Beenden oder verwerfen</button></div>
       </section>`; })() : ""}
@@ -2221,11 +2481,12 @@ function vDay() {
 /* Geräteverwaltung */
 let devFilter = "alle", devDraft = null, devRet = "list";
 function devListHtml() {
-  const all = allEx(), list = all.filter(e => devFilter === "alle" || (devFilter === "fav" ? e.fav : e.muscle === devFilter));
+  const all = allEx(), list = all.filter(e => devFilter === "alle" || (devFilter === "fav" ? e.fav : BRAND[devFilter] ? e.brand === devFilter : e.muscle === devFilter));
   return `${sheetHead("Meine Geräte", "Fertig", "devsDone")}
     <p class="small muted">${all.filter(e => !e.off).length} von ${all.length} im Studio · ${all.filter(e => e.fav).length} bevorzugt</p>
-    <div class="chips">${[["alle", "Alle"], ["fav", "Bevorzugt"], ...Object.entries(MUSCLES)].map(([k, l]) =>
+    <div class="chips">${[["alle", "Alle"], ["fav", "Bevorzugt"], ["hs", BRAND.hs], ["lf", BRAND.lf], ...Object.entries(MUSCLES)].map(([k, l]) =>
       `<button class="chip ${devFilter === k ? "on" : ""}" data-a="devFilt" data-k="${k}">${l}</button>`).join("")}</div>
+    ${BRAND[devFilter] ? `<div class="row wrap" id="devBulk" style="gap:8px"><button class="btn sm" data-a="devBulk" data-v="on">Alle ins Studio</button><button class="btn sm quiet" data-a="devBulk" data-v="off">Alle nicht im Studio</button></div>` : ""}
     ${list.length ? `<div class="group">${list.map(e => `<button class="li" data-a="editDev" data-id="${e.id}" data-ret="list">
       <div class="grow"><div class="t" style="${e.off ? "opacity:.45" : ""}">${esc(e.name)}</div>
         <div class="s ellipsis">${esc(aboutOf(e))} · ${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</div></div>
@@ -2287,7 +2548,7 @@ function devBack(savedId) {
 let pickFilter = "alle", pickQuery = "";
 function pickerHtml() {
   const q = pickQuery.toLowerCase();
-  const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && (!q || e.name.toLowerCase().includes(q) || (e.label || "").toLowerCase().includes(q)));
+  const match = allEx().filter(e => (pickFilter === "alle" || e.muscle === pickFilter) && findEx(e, q));
   const list = match.filter(e => !e.off).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0)), hidden = match.length - list.length;
   return `${sheetHead("Übung hinzufügen")}
     <input id="pickQ" data-i="pickQ" placeholder="Suchen, z. B. Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
@@ -2297,7 +2558,7 @@ function pickerHtml() {
       <div class="li" style="padding-right:var(--s2)"><button class="row grow" data-a="pick" data-id="${e.id}" style="text-align:left;gap:var(--s3)">
         <div style="width:34px;flex:0 0 34px">${figure({ [e.muscle]: "var(--accent)", ...Object.fromEntries(e.sec.map(m => [m, "var(--accent-soft)"])) }, e.name, e.muscle)}</div>
         <div class="grow"><div class="row wrap" style="gap:6px"><span class="t">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
-          <div class="s">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""} · ${e.id.startsWith("c-") ? "eigenes Gerät" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "insgesamt"}</div></div>
+          <div class="s">${brandPre(e)}${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""} · ${e.id.startsWith("c-") ? "eigenes Gerät" : e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "pro Seite" : "insgesamt"}</div></div>
         <span class="badge added" hidden></span></button>
         <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button>
       </div>`).join("")}</div>` : `<p class="muted" id="pickList">Nichts gefunden.</p>`}
@@ -2343,7 +2604,7 @@ function startTraining(day) {
   const tp = activeTimeplan(day);
   const list = day.items.map(it => tp && tp.replace[it.id] ? makeEntry(Object.assign({}, it, { exId: tp.replace[it.id] }), { from: ex(it.exId).name }) : makeEntry(it));
   state.session = {
-    dayId: day.id, dayName: day.name, start: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
+    dayId: day.id, dayName: day.name, start: Date.now(), lastAt: Date.now(), idx: 0, phase: "set", restEnd: 0, restTotal: 0,
     list, timeHidden: [], timeAdj: null
   };
   list.forEach((l, i) => { l.ord = i; });
@@ -2507,7 +2768,7 @@ function doneSet() {
   const s = S(), x = s.list[s.idx], i = curSetIdx(x);
   if (i === -1) return;
   const err = setError(x.sets[i]) || kgCheck(x, i); if (err) return showSetError(err);
-  x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i };
+  x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i }; s.lastAt = Date.now();
   const pr = livePr(x, i), isPR = !!pr, ts = x.sets[i];
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
   s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0; s.said10 = false;
@@ -2551,7 +2812,8 @@ function finish(saveIt) {
         for (const kg of [...new Set(v.map(t => t.kg))].sort((a, b) => b - a)) { const r = Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)), rb = repBest(x.exId, x.u, kg);
           if (rb !== null && r > rb) return { name: x.name, kg, u: x.u, reps: r, from: rb }; }
         return null; }).filter(Boolean);
-      const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date().toISOString(), durationSec: Math.round((Date.now() - s.start) / 1000), exercises: exs };
+      const end = sessionEnd(s);
+      const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date(end).toISOString(), durationSec: Math.max(0, Math.round((end - s.start) / 1000)), exercises: exs };
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       state.history.push(rec);
       summary = { rec, prs, repPrs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
@@ -2671,7 +2933,7 @@ function devInfoSheet() {
       <input id="noteT" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
     <div class="field" id="devTricks"><label>Tricks für dieses Gerät</label>${tricksHtml(e, x)}</div>
-    <p class="small muted">${e.label && e.label !== e.name ? `Am Gerät steht: ${esc(e.label)}<br>` : ""}${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
+    <p class="small muted">${e.label && e.label !== e.name ? `Am Gerät steht: ${esc(labelOf(e))}<br>` : ""}${MUSCLES[e.muscle]}${e.sec.length ? " · unterstützt: " + e.sec.map(m => MUSCLES[m]).join(", ") : ""}<br>${e.pattern ? PATTERNS[e.pattern].label + " · " : ""}${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
     <div class="stack-sm">
       <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="train">Ausführliche Anleitung</button>
       <button class="btn block" data-a="openSwap" ${x.sets.some(t => t.done) ? "disabled" : ""}>Gerät tauschen</button>
@@ -2711,10 +2973,11 @@ function rankAlternatives(curId, used) {
     if (e.off || used.has(e.id) || e.id === cur.id || e.muscle !== cur.muscle) continue;
     const same = !!cur.pattern && e.pattern === cur.pattern;
     const rel = !same && !!cur.pattern && !!e.pattern && PATTERNS[cur.pattern].rel.includes(e.pattern);
-    const known = knownDev(e.id);
-    const score = (rel ? 50 : 0) + (e.fav ? 30 : 0) + (known ? 10 : 0);
+    const known = knownDev(e.id), twin = sameKind(e, cur);
+    const score = (twin ? 40 : 0) + (rel ? 50 : 0) + (e.fav ? 30 : 0) + (known ? 10 : 0);
     let why;
-    if (same) why = `Gleiches Bewegungsmuster (${PATTERNS[e.pattern].label}), ebenfalls ${MUSCLES[e.muscle]}. Widerstandsverlauf kann sich unterscheiden.`;
+    if (twin) why = `Gleiche Übungsart am Gerät von ${BRAND[e.brand] || "deinem Studio"}. Bewegungsweg und Widerstandsverlauf können sich unterscheiden.`;
+    else if (same) why = `Gleiches Bewegungsmuster (${PATTERNS[e.pattern].label}), ebenfalls ${MUSCLES[e.muscle]}. Widerstandsverlauf kann sich unterscheiden.`;
     else if (rel) why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit verwandtem Bewegungsmuster (${PATTERNS[e.pattern].label} statt ${PATTERNS[cur.pattern].label}): anderer Belastungsschwerpunkt.`;
     else why = `Trainiert ebenfalls ${MUSCLES[e.muscle]}, aber mit anderer Bewegung${e.pattern ? " (" + PATTERNS[e.pattern].label + ")" : ""}. Keine direkte Alternative.`;
     (same ? direct : other).push({ e, why, known, score, kind: same ? "same" : rel ? "rel" : "other" });
@@ -4239,6 +4502,7 @@ const COACH_RULES = [
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
   ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt die App zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet die App in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
   ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. ohne Reserve – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
+  ["Vergessenes Training", "Über 30 Minuten ohne Satz: Beim nächsten Öffnen ist das Training pausiert. Beim Beenden zählt die Zeit bis zum letzten Satz bzw. bis zur Pause (Regel der App)."],
   ["Tippfehler", "Mehr als doppelt so viel Gewicht wie dein bisher schwerster Satz am Gerät: Die App fragt einmal nach, bevor sie den Satz speichert (Regel der App). Korrigieren lässt sich jedes Training unter Fortschritt → Letzte Trainings."],
   ["Stillstand", "Mindestens 4 vollständige Einheiten über mindestens 3 Wochen ohne mehr Gewicht oder Wiederholungen. Dann schlägt die App ein Gerät mit gleichem Bewegungsmuster vor – oder, wenn du mit Reserve trainiert hast, näher ans Limit zu gehen."],
   ["Häufigkeit", "Deine Trainings der letzten 4 vollen Wochen im Vergleich mit den Tagen deines Plans (ab 4 Wochen Verlauf). Kommt ein Trainingstag 12 Tage oder länger nicht dran, obwohl du trainiert hast, gibt es einen Hinweis."],
@@ -4511,6 +4775,7 @@ const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh) re
 function histSheet(h, msg = "") {
   return `${sheetHead(esc(h.day), "Fertig")}
     <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min. · ${nSets(histSetCount(h))}</p>
+    <button class="link small" data-a="histMeta" style="justify-self:start;margin-top:calc(-1 * var(--s3))">Datum oder Dauer ändern</button>
     ${msg ? `<p class="small" id="histMsg" role="status" style="margin:0;color:var(--ok)">${esc(msg)}</p>` : ""}
     <div class="plain-list" id="histEx">${h.exercises.map((x, xi) => `<div class="li" style="display:block">
       <div class="row between"><span class="t ellipsis">${esc(x.name)}</span><span class="small faint">${UNIT[x.u] || ""}</span></div>
@@ -4527,6 +4792,17 @@ function histSetSheet() {
     <p class="error" id="hsErr" role="alert" hidden></p>
     <div class="stack-sm"><button class="btn primary block xl" data-a="histSetSave">Speichern</button>
       ${histSetCount(h) > 1 ? `<button class="btn block danger" data-a="histSetDel">Satz löschen</button>` : ""}</div>`;
+}
+const localDay = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function histMetaSheet() {
+  const h = histRec();
+  return `${sheetHead("Datum und Dauer", "Zurück", "histBack")}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">
+      <div class="field"><label for="hmDate">Datum</label><input id="hmDate" type="date" value="${localDay(new Date(h.date))}" max="${localDay(new Date())}"></div>
+      <div class="field"><label for="hmMin">Dauer in Minuten</label><input id="hmMin" inputmode="numeric" value="${Math.max(1, Math.round((h.durationSec || 0) / 60))}" autocomplete="off" enterkeyhint="done"></div></div>
+    <p class="error" id="hmErr" role="alert" hidden></p>
+    ${h.hk ? `<p class="small muted" style="margin:0">Der Eintrag in Apple Health ändert sich dadurch nicht.</p>` : ""}
+    <button class="btn primary block xl" data-a="histMetaSave">Speichern</button>`;
 }
 // Nach jeder Änderung: Kraftziele, die nur durch den alten Wert erreicht waren, gelten wieder als offen.
 function histChanged() {
@@ -4969,6 +5245,10 @@ const A = {
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
   devsDone: () => { closeSheet(); render(); },
   devFilt: el => { devFilter = el.dataset.k; openSheet(devListHtml()); },
+  devBulk: el => { const off = el.dataset.v === "off";
+    LIB.filter(e => e.brand === devFilter).forEach(e => { state.dev[e.id] = Object.assign({}, state.dev[e.id] || {}, { off }); });
+    save(); openSheet(devListHtml()); },
+  libBrand: el => { libBrand = el.dataset.k; render(); },
   editDev: el => { const e = ex(el.dataset.id); devRet = el.dataset.ret || "list";
     devDraft = { id: e.id, name: e.name, muscle: e.muscle, sec: e.sec.slice(), type: e.type, load: e.load, step: e.step, off: !!e.off, fav: !!e.fav, pattern: e.pattern, note: state.notes[e.id] || "" };
     openSheet(devSheetHtml()); },
@@ -5036,15 +5316,16 @@ const A = {
     const i = s.idx; if (!x.sets.length) s.list.splice(i, 1); afterListChange(x.sets.length ? i + 1 : i); },
   openDevInfo: () => openSheet(devInfoSheet()),
   askStop: () => { const s = S(), any = s.list.some(x => x.sets.some(t => t.done));
-    openSheet(`<h2>Training unterbrechen?</h2>
-      <button class="btn primary block" data-a="pauseT">Pausieren, später weitermachen</button>
+    openSheet(`<h2>${s.paused ? "Training beenden?" : "Training unterbrechen?"}</h2>
+      ${s.paused ? "" : `<button class="btn primary block" data-a="pauseT">Pausieren, später weitermachen</button>`}
       ${any ? `<button class="btn block" data-a="stopSave">Speichern & beenden</button>` : ""}
       <button class="btn block danger" data-a="askDiscard">Verwerfen</button>
-      <button class="btn block" data-a="closeSheet">Weiter trainieren</button>`); },
+      <button class="btn block" data-a="closeSheet">${s.paused ? "Abbrechen" : "Weiter trainieren"}</button>`); },
   askDiscard: () => openSheet(`<h2>Training verwerfen?</h2><p class="muted">Alle Sätze dieser Einheit gehen verloren.</p>
       <button class="btn block" style="background:var(--bad);color:#fff" data-a="stopDiscard">Verwerfen</button><button class="btn block" data-a="closeSheet">Zurück</button>`),
-  pauseT: () => { const s = S(); s.paused = Date.now(); stopTick(); awake(false); save(); closeSheet(); go("home"); },
+  pauseT: () => { const s = S(); if (!s.paused) s.paused = Date.now(); stopTick(); awake(false); save(); closeSheet(); go("home"); },
   resumeT: () => { const s = S(); if (!s) return; if (s.paused) { const d = Date.now() - s.paused; s.start += d; s.paused = null; }
+    s.lastAt = Date.now(); s.autoPaused = false;
     s.phase = "set"; save(); awake(true); go("train"); startTick(); },
   openSwap: () => { swapPerm = false; openSheet(swapSheet()); },
   swapMode: el => { swapPerm = el.dataset.v === "1"; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + swapSheet(); },
@@ -5067,6 +5348,19 @@ const A = {
   histSetDel: () => { const h = histRec(), x = h?.exercises[histEdit.x]; if (!x?.sets[histEdit.i] || histSetCount(h) < 2) return closeSheet();
     x.sets.splice(histEdit.i, 1); if (!x.sets.length) h.exercises.splice(histEdit.x, 1);
     histChanged(); sheetTo(histSheet(h, `Satz gelöscht.`)); },
+  histMeta: () => { if (histRec()) sheetTo(histMetaSheet()); },
+  histMetaSave: () => { const h = histRec(); if (!h) return closeSheet();
+    const dv = byId("hmDate").value, min = num(byId("hmMin").value), old = new Date(h.date), oldMin = Math.max(1, Math.round((h.durationSec || 0) / 60));
+    let nd = /^\d{4}-\d{2}-\d{2}$/.test(dv) ? new Date(`${dv}T${pad2(old.getHours())}:${pad2(old.getMinutes())}:${pad2(old.getSeconds())}`) : null;
+    if (nd && nd > Date.now() && dv === localDay(new Date())) nd = new Date(); // heute, aber Uhrzeit noch nicht erreicht
+    const err = !nd || isNaN(nd) ? "Bitte ein Datum wählen." : nd > Date.now() ? "Das Datum liegt in der Zukunft."
+      : !Number.isInteger(min) || min < 1 || min > 300 ? "Bitte eine Dauer von 1 bis 300 Minuten eintragen." : "";
+    if (err) { const el = byId("hmErr"); el.textContent = err; el.hidden = false; return; }
+    const dayChanged = dv !== localDay(old), changed = dayChanged || min !== oldMin;
+    if (dayChanged) { h.date = nd.toISOString(); state.history.sort((a, b) => new Date(a.date) - new Date(b.date)); }
+    if (min !== oldMin) h.durationSec = min * 60;
+    if (changed) histChanged();
+    sheetTo(histSheet(h, changed ? "Datum und Dauer gespeichert." : "")); },
   histDel: () => { const h = histRec(); if (!h) return closeSheet();
     sheetTo(`${sheetHead("Training löschen?", "")}<p class="muted">„${esc(h.day)}“ vom ${fmtDay(h.date)} mit ${nSets(histSetCount(h))} wird gelöscht.</p>
       ${h.hk ? `<p class="small muted">Der Eintrag in Apple Health bleibt und lässt sich nur dort löschen.</p>` : ""}
@@ -5092,7 +5386,7 @@ const A = {
   timeFit: el => { const s = S(), m = +el.dataset.m, res = previewLive(s, m);
     if (res.fits) { applyKeep(s, res.keep); s.timeAdj = { minutes: m }; s.timeHintOff = true; save(); render(); } else { timeSel = m; openSheet(liveTimeSheet()); } },
   timeHintOff: () => { S().timeHintOff = true; save(); render(); },
-  warmDone: () => { S().warmDone = true; save(); render(); },
+  warmDone: () => { S().warmDone = true; S().lastAt = Date.now(); save(); render(); },
   advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
     x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
   advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
@@ -5145,7 +5439,9 @@ document.addEventListener("keydown", ev => {
   const upd = () => document.documentElement.style.setProperty("--kb", Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) + "px");
   vv.addEventListener("resize", upd); vv.addEventListener("scroll", upd);
 })();
-document.addEventListener("visibilitychange", () => { if (!document.hidden && state.session) { awake(true); tick(); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden || !state.session) return;
+  if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
+  if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, get state() { return state; } };
