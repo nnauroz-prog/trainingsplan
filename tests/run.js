@@ -66,7 +66,8 @@ async function open(data, opts = {}) {
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
   // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
-  page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && (m.location().url || "").includes("openfoodfacts.org"))) allErrors.push(m.text()); });
+  // Der Testserver hat keine Server-Funktion: /api/food antwortet mit 404, die App nimmt dann die alte Schnittstelle
+  page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && /openfoodfacts\.org|\/api\/food/.test(m.location().url || ""))) allErrors.push(m.text()); });
   await page.goto(URL);
   return { ctx, page };
 }
@@ -362,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v45)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v45")));
+      ok("Service Worker aktiv (Cache trainingsplan-v46)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v46")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3132,7 +3133,51 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("55. Konsole");
+    section("55. Lebensmittel: Supermärkte, Marken, Fast Food");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const fd = await tp(page, () => { const T = window.__tp, bad = [];
+        T.FAST_DB.forEach(([id, n, k, p, c, f]) => { if (!Number.isInteger(id) || !n || ![k, p, c, f].every(v => typeof v === "number" && v >= 0) || p + c + f > 100.5) bad.push(id); });
+        const bm = T.FAST_DB.find(r => r[0] === 170720);
+        return { n: T.FAST_DB.length, bad, bm, q1: T.offQuery("skyr lidl"), q2: T.offQuery("ja! milch rewe"), q3: T.offQuery("sucuk") }; });
+      ok("34 Fast-Food-Produkte aus USDA, alle vollständig", fd.n === 34 && !fd.bad.length, fd.bad.join());
+      ok("Stichprobe Big Mac wie USDA SR Legacy (257 kcal, 11,8 E, 20,1 K, 15 F je 100 g; 1 Stück = 219 g)", JSON.stringify(fd.bm.slice(2, 6)) === "[257,11.8,20.1,15]" && fd.bm[7][1] === 219);
+      ok("„Skyr Lidl“ sucht Skyr bei Lidl-Eigenmarken (Milbona, Pilos …)", fd.q1.startsWith("skyr brands_tags:(") && fd.q1.includes("milbona") && fd.q1.includes("pilos") && !/\blidl brands/.test(fd.q1));
+      ok("„ja! milch rewe“: Rewe-Marken als Filter, „ja“ nicht doppelt im Suchtext", fd.q2.startsWith("milch brands_tags:(") && fd.q2.includes(" OR ja OR ") && fd.q3 === "sucuk");
+      let asked = [];
+      await page.route("**/api/food**", route => { asked.push(decodeURIComponent(route.request().url()));
+        route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ hits: [
+          { code: "1", product_name: "Sucuk", brands: ["Yayla"], countries_tags: ["en:germany"], nutriments: { "energy-kcal_100g": 377, proteins_100g: 15, carbohydrates_100g: 0.5, fat_100g: 35 } },
+          { code: "2", product_name: "Sucuk", brands: ["Yayla"], countries_tags: ["en:germany"], nutriments: { "energy-kcal_100g": 377, proteins_100g: 15, carbohydrates_100g: 0.5, fat_100g: 35 } },
+          { code: "3", product_name: "Sucuk Spezial", brands: ["Ausland"], countries_tags: ["en:russia"], nutriments: { "energy-kcal_100g": 300, proteins_100g: 20, carbohydrates_100g: 1, fat_100g: 24 } },
+          { code: "4", product_name: "Sucuk am Stück", brands: ["Kamar"], nutriments: { "energy-kcal_100g": 372, proteins_100g: 18, carbohydrates_100g: 0.7, fat_100g: 33 } },
+          { code: "5", product_name: "Ohne Werte", nutriments: {} }] }) }); });
+      await page.click("[data-a=tab][data-v=food]"); await page.click("[data-a=foodAdd][data-m=m]");
+      ok("Hinweis: Fast Food und Supermarkt-Suche", (await page.textContent("#foodRes")).includes("34 Fast-Food-Produkte") && (await page.textContent("#foodRes")).includes("Skyr Lidl"));
+      await page.fill("#foodQ", "mcdonalds");
+      ok("„mcdonalds“ findet die McDonald's-Produkte lokal (Schreibweise egal)", (await page.$$eval("#foodRes [data-a=foodPick] .t", e => e.map(x => x.textContent))).filter(t => t.includes("McDonald's")).length === 12);
+      await page.fill("#foodQ", "big mac");
+      const bigmac = (await page.textContent("#foodRes")).replace(/\s+/g, " ");
+      ok("„big mac“ findet den Big Mac mit kcal, Eiweiß, Kohlenhydraten und Fett", bigmac.includes("Big Mac (McDonald's)") && bigmac.includes("257 kcal · E 11,8 · K 20,1 · F 15 g je 100 g"));
+      await page.click("#foodRes [data-a=foodPick]");
+      ok("Big Mac: Portion vorausgewählt (219 g → 563 kcal), Hinweis auf US-Rezeptur", (await page.inputValue("#amtG")) === "219" && (await page.textContent("#amtOut")).replace(/\s+/g, "").includes("kcal563") && (await page.textContent(".sheet")).includes("US-Rezeptur"));
+      await page.keyboard.press("Escape"); await page.click("[data-a=foodAdd][data-m=m]");
+      asked = []; await page.fill("#foodQ", "sucuk");
+      await page.waitForSelector("#offRes [data-a=foodPick]", { timeout: 5000 }).catch(() => {});
+      const rows = await page.$$eval("#offRes [data-a=foodPick]", e => e.map(x => x.textContent.replace(/\s+/g, " ").trim()));
+      ok("Online-Suche startet beim Tippen von selbst (über /api/food)", asked.some(u => u.includes("/api/food?q=sucuk")));
+      ok("Gleiches Produkt nur einmal, ohne unvollständige, Ausland zuletzt", rows.length === 3 && rows[0].includes("Yayla") && rows[1].includes("Kamar") && rows[2].includes("Ausland"), rows.join(" | "));
+      asked = []; await page.fill("#foodQ", "skyr lidl"); await page.waitForTimeout(900);
+      ok("„Skyr Lidl“: Anfrage mit Lidl-Eigenmarken", asked.some(u => u.includes("brands_tags:(lidl OR milbona")));
+      await ctx.close();
+      const swSrc = require("fs").readFileSync(require("path").join(__dirname, "..", "sw.js"), "utf8");
+      ok("Service Worker speichert Suchergebnisse nicht zwischen (/api/ immer aus dem Netz)", swSrc.includes('url.pathname.startsWith("/api/")'));
+      const api = require(require("path").join(__dirname, "..", "api", "food.js"));
+      const res = await new Promise(resolve => { const r = { setHeader() {}, status(c) { this.c = c; return this; }, json(o) { resolve({ c: this.c, o }); } }; api({ query: { q: "x" } }, r); });
+      ok("Server-Funktion lehnt zu kurze Suchbegriffe ab, ohne Open Food Facts zu fragen", res.c === 400);
+    }
+
+    section("56. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

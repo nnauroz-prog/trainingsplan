@@ -3560,6 +3560,45 @@ const FOOD_DB = [
 [172241, "Balsamico-Essig", "sonst", 88, 0.49, 17, 0, null],  // Vinegar, balsamic
 [170317, "Käsepizza (TK), gebacken", "sonst", 268, 10.4, 29, 12.3, 2.2],  // Pizza, cheese topping, regular crust, frozen, cooked
 ];
+// Fast Food aus USDA SR Legacy: [FDC-ID, Name, kcal, Eiweiß, Kohlenhydrate, Fett, Ballaststoffe je 100 g, Portion].
+// US-Rezepturen – in Deutschland können Rezeptur und Portionsgröße abweichen; das steht beim Eintrag dabei.
+const FAST_DB = [
+[170720, "Big Mac (McDonald's)", 257, 11.8, 20.1, 15.0, 1.6, ["1 Big Mac", 219]],  // McDONALD'S, BIG MAC
+[170320, "Cheeseburger (McDonald's)", 263, 13.0, 27.8, 11.8, 1.1, ["1 Cheeseburger", 119]],  // McDONALD'S, Cheeseburger
+[170717, "Hamburger (McDonald's)", 264, 12.9, 30.3, 10.1, 1.3, ["1 Hamburger", 95]],  // McDONALD'S, Hamburger
+[172065, "Double Cheeseburger (McDonald's)", 282, 15.5, 18.8, 16.1, 0.8, ["1 Double Cheeseburger", 155]],  // McDONALD'S, Double Cheeseburger
+[170719, "Quarter Pounder mit Käse (McDonald's)", 258, 14.6, 20.0, 14.2, 1.4, ["1 Quarter Pounder mit Käse", 199]],  // McDONALD'S, QUARTER POUNDER with Cheese
+[173305, "McChicken (McDonald's)", 273, 10.4, 28.0, 13.2, 1.3, ["1 McChicken", 131]],  // McDONALD'S, McCHICKEN Sandwich
+[173297, "Chicken McNuggets (McDonald's)", 302, 15.8, 15.1, 19.8, null, ["6 Chicken McNuggets", 95]],  // McDONALD'S, Chicken McNUGGETS
+[170721, "Pommes (McDonald's)", 323, 3.41, 42.6, 15.5, 3.9, ["1 mittlere Portion", 117]],  // McDONALD'S, french fries
+[170319, "Filet-o-Fish (McDonald's)", 282, 11.3, 26.4, 14.6, 1.4, ["1 Filet-o-Fish", 134]],  // McDONALD'S, FILET-O-FISH
+[173304, "McFlurry Oreo (McDonald's)", 165, 3.97, 25.6, 5.66, 0.1, ["1 McFlurry (US-Größe 355 ml)", 337]],  // McDONALD'S, McFLURRY with OREO cookies
+[173307, "Egg McMuffin (McDonald's)", 228, 13.6, 21.7, 9.66, 1.1, ["1 Egg McMuffin", 126]],  // McDONALD'S, Egg McMUFFIN
+[173298, "Hash Brown (McDonald's)", 271, 2.48, 28.6, 16.3, 2.8, ["1 Hash Brown", 53]],  // McDONALD'S, Hash Brown
+[170727, "Whopper (Burger King)", 233, 10.7, 18.6, 12.8, 1.8, ["1 Whopper", 291]],  // BURGER KING, WHOPPER, no cheese
+[170728, "Whopper mit Käse (Burger King)", 250, 11.2, 16.7, 15.3, 1.0, ["1 Whopper mit Käse", 316]],  // BURGER KING, WHOPPER, with cheese
+[170730, "Double Whopper mit Käse (Burger King)", 266, 14.5, 13.5, 17.1, 1.6, ["1 Double Whopper mit Käse", 399]],  // BURGER KING, DOUBLE WHOPPER, with cheese
+[170329, "Cheeseburger (Burger King)", 286, 14.6, 23.7, 14.8, 1.0, ["1 Cheeseburger", 133]],  // BURGER KING, Cheeseburger
+[170327, "Pommes (Burger King)", 280, 3.23, 38.7, 12.5, 2.9, ["1 mittlere Portion", 117]],  // BURGER KING, french fries
+[170771, "Onion Rings (Burger King)", 417, 3.86, 43.6, 25.2, 2.7, ["1 mittlere Portion", 117]],  // BURGER KING, Onion Rings
+[170731, "Chicken Strips (Burger King)", 292, 18.2, 20.5, 15.2, 1.3, ["5 Chicken Strips", 173]],  // BURGER KING, Chicken Strips
+[170744, "Hähnchenbrust Original Recipe (KFC)", 231, 21.9, 6.28, 13.1, null],  // KFC, Fried Chicken, ORIGINAL RECIPE, Breast, meat and skin with breading
+[170745, "Unterschenkel Original Recipe (KFC)", 239, 22.3, 5.39, 14.2, null],  // KFC, Fried Chicken, ORIGINAL RECIPE, Drumstick, meat and skin with breading
+[170346, "Oberschenkel Original Recipe (KFC)", 269, 18.9, 8.46, 17.7, 0.0],  // KFC, Fried Chicken, ORIGINAL RECIPE, Thigh, meat and skin with breading
+[170347, "Flügel Original Recipe (KFC)", 297, 21.7, 9.93, 18.9, 0.0],  // KFC, Fried Chicken, ORIGINAL RECIPE, Wing, meat and skin with breading
+[170737, "Popcorn Chicken (KFC)", 351, 17.7, 21.2, 21.7, 1.0, ["10 Stück", 56]],  // KFC, Popcorn Chicken
+[170341, "Crispy Strips (KFC)", 274, 20.2, 13.7, 15.4, 1.4, ["1 Strip", 47]],  // KFC, Crispy Chicken Strips
+[170340, "Coleslaw (KFC)", 144, 0.91, 15.6, 8.64, 2.0, ["1 kleine Packung", 112]],  // KFC, Coleslaw
+[170314, "Sub Hähnchenbrust (Subway, Weißbrot, Salat, Tomate)", 157, 10.8, 21.4, 3.15, 1.2, ["1 Sub, 15 cm", 198]],  // SUBWAY, oven roasted chicken sub on white bread with lettuce and tomato
+[170316, "Sub Thunfisch (Subway, Weißbrot, Salat, Tomate)", 221, 12.3, 16.0, 12.0, 0.7, ["1 Sub, 15 cm", 237]],  // SUBWAY, tuna sub on white bread with lettuce and tomato
+[170705, "Sub Chicken Teriyaki (Subway, Weißbrot)", 155, 10.9, 22.5, 2.37, 1.2, ["1 Sub, 15 cm", 228]],  // SUBWAY, sweet onion chicken teriyaki sub on white bread with lettuce, tomato and sweet onion sauce
+[170310, "Sub Steak & Cheese (Subway, Weißbrot)", 183, 12.3, 21.5, 5.34, 1.2, ["1 Sub, 15 cm", 201]],  // SUBWAY, steak & cheese sub on white bread with American cheese, lettuce and tomato
+[170711, "Sub Putenbrust (Subway, Weißbrot, Salat, Tomate)", 147, 9.12, 22.4, 2.31, 1.3, ["1 Sub, 15 cm", 184]],  // SUBWAY, turkey breast sub on white bread with lettuce and tomato
+[173292, "Pizza Käse (Pizzakette, normaler Boden)", 266, 11.4, 33.3, 9.69, 2.3, ["1 Stück", 107]],  // Fast Food, Pizza Chain, 14" pizza, cheese topping, regular crust
+[173295, "Pizza Peperoni-Salami (Pizzakette, normaler Boden)", 282, 11.7, 32.0, 11.9, 2.3, ["1 Stück", 111]],  // Fast Food, Pizza Chain, 14" pizza, pepperoni topping, regular crust
+[173294, "Pizza Käse (Pizzakette, dünner Boden)", 302, 12.8, 31.2, 14.0, 2.5, ["1 Stück", 76]],  // Fast Food, Pizza Chain, 14" pizza, cheese topping, thin crust
+];
+const FAST_SUB = "USDA FoodData Central · Fast Food, US-Rezeptur – in Deutschland teils anders";
 const FOOD_CAT = { getreide: "Getreide & Beilagen", fleisch: "Fleisch & Fisch", eiweiss: "Eier, Hülsenfrüchte & Tofu", milch: "Milch & Käse",
   obst: "Obst", gemuese: "Gemüse", nuss: "Nüsse, Samen & Öle", suess: "Süßes", getraenke: "Getränke", sonst: "Saucen" };
 const MEALS = [["f", "Frühstück", "Früh"], ["m", "Mittagessen", "Mittag"], ["a", "Abendessen", "Abend"], ["s", "Snacks", "Snack"]];
@@ -3679,6 +3718,9 @@ function trendHtml(G) {
 const foodPool = new Map();
 FOOD_DB.forEach(([id, n, cat, k, p, c, f, fib, por]) => foodPool.set("u:" + id,
   { key: "u:" + id, n, k, p, c, f, fib, por: por || null, src: "usda:" + id, sub: "USDA FoodData Central · " + FOOD_CAT[cat] }));
+FAST_DB.forEach(([id, n, k, p, c, f, fib, por]) => foodPool.set("u:" + id, { key: "u:" + id, n, k, p, c, f, fib, por: por || null, src: "usda:" + id, sub: FAST_SUB }));
+// Suche unempfindlich gegen Apostroph, Bindestrich und Leerzeichen („mcdonalds“ findet „McDonald's“, „big mac“ den Big Mac)
+const foodNorm = s => String(s).toLowerCase().replace(/[’'`´.\-\s]/g, "");
 function poolOwn(x) { const key = "m:" + x.id; foodPool.set(key, { key, n: x.n, k: x.k, p: x.p, c: x.c, f: x.f, fib: x.fib ?? null, por: x.por || null, src: "own:" + x.id, sub: "Eigenes Lebensmittel" }); return key; }
 function offFood(p) {
   const nu = isObj(p.nutriments) ? p.nutriments : {};
@@ -3714,7 +3756,7 @@ function recentKeys() {
 let foodDay = null, foodCtx = { m: "f", d: null, q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }, nutrDraft = null;
 function foodRows(keys) {
   return keys.map(k => { const x = foodPool.get(k); return `<button class="li" data-a="foodPick" data-k="${esc(k)}">
-    <div class="grow"><div class="t">${esc(x.n)}</div><div class="s">${fmtK(x.k)} kcal · ${fmtN(x.p)} g Eiweiß je 100 g${x.brand ? " · " + esc(x.brand) : ""}</div></div><span class="chev">›</span></button>`; }).join("");
+    <div class="grow"><div class="t">${esc(x.n)}</div><div class="s">${fmtK(x.k)} kcal · E ${fmtN(x.p)} · K ${fmtN(x.c)} · F ${fmtN(x.f)} g je 100 g${x.brand ? " · " + esc(x.brand) : ""}</div></div><span class="chev">›</span></button>`; }).join("");
 }
 function mealsKcal(x) { return x.items.reduce((a, e) => a + entryVals(e).k, 0); }
 function mealRows(list) {
@@ -3729,9 +3771,10 @@ function foodResults() {
     const rec = recentKeys(), own = state.myFoods.map(poolOwn);
     return mealRows(state.meals) + (rec.length ? `<section class="section"><h2>Zuletzt verwendet</h2><div class="group">${foodRows(rec)}</div></section>` : "")
       + (own.length ? `<section class="section"><h2>Eigene Lebensmittel</h2><div class="group">${foodRows(own)}</div></section>` : "")
-      + `<p class="small faint">${FOOD_DB.length} Grundnahrungsmittel mit Werten aus der USDA-Datenbank. Für Markenprodukte die Online-Suche oder den Barcode nutzen.</p>`;
+      + `<p class="small faint">${FOOD_DB.length} Grundnahrungsmittel und ${FAST_DB.length} Fast-Food-Produkte mit Werten aus der USDA-Datenbank. Beim Tippen sucht die App zusätzlich online in Open Food Facts – auch nach Supermarkt-Eigenmarken, z. B. „Skyr Lidl“.</p>`;
   }
-  const keys = [...state.myFoods.filter(x => x.n.toLowerCase().includes(q)).map(poolOwn), ...FOOD_DB.filter(r => r[1].toLowerCase().includes(q)).map(r => "u:" + r[0])].slice(0, 40);
+  const nq = foodNorm(q), hit = n => foodNorm(n).includes(nq);
+  const keys = [...state.myFoods.filter(x => hit(x.n)).map(poolOwn), ...FOOD_DB.filter(r => hit(r[1])).map(r => "u:" + r[0]), ...FAST_DB.filter(r => hit(r[1])).map(r => "u:" + r[0])].slice(0, 40);
   const ms = state.meals.filter(x => x.n.toLowerCase().includes(q));
   return mealRows(ms) + (keys.length ? `<div class="group">${foodRows(keys)}</div>` : ms.length ? "" : `<p class="small muted">Kein Grundnahrungsmittel gefunden. Probier die Online-Suche.</p>`);
 }
@@ -3739,7 +3782,7 @@ function offHtml() {
   if (foodCtx.off === null) return foodCtx.offMsg ? `<p class="small muted" id="offMsg">${esc(foodCtx.offMsg)}</p>` : "";
   return foodCtx.off.length ? `<section class="section"><h2>Online · Packungsangaben</h2><div class="group">${foodRows(foodCtx.off)}</div>
     <p class="small faint">Quelle: Open Food Facts. Die Angaben haben Nutzer von Packungen übernommen – vergleiche sie im Zweifel mit deiner Packung.</p></section>`
-    : `<p class="small muted" id="offMsg">Online nichts mit vollständigen Nährwerten gefunden.</p>`;
+    : `<p class="small muted" id="offMsg">Online nichts Passendes mit vollständigen Nährwerten gefunden.</p>`;
 }
 function offBtnHtml() { const q = foodCtx.q.trim(); return `<button class="btn block" data-a="offSearch" id="offBtn" ${q.length >= 2 ? "" : "disabled"}>${q.length >= 2 ? `Online nach „${esc(q)}“ suchen` : "Online-Suche: Suchbegriff eingeben"}</button>`; }
 function foodAddSheet() {
@@ -3813,7 +3856,28 @@ async function fetchJSON(url, ms = 12000) {
   finally { clearTimeout(t); }
 }
 const OFF_FIELDS = "code,product_name,product_name_de,brands,nutriments,serving_quantity";
-const offSearchUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
+// Supermärkte → Eigenmarken (Schreibweise wie in Open Food Facts). „Skyr Lidl“ sucht Skyr bei Milbona, Pilos usw.
+const STORE_BRANDS = {
+  lidl: ["lidl", "milbona", "pilos", "freeway", "crownfield", "chef-select", "solevita", "snack-day", "fin-carre", "favorina", "vitasia", "kania", "alesto", "combino", "baresa", "nixe", "sondey", "bellarom", "dulano", "trattoria-alfredo"],
+  aldi: ["aldi", "aldi-nord", "aldi-sud", "milsani", "moser-roth", "gutbio", "golden-bridge", "lyttos", "rio-d-oro", "choco-changer", "cucina-nobile", "knusperone", "goldahren"],
+  rewe: ["rewe", "ja", "rewe-beste-wahl", "rewe-bio", "rewe-feine-welt"],
+  edeka: ["edeka", "gut-gunstig", "edeka-bio", "edeka-herzstucke"],
+  kaufland: ["kaufland", "k-classic", "k-bio"],
+  penny: ["penny", "naturgut"], netto: ["netto"], dm: ["dm", "dmbio"], rossmann: ["rossmann", "enerbio"]
+};
+function offQuery(q) {
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean), key = w => w.replace(/[^a-zäöü]/g, "");
+  const stores = words.filter(w => STORE_BRANDS[key(w)]), rest = words.filter(w => !STORE_BRANDS[key(w)]).join(" ").replace(/[+\-!(){}[\]^"~*?:\\/&|]/g, " ").trim();
+  if (!stores.length) return rest;
+  const tags = [...new Set(stores.flatMap(w => STORE_BRANDS[key(w)]))];
+  // Eigenmarken-Namen (z. B. „ja!“ bei Rewe) stecken schon im Filter und würden sonst jede Zutatenliste treffen
+  const text = rest.split(" ").filter(w => w && !tags.includes(w)).join(" ");
+  return `${text ? text + " " : ""}brands_tags:(${tags.join(" OR ")})`;
+}
+// Suche über die eigene Vercel-Funktion (/api/food), weil search.openfoodfacts.org keine Browser-Anfragen anderer Seiten erlaubt
+const offSearchUrl = q => `/api/food?q=${encodeURIComponent(offQuery(q))}`;
+const offLegacyUrl = q => `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=24&cc=de&lc=de&fields=${OFF_FIELDS}`;
+let offTimer = null;
 const offProductUrl = code => `https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=${OFF_FIELDS}`;
 const offErr = search => navigator.onLine === false ? "Keine Internetverbindung. Grundnahrungsmittel und eigene Lebensmittel funktionieren auch offline."
   : "Open Food Facts ist gerade nicht erreichbar oder ausgelastet. Bitte in einer Minute erneut versuchen." + (search ? " Die Barcode-Abfrage nutzt eine andere Schnittstelle und funktioniert oft trotzdem." : "");
@@ -5312,10 +5376,25 @@ const A = {
     const box = () => byId("offRes");
     foodCtx.off = null; foodCtx.offMsg = "Suche läuft …"; if (box()) box().innerHTML = offHtml();
     try {
-      const r = await fetchJSON(offSearchUrl(q), 20000), seen = new Set();
+      // Neue Suchschnittstelle (schnell); fällt sie aus, die alte. In Deutschland verkaufte Produkte zuerst.
+      let list;
+      try { if (!/^https?:$/.test(location.protocol)) throw new Error("ohne Server");
+        const r = await fetchJSON(offSearchUrl(q), 12000); if (!Array.isArray(r.hits)) throw new Error("Format");
+        // Nur Produkte, die ausdrücklich nur in anderen Ländern verkauft werden, rutschen nach unten; fehlende Länderangabe ist neutral
+        const away = x => { const c = x.countries_tags || []; return c.length && !c.includes("en:germany") ? 1 : 0; };
+        list = r.hits.slice().sort((a, b) => away(a) - away(b)); }
+      catch (e1) { const r = await fetchJSON(offLegacyUrl(q), 20000); list = Array.isArray(r.products) ? r.products : []; }
+      const seen = new Set();
       // Doppelte Produkte (gleicher Barcode) nur einmal; der erste Treffer zählt
-      const uniq = (Array.isArray(r.products) ? r.products : []).filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
-      foodCtx.off = uniq.map(offFood).filter(Boolean).slice(0, 20); foodCtx.offMsg = "";
+      const uniq = list.filter(x => { const c = String(x && x.code || ""); if (!c || seen.has(c)) return false; seen.add(c); return true; });
+      let keys = uniq.map(offFood).filter(Boolean);
+      // Gleiches Produkt unter mehreren Barcodes nur einmal (Name, Marke und kcal gleich)
+      const sig = new Set(); keys = keys.filter(k => { const x = foodPool.get(k), s = foodNorm(x.n) + "|" + foodNorm(x.brand || "") + "|" + x.k; if (sig.has(s)) return false; sig.add(s); return true; });
+      // Alle Suchwörter müssen in Name oder Marke vorkommen (Supermarkt-Namen sind schon Filter); passt nichts, bleibt die Trefferliste
+      const words = q.toLowerCase().split(/\s+/).map(w => foodNorm(w.replace(/[^a-z0-9äöüß]/g, ""))).filter(w => w.length >= 2 && !STORE_BRANDS[w]);
+      const fits = keys.filter(k => { const x = foodPool.get(k), hay = foodNorm(x.n + " " + (x.brand || "")); return words.every(w => hay.includes(w)); });
+      const nq = foodNorm(q), local = [...FOOD_DB, ...FAST_DB].some(r => foodNorm(r[1]).includes(nq)) || state.myFoods.some(x => foodNorm(x.n).includes(nq));
+      foodCtx.off = (fits.length ? fits : local ? [] : keys).slice(0, 25); foodCtx.offMsg = "";
     }
     catch (e) { foodCtx.off = null; foodCtx.offMsg = offErr(true); }
     if (foodCtx.q.trim() === q && box()) box().innerHTML = offHtml();
@@ -5664,7 +5743,9 @@ document.addEventListener("input", ev => {
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "pickMuscle") { pickMuscle = MUSCLES[el.value] ? el.value : "alle"; refreshPicker(); }
   else if (k === "gEx") { goalDraft.exId = el.value; goalDraft.target = null; goalRefresh(); }
-  else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = ""; }
+  else if (k === "foodQ") { foodCtx.q = el.value; foodCtx.off = null; foodCtx.offMsg = ""; byId("foodRes").innerHTML = foodResults(); byId("offBox").innerHTML = offBtnHtml(); byId("offRes").innerHTML = "";
+    // Online-Suche startet von selbst, sobald eine kurze Tipp-Pause entsteht
+    clearTimeout(offTimer); if (el.value.trim().length >= 3 && navigator.onLine !== false) offTimer = setTimeout(() => { if (byId("offRes") && foodCtx.q === el.value) A.offSearch(); }, 600); }
   else if (k === "amtG") { foodCtx.g = num(el.value) || 0; byId("amtErr").hidden = true; byId("amtOut").innerHTML = amtOut(); }
   else if (k === "nutrIn") { readNutrInputs(); byId("nutrOut").innerHTML = nutrOutHtml(); }
   else if (k === "ownIn") ownHint();
@@ -5701,7 +5782,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, FAST_DB, offQuery, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
