@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v47)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v47")));
+      ok("Service Worker aktiv (Cache trainingsplan-v48)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v48")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1215,6 +1215,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Frauen: − 161 statt + 5 (1.614 kcal); Aufbau + 10 % → 2.750 kcal", cg.w.bmr === 1614 && cg.w.auto === 2750);
       ok("Abnehmen − 15 % → 2.350 kcal; eigenes Ziel hat Vorrang", cg.ab.auto === 2350 && cg.own.kcal === 2500 && cg.own.auto === 2760);
       ok("Eiweiß 1,6 g/kg (128 g), obere Grenze 2,2 g/kg (176 g)", cg.m.prot === 128 && cg.m.protHi === 176);
+      ok("Fett 20–35 % von 2.760 kcal (61–107 g), Kohlenhydrate als Rest (321–425 g), Ballaststoffe 25 g", cg.m.fatLo === 61 && cg.m.fatHi === 107 && cg.m.carbLo === 321 && cg.m.carbHi === 425 && cg.m.fib === 25, JSON.stringify(cg.m));
       ok("Unter 18 Jahren keine Berechnung (Formel für Erwachsene); ungültige Werte werden verworfen", cg.young === null && cg.clean[0] === null && cg.clean[1] === 1.55 && cg.clean[2] === null);
       // Tagebuch-Daten
       const cf = await tp(page, () => window.__tp.cleanFood({ "2026-01-02": [
@@ -1246,12 +1247,14 @@ async function finishAllSets(page, kg, reps) {
       ok("Aktivität ändert den Bedarf (× 1,85 → 3.293 kcal)", (await page.textContent("#nutrOut")).includes("3.293") && await page.$eval("[data-a=nSet][data-k=pal][data-v='1.85'] .check", e => e.classList.contains("on")));
       await page.click("[data-a=nSet][data-k=pal][data-v='1.55']"); await page.click("[data-a=nSet][data-k=goal][data-v=auf]");
       const sh = await page.textContent(".sheet");
-      ok("Rechenweg und Grenzen offen erklärt, mit Quellen", sh.includes("Mifflin-St Jeor") && sh.includes("498") && sh.includes("FAO") && sh.includes("Schwangerschaft") && (await page.$$(".sheet .srcs a")).length === 6);
+      ok("Rechenweg und Grenzen offen erklärt, mit Quellen", sh.includes("Mifflin-St Jeor") && sh.includes("498") && sh.includes("FAO") && sh.includes("Schwangerschaft") && sh.includes("20–35 % der Kalorien") && sh.includes("EFSA") && (await page.$$(".sheet .srcs a")).length === 8);
       ok("Ziele-Formular bei 360 px ohne seitliches Scrollen", await noOverflow(page));
       await page.click("[data-a=nutrSave]");
       let st = await stored(page);
       ok("Ziele gespeichert; Gewicht im Verlauf eingetragen", st.nutr.age === 30 && st.nutr.goal === "auf" && st.weights.length === 1 && st.weights[0].kg === 80);
       ok("Übersicht: 3.030 kcal übrig, Eiweißziel 128 g", (await page.textContent("#foodSum")).includes("3.030") && (await page.textContent("#foodSum")).includes("128 g"));
+      const mr = (await page.textContent("#macroRows")).replace(/\s+/g, " ");
+      ok("Übersicht: Kohlenhydrate, Fett und Ballaststoffe mit Bereich bzw. Ziel", mr.replace(/ /g, "").includes("Kohlenhydrate0von364–479g") && mr.replace(/ /g, "").includes("Fett0von67–118g") && mr.replace(/ /g, "").includes("Ballaststoffe0von25g"), mr);
       // Grundnahrungsmittel hinzufügen
       await page.click("[data-a=foodAdd][data-m=f]");
       ok("Hinzufügen-Sheet ohne Suche: Hinweis auf Datenbank", (await page.textContent("#foodRes")).includes("232 Grundnahrungsmittel"));
