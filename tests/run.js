@@ -362,7 +362,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v39)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v39")));
+      ok("Service Worker aktiv (Cache trainingsplan-v40)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v40")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2861,7 +2861,77 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("49. Konsole");
+    section("49. Vergessenes Training: richtige Dauer und richtiges Datum");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 0 }] }] };
+      // Training starten, einen Satz machen, dann die Uhr im Speicher zurückdrehen und neu laden
+      const setup = async (mod, keepOpen) => {
+        const { ctx, page } = await open({ plan, history: [] });
+        await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+        await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+        await page.evaluate(([k, m]) => { const d = JSON.parse(localStorage.getItem(k)), n = Date.now(); Object.assign(d.session, Object.fromEntries(Object.entries(m).map(([a, v]) => [a, v === null ? null : n - v * 60000]))); localStorage.setItem(k, JSON.stringify(d)); }, [KEY, mod]);
+        await page.reload(); return { ctx, page };
+      };
+      let { ctx, page } = await setup({ start: 180, lastAt: 150 });
+      let st = await stored(page);
+      ok("2,5 Std. ohne Satz: beim Öffnen pausiert, „Heute“ statt Training", !(await page.$("[data-a=doneSet]")) && !!(await page.$("[data-a=resumeT]")) && st.session.paused === st.session.lastAt && st.session.autoPaused === true);
+      ok("Karte erklärt es und nennt den letzten Satz", (await page.textContent("#autoPaused")).includes("über 30 Minuten kein Satz") && /letzter Satz (heute|gestern) \d\d:\d\d Uhr/.test(await page.textContent(".hero")));
+      await page.click("[data-a=askStop]");
+      ok("Beenden-Sheet ohne „Pausieren“", (await page.textContent(".sheet")).includes("Training beenden?") && !(await page.$(".sheet [data-a=pauseT]")));
+      await page.click("[data-a=stopSave]");
+      st = await stored(page); let h = st.history.at(-1);
+      ok("Gespeichert mit dem Zeitpunkt des letzten Satzes und 30 Min. Dauer", Math.abs(new Date(h.date) - (Date.now() - 150 * 60000)) < 15000 && Math.abs(h.durationSec - 1800) < 15, `${h.date} ${h.durationSec}`);
+      await ctx.close();
+
+      ({ ctx, page } = await setup({ start: 180, lastAt: 150 }));
+      await page.click("[data-a=resumeT]");
+      const el = await tp(page, () => (Date.now() - window.__tp.state.session.start) / 60000);
+      ok("Fortsetzen: Uhr zeigt nur die Trainingszeit (30 Min.), nicht die Lücke", Math.abs(el - 30) < 0.5 && !!(await page.$("[data-a=doneSet]")), String(el));
+      await ctx.close();
+
+      ({ ctx, page } = await setup({ start: 40, lastAt: 10 }));
+      ok("10 Min. ohne Satz: Training läuft weiter", !!(await page.$("[data-a=doneSet]")) && !(await stored(page)).session.paused);
+      // Zurück in die App nach über 30 Minuten (App lag im Hintergrund)
+      await page.evaluate(() => { window.__tp.state.session.lastAt = Date.now() - 40 * 60000; document.dispatchEvent(new Event("visibilitychange")); });
+      ok("Rückkehr in die App nach 40 Min.: pausiert, „Heute“", !!(await page.$("[data-a=resumeT]")) && !!(await page.$("#autoPaused")));
+      await ctx.close();
+
+      // Selbst pausiert, erst am nächsten Tag beendet
+      ({ ctx, page } = await setup({ start: 20 * 60 + 30, lastAt: 20 * 60 + 2, paused: 20 * 60 }));
+      ok("Selbst pausiert: kein Hinweis auf automatische Pause", !(await page.$("#autoPaused")) && !!(await page.$("[data-a=resumeT]")));
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      h = (await stored(page)).history.at(-1);
+      ok("Am Folgetag beendet: Datum der Pause, Dauer bis zur Pause (30 Min.)", Math.abs(new Date(h.date) - (Date.now() - 20 * 3600000)) < 15000 && Math.abs(h.durationSec - 1800) < 15, `${h.date} ${h.durationSec}`);
+      await ctx.close();
+    }
+    {
+      // Datum und Dauer im Verlauf korrigieren
+      const now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+      const ld = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const H = [{ id: "b1", dayId: "d1", day: "Test", date: new Date(Date.now() - 3 * 864e5).toISOString(), durationSec: 3000, exercises: [{ exId: "hs-chest", name: "Brustpresse", u: "s", sets: [{ kg: 40, reps: 10 }] }] },
+        { id: "b2", dayId: "d1", day: "Test", date: new Date().toISOString(), durationSec: 86400, exercises: [{ exId: "hs-chest", name: "Brustpresse", u: "s", sets: [{ kg: 40, reps: 10 }] }] }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: H });
+      await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary"); await page.click("#discLog [data-a=histOpen][data-id=b2]");
+      ok("Sheet zeigt die falsche Dauer (1440 Min.)", (await page.textContent(".sheet")).includes("1440 Min."));
+      await page.click("[data-a=histMeta]");
+      ok("Datum und Dauer: Felder mit den gespeicherten Werten", (await page.inputValue("#hmDate")) === ld(now) && (await page.inputValue("#hmMin")) === "1440");
+      await page.click("[data-a=histMetaSave]");
+      ok("Über 300 Min.: Fehlermeldung", (await page.textContent("#hmErr")).includes("1 bis 300"));
+      await page.fill("#hmMin", "55"); await page.fill("#hmDate", ld(new Date(Date.now() + 2 * 864e5))); await page.click("[data-a=histMetaSave]");
+      ok("Datum in der Zukunft: Fehlermeldung", (await page.textContent("#hmErr")).includes("Zukunft"));
+      await page.fill("#hmDate", ld(y)); await page.click("[data-a=histMetaSave]");
+      const st = await stored(page), b2 = st.history.find(x => x.id === "b2");
+      ok("Gespeichert: 55 Min., Vortag, Uhrzeit bleibt", b2.durationSec === 3300 && ld(new Date(b2.date)) === ld(y) && new Date(b2.date).getHours() === now.getHours() && (await page.textContent("#histMsg")).includes("Datum und Dauer gespeichert"));
+      ok("Verlauf bleibt nach Datum sortiert", st.history.map(x => x.id).join() === "b1,b2");
+      await page.click("[data-a=histMeta]"); await page.fill("#hmDate", ld(new Date(Date.now() - 5 * 864e5))); await page.click("[data-a=histMetaSave]");
+      ok("Vor ein älteres Training verschoben: Reihenfolge angepasst", (await stored(page)).history.map(x => x.id).join() === "b2,b1");
+      ok("360 px: kein seitliches Scrollen", await noOverflow(page));
+      await page.click(".sheet .sh-head [data-a=closeSheet]"); await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=tab][data-v=wissen]"); await page.click("#wissenCoach");
+      ok("Regel steht unter „So entscheidet die App“", (await page.textContent("#coachRules")).includes("Über 30 Minuten ohne Satz"));
+      await ctx.close();
+    }
+
+    section("50. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
