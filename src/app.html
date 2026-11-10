@@ -12,9 +12,9 @@
   :root{
     /* Farben (dunkel = Standard) */
     --bg:#0D0E10; --raise:#16181B; --raise-2:#202328; --raise-3:#2A2E34;
-    --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A1A7B0; --text-3:#6C727C;
-    --mbody:var(--text-2); --mbody2:var(--text-3); --mgear:var(--raise-3); --mgear-line:var(--text-3);
-    --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#FFFFFF;
+    --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A9AFB8; --text-3:#8A909A;
+    --mbody:#A1A7B0; --mbody2:#6C727C; --mgear:var(--raise-3); --mgear-line:#6C727C;
+    --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#111214; --accent-ink:#FF7A2E;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#F5B740; --warn-tint:rgba(245,183,64,.12); --bad:#F2554F;
     --fig:#24272C; --muscle:#363A41; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.6);
     --bar-bg:rgba(13,14,16,.88); --accent-soft:rgba(255,107,26,.42); --sheet:#17191C; --seg-on:#2A2E34;
@@ -29,18 +29,20 @@
   }
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
     --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#5A616B; --text-3:#8C929B;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
-    --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
+    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
+    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
+    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light}}
+    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}}
   :root[data-theme="light"]{
     --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#5A616B; --text-3:#8C929B;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
-    --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
+    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
+    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
+    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light}
+    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -82,6 +84,7 @@
   .between{justify-content:space-between}
   .wrap{flex-wrap:wrap}
   .head{display:grid;gap:var(--s1)}
+  .head.home .title{font-size:28px}
   .section{display:grid;gap:var(--s3)}
   .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3)}
   .section-head h2{font-size:22px}
@@ -94,10 +97,11 @@
   .btn.primary:active:not(:disabled){background:var(--accent-press)}
   .btn.block{width:100%}
   .btn.xl{min-height:58px;font-size:18px;border-radius:var(--r-lg)}
-  .btn.sm{min-height:40px;padding:0 var(--s4);font-size:15px;border-radius:12px}
+  .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:12px}
   .btn.danger{color:var(--bad)}
   .btn.quiet{background:transparent;color:var(--text-2)}
-  .link{color:var(--accent);font-weight:600;min-height:32px;display:inline-flex;align-items:center}
+  .link{color:var(--accent-ink);font-weight:600;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+  p .link{min-height:0;min-width:0}
   .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--raise-2);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--text)}
   .icon-btn.plain{background:transparent}
 
@@ -105,20 +109,20 @@
   .actionbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;background:var(--bar-bg);
     -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
     padding:var(--s3) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(var(--s3) + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px))}
-  .actionbar .in{max-width:600px;margin:0 auto;display:grid;gap:var(--s2)}
+  .actionbar .in{max-width:calc(600px - 2 * var(--gutter));margin:0 auto;display:grid;gap:var(--s2)}
 
   /* ---------- Chips, Badges, Segment ---------- */
   .chips{display:flex;gap:var(--s2);overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter)}
   .chips::-webkit-scrollbar{display:none}
   .chips.wrap{flex-wrap:wrap;margin:0;padding:0}
-  .chip{min-height:38px;padding:0 var(--s4);border-radius:999px;background:var(--raise-2);font-size:15px;font-weight:600;white-space:nowrap;color:var(--text-2)}
+  .chip{min-height:40px;padding:0 var(--s4);border-radius:999px;background:var(--raise-2);font-size:15px;font-weight:600;white-space:nowrap;color:var(--text-2)}
   .chip.on{background:var(--text);color:var(--bg)}
   .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--raise-2);color:var(--text-2);white-space:nowrap}
   .badge.fav{background:var(--accent);color:var(--on-accent)}
   .badge.up{background:var(--ok-tint);color:var(--ok)}
-  .badge.pr{background:var(--accent-tint);color:var(--accent)}
+  .badge.pr{background:var(--accent-tint);color:var(--accent-ink)}
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:12px}
-  .seg button{min-height:40px;border-radius:10px;font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
+  .seg button{min-height:44px;border-radius:10px;font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
   .seg button.on{background:var(--seg-on);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 
   /* ---------- Gruppierte Listen ---------- */
@@ -150,10 +154,10 @@
   /* ---------- Hinweise ---------- */
   .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .note.warn{background:var(--warn-tint)}
-  .ins{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
-  .ins.warn{box-shadow:inset 3px 0 0 var(--warn)}
-  .ins.good{box-shadow:inset 3px 0 0 var(--ok)}
-  .ins .t{font-weight:700}
+  .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
+  .ins.warn{--sig:var(--warn)} .ins.good{--sig:var(--ok)} .ins.ask{--sig:var(--text-3)}
+  .ins .t{font-weight:700;display:flex;align-items:baseline;gap:10px}
+  .ins .t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--sig);transform:translateY(-1px)}
   .note .cap{color:var(--text-2)}
   .reason{font-size:14px;line-height:1.4;color:var(--text-2)}
 
@@ -163,8 +167,17 @@
     padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))}
   nav.tabs .in{display:flex;width:100%;max-width:600px}
   nav.tabs button{flex:1;display:grid;justify-items:center;gap:3px;min-height:50px;padding-top:4px;font-size:11px;font-weight:600;color:var(--text-3);text-align:center}
-  nav.tabs button.on{color:var(--accent)}
+  nav.tabs button.on{color:var(--accent-ink)}
   nav.tabs svg{width:25px;height:25px}
+  @media (min-width:1024px){
+    nav.tabs{top:0;right:auto;width:96px;flex-direction:column;justify-content:flex-start;border-top:0;border-right:1px solid var(--hair);padding:var(--s6) 8px}
+    nav.tabs .in{flex-direction:column;gap:var(--s2)}
+    nav.tabs button{flex:0 0 auto;min-height:64px;border-radius:var(--r);font-size:12px}
+    nav.tabs button.on{background:var(--accent-tint)}
+    nav.tabs button:hover:not(.on){color:var(--text-2)}
+    body{padding-bottom:var(--s7);padding-top:var(--s6)}
+    body.training{padding-bottom:132px}
+  }
 
   /* ---------- Figur ---------- */
   .fig{display:block;width:100%;height:auto}
@@ -182,7 +195,7 @@
   .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
   .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
-  .week .wp.done{color:var(--accent)}
+  .week .wp.done{color:var(--text-2)}
   .week .dot.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--raise-3);color:var(--text-3);text-decoration:line-through}
   .week .dot.today{box-shadow:inset 0 0 0 2px var(--text);color:var(--text)}
   .week .dot.done.today{box-shadow:inset 0 0 0 2px var(--on-accent)}
@@ -198,8 +211,11 @@
   .t-bar .cnt{font-size:13px;color:var(--text-3)}
   .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right;display:grid;justify-items:end;line-height:1;gap:2px}
   .t-clock small{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
+  @media (max-width:359px){ .t-bar{gap:var(--s2)} .t-bar .icon-btn{width:42px;height:42px} .t-clock{min-width:44px;font-size:20px} }
   .bar{height:3px;background:var(--raise-2);border-radius:3px;overflow:hidden}
   .bar>div{height:100%;background:var(--accent);transition:width .35s}
+  .bar.ticks{height:6px;border-radius:0;-webkit-mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)));
+    mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)))}
   .ex-head{display:grid;gap:var(--s2)}
   .setting{justify-self:start;font-size:15px;color:var(--text-2);min-height:28px}
   .setting b{color:var(--text);font-weight:600}
@@ -207,7 +223,7 @@
   .set-pill{flex:1;min-width:0;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--raise);font-weight:700;font-size:14px;color:var(--text-3)}
   .set-pill.cur{background:var(--raise-2);color:var(--text);box-shadow:inset 0 0 0 2px var(--accent)}
   .set-pill.done{background:var(--ok-tint);color:var(--ok)}
-  .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:32px;text-align:left}
+  .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:44px;text-align:left}
   .prog .arr{font-weight:700}
   .prog.up .arr{color:var(--ok)} .prog.down .arr{color:var(--warn)}
   .prog .more{color:var(--text-3);font-size:13px}
@@ -222,7 +238,9 @@
     .training .page{gap:var(--s3) !important}
     .stepper .ctl{grid-template-columns:56px 1fr 56px}
     .stepper .ctl button{width:56px;height:56px;font-size:26px}
-    .stepper input{font-size:54px;min-height:60px}
+    .stepper input{font-size:54px;min-height:56px}
+    .warm{padding:var(--s2) var(--s3)} .warm .btn.sm{min-height:40px}
+    .bar.ticks{height:4px}
     .set-pill{height:34px}
     .ex-head h1{font-size:30px}
   }
@@ -269,7 +287,7 @@
   .gnote{border-top:1px solid var(--hair);padding-top:var(--s4)}
   .lead{font-size:18px;line-height:1.45;color:var(--text);max-width:65ch}
   .infobtn{font-family:var(--display);font-weight:700;font-size:18px;color:var(--text-2);box-shadow:inset 0 0 0 1.5px var(--hair)}
-  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:32px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
+  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
   .timebtn b{color:var(--text);font-weight:600}
   .timebtn .chev{font-size:16px;margin-left:2px}
   .facts{margin:0;padding-left:18px;display:grid;gap:4px;font-size:15px}
@@ -311,11 +329,13 @@
   /* ---------- Verlauf ---------- */
   .kpi{display:flex;align-items:baseline;gap:var(--s2)}
   .kpi .num{font-size:56px;font-weight:800}
-  .bars{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;align-items:end;height:84px}
-  .bars .b{background:var(--accent);border-radius:6px 6px 3px 3px;min-height:4px}
+  .bars{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;align-items:end;height:96px;padding-top:18px}
+  .bars .b{position:relative;background:var(--text-3);border-radius:4px 4px 2px 2px;min-height:4px}
   .bars .b.zero{background:var(--raise-2)}
-  .bars .b.cur{background:var(--text)}
-  .bars-x{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;font-size:11px;color:var(--text-3);text-align:center}
+  .bars .b.cur{background:var(--accent)}
+  .bars .b.cur.zero{background:var(--raise-3)}
+  .bars .b[data-n]:not(.zero)::before{content:attr(data-n);position:absolute;bottom:100%;left:0;right:0;margin-bottom:3px;text-align:center;font-size:12px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
+  .bars-x{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;font-size:11px;color:var(--text-3);text-align:center}
   .spark{width:52px;height:26px;flex:0 0 52px}
   .delta{min-width:34px;text-align:right}
   .delta{font-size:13px;font-weight:700;color:var(--ok)}
@@ -344,9 +364,9 @@
   .nutgrid .num{font-size:22px}
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
-  .addrow{color:var(--accent);font-weight:600;min-height:48px}
+  .addrow{color:var(--accent-ink);font-weight:600;min-height:48px}
   .buddy-says{display:grid;gap:var(--s2)}
-  .icon-btn.on{color:var(--accent)}
+  .icon-btn.on{color:var(--accent-ink)}
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -370,11 +390,10 @@
   .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
   .warm .t{font-weight:700;font-size:15px}
   .warm .s{font-size:13px;color:var(--text-2)}
-  .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--accent-tint);color:var(--text);font-size:15px;text-align:left}
-  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
+  .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);color:var(--text);font-size:15px;text-align:left}
+  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);flex:none}
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
-  .ins.ask{box-shadow:inset 3px 0 0 var(--text-3)}
   .ask .chip{min-height:34px;font-size:14px}
   .trks{display:grid;gap:var(--s2)}
   .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
@@ -2192,7 +2211,7 @@ const MOTION = {
   "hs-ab": { A: Object.assign({}, SEATED, { t: -96, ua: 70, fa: -100 }), B: { t: -55, ua: 111, fa: -59 }, hl: ["t"], gear: ["seat", "handle"] }
 };
 // Gleiche Bewegung an mehreren Geräten
-Object.assign(MOTION, { "hs-lat": MOTION["hs-pulldown"], "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
+Object.assign(MOTION, { "hs-lat": Object.assign({}, MOTION["hs-pulldown"], { gear: ["seat", "thighpad", "topcable"], _box: null, _rig: undefined, _floor: undefined }), "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
   "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
   "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
   "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
@@ -2237,6 +2256,7 @@ function motBox(sp) {
   if (rig && rig.kind === "rail" && !sp.norail) { inc(mSh(rig.a, rig.u, -8), 3); inc(mSh(rig.b, rig.u, 18), 3); }
   if (G.includes("belt")) inc([at[0] - 52, sp._floor - 4], 6);
   if (G.includes("smith")) for (const q of [0, 1]) inc(mJoints(sp, mPose(sp, q)).hand, 15);
+  if (G.includes("topcable")) { const hA = mJoints(sp, mPose(sp, 0)).hand; inc([hA[0], hA[1] - 19], 4); }
   y0 = Math.min(y0, sp._floor - 60); x0 -= 20;
   const m = 8; x0 -= m; y0 -= m; x1 += m; y1 += m;
   let w = x1 - x0, h = y1 - y0; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
@@ -2259,10 +2279,11 @@ const mOp = op => op != null && op < 1 ? ` fill-opacity="${mF(op * 100) / 100}"`
 function mCap(a, b, w1, w2, c, op) { return `<path d="${mCapD(a, b, w1, w2)}" fill="${c}"${mOp(op)}/>`; }
 // Gliedmaße mit Rundung: Licht von oben links, Schatten auf der abgewandten Seite
 const MLIGHT = [-.45, -.89];
-function mLimb(a, b, w1, w2, c, op) {
+const MOL = ` stroke="#000" stroke-opacity=".22" stroke-width=".6"`;
+function mLimb(a, b, w1, w2, c, op, ol) {
   const u = mUnit(a, b); let n = [-u[1], u[0]]; if (n[0] * MLIGHT[0] + n[1] * MLIGHT[1] < 0) n = [-n[0], -n[1]];
   const k = op == null ? 1 : op;
-  return mCap(a, b, w1, w2, c, op)
+  return (ol ? `<path d="${mCapD(a, b, w1, w2)}" fill="${c}"${mOp(op)}${MOL}/>` : mCap(a, b, w1, w2, c, op))
     + `<path d="${mCapD(mSh(a, n, -w1 * .3), mSh(b, n, -w2 * .3), w1 * .36, w2 * .36)}" fill="#000" fill-opacity="${mF(14 * k) / 100}"/>`
     + `<path d="${mCapD(mSh(a, n, w1 * .2), mSh(b, n, w2 * .2), w1 * .34, w2 * .34)}" fill="#fff" fill-opacity="${mF(15 * k) / 100}"/>`;
 }
@@ -2280,15 +2301,24 @@ function mBellyD(a, b, n, s0, s1, hw0, hw1, bul) {
   const co = mSh(mLerp(a, b, sm), n, 2 * (hw(sm) + bul) - (hw(s0) + hw(s1)) * .25), ci = mSh(mLerp(a, b, sm), n, hw(sm) * .05);
   return `M${mF(e0[0])} ${mF(e0[1])}Q${mF(co[0])} ${mF(co[1])} ${mF(e1[0])} ${mF(e1[1])}Q${mF(ci[0])} ${mF(ci[1])} ${mF(e0[0])} ${mF(e0[1])}Z`;
 }
-// Muskel zeichnen: arbeitet vor allem = Akzent mit Leuchten, hilft mit = Akzent schwach, sonst Körperfarbe
-function mMus(d, role, act, base) {
+function mFibD(a, b, n, s0, s1, hw0, hw1, bul, k = 3) {
+  const hw = s => hw0 + (hw1 - hw0) * s, sm = (s0 + s1) / 2, q = s0 + (s1 - s0) * .12, r = s1 - (s1 - s0) * .12; let d = "";
+  for (let i = 1; i <= k; i++) { const f = i / (k + 1), o = hw(sm) * .5 + (hw(sm) * .5 + bul) * f;
+    const p0 = mSh(mLerp(a, b, q), n, hw(q) * (.5 + .3 * f)), p1 = mSh(mLerp(a, b, r), n, hw(r) * (.5 + .3 * f)), c = mSh(mLerp(a, b, sm), n, 2 * o - (hw(q) + hw(r)) * (.25 + .15 * f));
+    d += `M${mF(p0[0])} ${mF(p0[1])}Q${mF(c[0])} ${mF(c[1])} ${mF(p1[0])} ${mF(p1[1])}`; }
+  return d;
+}
+// Muskel zeichnen: arbeitet vor allem = Akzent mit Leuchten und Fasern, hilft mit = Akzent schwach, sonst Körperfarbe
+function mMus(d, role, act, base, fib) {
+  const lines = fib && role ? `<path d="${fib}" fill="none" stroke="#fff" stroke-width=".55" stroke-linecap="round" stroke-opacity="${role === 2 ? mF((.28 + .2 * act) * 100) / 100 : .16}"/>` : "";
   if (role === 2) return `<path d="${d}" fill="none" stroke="${MH}" stroke-width="6" stroke-linejoin="round" stroke-opacity="${mF(act * 18) / 100}"/>`
-    + `<path d="${d}" fill="${MH}" fill-opacity="${mF((.5 + .5 * act) * 100) / 100}"/>`;
-  if (role === 1) return `<path d="${d}" fill="${MH}" fill-opacity="${mF((.22 + .18 * act) * 100) / 100}"/>`;
+    + `<path d="${d}" fill="${MH}" fill-opacity="${mF((.55 + .45 * act) * 100) / 100}"/>` + lines;
+  if (role === 1) return `<path d="${d}" fill="${MH}" fill-opacity="${mF((.24 + .18 * act) * 100) / 100}"/>` + lines;
   return `<path d="${d}" fill="${base}"/><path d="${d}" fill="#fff" fill-opacity=".07"/>`;
 }
 const M_SHAPE = { brust: "chest", ruecken: "lats", schultern: "delt", bizeps: "bic", trizeps: "tri", bauch: "abs", beinev: "quad", beineh: "ham", po: "glute", waden: "calf", innen: "add" };
-const mRoles = e => { const r = {}; (e.sec || []).forEach(m => { if (M_SHAPE[m]) r[M_SHAPE[m]] = 1; }); if (M_SHAPE[e.muscle]) r[M_SHAPE[e.muscle]] = 2; return r; };
+// Rücken: breiter Rückenmuskel und Trapezmuskel gehören zur Gruppe „Rücken“
+const mRoles = e => { const r = {}; (e.sec || []).forEach(m => { if (M_SHAPE[m]) r[M_SHAPE[m]] = 1; }); if (M_SHAPE[e.muscle]) r[M_SHAPE[e.muscle]] = 2; if (r.lats) r.trap = r.lats; return r; };
 
 // ---------- Ablauf und Anspannung ----------
 // 4 s je Wiederholung. Standard: kurz halten, zügig hin (1,2 s), kurz halten, langsam zurück (2 s).
@@ -2424,6 +2454,11 @@ function motDraw(sp, s, e) {
   if (G.includes("smith")) { const a = mJoints(sp, mPose(sp, 0)).hand, b = mJoints(sp, mPose(sp, 1)).hand, d = [a[0] - b[0], a[1] - b[1]], k = (floorY - b[1]) / (d[1] || 1), top = box[1] + 2, k2 = (top - b[1]) / (d[1] || 1);
     g.push(mLine([b[0] + d[0] * k2, top], [b[0] + d[0] * k, floorY], 2.4, MGL), mPlate(j.hand, 14, .55));
     gf.push(mDot(j.hand, 4.4, MGL), mDot(j.hand, 1.8, MG)); }
+  if (G.includes("topcable")) { const hA = mJoints(sp, mPose(sp, 0)).hand, pul = [hA[0] + 1, hA[1] - 14], sx = box[0] + 12, lift = p * 9;
+    g.push(mLine([sx - 7, floorY], [sx - 7, pul[1] - 4], 2.4, MGL), mLine([sx + 7, floorY], [sx + 7, pul[1] - 4], 2.4, MGL), mLine([sx - 7, pul[1] - 4], [pul[0] + 4, pul[1] - 4], 2.6, MGL),
+      mLine([sx, floorY - 6 - 5 * 6 - lift], [sx, pul[1]], 1, MGL), mLine([sx, pul[1]], pul, 1, MGL), mLine(pul, j.hand, 1.1, MGL),
+      `<circle cx="${mF(pul[0])}" cy="${mF(pul[1])}" r="3.4" fill="${MG}" stroke="${MGL}" stroke-width="1"/>`);
+    gf.push(mLine(mSh(j.hand, [-1, .15], 6), mSh(j.hand, [1, -.15], 6), 3, MGL)); }
   if (G.includes("cable")) gf.push(mLine(sp.cable, j.hand, 1.4, MGL), mDot(sp.cable, 4.2, MGL));
   if (G.includes("handle")) gf.push(mDot(j.hand, 3.6, MGL), mDot(j.hand, 1.5, MG));
   // Bewegungsweg des arbeitenden Endes als feine Punktlinie
@@ -2437,40 +2472,49 @@ function motDraw(sp, s, e) {
   const thD = mUnit(j.hip, j.knee), shD = mUnit(j.knee, j.ank), uaD = mUnit(j.sho, j.elb);
   // Muskeln eines Beins/Arms (nah: alle, fern: nur aktive, gedämpft)
   const legMus = (near, hip, kn, an) => { const t = mUnit(hip, kn), s2 = mUnit(kn, an), out = [];
-    const add = (k, d) => { const r = role(k); if (near || r === 2) out.push(near ? mMus(d, r, act, MB) : `<path d="${d}" fill="${MH}" fill-opacity="${mF((.25 + .25 * act) * 100) / 100}"/>`); };
-    add("quad", mBellyD(hip, kn, mRot(t, -1), .12, .86, 5.5, 4, 1.6 + .7 * act * (role("quad") === 2)));
-    add("ham", mBellyD(hip, kn, mRot(t, 1), .14, .86, 5.5, 4, 1.2 + .7 * act * (role("ham") === 2)));
-    add("calf", mBellyD(kn, an, mRot(s2, 1), .08, .55, 4, 2.8, 1.8 + .8 * act * (role("calf") === 2)));
+    const add = (k, A, B, n, s0, s1, h0, h1, b0, bx) => { const r = role(k), bul = b0 + bx * act * (r === 2), d = mBellyD(A, B, n, s0, s1, h0, h1, bul);
+      if (near || r === 2) out.push(near ? mMus(d, r, act, MB, mFibD(A, B, n, s0, s1, h0, h1, bul)) : `<path d="${d}" fill="${MH}" fill-opacity="${mF((.25 + .25 * act) * 100) / 100}"/>`); };
+    add("quad", hip, kn, mRot(t, -1), .12, .86, 5.5, 4, 1.6, .7);
+    add("ham", hip, kn, mRot(t, 1), .14, .86, 5.5, 4, 1.2, .7);
+    add("calf", kn, an, mRot(s2, 1), .08, .55, 4, 2.8, 1.8, .8);
     return out.join(""); };
   const armMus = (near, so, el) => { const u = mUnit(so, el), out = [];
-    const add = (k, d) => { const r = role(k); if (near || r === 2) out.push(near ? mMus(d, r, act, MB) : `<path d="${d}" fill="${MH}" fill-opacity="${mF((.25 + .25 * act) * 100) / 100}"/>`); };
-    add("bic", mBellyD(so, el, mRot(u, -1), .22, .86, 3.8, 3, 1 + 1.1 * act * (role("bic") === 2)));
-    add("tri", mBellyD(so, el, mRot(u, 1), .12, .84, 3.8, 3, 1 + .8 * act * (role("tri") === 2)));
+    const add = (k, A, B, n, s0, s1, h0, h1, b0, bx) => { const r = role(k), bul = b0 + bx * act * (r === 2), d = mBellyD(A, B, n, s0, s1, h0, h1, bul);
+      if (near || r === 2) out.push(near ? mMus(d, r, act, MB, mFibD(A, B, n, s0, s1, h0, h1, bul, 2)) : `<path d="${d}" fill="${MH}" fill-opacity="${mF((.25 + .25 * act) * 100) / 100}"/>`); };
+    add("bic", so, el, mRot(u, -1), .22, .86, 3.8, 3, 1, 1.1);
+    add("tri", so, el, mRot(u, 1), .12, .84, 3.8, 3, 1, .8);
     const dc = sh(so, u, 3.2), r = role("delt"), dd = `M${mF(dc[0] + 5.6)} ${mF(dc[1])}A5.6 5 0 1 0 ${mF(dc[0] - 5.6)} ${mF(dc[1])}A5.6 5 0 1 0 ${mF(dc[0] + 5.6)} ${mF(dc[1])}Z`;
     if (near || r === 2) out.push(near ? mMus(dd, r, act, MB) : `<path d="${dd}" fill="${MH}" fill-opacity="${mF((.25 + .25 * act) * 100) / 100}"/>`);
     return out.join(""); };
   const shoe = (an, to, sd, op) => { const fd = mUnit(an, to); return mCap(sh(sh(an, fd, -3), sd, 1.2), to, 6, 4.4, MB2, op); };
   const leg = (near, kn, an, to) => { const f = near ? q => q : far, c = near ? MB : MB2;
-    body.push(mLimb(f(j.hip), f(kn), 11, 8, c), mLimb(f(kn), f(an), 8, 5.5, c), legMus(near, f(j.hip), f(kn), f(an)), shoe(f(an), f(to), mUnit(f(kn), f(an)), near ? 1 : .75)); };
+    body.push(mLimb(f(j.hip), f(kn), 11, 8, c, null, 1), mLimb(f(kn), f(an), 8, 5.5, c, null, 1), legMus(near, f(j.hip), f(kn), f(an)), shoe(f(an), f(to), mUnit(f(kn), f(an)), near ? 1 : .75)); };
   const arm = near => { const f = near ? q => q : far, c = near ? MB : MB2;
-    body.push(mLimb(f(j.sho), f(j.elb), 7.6, 6, c), armMus(near, f(j.sho), f(j.elb)), mLimb(f(j.elb), f(j.hand), 6, 4.4, c), mDot(f(j.hand), 3.3, c)); };
+    body.push(mLimb(f(j.sho), f(j.elb), 7.6, 6, c, null, 1), armMus(near, f(j.sho), f(j.elb)), mLimb(f(j.elb), f(j.hand), 6, 4.4, c, null, 1), `<circle cx="${mF(f(j.hand)[0])}" cy="${mF(f(j.hand)[1])}" r="3.3" fill="${c}"${MOL}/>`); };
   if (j.knee2) body.push(mCap(far(j.hip), far(j.knee2), 11, 8, MB2, .7), mCap(far(j.knee2), far(j.ank2), 8, 5.5, MB2, .7));
   else leg(false, j.knee, j.ank, j.toe);
   arm(false);
   // Rumpf als Körperform: Brust vorn gewölbt, Lendenbereich hinten leicht hohl
   const tu = mUnit(j.hip, j.sho), tL = Math.hypot(j.sho[0] - j.hip[0], j.sho[1] - j.hip[1]), T = (s, o) => sh(sh(j.hip, tu, tL * s), fwd, o);
   const prof = [[-.08, 5.2, -6.4], [.18, 6.2, -6.4], [.4, 6, -5.6], [.62, 6.9, -6.4], [.84, 7.6, -7.2], [1.04, 4.4, -5.6]];
-  body.push(`<path d="${mBlob([...prof.map(([s, f]) => T(s, f)), ...prof.slice().reverse().map(([s, , b]) => T(s, b))])}" fill="${MB}"/>`,
+  body.push(`<path d="${mBlob([...prof.map(([s, f]) => T(s, f)), ...prof.slice().reverse().map(([s, , b]) => T(s, b))])}" fill="${MB}"${MOL}/>`,
     `<path d="${mBlob([T(.1, -6), T(.5, -5.2), T(.95, -6.6), T(.95, -3.6), T(.5, -2.6), T(.1, -3.4)])}" fill="#000" fill-opacity=".1"/>`);
   // Gesäß hinter dem Hüftgelenk, Rumpfmuskeln
   const gl = sh(sh(j.hip, back, 3.5), thD, 2), glD = mBlob([sh(gl, tu, 7), sh(sh(gl, back, 4.5), tu, 3), sh(sh(gl, back, 4.6), thD, 5), sh(gl, thD, 9), sh(sh(gl, back, -3), thD, 3), sh(sh(gl, back, -2), tu, 4)]);
   body.push(mMus(glD, role("glute"), act, MB));
-  body.push(mMus(mBellyD(j.hip, j.sho, fwd, .62, .96, 6.9, 7.4, .8 + 1.2 * act * (role("chest") === 2)), role("chest"), act, MB));
-  body.push(mMus(mBellyD(j.hip, j.sho, fwd, .16, .58, 6.1, 6.6, .3 + .5 * act * (role("abs") === 2)), role("abs"), act, MB));
-  body.push(mMus(mBellyD(j.hip, j.sho, back, .44, .86, 5.8, 7, .7 + .9 * act * (role("lats") === 2)), role("lats"), act, MB));
+  const ins = sh(j.sho, uaD, 5.5), bulC = .8 + 1.2 * act * (role("chest") === 2), bulL = .7 + 1 * act * (role("lats") === 2);
+  const chestD = mBlob([T(.6, 6.4), T(.74, 7.6 + bulC), T(.92, 7.8), sh(ins, fwd, 1.5), T(.86, 3.6), T(.66, 3)]);
+  const chestF = [.3, .55, .8].map(f => { const a0 = T(.64 + .26 * f, 6.4 + 1.2 * f), c0 = T(.8, 4 + 3 * f); return `M${mF(a0[0])} ${mF(a0[1])}Q${mF(c0[0])} ${mF(c0[1])} ${mF(ins[0])} ${mF(ins[1])}`; }).join("");
+  body.push(mMus(chestD, role("chest"), act, MB, chestF));
+  const absR = role("abs"), absD = mBellyD(j.hip, j.sho, fwd, .14, .58, 6.1, 6.6, .3 + .5 * act * (absR === 2));
+  body.push(mMus(absD, absR, act, MB), absR ? [.27, .38, .49].map(s => { const a0 = T(s, 3.4), b0 = T(s + .01, 6.9 + .3 * (absR === 2) * act); return `<line x1="${mF(a0[0])}" y1="${mF(a0[1])}" x2="${mF(b0[0])}" y2="${mF(b0[1])}" stroke="#000" stroke-opacity=".22" stroke-width=".6"/>`; }).join("") : "");
+  const latD = mBlob([T(.18, -5.6), T(.46, -7.2 - bulL), T(.76, -7.6), sh(ins, back, 1.5), T(.74, -2.6), T(.34, -2.8)]);
+  const latF = [.25, .5, .75].map(f => { const a0 = T(.22 + .3 * f, -5.6 - 1.2 * f), c0 = T(.6, -3.6 - 3 * f); return `M${mF(a0[0])} ${mF(a0[1])}Q${mF(c0[0])} ${mF(c0[1])} ${mF(ins[0])} ${mF(ins[1])}`; }).join("");
+  body.push(mMus(latD, role("lats"), act, MB, latF));
+  body.push(mMus(mBlob([T(1.1, -1.6), T(1.02, -5.6), T(.8, -6.8), T(.72, -5), T(.9, -3.2)]), role("trap"), act, MB));
   // Kopf mit Hals, Haaren und Nase (zeigt die Blickrichtung)
   const hd = mDir(P.t + (P.hd || 0), 1), face = [-hd[1], hd[0]];
-  body.push(mLimb(j.sho, j.head, 5, 4.6, MB), mDot(sh(sh(j.head, face, -1.2), hd, .8), 7.4, MB2), mDot(sh(j.head, face, .5), 6.9, MB),
+  body.push(mLimb(j.sho, j.head, 5, 4.6, MB, null, 1), mDot(sh(sh(j.head, face, -1.2), hd, .8), 7.4, MB2), `<circle cx="${mF(sh(j.head, face, .5)[0])}" cy="${mF(sh(j.head, face, .5)[1])}" r="6.9" fill="${MB}"${MOL}/>`,
     mDot(sh(sh(j.head, face, 6.6), hd, -1), 1.4, MB), `<circle cx="${mF(sh(sh(j.head, face, -1), hd, 2)[0])}" cy="${mF(sh(sh(j.head, face, -1), hd, 2)[1])}" r="3" fill="#fff" fill-opacity=".1"/>`);
   leg(true, j.knee, j.ank, j.toe);
   arm(true);
@@ -2567,17 +2611,25 @@ function motStart() { if (!motRAF && !motReduce() && document.querySelector("svg
 new MutationObserver(() => motStart()).observe(document.documentElement, { childList: true, subtree: true });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) motStart(); });
 
-function guideHtml(id) {
+// Bewegung mit Tempo-/Atemhinweis und Steuerung (Übungsseite oben, Anleitung im Sheet)
+function guideMot(id) {
+  const mot = motionSvg(id, { anim: true, cue: true, ctl: true });
+  return mot ? `<div class="gmot" id="gMotion">${mot}<p class="small faint" style="margin:0;text-align:center">Orange: arbeitet vor allem · blass orange: hilft mit</p></div>` : "";
+}
+// Muskeln zur Bewegung: hauptsächlich und unterstützend (aus der Anleitung bzw. den Geräteangaben)
+function gmusHtml(id) {
+  const e = ex(id), g = GUIDE[id], ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  return `<div class="gmus">
+      <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
+      ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
+    </div>`;
+}
+function guideHtml(id, o = {}) {
   const e = ex(id), g = GUIDE[id];
   const sec = (title, inner) => `<section class="gsec"><h2>${title}</h2>${inner}</section>`;
   const ol = arr => `<ol class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ol>`;
   const ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  const mot = motionSvg(id, { anim: true, cue: true, ctl: true });
-  const head = `${mot ? `<div class="gmot" id="gMotion">${mot}<p class="small faint" style="margin:0;text-align:center">Orange: arbeitet vor allem · blass orange: hilft mit</p></div>` : ""}
-    <div class="gmus">
-      <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
-      ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
-    </div>`;
+  const head = `${o.noMot ? "" : guideMot(id)}${o.noMus ? "" : gmusHtml(id)}`;
   if (!g) return `${head}${sec("Hinweis", `<p class="muted">Für eigene Geräte gibt es keine ausführliche Anleitung. Muskeln und Bewegungsmuster stammen aus deinen Angaben.</p>`)}`;
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
   const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
@@ -2624,9 +2676,10 @@ function vEx() {
       <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
+    ${guideMot(id)}${gmusHtml(id)}
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
     <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
-    ${guideHtml(id)}
+    ${guideHtml(id, { noMot: true, noMus: true })}
     <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
 }
@@ -2755,13 +2808,13 @@ function vHome() {
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
+    <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
     ${homeNote ? `<p class="note small" id="homeNote" role="status" style="margin:0">${esc(homeNote)}</p>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
           <div class="metaline"><span><b>${dn}</b> von ${tot} Sätzen</span>${dn && ses.lastAt ? `<span>letzter Satz ${atTxt(ses.lastAt)}</span>` : ""}</div></div>
-        <div class="bar"><div style="width:${Math.round(dn / tot * 100)}%"></div></div>
+        <div class="bar ticks" style="--n:${tot}" role="img" aria-label="${dn} von ${tot} Sätzen"><div style="width:${dn / tot * 100}%"></div></div>
         ${ses.autoPaused ? `<p class="small muted" id="autoPaused" style="margin:0">Pausiert, weil über 30 Minuten kein Satz kam. Beim Beenden zählt die Zeit bis zum letzten Satz.</p>` : ""}
         <div class="stack-sm"><button class="btn primary xl block" data-a="resumeT">Fortsetzen</button>
           <button class="btn quiet sm block" data-a="askStop">Beenden oder verwerfen</button></div>
@@ -2773,7 +2826,7 @@ function vHome() {
           ${(() => { const tp = activeTimeplan(day);
             return `<div class="metaline"><button class="timebtn" data-a="openPreview" id="exBtn" aria-label="Übungen und Gewichte für heute ansehen"><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}<span class="chev">›</span></button>
               <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
-              ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
+              ${tp ? `<p class="small" style="color:var(--accent-ink);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
         ${(() => { const ids = day.items.map(i => i.exId).filter(id => motSpec(id)); if (!ids.length) return "<div></div>";
           return `<div class="hero-mot">${motionSvg(ids[0], { anim: true }).replace('<svg class="motion"', `<svg class="motion" data-cycle="${ids.join(",")}"`)}<span class="mcap small faint">1/${ids.length} · ${esc(ex(ids[0]).name)}</span></div>`; })()}
@@ -2940,7 +2993,7 @@ function vPlan() {
           <div class="s clamp2">${d.items.map(it => esc(ex(it.exId).name)).join(" · ") || "Noch keine Übungen"}</div></div>
         <span class="min">${estMinutes(d)} Min.</span><span class="chev">›</span>
       </button>`).join("")}
-      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
+      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
     </div>
     ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
       return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
@@ -3429,7 +3482,7 @@ function vTrain() {
       <button class="icon-btn ${state.voice ? "on" : ""}" data-a="voiceToggle" aria-label="Sprachbegleitung ${state.voice ? "aus" : "an"}schalten" aria-pressed="${state.voice}">${state.voice ? ICON.voiceOn : ICON.voiceOff}</button>
       <button class="icon-btn" data-a="openJump" aria-label="Übungen">${ICON.list}</button>
     </div>
-    <div class="bar"><div style="width:${Math.round(done / total * 100)}%"></div></div></div>`;
+    <div class="bar ticks" style="--n:${total}" role="img" aria-label="${done} von ${total} Sätzen"><div style="width:${done / total * 100}%"></div></div></div>`;
 
   if (s.phase === "rest") {
     const left = Math.max(0, (s.restEnd - Date.now()) / 1000), C = 2 * Math.PI * 56;
@@ -3438,10 +3491,10 @@ function vTrain() {
     const sameEx = lx && lx.key === nx.key;
     $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
       <div class="rest">
-        <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
+        <div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
           <circle id="ringArc" cx="60" cy="60" r="56" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
             stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - (s.restTotal ? left / s.restTotal : 0))}"/></svg>
-          <div class="t"><div class="cap">Pause</div><div class="num" id="timer">${fmtTime(left)}</div></div></div>
+          <div class="t"><div class="cap">Pause</div><div class="num" id="timer" role="timer" aria-label="Pause, verbleibende Zeit">${fmtTime(left)}</div></div></div>
         <div class="pm"><button class="btn sm" data-a="restAdd" data-d="-15">−15 s</button><button class="btn sm" data-a="restAdd" data-d="15">+15 s</button></div>
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
@@ -3539,7 +3592,7 @@ function jumpSheet() {
     <div class="group">${s.list.map((x, i) => { const d = x.sets.filter(t => t.done).length, fin = d === x.sets.length;
     return `<div class="li">
       <button class="grow" data-a="jump" data-i2="${i}" ${fin ? "disabled" : ""} style="text-align:left;min-height:44px">
-        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : ""}</div></button>
+        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent-ink)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : ""}</div></button>
       ${!fin && i !== s.list.length - 1 ? `<button class="btn sm" data-a="moveEnd" data-i2="${i}">Später</button>` : fin ? `<span class="badge up">Fertig</span>` : ""}
     </div>`; }).join("")}</div>
     <p class="small faint" style="margin:0">Übung antippen, um sie jetzt zu machen.</p>
@@ -3649,7 +3702,7 @@ function healthSheet() {
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
       <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul>
-      ${state.watch ? `<p class="small" id="hkWatchNote" style="color:var(--accent)">Deine Apple Watch zeichnet die Trainings auf. Damit sie nicht doppelt in Health stehen, bietet die App die Trainings-Übergabe nicht an. Das Körpergewicht lässt sich weiter übergeben.</p>` : ""}</section>
+      ${state.watch ? `<p class="small" id="hkWatchNote" style="color:var(--accent-ink)">Deine Apple Watch zeichnet die Trainings auf. Damit sie nicht doppelt in Health stehen, bietet die App die Trainings-Übergabe nicht an. Das Körpergewicht lässt sich weiter übergeben.</p>` : ""}</section>
     <details class="disc" id="hkSetup" ${state.health ? "" : "open"}><summary><div class="grow"><h3>Kurzbefehl einrichten</h3><div class="small muted">Einmalig, etwa 3 Minuten</div></div><span class="chev">›</span></summary><div class="body">
       <ol class="glist">
         ${step(1, `App „Kurzbefehle“ öffnen und auf „+“ tippen. Den Kurzbefehl genau so nennen: <b>${HK_NAME}</b>`)}
@@ -4295,8 +4348,8 @@ function vFood() {
   // Bereich (z. B. Fett 20–35 % der Kalorien): markierte Zone, grün darin, Warnfarbe darüber
   const range = (l, v, lo, hi) => { const top = hi * 1.2 || 1, pc = x => Math.min(100, x / top * 100);
     return `<div class="row between small"><span>${l}</span><span><b>${fmtK(v)}</b> von ${lo}–${hi} g</span></div>
-      <div class="mtrack" style="height:10px"><div style="position:absolute;top:0;bottom:0;left:${pc(lo)}%;width:${pc(hi) - pc(lo)}%;background:var(--accent-soft);opacity:.45"></div>
-      <div class="mfill" style="width:${pc(v)}%;background:${v > hi ? "var(--warn)" : v >= lo ? "var(--ok)" : "var(--accent)"}"></div></div>`; };
+      <div class="mtrack" style="height:10px"><div style="position:absolute;top:0;bottom:0;left:${pc(lo)}%;width:${pc(hi) - pc(lo)}%;background:var(--band)"></div>
+      <div class="mfill" style="width:${pc(v)}%;background:${v > hi ? "var(--warn)" : v >= lo ? "var(--ok)" : "var(--text-2)"}"></div></div>`; };
   const left = G ? G.kcal - t.k : 0;
   const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
@@ -4309,9 +4362,9 @@ function vFood() {
       ${bar(t.k, G.kcal, left >= 0 ? "var(--accent)" : "var(--warn)")}
       <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal gegessen</p>
       <div class="row between small" style="margin-top:var(--s3)"><span>Eiweiß</span><span><b>${fmtK(t.p)}</b> von ${G.prot} g</span></div>
-      ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--accent)")}
+      ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--text-2)")}
       <div class="stack-sm" id="macroRows">${range("Kohlenhydrate", t.c, G.carbLo, G.carbHi)}${range("Fett", t.f, G.fatLo, G.fatHi)}
-      <div class="row between small"><span>Ballaststoffe</span><span><b>${fmtK(t.fib)}</b> von ${G.fib} g</span></div>${bar(t.fib, G.fib, t.fib >= G.fib ? "var(--ok)" : "var(--accent)")}</div></section>`
+      <div class="row between small"><span>Ballaststoffe</span><span><b>${fmtK(t.fib)}</b> von ${G.fib} g</span></div>${bar(t.fib, G.fib, t.fib >= G.fib ? "var(--ok)" : "var(--text-2)")}</div></section>`
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
@@ -4881,7 +4934,7 @@ function buddySays(day, thisWeek, goal, streak) {
   else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt verbessert: ${pr.name} ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
   if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
   if (thisWeek >= goal) facts.push(`Wochenziel geschafft: ${thisWeek} von ${goal}`);
-  if (streak >= 2) facts.push(`${streak} Wochen in Folge geschafft`);
+  // Serie steht unter „Diese Woche“ – hier nicht doppelt
   const rm = (state.misses || []).filter(m => m.d !== dkey(now) && !trainedOn(dateOf(m.d)) && (now - dateOf(m.d)) / 864e5 <= 3).pop();
   if (rm && !mw && !sick && !mToday) facts.push(`${WD_LONG[wdOf(dateOf(rm.d))]} ausgefallen – ${MISS_L[rm.r]}`);
   return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
@@ -5165,7 +5218,7 @@ function insightCard(x, ret) {
   const attrs = d => Object.entries(d).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("");
   return `<div class="ins ${x.kind}" data-ins="${esc(x.id)}"><div class="t">${esc(x.title)}</div>
     <p class="small" style="margin:0">${esc(x.text)}</p>
-    ${x.act.length ? `<div class="row wrap" style="gap:var(--s2)">${x.act.map((a, i) => `<button class="btn sm ${i === 0 && x.kind !== "good" ? "primary" : ""}" data-a="${a.a}"${attrs(a.d)}>${esc(a.l)}</button>`).join("")}</div>` : ""}
+    ${x.act.length ? `<div class="row wrap" style="gap:var(--s2)">${x.act.map(a => `<button class="btn sm" data-a="${a.a}"${attrs(a.d)}>${esc(a.l)}</button>`).join("")}</div>` : ""}
     <div class="row wrap" style="gap:var(--s4)">${x.art ? `<button class="link small" data-a="openArt" data-id="${x.art}" data-ret="${ret}">Hintergrund</button>` : ""}<button class="link small faint" data-a="coachHide" data-id="${esc(x.id)}">Ausblenden</button></div></div>`;
 }
 let coachBack = "home", coachDraft = null;
@@ -5360,7 +5413,7 @@ function vHistory() {
     <section class="section">
       <div class="section-head"><h2>Häufigkeit</h2><span class="small muted">${monthCount} ${monthCount === 1 ? "Tag" : "Tage"} im ${cm.toLocaleDateString("de-DE", { month: "long" })}</span></div>
       <div class="kpi"><span class="num">${String(Math.round(perWeek * 10) / 10).replace(".", ",")}</span><span class="sub">Trainings pro Woche · letzte 4 Wochen</span></div>
-      <div class="bars">${weeks.map((w, i) => `<div class="b ${w.n ? "" : "zero"} ${i === 7 ? "cur" : ""}" style="height:${w.n ? Math.max(8, w.n / maxN * 100) : 4}%" title="${w.n} Trainings"></div>`).join("")}</div>
+      <div class="bars">${weeks.map((w, i) => `<div class="b ${w.n ? "" : "zero"} ${i === 7 ? "cur" : ""}" data-n="${w.n}" style="height:${w.n ? Math.max(8, w.n / maxN * 100) : 4}%" title="${w.n} Trainings"></div>`).join("")}</div>
       <div class="bars-x">${weeks.map((w, i) => `<span>${i === 7 ? "Jetzt" : w.s.getDate() + "." + (w.s.getMonth() + 1) + "."}</span>`).join("")}</div>
     </section>
     <section class="section">

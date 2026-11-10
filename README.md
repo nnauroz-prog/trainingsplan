@@ -107,7 +107,13 @@ Alle Daten liegen lokal im Browser des Geräts.
 
 ## Design
 
-Designsystem „Instrument“ (CSS-Tokens in `src/app.html`): Inhalte direkt auf Graphit statt in Karten, Hierarchie über Typografie (Barlow Condensed für Titel und Zahlen, Barlow für Text) und Weißraum. Orange nur für die Hauptaktion je Ansicht, Grün für erledigt/erholt. Gruppierte Listen nur für echte Listen, Details in Bottom-Sheets oder aufklappbaren Bereichen. Im Training sitzt „Satz fertig“ fest im Daumenbereich und folgt der Tastatur.
+Designsystem „Instrument“ (CSS-Tokens in `src/app.html`): Inhalte direkt auf Graphit statt in Karten, Hierarchie über Typografie (Barlow Condensed für Titel und Zahlen, Barlow für Text) und Weißraum. Gruppierte Listen nur für echte Listen, Details in Bottom-Sheets oder aufklappbaren Bereichen. Im Training sitzt „Satz fertig“ fest im Daumenbereich und folgt der Tastatur.
+
+- **Signalorange:** gefüllt nur für die eine Hauptaktion je Ansicht, mit dunkler Schrift (Kontrast 6,6:1 dunkel, 5,7:1 hell). Sonst Orange nur für Links (eigenes Token `--accent-ink`, im hellen Design dunkler), den arbeitenden Muskel und den aktuellen Wert in Diagrammen. Hinweiskarten zeigen ihre Art mit einem Signalpunkt (orange Tipp, gelb Warnung, grün gut, grau Frage) und haben neutrale Knöpfe
+- **Skala statt Balken:** Im Training ist der Fortschritt eine Skala mit einem Strich je Satz
+- **Daten ruhig:** Nährwertbalken neutral bis zum Ziel, grün im Bereich, Warnfarbe darüber; nur der Kalorienbalken ist orange. Häufigkeit mit neutralen Balken und Zahl, die aktuelle Woche orange
+- **Barrierefreiheit (WCAG 2.2 AA):** alle Textfarben ≥ 4,5:1 auf allen Flächen in beiden Designs (per Test geprüft), Tippflächen 44 px (Filter-Chips 40 px), Textlinks im Fließtext ausgenommen; Pausen-Timer als `role="timer"`; „Bewegung reduzieren“ zeigt Start und Ende still
+- **Desktop ab 1024 px:** Navigation als Leiste links, Inhalt als Spalte; die Aktionsleiste ist bündig mit der Spalte
 
 ## Entwicklung
 

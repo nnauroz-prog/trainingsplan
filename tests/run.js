@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v48)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v48")));
+      ok("Service Worker aktiv (Cache trainingsplan-v49)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v49")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3131,7 +3131,7 @@ async function finishAllSets(page, kg, reps) {
       // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
-        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: chest.includes('fill="var(--accent)" fill-opacity="0.4"'), plate: chest.includes('r="9" fill="var(--mgear)"'),
+        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: /fill="var\(--accent\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
           lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
           press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
           downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
@@ -3254,7 +3254,48 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("58. Konsole");
+    section("58. Gestaltung: eine Hauptaktion, Skala je Satz, Desktop-Leiste");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, weights: [{ d: "2026-01-01", kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "auf", kcal: null } });
+      const ins = await page.$("#coach .ins");
+      ok("Hinweiskarte: Signalpunkt, Aktionen neutral (Orange nur für „Training starten“)", !ins || !(await page.$("#coach .ins .btn.primary")));
+      ok("„Heute“: genau eine orange Fläche (Hauptaktion)", (await page.$$("#app .btn.primary")).length === 1);
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const tk = await page.$eval(".t-top .bar.ticks", b => getComputedStyle(b).getPropertyValue("--n").trim());
+      ok("Training: Fortschritt als Skala mit einem Strich je Satz (4 Sätze)", tk === "4", tk);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      ok("Übungsseite: Bewegung direkt unter dem Titel, vor „Deine Werte“", await page.evaluate(() => !!(document.querySelector("#gMotion").compareDocumentPosition(document.querySelector("#exStats")) & Node.DOCUMENT_POSITION_FOLLOWING)));
+      await page.setViewportSize({ width: 1280, height: 800 });
+      const nav = await page.$eval("nav.tabs", n => { const r = n.getBoundingClientRect(); return { l: r.left, w: r.width, h: r.height }; });
+      ok("Ab 1024 px: Navigation als Leiste links über die ganze Höhe", nav.l === 0 && nav.w < 120 && nav.h >= 800, JSON.stringify(nav));
+      await ctx.close();
+    }
+
+    {
+      // Kontrast nach WCAG 2.2 AA (Text ≥ 4,5:1) für die Farbtokens in beiden Designs
+      const res = [];
+      for (const light of [false, true]) {
+        const { ctx, page } = await open({ plan: PLAN_SMALL }, { light });
+        res.push(await page.evaluate(lightMode => {
+          const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+          const lum = h => { h = h.replace("#", ""); const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+          const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+          const bad = [];
+          for (const fg of ["--text", "--text-2", "--text-3", "--accent-ink", "--ok", "--warn", "--bad"]) for (const bg of ["--bg", "--raise", "--raise-2", "--sheet"]) {
+            const r = cr(v(fg), v(bg)); if (r < 4.5) bad.push(`${fg} auf ${bg}: ${r.toFixed(2)}`); }
+          const onA = cr(v("--on-accent"), v("--accent")); if (onA < 4.5) bad.push(`Schrift auf Orange: ${onA.toFixed(2)}`);
+          return { lightMode, bad };
+        }, light));
+        await ctx.close();
+      }
+      ok("Kontrast: alle Textfarben ≥ 4,5:1 auf allen Flächen, auch Schrift auf den orangen Knöpfen (dunkel und hell)", res.every(r => !r.bad.length), JSON.stringify(res));
+    }
+
+    section("59. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
