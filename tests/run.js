@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v49)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v49")));
+      ok("Service Worker aktiv (Cache trainingsplan-v50)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v50")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3293,6 +3293,26 @@ async function finishAllSets(page, kg, reps) {
         await ctx.close();
       }
       ok("Kontrast: alle Textfarben ≥ 4,5:1 auf allen Flächen, auch Schrift auf den orangen Knöpfen (dunkel und hell)", res.every(r => !r.bad.length), JSON.stringify(res));
+    }
+
+    {
+      // Struktur für Screenreader: ein <main>, genau eine Überschrift erster Ebene je Ansicht, Sheets mit Namen
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const h1 = async () => page.$$eval("main h1", e => e.map(x => x.textContent.trim()));
+      const views = {};
+      views.heute = await h1();
+      await page.click("[data-a=tab][data-v=plan]"); views.training = await h1();
+      await page.click("[data-a=tab][data-v=lib]"); views.wissen = await h1();
+      await page.click("[data-a=openEx][data-id=hs-chest]"); views.uebung = await h1();
+      await page.click("[data-a=tab][data-v=food]"); views.essen = await h1();
+      await page.click("[data-a=tab][data-v=history]"); views.fortschritt = await h1();
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      views.satz = await h1();
+      await page.click("[data-a=openJump]");
+      const dlg = await page.$eval(".sheet[role=dialog]", s => { const id = s.getAttribute("aria-labelledby"); return id && document.getElementById(id) ? document.getElementById(id).textContent.trim() : null; });
+      ok("Hauptbereich als <main>, je Ansicht genau eine Überschrift erster Ebene", !!(await page.$("main#app")) && Object.values(views).every(v => v.length === 1) && views.heute[0] === "Heute" && views.satz[0] === "Brustpresse", JSON.stringify(views));
+      ok("Sheet als Dialog mit Namen aus seiner Überschrift", dlg === "Übungen", String(dlg));
+      await ctx.close();
     }
 
     section("59. Konsole");
