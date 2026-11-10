@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v52)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v52")));
+      ok("Service Worker aktiv (Cache trainingsplan-v53)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v53")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3135,7 +3135,7 @@ async function finishAllSets(page, kg, reps) {
       const a2 = await page.$eval(".mot-btn svg .mfig", g => g.innerHTML);
       ok("Training: Animation neben dem Gerätenamen bewegt sich", a1 !== a2);
       await page.click(".mot-btn");
-      ok("Antippen öffnet „Gerät & Technik“ mit großer Animation", !!(await page.$(".sheet .gmot svg.motion[data-anim]")));
+      ok("Antippen öffnet „Gerät & Technik“ mit großer Animation und Hinweis „Gerät vereinfacht“", !!(await page.$(".sheet .gmot svg.motion[data-anim]")) && (await page.textContent(".sheet .gmot .mnote")).includes("Gerät vereinfacht"));
       await page.click(".sheet .sh-head [data-a=closeSheet]");
       ok("360 px: Animation verdrängt die Eingabe nicht (kein seitliches Scrollen)", await noOverflow(page));
       // Pause vor einem anderen Gerät: Bewegung der nächsten Übung
@@ -3286,6 +3286,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      ok("Unter der Animation steht, dass das Gerät vereinfacht ist (Schema, kein genaues Modell)", (await page.textContent("#gMotion .mnote")).includes("Gerät vereinfacht"));
       ok("Übungsseite: Bewegung direkt unter dem Titel, vor „Deine Werte“", await page.evaluate(() => !!(document.querySelector("#gMotion").compareDocumentPosition(document.querySelector("#exStats")) & Node.DOCUMENT_POSITION_FOLLOWING)));
       await page.setViewportSize({ width: 1280, height: 800 });
       const nav = await page.$eval("nav.tabs", n => { const r = n.getBoundingClientRect(); return { l: r.left, w: r.width, h: r.height }; });
