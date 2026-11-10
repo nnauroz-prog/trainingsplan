@@ -4951,7 +4951,7 @@ function buddySays(day, thisWeek, goal, streak) {
   else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt verbessert: ${pr.name} ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
   if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
   if (thisWeek >= goal) facts.push(`Wochenziel geschafft: ${thisWeek} von ${goal}`);
-  if (streak >= 2) facts.push(`${streak} Wochen in Folge geschafft`);
+  // Serie steht unter „Diese Woche“ – hier nicht doppelt
   const rm = (state.misses || []).filter(m => m.d !== dkey(now) && !trainedOn(dateOf(m.d)) && (now - dateOf(m.d)) / 864e5 <= 3).pop();
   if (rm && !mw && !sick && !mToday) facts.push(`${WD_LONG[wdOf(dateOf(rm.d))]} ausgefallen – ${MISS_L[rm.r]}`);
   return `<div class="buddy-says" id="buddy"><p class="reason" style="color:var(--text);margin:0"><b>${esc(title)}.</b> ${esc(text.trim())}</p>
