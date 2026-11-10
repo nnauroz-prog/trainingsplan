@@ -33,14 +33,16 @@
     --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
     --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light}}
+    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858C95; --mbody2:#AEB4BB}}
   :root[data-theme="light"]{
     --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
     --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#5A616B; --text-3:#8C929B;
     --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
     --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light}
+    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858C95; --mbody2:#AEB4BB}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -107,7 +109,7 @@
   .actionbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;background:var(--bar-bg);
     -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
     padding:var(--s3) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(var(--s3) + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px))}
-  .actionbar .in{max-width:600px;margin:0 auto;display:grid;gap:var(--s2)}
+  .actionbar .in{max-width:calc(600px - 2 * var(--gutter));margin:0 auto;display:grid;gap:var(--s2)}
 
   /* ---------- Chips, Badges, Segment ---------- */
   .chips{display:flex;gap:var(--s2);overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter)}
@@ -2614,16 +2616,20 @@ function guideMot(id) {
   const mot = motionSvg(id, { anim: true, cue: true, ctl: true });
   return mot ? `<div class="gmot" id="gMotion">${mot}<p class="small faint" style="margin:0;text-align:center">Orange: arbeitet vor allem · blass orange: hilft mit</p></div>` : "";
 }
+// Muskeln zur Bewegung: hauptsächlich und unterstützend (aus der Anleitung bzw. den Geräteangaben)
+function gmusHtml(id) {
+  const e = ex(id), g = GUIDE[id], ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
+  return `<div class="gmus">
+      <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
+      ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
+    </div>`;
+}
 function guideHtml(id, o = {}) {
   const e = ex(id), g = GUIDE[id];
   const sec = (title, inner) => `<section class="gsec"><h2>${title}</h2>${inner}</section>`;
   const ol = arr => `<ol class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ol>`;
   const ul = arr => `<ul class="glist">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
-  const head = `${o.noMot ? "" : guideMot(id)}
-    <div class="gmus">
-      <div><div class="cap">Hauptsächlich</div>${ul(g ? g.main : [MUSCLES[e.muscle]])}</div>
-      ${(g ? g.sup : e.sec.map(m => MUSCLES[m])).length ? `<div><div class="cap">Unterstützend</div>${ul(g ? g.sup : e.sec.map(m => MUSCLES[m]))}</div>` : ""}
-    </div>`;
+  const head = `${o.noMot ? "" : guideMot(id)}${o.noMus ? "" : gmusHtml(id)}`;
   if (!g) return `${head}${sec("Hinweis", `<p class="muted">Für eigene Geräte gibt es keine ausführliche Anleitung. Muskeln und Bewegungsmuster stammen aus deinen Angaben.</p>`)}`;
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
   const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
@@ -2670,10 +2676,10 @@ function vEx() {
       <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
-    ${guideMot(id)}
+    ${guideMot(id)}${gmusHtml(id)}
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
     <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
-    ${guideHtml(id, { noMot: true })}
+    ${guideHtml(id, { noMot: true, noMus: true })}
     <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
 }
@@ -4342,8 +4348,8 @@ function vFood() {
   // Bereich (z. B. Fett 20–35 % der Kalorien): markierte Zone, grün darin, Warnfarbe darüber
   const range = (l, v, lo, hi) => { const top = hi * 1.2 || 1, pc = x => Math.min(100, x / top * 100);
     return `<div class="row between small"><span>${l}</span><span><b>${fmtK(v)}</b> von ${lo}–${hi} g</span></div>
-      <div class="mtrack" style="height:10px"><div style="position:absolute;top:0;bottom:0;left:${pc(lo)}%;width:${pc(hi) - pc(lo)}%;background:var(--accent-soft);opacity:.45"></div>
-      <div class="mfill" style="width:${pc(v)}%;background:${v > hi ? "var(--warn)" : v >= lo ? "var(--ok)" : "var(--accent)"}"></div></div>`; };
+      <div class="mtrack" style="height:10px"><div style="position:absolute;top:0;bottom:0;left:${pc(lo)}%;width:${pc(hi) - pc(lo)}%;background:var(--band)"></div>
+      <div class="mfill" style="width:${pc(v)}%;background:${v > hi ? "var(--warn)" : v >= lo ? "var(--ok)" : "var(--text-2)"}"></div></div>`; };
   const left = G ? G.kcal - t.k : 0;
   const days = Array.from({ length: 7 }, (_, i) => dkey(new Date(Date.now() - i * 864e5))).filter(x => (state.food[x] || []).length);
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
@@ -4356,9 +4362,9 @@ function vFood() {
       ${bar(t.k, G.kcal, left >= 0 ? "var(--accent)" : "var(--warn)")}
       <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal gegessen</p>
       <div class="row between small" style="margin-top:var(--s3)"><span>Eiweiß</span><span><b>${fmtK(t.p)}</b> von ${G.prot} g</span></div>
-      ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--accent)")}
+      ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--text-2)")}
       <div class="stack-sm" id="macroRows">${range("Kohlenhydrate", t.c, G.carbLo, G.carbHi)}${range("Fett", t.f, G.fatLo, G.fatHi)}
-      <div class="row between small"><span>Ballaststoffe</span><span><b>${fmtK(t.fib)}</b> von ${G.fib} g</span></div>${bar(t.fib, G.fib, t.fib >= G.fib ? "var(--ok)" : "var(--accent)")}</div></section>`
+      <div class="row between small"><span>Ballaststoffe</span><span><b>${fmtK(t.fib)}</b> von ${G.fib} g</span></div>${bar(t.fib, G.fib, t.fib >= G.fib ? "var(--ok)" : "var(--text-2)")}</div></section>`
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
