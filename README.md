@@ -112,7 +112,7 @@ Designsystem „Instrument“ (CSS-Tokens in `src/app.html`): Inhalte direkt auf
 - **Signalorange:** gefüllt nur für die eine Hauptaktion je Ansicht, mit dunkler Schrift (Kontrast 6,6:1 dunkel, 5,7:1 hell). Sonst Orange nur für Links (eigenes Token `--accent-ink`, im hellen Design dunkler), den arbeitenden Muskel und den aktuellen Wert in Diagrammen. Hinweiskarten zeigen ihre Art mit einem Signalpunkt (orange Tipp, gelb Warnung, grün gut, grau Frage) und haben neutrale Knöpfe
 - **Skala statt Balken:** Im Training ist der Fortschritt eine Skala mit einem Strich je Satz
 - **Daten ruhig:** Nährwertbalken neutral bis zum Ziel, grün im Bereich, Warnfarbe darüber; nur der Kalorienbalken ist orange. Häufigkeit mit neutralen Balken und Zahl, die aktuelle Woche orange
-- **Barrierefreiheit (WCAG 2.2 AA):** alle Textfarben ≥ 4,5:1 auf allen Flächen in beiden Designs (per Test geprüft), Tippflächen 44 px (Filter-Chips 40 px), Textlinks im Fließtext ausgenommen; Pausen-Timer als `role="timer"`; „Bewegung reduzieren“ zeigt Start und Ende still
+- **Barrierefreiheit (WCAG 2.2 AA):** alle Textfarben ≥ 4,5:1 auf allen Flächen in beiden Designs (per Test geprüft), Tippflächen 44 px (Filter-Chips 40 px), Textlinks im Fließtext ausgenommen; Pausen-Timer als `role="timer"`; Hauptbereich als `<main>`, je Ansicht genau eine Überschrift erster Ebene, Sheets als Dialog mit Namen aus ihrer Überschrift. Mit axe-core 4.10 geprüft (WCAG 2.2 A/AA und Best Practice, 9 Ansichten in beiden Designs): keine Verstöße; „Bewegung reduzieren“ zeigt Start und Ende still
 - **Desktop ab 1024 px:** Navigation als Leiste links, Inhalt als Spalte; die Aktionsleiste ist bündig mit der Spalte
 
 ## Entwicklung

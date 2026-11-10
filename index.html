@@ -78,12 +78,14 @@
 
   /* ---------- Typografie ---------- */
   .cap{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+  h1.cap{font-family:var(--body);line-height:inherit}
   .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
   .title{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;letter-spacing:.005em;margin:var(--s1) 0 0;text-wrap:balance}
   .hero-name{font-family:var(--display);font-weight:800;font-size:clamp(34px, 11vw, 48px);line-height:.95;margin:0;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
   h1{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.02;margin:0;text-wrap:balance}
   h2{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.1;margin:0;text-wrap:balance}
   h3{font-size:17px;font-weight:600;margin:0;line-height:1.3}
+  h2.h3{font-family:var(--body);font-size:17px;font-weight:600;line-height:1.3}
   .sub{font-size:15px;color:var(--text-2)}
   .small{font-size:14px}
   .muted{color:var(--text-2)}
@@ -434,7 +436,7 @@
 </style>
 
 <p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Training → Einstellungen eine Sicherung erstellen.</p>
-<div id="app"></div>
+<main id="app"></main>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
   <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Training</button>
@@ -1992,9 +1994,12 @@ const recColor = p => p >= 85 ? "var(--ok)" : p >= 45 ? "var(--warn)" : "var(--b
 
 /* ================= Sheet ================= */
 let lastSheet = null, genPrev = null;
+// Dialogname aus der ersten Überschrift im Sheet (für Screenreader)
+function sheetName(sh) { const h = sh && sh.querySelector("h2, h3"); if (h) { h.id = h.id || "shTitle"; sh.setAttribute("aria-labelledby", h.id); } else if (sh) sh.removeAttribute("aria-labelledby"); }
 function openSheet(html) {
   stopScan(); lastSheet = html;
   $sheet.innerHTML = `<div class="scrim" data-a="closeSheet"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  sheetName($sheet.querySelector(".sheet"));
 }
 function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
 const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
@@ -2673,7 +2678,7 @@ function vLib() {
   // Geräte im Studio zuerst
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m).sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0))]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><div class="title">Übungen</div>
+    <div class="head"><div class="cap">Wissen</div><h1 class="title">Übungen</h1>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
     ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
@@ -2690,7 +2695,7 @@ function vEx() {
   $app.innerHTML = `<div class="page guide">
     <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
       <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
-      <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</div>
+      <h1 class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</h1>
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
       <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
     ${guideMot(id)}${gmusHtml(id)}
@@ -2718,7 +2723,7 @@ function exAltHtml(id) {
 const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><div class="title">Artikel</div>
+    <div class="head"><div class="cap">Wissen</div><h1 class="title">Artikel</h1>
       <p class="sub">Grundlagen zu Training und Ernährung, mit Quellen.</p></div>
     ${wissenSeg("wissen")}
     <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen</div></div><span class="chev">›</span></button></div>
@@ -2731,7 +2736,7 @@ function vArt() {
   const a = ARTICLES.find(x => x.id === artId) || ARTICLES[0];
   $app.innerHTML = `<div class="page guide">
     <div class="head"><button class="link" data-a="artBack">‹ Zurück</button><div class="cap">Trainingswissen</div>
-      <div class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(a.title)}</div></div>
+      <h1 class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(a.title)}</h1></div>
     <p class="lead">${esc(a.lead)}</p>
     <div class="stack" style="gap:var(--s4)">${a.body.map(p => `<p>${esc(p)}</p>`).join("")}</div>
     <section class="gsec gnote"><div class="cap">Quellen</div>${srcList(a.src)}
@@ -2776,7 +2781,7 @@ function vSetup() {
   const all = allEx(), av = all.filter(e => !e.off).length, fav = all.filter(e => e.fav).length;
   $app.innerHTML = `<div class="page">
     <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Training</button>` : `<div class="cap">Neuer Plan</div>`}
-      <div class="title">Dein Training</div>
+      <h1 class="title">Dein Training</h1>
       <p class="sub">Ein paar Angaben, dann steht dein Plan – mit festen Tagen. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
       <p class="small faint">Startwerte der App: ${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen · ${GOALS[setup.goal].rest} s Pause</p></div>
@@ -2825,7 +2830,7 @@ function vHome() {
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
 
   $app.innerHTML = `<div class="page">
-    <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><div class="title">Heute</div></div>
+    <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><h1 class="title">Heute</h1></div>
     ${homeNote ? `<p class="note small" id="homeNote" role="status" style="margin:0">${esc(homeNote)}</p>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
@@ -2997,7 +3002,7 @@ function vPlan() {
   const p = state.plan;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
-      <div class="row between"><div class="title">Training</div><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
+      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
@@ -3021,7 +3026,7 @@ function vPlan() {
 function vSettings() {
   const seg = (k, on) => `<div class="seg" style="min-width:140px"><button data-a="nOpt" data-k="${k}" data-v="0" class="${on ? "" : "on"}">Aus</button><button data-a="nOpt" data-k="${k}" data-v="1" class="${on ? "on" : ""}">An</button></div>`;
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><div class="title">Einstellungen</div></div>
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><h1 class="title">Einstellungen</h1></div>
     <section class="section"><h2>Training</h2><div class="group">
       <button class="li" data-a="openSched"><div class="grow"><div class="t">Trainingstermine</div><div class="s">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
       <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
@@ -3227,7 +3232,7 @@ function refreshPicker() { sheetKeep(pickerHtml()); }
 function sheetKeep(html) {
   const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html);
   const act = document.activeElement, fid = act && act.id && sh.contains(act) ? act.id : null, pos = fid && act.selectionStart != null ? act.selectionStart : null, top = sh.scrollTop;
-  lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = top;
+  lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = top; sheetName(sh);
   if (fid) { const i = byId(fid); if (i) { i.focus(); if (pos != null && i.setSelectionRange) try { i.setSelectionRange(pos, pos); } catch (e) {} } }
 }
 
@@ -3511,10 +3516,10 @@ function vTrain() {
         <div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
           <circle id="ringArc" cx="60" cy="60" r="56" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
             stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - (s.restTotal ? left / s.restTotal : 0))}"/></svg>
-          <div class="t"><div class="cap">Pause</div><div class="num" id="timer" role="timer" aria-label="Pause, verbleibende Zeit">${fmtTime(left)}</div></div></div>
+          <div class="t"><h1 class="cap">Pause</h1><div class="num" id="timer" role="timer" aria-label="Pause, verbleibende Zeit">${fmtTime(left)}</div></div></div>
         <div class="pm"><button class="btn sm" data-a="restAdd" data-d="-15">−15 s</button><button class="btn sm" data-a="restAdd" data-d="15">+15 s</button></div>
       </div>
-      ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
+      ${lt ? `<div class="feel-q"><div class="row between"><h2 class="h3">Wie war Satz ${ld.si + 1}?</h2><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
           <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="feel" data-f="${k}" class="${lt.f === k ? "on" : ""}">${l}</button>`).join("")}</div>
           ${(() => { const pr = livePr(lx, ld.si); return pr ? `<p class="small" id="livePr" style="margin:0;color:var(--ok);font-weight:600">${esc(pr.txt)}</p>` : ""; })()}
           ${(() => { const lp = lastPerf(lx.exId, lx.u || unitOf(ex(lx.exId))), ps = lp ? lp[ld.si] || null : null; if (!ps) return "";
@@ -4372,7 +4377,7 @@ function vFood() {
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${dl}</div>
-      <div class="row between"><div class="title">Essen</div>
+      <div class="row between"><h1 class="title">Essen</h1>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= today ? "disabled" : ""}>›</button></div></div></div>
     ${G ? `<section class="stack-sm" id="foodSum">
       <div class="kpi"><span class="num" style="font-size:48px">${fmtK(Math.abs(left))}</span><span class="sub">kcal ${left >= 0 ? "übrig" : "über dem Ziel"}</span></div>
@@ -4669,7 +4674,7 @@ function vWeek() {
   if (s.food && s.G && s.food.p < s.G.prot * 0.9) hints.push(`Eiweiß lag im Schnitt ${fmtK(s.G.prot - s.food.p)} g unter deinem Ziel von ${s.G.prot} g.`);
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="weekBack">‹ Zurück</button><div class="cap">Wochenrückblick · ${fmtD(s.mon)} – ${fmtD(last)}</div>
-      <div class="row between"><div class="title">${label}</div>
+      <div class="row between"><h1 class="title">${label}</h1>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="weekNav" data-d="1" aria-label="Vorherige Woche">‹</button><button class="icon-btn" data-a="weekNav" data-d="-1" aria-label="Nächste Woche" ${weekOff === 0 ? "disabled" : ""}>›</button></div></div></div>
     <section class="stack-sm" id="weekTrain"><h2 style="margin:0">Training</h2>
       <div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : "")}
@@ -5259,7 +5264,7 @@ function vCoach() {
   const warn = vis.filter(x => x.kind !== "good"), good = vis.filter(x => x.kind === "good");
   const pv = state.prevPlan;
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><div class="title">Hinweise</div></div>
+    <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><h1 class="title">Hinweise</h1></div>
     ${pv ? `<div class="note" id="undoPlan"><div class="cap">Plan geändert · ${fmtDay(pv.at)}</div><p class="small">${esc(pv.why)}</p>
       <div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div></div>` : ""}
     <section class="section" id="coachTips"><h2>Vorschläge</h2>
@@ -5353,7 +5358,7 @@ function vSummary() {
   $app.innerHTML = `<div class="page">
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
-      <div><div class="cap">${esc(r.day)} · beendet${r.adj ? " · zeitlich angepasst" : ""}</div><div class="title">Stark gemacht.</div></div></div>
+      <div><div class="cap">${esc(r.day)} · beendet${r.adj ? " · zeitlich angepasst" : ""}</div><h1 class="title">Stark gemacht.</h1></div></div>
     <div class="grid3">
       <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div></div>
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
@@ -5423,7 +5428,7 @@ function vHistory() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)), lastW = W[W.length - 1];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><div class="title">Fortschritt</div></div>
+    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1 class="title">Fortschritt</h1></div>
     ${histNote ? `<p class="note small" id="histNote" role="status" style="margin:0">${esc(histNote)}</p>` : ""}
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek"><div class="grow"><div class="t">Wochenrückblick</div><div class="s">Training, Ernährung und Gewicht der Woche</div></div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
@@ -5513,7 +5518,7 @@ const histRec = () => histEdit && state.history.find(h => h.id === histEdit.id);
 const nSets = n => `${n} ${n === 1 ? "Satz" : "Sätze"}`;
 const histSetCount = h => h.exercises.reduce((a, x) => a + x.sets.length, 0);
 // Weiterblättern im offenen Sheet ohne erneute Einblend-Animation
-const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; };
+const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; sheetName(sh); };
 function histSheet(h, msg = "") {
   return `${sheetHead(esc(h.day), "Fertig")}
     <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min. · ${nSets(histSetCount(h))}</p>
