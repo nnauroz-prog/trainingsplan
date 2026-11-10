@@ -39,6 +39,8 @@ const OLD_V2 = {
   weights: [{ d: "2026-10-01", kg: 82.4 }],
   session: null, selDay: null
 };
+// Helle Fläche: alle Farbkanäle über 230 (Sheet im hellen Design, z. B. warmes Weiß)
+const isLightBg = c => { const m = (String(c).match(/\d+/g) || []).map(Number); return m.length >= 3 && m[0] > 230 && m[1] > 230 && m[2] > 230; };
 const PLAN_SMALL = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [
   { id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 0 },
   { id: "i2", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 0 },
@@ -363,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v55)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v55")));
+      ok("Service Worker aktiv (Cache trainingsplan-v57)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v57")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -589,7 +591,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: p2, history: [hist("hs-legpress", [{ kg: 100, reps: 10 }], 0.5, "t")] }, { light: true });
       await page.click("[data-a=pickDay]");
       const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
-      ok("Hellmodus: Bottom-Sheet ist hell", /255, 255, 255/.test(bg), bg);
+      ok("Hellmodus: Bottom-Sheet ist hell", isLightBg(bg), bg);
       await page.click(".sheet [data-a=selDay][data-id=d2]");
       ok("„Anderes Training wählen“ übernimmt den Tag", (await page.textContent(".hero-name")) === "Zweiter Tag");
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=showRec]");
@@ -770,7 +772,7 @@ async function finishAllSets(page, kg, reps) {
       const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
       await page.click(".sheet [data-a=closeSheet]"); await page.click("[data-a=start]"); await liveSet(page, 15); const c = await noOverflow(page);
       ok(`17. ${w} px ${light ? "hell" : "dunkel"}: Heute, Zeit-Vorschau, Zeit im Training ohne seitliches Scrollen`, a && b && c);
-      ok(`17. ${w} px ${light ? "hell" : "dunkel"}: Sheet in passender Farbe`, light ? /255, 255, 255/.test(bg) : !/255, 255, 255/.test(bg), bg);
+      ok(`17. ${w} px ${light ? "hell" : "dunkel"}: Sheet in passender Farbe`, light ? isLightBg(bg) : !isLightBg(bg), bg);
       await ctx.close();
     }
 
@@ -930,7 +932,7 @@ async function finishAllSets(page, kg, reps) {
       const a = await noOverflow(page);
       await page.click("[data-a=openRir]"); const b = await noOverflow(page);
       const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
-      ok(`18. ${w} px ${light ? "hell" : "dunkel"}: Pause mit RIR und RIR-Sheet ohne seitliches Scrollen, passende Farben`, a && b && (light ? /255, 255, 255/.test(bg) : !/255, 255, 255/.test(bg)), bg);
+      ok(`18. ${w} px ${light ? "hell" : "dunkel"}: Pause mit RIR und RIR-Sheet ohne seitliches Scrollen, passende Farben`, a && b && (light ? isLightBg(bg) : !isLightBg(bg)), bg);
       await ctx.close();
     }
 
@@ -2571,7 +2573,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Suche findet auch die Bezeichnung am Gerät (chest press → Brustpresse)", (await page.textContent("#app")).includes("Brustpresse"));
       await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=hs-row]");
       ok("Geräteseite: deutscher Name, darunter „Am Gerät steht: Iso-Lateral Row“", (await page.textContent(".head .title")) === "Rudern" && (await page.textContent("#exLabel")) === "Am Gerät steht: Iso-Lateral Row");
-      ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel orange", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
+      ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel in Akzentfarbe", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
       await page.click("[data-a=exBack]");
       const thumbs = await page.$$eval("#libList .thumbbox svg.motion", e => e.length);
       ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 52 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
@@ -3023,7 +3025,7 @@ async function finishAllSets(page, kg, reps) {
       await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       await page.click("[data-a=feel][data-f=l]");
       const feel = await page.evaluate(() => { const on = getComputedStyle(document.querySelector(".seg.feel button.on")).backgroundColor, main = getComputedStyle(document.querySelector(".actionbar .btn.primary")).backgroundColor; return on !== main; });
-      ok("„Leicht / Passt / Schwer“: Auswahl neutral, Orange nur für die Hauptaktion", feel);
+      ok("„Leicht / Passt / Schwer“: Auswahl neutral, Akzentfarbe nur für die Hauptaktion", feel);
       await page.click("text=Satz korrigieren"); if (!(await fits())) bad.push("Satz ändern"); await close();
       await page.click("[data-a=openJump]"); if (!(await fits())) bad.push("Übungen");
       const jl = await page.textContent(".sheet");
@@ -3276,8 +3278,8 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL, weights: [{ d: "2026-01-01", kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "auf", kcal: null } });
       const ins = await page.$("#coach .ins");
-      ok("Hinweiskarte: Signalpunkt, Aktionen neutral (Orange nur für „Training starten“)", !ins || !(await page.$("#coach .ins .btn.primary")));
-      ok("„Heute“: genau eine orange Fläche (Hauptaktion)", (await page.$$("#app .btn.primary")).length === 1);
+      ok("Hinweiskarte: Signalpunkt, Aktionen neutral (Akzentfarbe nur für „Training starten“)", !ins || !(await page.$("#coach .ins .btn.primary")));
+      ok("„Heute“: genau eine Fläche in Akzentfarbe (Hauptaktion)", (await page.$$("#app .btn.primary")).length === 1);
       await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
       const tk = await page.$eval(".t-top .bar.ticks", b => getComputedStyle(b).getPropertyValue("--n").trim());
       ok("Training: Fortschritt als Skala mit einem Strich je Satz (4 Sätze)", tk === "4", tk);
@@ -3306,12 +3308,12 @@ async function finishAllSets(page, kg, reps) {
           const bad = [];
           for (const fg of ["--text", "--text-2", "--text-3", "--accent-ink", "--ok", "--warn", "--bad"]) for (const bg of ["--bg", "--raise", "--raise-2", "--sheet"]) {
             const r = cr(v(fg), v(bg)); if (r < 4.5) bad.push(`${fg} auf ${bg}: ${r.toFixed(2)}`); }
-          const onA = cr(v("--on-accent"), v("--accent")); if (onA < 4.5) bad.push(`Schrift auf Orange: ${onA.toFixed(2)}`);
+          for (const bg of ["--accent", "--accent-stripe", "--accent-press"]) { const onA = cr(v("--on-accent"), v(bg)); if (onA < 4.5) bad.push(`Schrift auf ${bg}: ${onA.toFixed(2)}`); }
           return { lightMode, bad };
         }, light));
         await ctx.close();
       }
-      ok("Kontrast: alle Textfarben ≥ 4,5:1 auf allen Flächen, auch Schrift auf den orangen Knöpfen (dunkel und hell)", res.every(r => !r.bad.length), JSON.stringify(res));
+      ok("Kontrast: alle Textfarben ≥ 4,5:1 auf allen Flächen, auch Schrift auf beiden Warnstreifen der Hauptknöpfe (dunkel und hell)", res.every(r => !r.bad.length), JSON.stringify(res));
     }
 
     {

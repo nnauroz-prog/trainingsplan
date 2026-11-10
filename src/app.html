@@ -1,48 +1,49 @@
 <title>Trainingsplan</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
   /* =====================================================================
-     Designsystem „Instrument“
-     Layout: Inhalte direkt auf Graphit, Hierarchie über Typografie und Weißraum.
-     Gruppierte Listen nur für echte Listen. Eine orange Hauptaktion je Ansicht,
-     im Training fest im Daumenbereich (über der Tastatur).
+     Designsystem „Werkbank“
+     Wie die Geräte selbst: Stahl und Signalgelb, kantige Flächen, Schablonenschrift
+     für Überschriften, Monoschrift wie auf Geräteplaketten. Eine gelbe Hauptaktion je
+     Ansicht (mit Warnstreifen), im Training fest im Daumenbereich (über der Tastatur).
      ===================================================================== */
   :root{
-    /* Farben (dunkel = Standard) */
-    --bg:#0D0E10; --raise:#16181B; --raise-2:#202328; --raise-3:#2A2E34;
-    --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A9AFB8; --text-3:#8A909A;
-    --mbody:#A1A7B0; --mbody2:#6C727C; --mgear:var(--raise-3); --mgear-line:#6C727C;
-    --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#111214; --accent-ink:#FF7A2E;
-    --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#F5B740; --warn-tint:rgba(245,183,64,.12); --bad:#F2554F;
-    --fig:#24272C; --muscle:#363A41; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.6);
-    --bar-bg:rgba(13,14,16,.88); --accent-soft:rgba(255,107,26,.42); --sheet:#17191C; --seg-on:#2A2E34;
+    /* Farben (dunkel = Standard): Stahl und Signalgelb */
+    --bg:#121212; --raise:#1C1C1C; --raise-2:#272727; --raise-3:#343434;
+    --hair:rgba(255,255,255,.12); --text:#F2F2F0; --text-2:#BDBDB8; --text-3:#9A9A95;
+    --mbody:#A8A8A3; --mbody2:#6E6E6A; --mgear:#3A3A3A; --mgear-line:#7A7A74;
+    --accent:#FFD21F; --accent-press:#E9BE00; --accent-stripe:#F2C200; --accent-tint:rgba(255,210,31,.12); --on-accent:#111111; --accent-ink:#FFD21F;
+    --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#FF8A3D; --warn-tint:rgba(255,138,61,.13); --bad:#FF6A61;
+    --fig:#262626; --muscle:#3A3A3A; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.62);
+    --bar-bg:rgba(18,18,18,.9); --accent-soft:rgba(255,210,31,.42); --sheet:#1C1C1C; --seg-on:#3A3A3A;
     /* Schrift */
     --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
     --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    /* Raster (4er-Schritte) */
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+    /* Raster (4er-Schritte), kantige Formen */
     --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-    --r-sm:10px; --r:14px; --r-lg:20px; --r-xl:28px;
+    --r-sm:2px; --r:3px; --r-lg:4px; --r-xl:6px;
     --gutter:20px; --tap:48px;
     color-scheme:dark;
   }
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
-    --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
-    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
-    --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}}
+    --bg:#ECEBE7; --raise:#F7F6F3; --raise-2:#E0DFDA; --raise-3:#D1D0CA;
+    --hair:rgba(17,17,17,.13); --text:#111111; --text-2:#3E3E3A; --text-3:#5A5A55;
+    --accent:#FFC800; --accent-press:#E6B400; --accent-stripe:#F0BA00; --accent-tint:rgba(255,200,0,.2); --on-accent:#111111; --accent-ink:#6B5000;
+    --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
+    --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
+    --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858580; --mbody2:#AEAEA9; --mgear:#D1D0CA; --mgear-line:#8C8C86}}
   :root[data-theme="light"]{
-    --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
-    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
-    --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
-    --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}
+    --bg:#ECEBE7; --raise:#F7F6F3; --raise-2:#E0DFDA; --raise-3:#D1D0CA;
+    --hair:rgba(17,17,17,.13); --text:#111111; --text-2:#3E3E3A; --text-3:#5A5A55;
+    --accent:#FFC800; --accent-press:#E6B400; --accent-stripe:#F0BA00; --accent-tint:rgba(255,200,0,.2); --on-accent:#111111; --accent-ink:#6B5000;
+    --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
+    --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
+    --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
+    --mbody:#858580; --mbody2:#AEAEA9; --mgear:#D1D0CA; --mgear-line:#8C8C86}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -59,10 +60,15 @@
   [hidden]{display:none!important}
   svg{flex:0 0 auto}
 
+  /* ---------- Werkbank: Schablone, Plakette, Warnstreifen ---------- */
+  .title,.hero-name,h1,h2{text-transform:uppercase;letter-spacing:.025em}
+  h2.h3{text-transform:none;letter-spacing:0}
+  .head .cap::before{content:"// ";color:var(--accent-ink)}
+
   /* ---------- Typografie ---------- */
-  .cap{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
-  h1.cap{font-family:var(--body);line-height:inherit}
-  .label{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+  .cap{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
+  h1.cap{font-family:var(--mono);line-height:inherit}
+  .label{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
   .title{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;letter-spacing:.005em;margin:var(--s1) 0 0;text-wrap:balance}
   .hero-name{font-family:var(--display);font-weight:800;font-size:clamp(34px, 11vw, 48px);line-height:.95;margin:0;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
   h1{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.02;margin:0;text-wrap:balance}
@@ -95,16 +101,17 @@
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);min-height:var(--tap);padding:0 var(--s5);
     border-radius:var(--r);font-weight:600;font-size:16px;background:var(--raise-2);color:var(--text);transition:transform .08s,background .15s}
   .btn:active:not(:disabled){transform:scale(.98)}
-  .btn.primary{background:var(--accent);color:var(--on-accent)}
-  .btn.primary:active:not(:disabled){background:var(--accent-press)}
+  .btn.primary{background:repeating-linear-gradient(-45deg,var(--accent) 0 18px,var(--accent-stripe) 18px 36px);color:var(--on-accent);
+    text-transform:uppercase;letter-spacing:.06em;font-weight:700;box-shadow:inset 0 -3px 0 rgba(0,0,0,.22)}
+  .btn.primary:active:not(:disabled){background:var(--accent-press);box-shadow:none}
   .btn.block{width:100%}
   .btn.xl{min-height:58px;font-size:18px;border-radius:var(--r-lg)}
-  .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:12px}
+  .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:var(--r)}
   .btn.danger{color:var(--bad)}
   .btn.quiet{background:transparent;color:var(--text-2)}
   .link{color:var(--accent-ink);font-weight:600;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
   p .link{min-height:0;min-width:0}
-  .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--raise-2);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--text)}
+  .icon-btn{width:44px;height:44px;border-radius:var(--r);background:var(--raise-2);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--text)}
   .icon-btn.plain{background:transparent}
 
   /* Feste Aktionsleiste im Daumenbereich (folgt der Tastatur) */
@@ -117,18 +124,18 @@
   .chips{display:flex;gap:var(--s2);overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter)}
   .chips::-webkit-scrollbar{display:none}
   .chips.wrap{flex-wrap:wrap;margin:0;padding:0}
-  .chip{min-height:40px;padding:0 var(--s4);border-radius:999px;background:var(--raise-2);font-size:15px;font-weight:600;white-space:nowrap;color:var(--text-2)}
+  .chip{min-height:40px;padding:0 var(--s4);border-radius:var(--r);background:var(--raise-2);font-size:15px;font-weight:600;white-space:nowrap;color:var(--text-2)}
   .chip.on{background:var(--text);color:var(--bg)}
-  .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--raise-2);color:var(--text-2);white-space:nowrap}
+  .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:var(--r-sm);background:var(--raise-2);color:var(--text-2);white-space:nowrap}
   .badge.fav{background:var(--accent);color:var(--on-accent)}
   .badge.up{background:var(--ok-tint);color:var(--ok)}
   .badge.pr{background:var(--accent-tint);color:var(--accent-ink)}
-  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:12px}
-  .seg button{min-height:44px;border-radius:10px;font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:var(--r)}
+  .seg button{min-height:44px;border-radius:var(--r-sm);font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
   .seg button.on{background:var(--seg-on);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 
   /* ---------- Gruppierte Listen ---------- */
-  .group{background:var(--raise);border-radius:var(--r-lg);overflow:hidden}
+  .group{background:var(--raise);border-radius:var(--r-lg);overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair)}
   .li{display:flex;align-items:center;gap:var(--s3);min-height:56px;padding:var(--s3) var(--s4);width:100%;text-align:left;position:relative;min-width:0}
   .group>.li+.li::before,.group>*+.li::before{content:"";position:absolute;top:0;left:var(--s4);right:0;height:1px;background:var(--hair)}
   .li .grow{flex:1;min-width:0}
@@ -154,12 +161,12 @@
   .title-input:focus{border-color:var(--accent)}
 
   /* ---------- Hinweise ---------- */
-  .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
+  .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair)}
   .note.warn{background:var(--warn-tint)}
-  .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
+  .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair)}
   .ins.warn{--sig:var(--warn)} .ins.good{--sig:var(--ok)} .ins.ask{--sig:var(--text-3)}
   .ins .t{font-weight:700;display:flex;align-items:baseline;gap:10px}
-  .ins .t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:50%;background:var(--sig);transform:translateY(-1px)}
+  .ins .t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:1px;background:var(--sig);transform:translateY(-1px)}
   .note .cap{color:var(--text-2)}
   .reason{font-size:14px;line-height:1.4;color:var(--text-2)}
 
@@ -195,7 +202,7 @@
   .week{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2);text-align:center}
   .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600;text-align:center;min-height:44px;border-radius:var(--r-sm)}
   .week .d:active .dot{transform:scale(.94)}
-  .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
+  .week .dot{width:34px;height:34px;border-radius:var(--r);display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
   .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
   .week .wp.done{color:var(--text-2)}
@@ -213,9 +220,9 @@
   .t-bar .day{font-weight:600;font-size:15px}
   .t-bar .cnt{font-size:13px;color:var(--text-3)}
   .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right;display:grid;justify-items:end;line-height:1;gap:2px}
-  .t-clock small{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
+  .t-clock small{font-family:var(--mono);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
   @media (max-width:359px){ .t-bar{gap:var(--s2)} .t-bar .icon-btn{width:42px;height:42px} .t-clock{min-width:44px;font-size:20px} }
-  .bar{height:3px;background:var(--raise-2);border-radius:3px;overflow:hidden}
+  .bar{height:3px;background:var(--raise-2);border-radius:var(--r-sm);overflow:hidden}
   .bar>div{height:100%;background:var(--accent);transition:width .35s}
   .bar.ticks{height:6px;border-radius:0;-webkit-mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)));
     mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)))}
@@ -223,7 +230,7 @@
   .setting{justify-self:start;font-size:15px;color:var(--text-2);min-height:28px}
   .setting b{color:var(--text);font-weight:600}
   .sets{display:flex;gap:6px}
-  .set-pill{flex:1;min-width:0;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--raise);font-weight:700;font-size:14px;color:var(--text-3)}
+  .set-pill{flex:1;min-width:0;height:40px;border-radius:var(--r);display:grid;place-items:center;background:var(--raise);font-weight:700;font-size:14px;color:var(--text-3)}
   .set-pill.cur{background:var(--raise-2);color:var(--text);box-shadow:inset 0 0 0 2px var(--accent)}
   .set-pill.done{background:var(--ok-tint);color:var(--ok)}
   .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:44px;text-align:left}
@@ -233,7 +240,7 @@
   .stepper{display:grid;gap:var(--s1)}
   .stepper .cap{display:flex;justify-content:space-between}
   .stepper .ctl{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:var(--s2)}
-  .stepper .ctl button{width:64px;height:64px;border-radius:50%;background:var(--raise-2);font-size:30px;font-weight:500;display:grid;place-items:center;color:var(--text)}
+  .stepper .ctl button{width:64px;height:64px;border-radius:var(--r);background:var(--raise-2);font-size:30px;font-weight:500;display:grid;place-items:center;color:var(--text)}
   .stepper .ctl button:active{background:var(--raise-3)}
   .stepper input{text-align:center;font-family:var(--display);font-weight:800;font-size:68px;line-height:1;min-height:76px;padding:0;border:0;background:transparent;border-radius:var(--r);font-variant-numeric:tabular-nums}
   .stepper input:focus{background:var(--raise)}
@@ -254,7 +261,7 @@
   .plates .pl{display:inline-grid;place-items:center;min-width:30px;height:calc(14px + var(--p) * .3px);min-height:16px;padding:0 5px;border-radius:5px;background:var(--raise-2);color:var(--text);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
   .plates .pl-r{color:var(--warn)}
   .actions3{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--s2)}
-  .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
+  .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
   .lastline{font-size:14px;color:var(--text-3)}
   /* Übungsseite und Wissen */
@@ -284,10 +291,10 @@
   .sheet .gmot{background:var(--raise-2)}
   .next-mot{margin:var(--s2) 0;padding:var(--s2)}
   .next-mot .motion{max-width:220px}
-  .thumbbox{width:52px;flex:0 0 52px;background:var(--raise-2);border-radius:10px;padding:2px}
+  .thumbbox{width:52px;flex:0 0 52px;background:var(--raise-2);border-radius:var(--r);padding:2px}
   .ex-top{display:flex;align-items:flex-start;gap:var(--s3)}
-  .mot-btn{flex:0 0 88px;width:88px;background:var(--raise);border-radius:14px;padding:4px}
-  @media (max-height:700px){ .mot-btn{flex-basis:60px;width:60px;padding:2px;border-radius:10px} }
+  .mot-btn{flex:0 0 88px;width:88px;background:var(--raise);border-radius:var(--r-lg);padding:4px;box-shadow:inset 0 0 0 1px var(--hair)}
+  @media (max-height:700px){ .mot-btn{flex-basis:60px;width:60px;padding:2px;border-radius:var(--r)} }
   .hero-mot{display:grid;gap:4px;justify-items:center;width:clamp(110px, 34vw, 150px)}
   .hero-mot .mcap{text-align:center;line-height:1.2}
   .gmus{display:grid;gap:var(--s4)}
@@ -320,15 +327,15 @@
   .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
   .dev-main{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
   .dev-main>.t,.dev-main>.s{max-width:100%}
-  .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
+  .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:var(--r-sm);box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
   .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
   .pick-box svg{width:16px;height:16px}
   .dev-row{padding:0 var(--s2) 0 0}
   .dev-check{flex:0 0 48px;height:48px;display:grid;place-items:center}
   .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .idx{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--raise-2);font-size:13px;font-weight:700;color:var(--text-2);flex:0 0 auto}
+  .idx{width:28px;height:28px;border-radius:var(--r-sm);font-family:var(--mono);display:grid;place-items:center;background:var(--raise-2);font-size:13px;font-weight:700;color:var(--text-2);flex:0 0 auto}
   .mini-step{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center}
-  .mini-step button{height:44px;border-radius:12px;background:var(--raise-2);font-size:22px;display:grid;place-items:center}
+  .mini-step button{height:44px;border-radius:var(--r);background:var(--raise-2);font-size:22px;display:grid;place-items:center}
   .mini-step output{text-align:center;font-family:var(--display);font-size:28px;font-weight:700}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .grid3 .mini-step{grid-template-columns:1fr 1fr;row-gap:6px}
@@ -338,7 +345,7 @@
   .kpi{display:flex;align-items:baseline;gap:var(--s2)}
   .kpi .num{font-size:56px;font-weight:800}
   .bars{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;align-items:end;height:96px;padding-top:18px}
-  .bars .b{position:relative;background:var(--text-3);border-radius:4px 4px 2px 2px;min-height:4px}
+  .bars .b{position:relative;background:var(--text-3);border-radius:var(--r-sm);min-height:4px}
   .bars .b.zero{background:var(--raise-2)}
   .bars .b.cur{background:var(--accent)}
   .bars .b.cur.zero{background:var(--raise-3)}
@@ -358,12 +365,12 @@
   details.disc>.body{display:grid;gap:var(--s4);padding-bottom:var(--s5)}
   .mlist{display:grid;gap:10px}
   .mrow{display:grid;grid-template-columns:96px 1fr 34px;gap:var(--s3);align-items:center}
-  .mtrack{position:relative;height:8px;border-radius:6px;background:var(--raise-2);overflow:hidden}
+  .mtrack{position:relative;height:8px;border-radius:var(--r-sm);background:var(--raise-2);overflow:hidden}
   .mband{position:absolute;top:0;bottom:0;background:var(--band)}
-  .mfill{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+  .mfill{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r-sm)}
   .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
   .cal .d{display:grid;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
-  .cal .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;color:var(--text-2)}
+  .cal .dot{width:34px;height:34px;border-radius:var(--r);display:grid;place-items:center;font-size:13px;color:var(--text-2)}
   .cal .dot.done{background:var(--accent);color:var(--on-accent);font-weight:700}
   .cal .dot.today{box-shadow:inset 0 0 0 2px var(--text)}
   .stat{display:grid;gap:var(--s1)}
@@ -378,7 +385,7 @@
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
-  .check{width:22px;height:22px;flex:0 0 22px;border-radius:50%;border:2px solid var(--text-3);margin-top:2px}
+  .check{width:22px;height:22px;flex:0 0 22px;border-radius:var(--r-sm);border:2px solid var(--text-3);margin-top:2px}
   .check.on{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 4px var(--raise)}
 
   /* ---------- Bottom-Sheet ---------- */
@@ -2648,7 +2655,7 @@ new MutationObserver(() => motStart()).observe(document.documentElement, { child
 document.addEventListener("visibilitychange", () => { if (!document.hidden) motStart(); });
 
 // Die Zeichnung zeigt die Bewegung, nicht das genaue Gerätemodell – das steht unter jeder großen Animation
-const MOT_NOTE = `<p class="small faint mnote" style="margin:0;text-align:center">Schema, Gerät vereinfacht · orange arbeitet, blass orange hilft mit</p>`;
+const MOT_NOTE = `<p class="small faint mnote" style="margin:0;text-align:center">Schema, Gerät vereinfacht · gelb arbeitet, blass gelb hilft mit</p>`;
 // Bewegung mit Tempo-/Atemhinweis und Steuerung (Übungsseite oben, Anleitung im Sheet)
 function guideMot(id) {
   const mot = motionSvg(id, { anim: true, cue: true, ctl: true });
