@@ -2633,10 +2633,12 @@ function motStart() { if (!motRAF && !motReduce() && document.querySelector("svg
 new MutationObserver(() => motStart()).observe(document.documentElement, { childList: true, subtree: true });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) motStart(); });
 
+// Die Zeichnung zeigt die Bewegung, nicht das genaue Gerätemodell – das steht unter jeder großen Animation
+const MOT_NOTE = `<p class="small faint mnote" style="margin:0;text-align:center">Schema, Gerät vereinfacht · orange arbeitet, blass orange hilft mit</p>`;
 // Bewegung mit Tempo-/Atemhinweis und Steuerung (Übungsseite oben, Anleitung im Sheet)
 function guideMot(id) {
   const mot = motionSvg(id, { anim: true, cue: true, ctl: true });
-  return mot ? `<div class="gmot" id="gMotion">${mot}<p class="small faint" style="margin:0;text-align:center">Orange: arbeitet vor allem · blass orange: hilft mit</p></div>` : "";
+  return mot ? `<div class="gmot" id="gMotion">${mot}${MOT_NOTE}</div>` : "";
 }
 // Muskeln zur Bewegung: hauptsächlich und unterstützend (aus der Anleitung bzw. den Geräteangaben)
 function gmusHtml(id) {
@@ -3595,7 +3597,7 @@ function devInfoSheet() {
   const s = S(), x = s.list[s.idx], e = ex(x.exId);
   const mot = motionSvg(e.id, { anim: true, cue: true, ctl: true });
   return `${sheetHead(esc(e.name))}
-    ${mot ? `<div class="gmot">${mot}</div>` : ""}
+    ${mot ? `<div class="gmot">${mot}${MOT_NOTE}</div>` : ""}
     <div class="field"><label for="noteT">Deine Einstellung</label>
       <input id="noteT" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
     ${TIPS[e.id] ? `<div class="field"><label>So geht's</label><ol class="tiplist">${TIPS[e.id].map(t => `<li>${esc(t)}</li>`).join("")}</ol></div>` : ""}
