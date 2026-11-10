@@ -3275,6 +3275,26 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
+    {
+      // Kontrast nach WCAG 2.2 AA (Text ≥ 4,5:1) für die Farbtokens in beiden Designs
+      const res = [];
+      for (const light of [false, true]) {
+        const { ctx, page } = await open({ plan: PLAN_SMALL }, { light });
+        res.push(await page.evaluate(lightMode => {
+          const cs = getComputedStyle(document.documentElement), v = n => cs.getPropertyValue(n).trim();
+          const lum = h => { h = h.replace("#", ""); const c = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+          const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+          const bad = [];
+          for (const fg of ["--text", "--text-2", "--text-3", "--accent-ink", "--ok", "--warn", "--bad"]) for (const bg of ["--bg", "--raise", "--raise-2", "--sheet"]) {
+            const r = cr(v(fg), v(bg)); if (r < 4.5) bad.push(`${fg} auf ${bg}: ${r.toFixed(2)}`); }
+          const onA = cr(v("--on-accent"), v("--accent")); if (onA < 4.5) bad.push(`Schrift auf Orange: ${onA.toFixed(2)}`);
+          return { lightMode, bad };
+        }, light));
+        await ctx.close();
+      }
+      ok("Kontrast: alle Textfarben ≥ 4,5:1 auf allen Flächen, auch Schrift auf den orangen Knöpfen (dunkel und hell)", res.every(r => !r.bad.length), JSON.stringify(res));
+    }
+
     section("59. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {

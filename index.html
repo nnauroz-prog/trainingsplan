@@ -29,9 +29,9 @@
   :root{
     /* Farben (dunkel = Standard) */
     --bg:#0D0E10; --raise:#16181B; --raise-2:#202328; --raise-3:#2A2E34;
-    --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A1A7B0; --text-3:#6C727C;
-    --mbody:var(--text-2); --mbody2:var(--text-3); --mgear:var(--raise-3); --mgear-line:var(--text-3);
-    --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#FFFFFF;
+    --hair:rgba(255,255,255,.07); --text:#F3F4F5; --text-2:#A9AFB8; --text-3:#8A909A;
+    --mbody:#A1A7B0; --mbody2:#6C727C; --mgear:var(--raise-3); --mgear-line:#6C727C;
+    --accent:#FF6B1A; --accent-press:#E85C0E; --accent-tint:rgba(255,107,26,.14); --on-accent:#111214; --accent-ink:#FF7A2E;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#F5B740; --warn-tint:rgba(245,183,64,.12); --bad:#F2554F;
     --fig:#24272C; --muscle:#363A41; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.6);
     --bar-bg:rgba(13,14,16,.88); --accent-soft:rgba(255,107,26,.42); --sheet:#17191C; --seg-on:#2A2E34;
@@ -46,20 +46,20 @@
   }
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
     --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#5A616B; --text-3:#8C929B;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
-    --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
+    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
+    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
+    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
     --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858C95; --mbody2:#AEB4BB}}
+    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}}
   :root[data-theme="light"]{
     --bg:#F4F5F7; --raise:#FFFFFF; --raise-2:#E9EBEF; --raise-3:#DCE0E5;
-    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#5A616B; --text-3:#8C929B;
-    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11);
-    --ok:#1F9D5B; --ok-tint:rgba(31,157,91,.12); --warn:#C98A0C; --warn-tint:rgba(201,138,12,.12); --bad:#D93A37;
+    --hair:rgba(15,17,20,.09); --text:#0F1114; --text-2:#4B515B; --text-3:#636973;
+    --accent:#F0600E; --accent-press:#D9540A; --accent-tint:rgba(240,96,14,.11); --accent-ink:#A94207;
+    --ok:#11733A; --ok-tint:rgba(17,115,58,.12); --warn:#8A5C00; --warn-tint:rgba(201,138,12,.14); --bad:#BE2A27;
     --fig:#E2E5E9; --muscle:#C8CDD4; --band:rgba(15,17,20,.10); --scrim:rgba(15,17,20,.38);
     --bar-bg:rgba(244,245,247,.9); --accent-soft:rgba(240,96,14,.36); --sheet:#FFFFFF; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858C95; --mbody2:#AEB4BB}
+    --mbody:#858C95; --mbody2:#AEB4BB; --mgear-line:#8C929B}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -117,8 +117,8 @@
   .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:12px}
   .btn.danger{color:var(--bad)}
   .btn.quiet{background:transparent;color:var(--text-2)}
-  .link{color:var(--accent);font-weight:600;min-height:44px;display:inline-flex;align-items:center}
-  p .link{min-height:0}
+  .link{color:var(--accent-ink);font-weight:600;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+  p .link{min-height:0;min-width:0}
   .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--raise-2);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--text)}
   .icon-btn.plain{background:transparent}
 
@@ -137,7 +137,7 @@
   .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--raise-2);color:var(--text-2);white-space:nowrap}
   .badge.fav{background:var(--accent);color:var(--on-accent)}
   .badge.up{background:var(--ok-tint);color:var(--ok)}
-  .badge.pr{background:var(--accent-tint);color:var(--accent)}
+  .badge.pr{background:var(--accent-tint);color:var(--accent-ink)}
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:12px}
   .seg button{min-height:44px;border-radius:10px;font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
   .seg button.on{background:var(--seg-on);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.18)}
@@ -184,7 +184,7 @@
     padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))}
   nav.tabs .in{display:flex;width:100%;max-width:600px}
   nav.tabs button{flex:1;display:grid;justify-items:center;gap:3px;min-height:50px;padding-top:4px;font-size:11px;font-weight:600;color:var(--text-3);text-align:center}
-  nav.tabs button.on{color:var(--accent)}
+  nav.tabs button.on{color:var(--accent-ink)}
   nav.tabs svg{width:25px;height:25px}
   @media (min-width:1024px){
     nav.tabs{top:0;right:auto;width:96px;flex-direction:column;justify-content:flex-start;border-top:0;border-right:1px solid var(--hair);padding:var(--s6) 8px}
@@ -240,7 +240,7 @@
   .set-pill{flex:1;min-width:0;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--raise);font-weight:700;font-size:14px;color:var(--text-3)}
   .set-pill.cur{background:var(--raise-2);color:var(--text);box-shadow:inset 0 0 0 2px var(--accent)}
   .set-pill.done{background:var(--ok-tint);color:var(--ok)}
-  .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:32px;text-align:left}
+  .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:44px;text-align:left}
   .prog .arr{font-weight:700}
   .prog.up .arr{color:var(--ok)} .prog.down .arr{color:var(--warn)}
   .prog .more{color:var(--text-3);font-size:13px}
@@ -304,7 +304,7 @@
   .gnote{border-top:1px solid var(--hair);padding-top:var(--s4)}
   .lead{font-size:18px;line-height:1.45;color:var(--text);max-width:65ch}
   .infobtn{font-family:var(--display);font-weight:700;font-size:18px;color:var(--text-2);box-shadow:inset 0 0 0 1.5px var(--hair)}
-  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:32px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
+  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
   .timebtn b{color:var(--text);font-weight:600}
   .timebtn .chev{font-size:16px;margin-left:2px}
   .facts{margin:0;padding-left:18px;display:grid;gap:4px;font-size:15px}
@@ -381,9 +381,9 @@
   .nutgrid .num{font-size:22px}
   .form2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
   .form3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
-  .addrow{color:var(--accent);font-weight:600;min-height:48px}
+  .addrow{color:var(--accent-ink);font-weight:600;min-height:48px}
   .buddy-says{display:grid;gap:var(--s2)}
-  .icon-btn.on{color:var(--accent)}
+  .icon-btn.on{color:var(--accent-ink)}
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
@@ -408,7 +408,7 @@
   .warm .t{font-weight:700;font-size:15px}
   .warm .s{font-size:13px;color:var(--text-2)}
   .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);color:var(--text);font-size:15px;text-align:left}
-  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);flex:none}
+  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);flex:none}
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
   .ask .chip{min-height:34px;font-size:14px}
@@ -2843,7 +2843,7 @@ function vHome() {
           ${(() => { const tp = activeTimeplan(day);
             return `<div class="metaline"><button class="timebtn" data-a="openPreview" id="exBtn" aria-label="Übungen und Gewichte für heute ansehen"><b>${tp ? tp.ex : day.items.length}</b> ${nEx(tp ? tp.ex : day.items.length)}<span class="chev">›</span></button>
               <button class="timebtn" data-a="openTime" aria-label="Trainingsdauer für heute ändern">≈ <b>${tp ? tp.est : estMinutes(day)}</b> Min.<span class="chev">›</span></button></div>
-              ${tp ? `<p class="small" style="color:var(--accent);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
+              ${tp ? `<p class="small" style="color:var(--accent-ink);font-weight:600">Für heute auf ${tp.minutes} Min. angepasst</p>` : ""}`; })()}
           <p class="small muted">${muscles.join(" · ") || "Noch keine Übungen"}</p></div>
         ${(() => { const ids = day.items.map(i => i.exId).filter(id => motSpec(id)); if (!ids.length) return "<div></div>";
           return `<div class="hero-mot">${motionSvg(ids[0], { anim: true }).replace('<svg class="motion"', `<svg class="motion" data-cycle="${ids.join(",")}"`)}<span class="mcap small faint">1/${ids.length} · ${esc(ex(ids[0]).name)}</span></div>`; })()}
@@ -3010,7 +3010,7 @@ function vPlan() {
           <div class="s clamp2">${d.items.map(it => esc(ex(it.exId).name)).join(" · ") || "Noch keine Übungen"}</div></div>
         <span class="min">${estMinutes(d)} Min.</span><span class="chev">›</span>
       </button>`).join("")}
-      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent)">Trainingstag hinzufügen</div></div></button>
+      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
     </div>
     ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
       return `<div class="group"><button class="li" data-a="showRec"><div class="grow"><div class="s">Erholung</div><div class="t">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
@@ -3508,10 +3508,10 @@ function vTrain() {
     const sameEx = lx && lx.key === nx.key;
     $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
       <div class="rest">
-        <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
+        <div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
           <circle id="ringArc" cx="60" cy="60" r="56" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
             stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - (s.restTotal ? left / s.restTotal : 0))}"/></svg>
-          <div class="t"><div class="cap">Pause</div><div class="num" id="timer">${fmtTime(left)}</div></div></div>
+          <div class="t"><div class="cap">Pause</div><div class="num" id="timer" role="timer" aria-label="Pause, verbleibende Zeit">${fmtTime(left)}</div></div></div>
         <div class="pm"><button class="btn sm" data-a="restAdd" data-d="-15">−15 s</button><button class="btn sm" data-a="restAdd" data-d="15">+15 s</button></div>
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h3>Wie war Satz ${ld.si + 1}?</h3><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
@@ -3609,7 +3609,7 @@ function jumpSheet() {
     <div class="group">${s.list.map((x, i) => { const d = x.sets.filter(t => t.done).length, fin = d === x.sets.length;
     return `<div class="li">
       <button class="grow" data-a="jump" data-i2="${i}" ${fin ? "disabled" : ""} style="text-align:left;min-height:44px">
-        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : ""}</div></button>
+        <div class="t ellipsis" style="${i === s.idx ? "color:var(--accent-ink)" : ""}">${esc(ex(x.exId).name)}</div><div class="s">${d} von ${x.sets.length} Sätzen${i === s.idx ? " · jetzt" : ""}</div></button>
       ${!fin && i !== s.list.length - 1 ? `<button class="btn sm" data-a="moveEnd" data-i2="${i}">Später</button>` : fin ? `<span class="badge up">Fertig</span>` : ""}
     </div>`; }).join("")}</div>
     <p class="small faint" style="margin:0">Übung antippen, um sie jetzt zu machen.</p>
@@ -3719,7 +3719,7 @@ function healthSheet() {
       <li>Keine Kalorien: Eine Schätzung ohne Herzfrequenz wäre ungenau.</li>
       <li>Sätze, Wiederholungen und Gewichte speichert Health nicht. Sie bleiben hier in der App.</li>
       <li>Die Daten gehen nur an den Kurzbefehl auf deinem iPhone, nicht an einen Server.</li></ul>
-      ${state.watch ? `<p class="small" id="hkWatchNote" style="color:var(--accent)">Deine Apple Watch zeichnet die Trainings auf. Damit sie nicht doppelt in Health stehen, bietet die App die Trainings-Übergabe nicht an. Das Körpergewicht lässt sich weiter übergeben.</p>` : ""}</section>
+      ${state.watch ? `<p class="small" id="hkWatchNote" style="color:var(--accent-ink)">Deine Apple Watch zeichnet die Trainings auf. Damit sie nicht doppelt in Health stehen, bietet die App die Trainings-Übergabe nicht an. Das Körpergewicht lässt sich weiter übergeben.</p>` : ""}</section>
     <details class="disc" id="hkSetup" ${state.health ? "" : "open"}><summary><div class="grow"><h3>Kurzbefehl einrichten</h3><div class="small muted">Einmalig, etwa 3 Minuten</div></div><span class="chev">›</span></summary><div class="body">
       <ol class="glist">
         ${step(1, `App „Kurzbefehle“ öffnen und auf „+“ tippen. Den Kurzbefehl genau so nennen: <b>${HK_NAME}</b>`)}
