@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v53)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v53")));
+      ok("Service Worker aktiv (Cache trainingsplan-v54)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v54")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3334,7 +3334,52 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("59. Konsole");
+    section("59. Scheibenrechner");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Beine", items: [{ id: "i1", exId: "hs-legpress", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i2", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i3", exId: "hs-fly", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const history = [{ id: "h", dayId: "d1", day: "Beine", date: new Date(Date.now() - 3 * 864e5).toISOString(), durationSec: 2000, exercises: [
+        { exId: "hs-legpress", name: "x", u: "t", planned: 2, rmin: 8, rmax: 12, sets: [{ kg: 95, reps: 8 }, { kg: 95, reps: 8 }] }, { exId: "hs-chest", name: "x", u: "s", planned: 2, rmin: 8, rmax: 12, sets: [{ kg: 41, reps: 8 }, { kg: 41, reps: 8 }] }] }];
+      const { ctx, page } = await open({ plan, history });
+      const pc = await tp(page, () => { const T = window.__tp; return { a: T.platesOf(47.5, T.PLATE_SIZES), b: T.platesOf(41, [20, 10, 5]), c: T.platesOf(0, T.PLATE_SIZES) }; });
+      ok("Rechner: 47,5 kg je Seite = 25 + 20 + 2,5; 41 kg mit 20/10/5 = 20 + 20, Rest 1 kg", JSON.stringify(pc.a) === '{"plates":[25,20,2.5],"rest":0}' && JSON.stringify(pc.b) === '{"plates":[20,20],"rest":1}' && pc.c.plates.length === 0, JSON.stringify(pc));
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const tx = s => s.replace(/\s+/g, "");
+      ok("Beinpresse (kg insgesamt): 95 kg → pro Seite 25 + 20 + 2,5", tx(await page.textContent("#platesTxt")) === "ProSeite25202,5", await page.textContent("#platesTxt"));
+      await page.click("[data-a=adj][data-k=kg][data-d='1']");
+      ok("Gewicht + Schritt: Anzeige folgt sofort (100 kg → 25 + 25)", tx(await page.textContent("#platesTxt")) === "ProSeite2525");
+      await page.fill("#kgIn", "0"); await page.dispatchEvent("#kgIn", "input");
+      ok("0 kg: keine Scheiben", tx(await page.textContent("#platesTxt")) === "");
+      await page.fill("#kgIn", "100"); await page.dispatchEvent("#kgIn", "input");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Brustpresse (kg pro Seite): 41 kg → 25 + 15 + 1 kg nicht aufteilbar", tx(await page.textContent("#platesTxt")).startsWith("ProSeite2515") && (await page.textContent("#platesTxt")).includes("1 kg nicht aufteilbar"), await page.textContent("#platesTxt"));
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Steckgewicht (Butterfly): kein Scheibenrechner", !(await page.$("#platesTxt")) && (await page.textContent("h1")).includes("Butterfly"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+      await page.click("#optPlates [data-a=plateToggle][data-v='25']"); await page.click("#optPlates [data-a=plateToggle][data-v='15']");
+      const st = await stored(page);
+      ok("Einstellungen → Studio: Scheiben im Studio abwählbar (ohne 25 und 15)", JSON.stringify(st.plates) === "[20,10,5,2.5,1.25]" && (await page.getAttribute("#optPlates [data-v='25']", "aria-pressed")) === "false");
+      const r = await tp(page, () => window.__tp.platesHtml(window.__tp.ex("hs-chest"), 40).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+      ok("Rechner nutzt nur die vorhandenen Scheiben (40 kg → 20 + 20)", r === "Pro Seite 20 20", r);
+      await ctx.close();
+    }
+
+    {
+      // Gewichtsart klar: Scheiben je Seite (Iso-Lateral), Scheiben insgesamt, Steckgewicht, Seilzug
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const g = await tp(page, () => { const T = window.__tp; return ["hs-chest", "hs-legpress", "hs-fly", "lf-pushdown", "hs-lat"].map(id => T.loadShort(T.ex(id)) + "|" + T.loadTxt(T.ex(id))); });
+      ok("Gewichtsart je Gerät: Brustpresse Scheiben je Seite, Beinpresse Scheiben insgesamt, Butterfly Steckgewicht, Kabel/Latzug Seilzug", JSON.stringify(g) === JSON.stringify(["Scheiben je Seite|Scheiben, pro Seite", "Scheiben|Scheiben, insgesamt", "Steckgewicht|Steckgewicht", "Seilzug|Seilzug, Steckgewicht", "Seilzug|Seilzug, Steckgewicht"]), JSON.stringify(g));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]");
+      ok("Geräteauswahl zeigt die Gewichtsart in jeder Zeile", (await page.textContent(".sheet [data-a=pick][data-id=hs-chest]")).includes("Scheiben je Seite") && (await page.textContent(".sheet [data-a=pick][data-id=hs-fly]")).includes("Steckgewicht"));
+      await ctx.close();
+    }
+
+    section("60. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

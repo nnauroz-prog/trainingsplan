@@ -242,11 +242,16 @@
     .stepper .ctl button{width:56px;height:56px;font-size:26px}
     .stepper input{font-size:54px;min-height:56px}
     .warm{padding:var(--s2) var(--s3)} .warm .btn.sm{min-height:40px}
+    .training .stepper{gap:2px} .training .plates{min-height:18px;font-size:12px} .training .plates .pl{height:calc(12px + var(--p) * .2px);min-height:14px;font-size:11px}
     .bar.ticks{height:4px}
     .set-pill{height:34px}
     .ex-head h1{font-size:30px}
   }
   .unit b{font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0}
+  .plates{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;min-height:22px;font-size:13px;color:var(--text-2)}
+  .plates .pl-l{margin-right:2px}
+  .plates .pl{display:inline-grid;place-items:center;min-width:30px;height:calc(14px + var(--p) * .3px);min-height:16px;padding:0 5px;border-radius:5px;background:var(--raise-2);color:var(--text);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+  .plates .pl-r{color:var(--warn)}
   .actions3{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--s2)}
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
@@ -1325,7 +1330,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
+function blank() { return { v: 6, plates: null, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1446,6 +1451,7 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
+  if (Array.isArray(raw.plates)) { const pl = PLATE_SIZES.filter(x => raw.plates.includes(x)); s.plates = pl.length && pl.length < PLATE_SIZES.length ? pl : null; }
   s.misses = cleanMisses(raw.misses); s.missSkip = /^\d{4}-\d{2}-\d{2}$/.test(raw.missSkip || "") ? raw.missSkip : null;
   s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
   s.backupAt = typeof raw.backupAt === "string" && !isNaN(new Date(raw.backupAt)) && +new Date(raw.backupAt) <= Date.now() + 864e5 ? new Date(raw.backupAt).toISOString() : null;
@@ -1509,9 +1515,27 @@ state = load();
 const ex = id => devFrom(state, id);
 const allEx = () => LIB.concat(state.custom).map(e => ex(e.id));
 const UNIT = { s: "kg pro Seite", t: "kg insgesamt", b: "kg am Gewichtsblock" };
+// Scheibenrechner: welche Scheiben je Seite. Standard-Scheiben (Regel der App), unter Einstellungen → Studio anpassbar
+const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
+function platesOf(perSide, avail) {
+  let r = Math.round(perSide * 100) / 100; const out = [];
+  for (const p of avail.slice().sort((a, b) => b - a)) while (r >= p - 1e-9) { out.push(p); r = Math.round((r - p) * 100) / 100; }
+  return { plates: out, rest: r };
+}
+// „insgesamt“: gleichmäßig auf beide Seiten verteilt; Steckgewicht: kein Rechner
+function platesHtml(e, kg) {
+  const u = unitOf(e); if (u === "b" || !(kg > 0)) return "";
+  const per = u === "s" ? kg : kg / 2, { plates, rest } = platesOf(per, state.plates || PLATE_SIZES);
+  const chips = plates.map(x => `<span class="pl" style="--p:${x}">${kgTxt(x)}</span>`).join("");
+  return `<span class="pl-l">Pro Seite</span>${chips}${rest ? `<span class="pl-r">+ ${kgTxt(rest)} kg nicht aufteilbar</span>` : ""}`;
+}
+function refreshPlates() { const s = S(), el = byId("platesTxt"); if (!s || !el) return; const x = s.list[s.idx], t = x.sets[curSetIdx(x)]; el.innerHTML = platesHtml(ex(x.exId), t && t.kg); }
 const UNIT_SHORT = { s: "pro Seite", t: "insgesamt", b: "am Block" };
 const unitTxt = e => UNIT[unitOf(e)];
-const loadTxt = e => e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
+// Gewichtsart: Scheiben an den Seiten (pro Seite oder insgesamt eingetragen) oder ein eingestelltes Gewicht am Block (Steckgewicht, bei Seilzug über ein Seil)
+const CABLE = new Set(["lf-pushdown", "hs-lat"]);
+const loadShort = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug" : "Steckgewicht") : e.load === "side" ? "Scheiben je Seite" : "Scheiben";
+const loadTxt = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug, Steckgewicht" : "Steckgewicht") : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
 // Volumen: bei „pro Seite“ zählen beide Seiten; Einheit kommt aus dem gespeicherten Eintrag
 const setVol = (entry, t) => validSet(t) ? t.kg * t.reps * ((entry.u || unitOf(ex(entry.exId))) === "s" ? 2 : 1) : 0;
@@ -3018,7 +3042,9 @@ function vSettings() {
       <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
         <div class="seg" style="min-width:140px"><button data-a="voiceSet" data-v="0" class="${state.voice ? "" : "on"}">Aus</button><button data-a="voiceSet" data-v="1" class="${state.voice ? "on" : ""}">An</button></div></div></div></section>
     <section class="section"><h2>Studio</h2><div class="group">
-      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
+      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
+      <div class="li" id="optPlates" style="display:grid;gap:var(--s2)"><div><div class="t">Scheiben im Studio</div><div class="s">Für den Scheibenrechner im Training</div></div>
+        <div class="chips wrap">${PLATE_SIZES.map(x => { const on = (state.plates || PLATE_SIZES).includes(x); return `<button class="chip ${on ? "on" : ""}" data-a="plateToggle" data-v="${x}" aria-pressed="${on}">${kgTxt(x)} kg</button>`; }).join("")}</div></div></div></section>
     <section class="section"><h2>Ernährung</h2><div class="group">
       <div class="li" id="optWater"><div class="grow"><div class="t">Wasser zählen</div><div class="s">Gläser und Trinkziel im Tab „Essen“</div></div>${seg("water", state.nutrOpt.water)}</div>
       <div class="li" id="optFast"><div class="grow"><div class="t">Intervallfasten</div><div class="s">Fasten-Timer im Tab „Essen“</div></div>${seg("fast", state.nutrOpt.fast)}</div></div></section>
@@ -3187,7 +3213,7 @@ function pickerHtml() {
   const row = e => { const on = inDay.has(e.id);
     return `<div class="li pick-row${on ? " on" : ""}">
       <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
-        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]}${e.off ? " · nicht im Studio" : ""}</span></span></button>
+        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]} · ${loadShort(e)}${e.off ? " · nicht im Studio" : ""}</span></span></button>
       <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
   return `${ses ? sheetHead("Gerät dazunehmen", "Zurück", "pickSesBack") : sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
     ${ses ? `<p class="small muted" style="margin:0" id="pickCount">Kommt direkt nach der aktuellen Übung dran. Geräte mit Häkchen sind schon im Training.</p>
@@ -3556,6 +3582,7 @@ function vTrain() {
       <div class="ctl"><button data-a="adj" data-k="kg" data-d="-1" aria-label="Weniger Gewicht">−</button>
         <input id="kgIn" data-i="kg" inputmode="decimal" enterkeyhint="done" value="${set.kg !== null ? kgTxt(set.kg) : ""}" placeholder="–" aria-label="Gewicht, ${unitTxt(e)}">
         <button data-a="adj" data-k="kg" data-d="1" aria-label="Mehr Gewicht">+</button></div>
+      ${unitOf(e) !== "b" ? `<p class="plates" id="platesTxt" aria-live="polite">${platesHtml(e, set.kg)}</p>` : ""}
     </div>
     <div class="stepper">
       <div class="cap"><span>Wiederholungen</span><span>Ziel ${repsTxt(x)}</span></div>
@@ -5923,6 +5950,10 @@ const A = {
   motSlow: el => { const m = motOf(el); if (!m) return; const now = performance.now(), loc = motLocal(m, now);
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
   reloadApp: () => location.reload(),
+  plateToggle: el => { const v = +el.dataset.v, cur = state.plates || PLATE_SIZES.slice(), has = cur.includes(v);
+    if (has && cur.length === 1) return; // mindestens eine Scheibengröße
+    const next = has ? cur.filter(x => x !== v) : PLATE_SIZES.filter(x => x === v || cur.includes(x));
+    state.plates = next.length === PLATE_SIZES.length ? null : next; save(); render(); },
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
   voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
   nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
@@ -6072,7 +6103,7 @@ const A = {
     showSetError("");
     // gleiches Gewicht für die restlichen Sätze übernehmen
     if (el.dataset.k === "kg") x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
-    refreshProg(); save(); },
+    refreshProg(); refreshPlates(); save(); },
   doneSet: () => doneSet(),
   skipRest: () => endRest(),
   restAdd: el => { const s = S(); s.restEnd += +el.dataset.d * 1000; s.restTotal = Math.max(1, s.restTotal + +el.dataset.d); save(); tick(); },
@@ -6197,7 +6228,7 @@ document.addEventListener("input", ev => {
       t.kg = v === null ? null : v;                 // ungültige Werte bleiben sichtbar, „Satz fertig“ prüft
       if (v === null || (v > 0 && v <= 1000)) x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
     } else { const v = num(el.value); t.reps = v === null ? NaN : v; }
-    showSetError(""); refreshProg(); save();
+    showSetError(""); refreshProg(); if (k === "kg") refreshPlates(); save();
   }
 });
 document.addEventListener("keydown", ev => {
@@ -6217,7 +6248,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
