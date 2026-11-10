@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v53)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v53")));
+      ok("Service Worker aktiv (Cache trainingsplan-v55)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v55")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1371,7 +1371,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Barcode: gefunden → Mengen-Sheet", (await page.textContent(".sheet")).includes("Bio-Magerquark"));
       await page.keyboard.press("Escape");
       // Tage
-      ok("Kein Blättern in die Zukunft", await page.isDisabled("[data-a=foodDay][data-d='1']"));
+      ok("Blättern in die Zukunft zum Planen (bis 14 Tage)", !(await page.isDisabled("[data-a=foodDay][data-d='1']")));
       await page.click("[data-a=foodDay][data-d='-1']");
       ok("Gestern: eigener, leerer Tag", (await page.textContent(".head")).includes("Gestern") && (await page.textContent("#foodSum")).includes("3.030"));
       await page.click("[data-a=foodAdd][data-m=a]"); await page.click("[data-a=quickOpen]"); await page.fill("#qkK", "700"); await page.click("[data-a=quickSave]");
@@ -3334,7 +3334,91 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("59. Konsole");
+    section("59. Scheibenrechner");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Beine", items: [{ id: "i1", exId: "hs-legpress", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i2", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i3", exId: "hs-fly", sets: 2, rmin: 8, rmax: 12, rest: 60 }] }] };
+      const history = [{ id: "h", dayId: "d1", day: "Beine", date: new Date(Date.now() - 3 * 864e5).toISOString(), durationSec: 2000, exercises: [
+        { exId: "hs-legpress", name: "x", u: "t", planned: 2, rmin: 8, rmax: 12, sets: [{ kg: 95, reps: 8 }, { kg: 95, reps: 8 }] }, { exId: "hs-chest", name: "x", u: "s", planned: 2, rmin: 8, rmax: 12, sets: [{ kg: 41, reps: 8 }, { kg: 41, reps: 8 }] }] }];
+      const { ctx, page } = await open({ plan, history });
+      const pc = await tp(page, () => { const T = window.__tp; return { a: T.platesOf(47.5, T.PLATE_SIZES), b: T.platesOf(41, [20, 10, 5]), c: T.platesOf(0, T.PLATE_SIZES) }; });
+      ok("Rechner: 47,5 kg je Seite = 25 + 20 + 2,5; 41 kg mit 20/10/5 = 20 + 20, Rest 1 kg", JSON.stringify(pc.a) === '{"plates":[25,20,2.5],"rest":0}' && JSON.stringify(pc.b) === '{"plates":[20,20],"rest":1}' && pc.c.plates.length === 0, JSON.stringify(pc));
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const tx = s => s.replace(/\s+/g, "");
+      ok("Beinpresse (kg insgesamt): 95 kg → pro Seite 25 + 20 + 2,5", tx(await page.textContent("#platesTxt")) === "ProSeite25202,5", await page.textContent("#platesTxt"));
+      await page.click("[data-a=adj][data-k=kg][data-d='1']");
+      ok("Gewicht + Schritt: Anzeige folgt sofort (100 kg → 25 + 25)", tx(await page.textContent("#platesTxt")) === "ProSeite2525");
+      await page.fill("#kgIn", "0"); await page.dispatchEvent("#kgIn", "input");
+      ok("0 kg: keine Scheiben", tx(await page.textContent("#platesTxt")) === "");
+      await page.fill("#kgIn", "100"); await page.dispatchEvent("#kgIn", "input");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Brustpresse (kg pro Seite): 41 kg → 25 + 15 + 1 kg nicht aufteilbar", tx(await page.textContent("#platesTxt")).startsWith("ProSeite2515") && (await page.textContent("#platesTxt")).includes("1 kg nicht aufteilbar"), await page.textContent("#platesTxt"));
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await page.fill("#repsIn", "8"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Steckgewicht (Butterfly): kein Scheibenrechner", !(await page.$("#platesTxt")) && (await page.textContent("h1")).includes("Butterfly"));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+      await page.click("#optPlates [data-a=plateToggle][data-v='25']"); await page.click("#optPlates [data-a=plateToggle][data-v='15']");
+      const st = await stored(page);
+      ok("Einstellungen → Studio: Scheiben im Studio abwählbar (ohne 25 und 15)", JSON.stringify(st.plates) === "[20,10,5,2.5,1.25]" && (await page.getAttribute("#optPlates [data-v='25']", "aria-pressed")) === "false");
+      const r = await tp(page, () => window.__tp.platesHtml(window.__tp.ex("hs-chest"), 40).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+      ok("Rechner nutzt nur die vorhandenen Scheiben (40 kg → 20 + 20)", r === "Pro Seite 20 20", r);
+      await ctx.close();
+    }
+
+    {
+      // Gewichtsart klar: Scheiben je Seite (Iso-Lateral), Scheiben insgesamt, Steckgewicht, Seilzug
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const g = await tp(page, () => { const T = window.__tp; return ["hs-chest", "hs-legpress", "hs-fly", "lf-pushdown", "hs-lat"].map(id => T.loadShort(T.ex(id)) + "|" + T.loadTxt(T.ex(id))); });
+      ok("Gewichtsart je Gerät: Brustpresse Scheiben je Seite, Beinpresse Scheiben insgesamt, Butterfly Steckgewicht, Kabel/Latzug Seilzug", JSON.stringify(g) === JSON.stringify(["Scheiben je Seite|Scheiben, pro Seite", "Scheiben|Scheiben, insgesamt", "Steckgewicht|Steckgewicht", "Seilzug|Seilzug, Steckgewicht", "Seilzug|Seilzug, Steckgewicht"]), JSON.stringify(g));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]");
+      ok("Geräteauswahl zeigt die Gewichtsart in jeder Zeile", (await page.textContent(".sheet [data-a=pick][data-id=hs-chest]")).includes("Scheiben je Seite") && (await page.textContent(".sheet [data-a=pick][data-id=hs-fly]")).includes("Steckgewicht"));
+      await ctx.close();
+    }
+
+    section("60. Tagesplan: Training, Schritte, Essen, Kalorienbilanz");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null },
+        sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "18:00", planB: "next" }, stepGoal: 8000, dayPlan: { [dk(1)]: { steps: 12000 }, "kaputt": { steps: 5 }, [dk(2)]: { steps: -3 } },
+        food: { [dk(0)]: [{ id: "x", m: "m", n: "Reis", src: "usda:168878", g: 300, per: { k: 130, p: 2.7, c: 28, f: .3 } }] } });
+      const r = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        const e0 = T.dayEnergy(k(0)), e1 = T.dayEnergy(k(1));
+        return { p0: T.plannedOn(k(0)), p1: T.plannedOn(k(1)), p2: T.plannedOn(k(2)), e0, e1, s: [T.stepsOn(k(0)), T.stepsOn(k(1)), T.stepsOn(k(2))], sl: T.stepLenCm(), dp: Object.keys(T.state.dayPlan) }; });
+      ok("Training je Tag laut Terminen und Ablauf: heute Drücken, morgen Ziehen, übermorgen Drücken", r.p0.name === "Drücken" && r.p1.name === "Ziehen" && r.p2.name === "Drücken" && !r.p0.done);
+      ok("Schritte: Tagesziel überschreibt das Standardziel, ungültige Einträge verworfen", JSON.stringify(r.s) === "[8000,12000,8000]" && r.dp.length === 1, JSON.stringify(r.s) + " " + JSON.stringify(r.dp));
+      const tk = Math.round(2.5 * 80 * r.p0.min / 60);
+      // Gehen nach Ludlow & Weyand 2016 bei 1,3 m/s und 1,80 m: (3,85 + 5,97 × 1,69 / 1,8) × 5 / 78 ≈ 0,606 kcal je kg und km
+      ok("Verbrauch heute: 2.759 (1.780 × 1,55) + Krafttraining 2,5 MET netto + Schritte über 5.000 (3.000 × 75 cm = 2,25 km → 109 kcal)",
+        r.sl === 75 && r.e0.G.tdee === 2759 && r.e0.trainKcal === tk && r.e0.stepKcal === 291 && r.e0.stepExtra === 109 && r.e0.total === 2759 + tk + 109 && r.e0.intake === 390 && r.e0.balance === 390 - r.e0.total, JSON.stringify(r.e0));
+      ok("Morgen 12.000 Schritte: 9 km, 436 kcal beim Gehen, davon 255 über 5.000", r.e1.stepKcal === 436 && r.e1.stepExtra === 255, JSON.stringify(r.e1));
+      const mod = await tp(page, () => { const T = window.__tp; T.state.nutr.pal = 1.85; const k = new Date(), e = T.dayEnergy(`${k.getFullYear()}-${String(k.getMonth() + 1).padStart(2, "0")}-${String(k.getDate()).padStart(2, "0")}`); T.state.nutr.pal = 1.55; return e; });
+      ok("„Mäßig aktiv“: Bewegung im Faktor enthalten, nichts doppelt gezählt", mod.extra === 0 && mod.total === mod.G.tdee);
+      // Bedienung
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      ok("Tag in der Wochenleiste öffnet den Tagesplan", (await page.textContent("main h1")) === "Heute" && (await page.textContent("#tagTrain")).includes("Drücken") && (await page.textContent("#tagBal")).includes("Defizit bisher"));
+      await page.click("[data-a=tagDay][data-d='1']");
+      ok("Nächster Tag: Morgen, Ziehen, 12.000 Schritte", (await page.textContent("main h1")) === "Morgen" && (await page.textContent("#tagTrain")).includes("Ziehen") && (await page.textContent("#tagStepsOut")) === "12.000");
+      await page.click("[data-a=tagStep][data-d='1000']");
+      ok("+ 1.000 Schritte gespeichert", (await stored(page)).dayPlan[dk(1)].steps === 13000);
+      await page.click("[data-a=tagStepDefault]");
+      const st = await stored(page);
+      ok("„… als Ziel für jeden Tag“ setzt das Standardziel", st.stepGoal === 13000 && !st.dayPlan[dk(1)]);
+      await page.click("[data-a=tagFood]");
+      ok("„Essen planen“ öffnet Essen für morgen („Geplant · Morgen“), Planen bis 14 Tage voraus", (await page.textContent(".head")).includes("Geplant · Morgen") && !(await page.$("[data-a=foodDay][data-d='1'][disabled]")) && !(await page.$("#waterBox")));
+      for (let i = 0; i < 14; i++) await page.click("[data-a=foodDay][data-d='1']").catch(() => {});
+      ok("Weiter als 14 Tage geht nicht", !!(await page.$("[data-a=foodDay][data-d='1'][disabled]")));
+      ok("Tagesplan bei 360 px ohne seitliches Scrollen", await (async () => { await page.click("[data-a=tab][data-v=home]"); await page.click("#homeTag"); return noOverflow(page); })());
+      await ctx.close();
+    }
+
+    section("61. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

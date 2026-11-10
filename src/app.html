@@ -193,7 +193,8 @@
   .metaline{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:15px;color:var(--text-2)}
   .metaline b{color:var(--text);font-weight:600}
   .week{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2);text-align:center}
-  .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
+  .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600;text-align:center;min-height:44px;border-radius:var(--r-sm)}
+  .week .d:active .dot{transform:scale(.94)}
   .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
   .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
@@ -242,11 +243,16 @@
     .stepper .ctl button{width:56px;height:56px;font-size:26px}
     .stepper input{font-size:54px;min-height:56px}
     .warm{padding:var(--s2) var(--s3)} .warm .btn.sm{min-height:40px}
+    .training .stepper{gap:2px} .training .plates{min-height:18px;font-size:12px} .training .plates .pl{height:calc(12px + var(--p) * .2px);min-height:14px;font-size:11px}
     .bar.ticks{height:4px}
     .set-pill{height:34px}
     .ex-head h1{font-size:30px}
   }
   .unit b{font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0}
+  .plates{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;min-height:22px;font-size:13px;color:var(--text-2)}
+  .plates .pl-l{margin-right:2px}
+  .plates .pl{display:inline-grid;place-items:center;min-width:30px;height:calc(14px + var(--p) * .3px);min-height:16px;padding:0 5px;border-radius:5px;background:var(--raise-2);color:var(--text);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+  .plates .pl-r{color:var(--warn)}
   .actions3{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--s2)}
   .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
   .tool svg{width:22px;height:22px;color:var(--text)}
@@ -562,6 +568,9 @@ const SOURCES = {
   usda: { t: "U.S. Department of Agriculture, Agricultural Research Service: FoodData Central – SR Legacy", j: "Datenstand April 2018", url: "https://fdc.nal.usda.gov/" },
   off: { t: "Open Food Facts – freie Datenbank mit Packungsangaben", j: "Open Database License", url: "https://world.openfoodfacts.org/" },
   efsa2010: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for water", j: "EFSA Journal 2010;8(3):1459", url: "https://doi.org/10.2903/j.efsa.2010.1459" },
+  compendium2024: { t: "Herrmann SD, Willis EA, Ainsworth BE et al.: 2024 Adult Compendium of Physical Activities: A third update of the energy costs of human activities", j: "J Sport Health Sci 2024;13(1):6–12", url: "https://pubmed.ncbi.nlm.nih.gov/38242596/" },
+  tudorlocke2004: { t: "Tudor-Locke C, Bassett DR: How many steps/day are enough? Preliminary pedometer indices for public health", j: "Sports Med 2004;34(1):1–8", url: "https://pubmed.ncbi.nlm.nih.gov/14715035/" },
+  ludlow2016: { t: "Ludlow LW, Weyand PG: Energy expenditure during level human walking: seeking a simple and accurate predictive solution", j: "J Appl Physiol 2016;120(5):481–494", url: "https://doi.org/10.1152/japplphysiol.00864.2015" },
   efsaFat: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for fats", j: "EFSA Journal 2010;8(3):1461", url: "https://doi.org/10.2903/j.efsa.2010.1461" },
   efsaCarb: { t: "EFSA Panel on Dietetic Products, Nutrition, and Allergies (NDA): Scientific Opinion on Dietary Reference Values for carbohydrates and dietary fibre", j: "EFSA Journal 2010;8(3):1462", url: "https://doi.org/10.2903/j.efsa.2010.1462" },
   schoenfeld2018: { t: "Schoenfeld BJ, Vigotsky A, Contreras B et al.: Differential effects of attentional focus strategies during long-term resistance training", j: "Eur J Sport Sci 2018;18(5):705–712", url: "https://pubmed.ncbi.nlm.nih.gov/29533715/" },
@@ -1325,7 +1334,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
-function blank() { return { v: 6, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
+function blank() { return { v: 6, plates: null, dayPlan: {}, stepGoal: null, stepLen: null, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1446,6 +1455,10 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
+  if (isObj(raw.dayPlan)) for (const [d, o] of Object.entries(raw.dayPlan)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && isObj(o) && Number.isInteger(o.steps) && o.steps >= 0 && o.steps <= 100000) s.dayPlan[d] = { steps: o.steps };
+  s.stepGoal = Number.isInteger(raw.stepGoal) && raw.stepGoal >= 0 && raw.stepGoal <= 100000 ? raw.stepGoal : null;
+  s.stepLen = Number.isInteger(raw.stepLen) && raw.stepLen >= 30 && raw.stepLen <= 150 ? raw.stepLen : null;
+  if (Array.isArray(raw.plates)) { const pl = PLATE_SIZES.filter(x => raw.plates.includes(x)); s.plates = pl.length && pl.length < PLATE_SIZES.length ? pl : null; }
   s.misses = cleanMisses(raw.misses); s.missSkip = /^\d{4}-\d{2}-\d{2}$/.test(raw.missSkip || "") ? raw.missSkip : null;
   s.goals = cleanGoals(raw.goals); s.why = typeof raw.why === "string" ? raw.why.trim().slice(0, 160) : "";
   s.backupAt = typeof raw.backupAt === "string" && !isNaN(new Date(raw.backupAt)) && +new Date(raw.backupAt) <= Date.now() + 864e5 ? new Date(raw.backupAt).toISOString() : null;
@@ -1509,9 +1522,27 @@ state = load();
 const ex = id => devFrom(state, id);
 const allEx = () => LIB.concat(state.custom).map(e => ex(e.id));
 const UNIT = { s: "kg pro Seite", t: "kg insgesamt", b: "kg am Gewichtsblock" };
+// Scheibenrechner: welche Scheiben je Seite. Standard-Scheiben (Regel der App), unter Einstellungen → Studio anpassbar
+const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
+function platesOf(perSide, avail) {
+  let r = Math.round(perSide * 100) / 100; const out = [];
+  for (const p of avail.slice().sort((a, b) => b - a)) while (r >= p - 1e-9) { out.push(p); r = Math.round((r - p) * 100) / 100; }
+  return { plates: out, rest: r };
+}
+// „insgesamt“: gleichmäßig auf beide Seiten verteilt; Steckgewicht: kein Rechner
+function platesHtml(e, kg) {
+  const u = unitOf(e); if (u === "b" || !(kg > 0)) return "";
+  const per = u === "s" ? kg : kg / 2, { plates, rest } = platesOf(per, state.plates || PLATE_SIZES);
+  const chips = plates.map(x => `<span class="pl" style="--p:${x}">${kgTxt(x)}</span>`).join("");
+  return `<span class="pl-l">Pro Seite</span>${chips}${rest ? `<span class="pl-r">+ ${kgTxt(rest)} kg nicht aufteilbar</span>` : ""}`;
+}
+function refreshPlates() { const s = S(), el = byId("platesTxt"); if (!s || !el) return; const x = s.list[s.idx], t = x.sets[curSetIdx(x)]; el.innerHTML = platesHtml(ex(x.exId), t && t.kg); }
 const UNIT_SHORT = { s: "pro Seite", t: "insgesamt", b: "am Block" };
 const unitTxt = e => UNIT[unitOf(e)];
-const loadTxt = e => e.type === "stack" ? "Steckgewicht" : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
+// Gewichtsart: Scheiben an den Seiten (pro Seite oder insgesamt eingetragen) oder ein eingestelltes Gewicht am Block (Steckgewicht, bei Seilzug über ein Seil)
+const CABLE = new Set(["lf-pushdown", "hs-lat"]);
+const loadShort = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug" : "Steckgewicht") : e.load === "side" ? "Scheiben je Seite" : "Scheiben";
+const loadTxt = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug, Steckgewicht" : "Steckgewicht") : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
 // Volumen: bei „pro Seite“ zählen beide Seiten; Einheit kommt aus dem gespeicherten Eintrag
 const setVol = (entry, t) => validSet(t) ? t.kg * t.reps * ((entry.u || unitOf(ex(entry.exId))) === "s" ? 2 : 1) : 0;
@@ -2655,7 +2686,7 @@ function guideHtml(id, o = {}) {
       ${srcs.length ? `<div class="cap">Quellen</div>${srcList(g.src)}` : ""}</section>`;
 }
 function srcList(keys) {
-  return `<ul class="glist srcs">${keys.map(k => SOURCES[k]).filter(Boolean).map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.t)}</a><span class="faint"> · ${esc(s.j)}</span></li>`).join("")}</ul>`;
+  return `<ul class="glist srcs">${keys.map(k => SOURCES[k]).filter(Boolean).map(s => `<li>${s.url ? `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.t)}</a>` : esc(s.t)}<span class="faint"> · ${esc(s.j)}</span></li>`).join("")}</ul>`;
 }
 function vLib() {
   const q = libQuery.toLowerCase();
@@ -2753,9 +2784,96 @@ function go(v) {
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === tabOf(v)));
   render(); window.scrollTo(0, 0);
 }
+/* ================= Tagesplan: Training, Schritte, Essen, Kalorienbilanz ================= */
+let tagDay = null;
+// Training an einem Tag: erledigt (Verlauf) oder geplant laut Terminen und Ablauf
+function plannedOn(dk) {
+  const h = state.history.find(x => dkey(new Date(x.date)) === dk);
+  if (h) return { name: h.day, done: true, min: Math.max(1, Math.round(h.durationSec / 60)) };
+  const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
+  const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
+  if (!days.length || !s || dk < dkey(today)) return null;
+  const nd = nextDay(); let k = Math.max(0, days.findIndex(x => nd && x.id === nd.id));
+  for (const c = new Date(today); c <= d; c.setDate(c.getDate() + 1)) {
+    if (!s.days.includes(wdOf(c)) || (dkey(c) === dkey(today) && trainedOn(c))) continue;
+    if (dkey(c) === dk) { const day = days[k % days.length]; return { name: day.name, done: false, min: estMinutes(day), dayId: day.id }; }
+    k++;
+  }
+  return null;
+}
+const stepsOn = dk => (state.dayPlan[dk] && state.dayPlan[dk].steps != null) ? state.dayPlan[dk].steps : state.stepGoal;
+// Schrittlänge: selbst gemessen oder Startwert der App aus der Körpergröße (0,415 × Größe, Frauen 0,413)
+const stepLenCm = () => state.stepLen || (state.nutr && state.nutr.cm ? Math.round(state.nutr.cm * (state.nutr.sex === "w" ? .413 : .415)) : null);
+// Verbrauch an einem Tag (Schätzung):
+// Grundbedarf = Grundumsatz × Aktivitätsfaktor (wie in den Zielen).
+// Krafttraining netto (3,5 − 1) MET × kg × Stunden (Compendium 2024, Code 02054).
+// Gehen in der Ebene netto nach Ludlow & Weyand 2016: VO₂ über Ruhe = 3,85 + 5,97 × v² / Größe (ml/kg/min), 1 l O₂ ≈ 5 kcal;
+// Tempo 1,3 m/s (≈ 4,7 km/h) ist ein Startwert der App.
+// Regel der App: Bei „Wenig aktiv“ (Faktor 1,55) sind etwa 5.000 Schritte im Alltag enthalten (Grenze „sitzender Lebensstil“
+// nach Tudor-Locke & Bassett 2004) – zusätzlich zählen Schritte darüber und das Krafttraining. Bei höherem Faktor ist Bewegung enthalten.
+function dayEnergy(dk) {
+  const G = nutrGoals(); if (!G) return null;
+  const kg = G.kg, tr = plannedOn(dk), steps = stepsOn(dk), sl = stepLenCm(), low = state.nutr.pal < 1.7;
+  const trainKcal = tr ? Math.round(2.5 * kg * tr.min / 60) : 0;
+  const v = 1.3, walk = (3.85 + 5.97 * v * v / ((state.nutr.cm || 175) / 100)) * 5 / (60 * v); // kcal je kg und km über dem Ruheumsatz
+  const km = steps != null && sl ? steps * sl / 100000 : 0, stepKcal = Math.round(walk * kg * km);
+  const extraSteps = low && steps != null && sl ? Math.max(0, steps - 5000) * sl / 100000 : 0, stepExtra = Math.round(walk * kg * extraSteps);
+  const extra = low ? trainKcal + stepExtra : 0, total = G.tdee + extra, intake = Math.round(dayTotals(dk).k);
+  return { G, tr, steps, sl, km, trainKcal, stepKcal, stepExtra, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
+}
+function vTag() {
+  const today = dkey(), dk = tagDay || today, d = dateOf(dk), E = dayEnergy(dk), tr = plannedOn(dk), steps = stepsOn(dk), sl = stepLenCm();
+  const minD = dkey(new Date(Date.now() - 7 * 864e5)), maxD = maxFoodDay(), t = dayTotals(dk), past = dk < today;
+  const title = dk === today ? "Heute" : dk === dkey(new Date(Date.now() + 864e5)) ? "Morgen" : dk === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : d.toLocaleDateString("de-DE", { weekday: "long" });
+  const kc = v => `${v < 0 ? "−" : ""}${fmtK(Math.abs(v))}`;
+  const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b>${v}</b></div>`;
+  $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="home">‹ Heute</button>
+      <div class="row between"><div><div class="cap">Tagesplan · ${d.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}</div><h1 class="title">${title}</h1></div>
+        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="tagDay" data-d="-1" aria-label="Vorheriger Tag" ${dk <= minD ? "disabled" : ""}>‹</button><button class="icon-btn" data-a="tagDay" data-d="1" aria-label="Nächster Tag" ${dk >= maxD ? "disabled" : ""}>›</button></div></div></div>
+    <section class="section" id="tagTrain"><h2>Training</h2>
+      ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt · ${tr.min} Min.` : `geplant · ≈ ${tr.min} Min.`}</div></div>
+          ${E ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
+        : `<p class="small muted" style="margin:0">${state.sched ? "Kein Training geplant – Ruhetag." : "Ohne feste Termine. Unter Training → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
+    </section>
+    <section class="section" id="tagSteps"><h2>Schritte</h2>
+      <div class="mini-step" style="grid-template-columns:52px 1fr 52px"><button data-a="tagStep" data-d="-1000" aria-label="1.000 Schritte weniger">−</button>
+        <output id="tagStepsOut">${steps != null ? fmtK(steps) : "–"}</output><button data-a="tagStep" data-d="1000" aria-label="1.000 Schritte mehr">+</button></div>
+      <p class="small muted" style="margin:0;text-align:center">${steps != null && sl ? `≈ ${String(Math.round(steps * sl / 10000) / 10).replace(".", ",")} km · ≈ ${E ? fmtK(E.stepKcal) : "–"} kcal beim Gehen` : steps != null ? "Für die Strecke fehlt deine Körpergröße (Essen → Ziele)." : "Noch kein Ziel – mit + festlegen."}</p>
+      ${steps != null && steps !== state.stepGoal ? `<button class="link small" data-a="tagStepDefault" style="justify-self:center">${fmtK(steps)} Schritte als Ziel für jeden Tag</button>` : ""}
+    </section>
+    <section class="section" id="tagFood"><h2>Essen</h2>
+      <div class="row between"><div><div class="t" style="font-weight:600">${fmtK(t.k)} kcal · ${fmtK(t.p)} g Eiweiß</div><div class="small muted">${(state.food[dk] || []).length ? `${(state.food[dk] || []).length} ${(state.food[dk] || []).length === 1 ? "Eintrag" : "Einträge"}${dk > today ? " geplant" : ""}` : dk > today ? "Noch nichts geplant" : "Noch nichts eingetragen"}${E ? ` · Ziel ${fmtK(E.G.kcal)} kcal` : ""}</div></div>
+        <button class="btn sm" data-a="tagFood" ${past && dk < minD ? "disabled" : ""}>${dk > today ? "Essen planen" : "Ansehen"}</button></div>
+    </section>
+    <section class="section" id="tagBal"><h2>Kalorienbilanz</h2>
+      ${E ? `<div class="note" style="gap:6px">
+          ${row("Grundumsatz × Aktivität", `Faktor ${String(state.nutr.pal).replace(".", ",")}`, `${fmtK(E.G.tdee)} kcal`)}
+          ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", "", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
+            : `<p class="small faint" style="margin:0">Training und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
+          ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
+          ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
+          <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
+          <p class="small faint" style="margin:0">Dein Ziel „${NGOAL[state.nutr.goal].label}“ plant ${E.goalDiff < 0 ? `etwa ${fmtK(-E.goalDiff)} kcal Defizit` : E.goalDiff > 0 ? `etwa ${fmtK(E.goalDiff)} kcal Überschuss` : "eine ausgeglichene Bilanz"} gegenüber dem Grundbedarf.</p></div>`
+        : `<div class="note"><p class="small">Für die Bilanz braucht die App Alter, Größe, Gewicht und Aktivität.</p><button class="btn sm" data-a="openNutr">Ziele festlegen</button></div>`}
+    </section>
+    <details class="disc"><summary><div class="grow"><h3>So wird gerechnet</h3><div class="small muted">Schätzung mit Quellen</div></div><span class="chev">›</span></summary><div class="body">
+      <ul class="glist small">
+        <li>Grundbedarf: Grundumsatz nach Mifflin-St Jeor × Aktivitätsfaktor aus deinen Zielen.</li>
+        <li>Krafttraining: 3,5 MET („mehrere Übungen, 8–15 Wiederholungen“, Compendium 2024). Gezählt wird der Anteil über dem Ruheumsatz: 2,5 × Körpergewicht × Stunden.</li>
+        <li>Gehen in der Ebene: Verbrauch über dem Ruheumsatz nach Ludlow und Weyand (2016) aus Größe, Gewicht und Tempo – genauer als ältere Gleichungen, die meist zu niedrig lagen. Tempo 1,3 m/s (≈ 4,7 km/h) ist ein Startwert der App; bergauf ist es mehr.</li>
+        <li>Schrittlänge ${sl ? `${sl} cm` : "–"}${state.stepLen ? " (selbst gemessen)" : " – Startwert der App aus deiner Körpergröße (0,415 × Größe, Frauen 0,413). Genauer: 10 Schritte gehen, Strecke messen, durch 10 teilen."}</li>
+        <li>Regel der App: Bei „Wenig aktiv“ sind etwa 5.000 Schritte am Tag im Alltag enthalten (Grenze „sitzender Lebensstil“ nach Tudor-Locke und Bassett); zusätzlich zählen Schritte darüber und das Krafttraining. Bei „Mäßig“ oder „Sehr aktiv“ ist Bewegung im Faktor enthalten und wird nicht doppelt gezählt.</li>
+        <li>Alles sind Schätzungen. Ob die Bilanz stimmt, zeigt dein Gewichtsverlauf nach zwei bis drei Wochen.</li>
+      </ul>
+      <div class="field"><label for="tagStepLen">Eigene Schrittlänge in cm (optional)</label><input id="tagStepLen" data-i="stepLen" inputmode="numeric" value="${state.stepLen || ""}" placeholder="${sl || ""}" autocomplete="off"></div>
+      <div class="cap">Quellen</div>${srcList(["mifflin1990", "fao2004", "compendium2024", "ludlow2016", "tudorlocke2004"])}
+    </div></details>
+  </div>`;
+}
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, week: vWeek, settings: vSettings, coach: vCoach })[view]();
+  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, tag: vTag, week: vWeek, settings: vSettings, coach: vCoach })[view]();
 }
 
 /* ================= Einrichtung ================= */
@@ -2797,7 +2915,7 @@ function vHome() {
   const week = ["M", "D", "M", "D", "F", "S", "S"].map((n, i) => {
     const d = new Date(monday); d.setDate(monday.getDate() + i);
     const k = d.getTime(), cls = doneDays.has(k) ? "done" : missDays.has(k) ? "miss" : "";
-    return `<div class="d">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div><span class="wp ${wp[i] && wp[i].done ? "done" : ""}">${wp[i] ? esc(wp[i].name) : ""}</span></div>`;
+    return `<button class="d" data-a="openTag" data-d="${dkey(d)}" aria-label="Tagesplan ${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div><span class="wp ${wp[i] && wp[i].done ? "done" : ""}">${wp[i] ? esc(wp[i].name) : ""}</span></button>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
   const goal = Math.max(1, state.plan.days.length);
@@ -2863,6 +2981,8 @@ function vHome() {
         <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
       </div>` : ""}
     <div class="plain-list">
+      ${(() => { const E = dayEnergy(dkey()), st = stepsOn(dkey());
+        return `<button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag"><div class="grow"><div class="s">Tagesplan</div><div class="t">${E ? `${E.balance <= 0 ? "Defizit" : "Überschuss"} bisher ≈ ${fmtK(Math.abs(E.balance))} kcal` : "Training, Schritte und Essen"}${st != null ? ` · ${fmtK(st)} Schritte` : ""}</div></div><span class="chev">›</span></button>`; })()}
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
 
@@ -3018,7 +3138,9 @@ function vSettings() {
       <div class="li" id="optVoice"><div class="grow"><div class="t">Sprachbegleitung</div><div class="s">Sagt Übung, Satz, Gewicht und Pausenende an</div></div>
         <div class="seg" style="min-width:140px"><button data-a="voiceSet" data-v="0" class="${state.voice ? "" : "on"}">Aus</button><button data-a="voiceSet" data-v="1" class="${state.voice ? "on" : ""}">An</button></div></div></div></section>
     <section class="section"><h2>Studio</h2><div class="group">
-      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button></div></section>
+      <button class="li" data-a="openDevs"><div class="grow"><div class="t">Geräte verwalten</div><div class="s">Vorhanden, bevorzugt, Gewichtsangabe, Schritte</div></div><span class="chev">›</span></button>
+      <div class="li" id="optPlates" style="display:grid;gap:var(--s2)"><div><div class="t">Scheiben im Studio</div><div class="s">Für den Scheibenrechner im Training</div></div>
+        <div class="chips wrap">${PLATE_SIZES.map(x => { const on = (state.plates || PLATE_SIZES).includes(x); return `<button class="chip ${on ? "on" : ""}" data-a="plateToggle" data-v="${x}" aria-pressed="${on}">${kgTxt(x)} kg</button>`; }).join("")}</div></div></div></section>
     <section class="section"><h2>Ernährung</h2><div class="group">
       <div class="li" id="optWater"><div class="grow"><div class="t">Wasser zählen</div><div class="s">Gläser und Trinkziel im Tab „Essen“</div></div>${seg("water", state.nutrOpt.water)}</div>
       <div class="li" id="optFast"><div class="grow"><div class="t">Intervallfasten</div><div class="s">Fasten-Timer im Tab „Essen“</div></div>${seg("fast", state.nutrOpt.fast)}</div></div></section>
@@ -3187,7 +3309,7 @@ function pickerHtml() {
   const row = e => { const on = inDay.has(e.id);
     return `<div class="li pick-row${on ? " on" : ""}">
       <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
-        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]}${e.off ? " · nicht im Studio" : ""}</span></span></button>
+        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]} · ${loadShort(e)}${e.off ? " · nicht im Studio" : ""}</span></span></button>
       <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
   return `${ses ? sheetHead("Gerät dazunehmen", "Zurück", "pickSesBack") : sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
     ${ses ? `<p class="small muted" style="margin:0" id="pickCount">Kommt direkt nach der aktuellen Übung dran. Geräte mit Häkchen sind schon im Training.</p>
@@ -3556,6 +3678,7 @@ function vTrain() {
       <div class="ctl"><button data-a="adj" data-k="kg" data-d="-1" aria-label="Weniger Gewicht">−</button>
         <input id="kgIn" data-i="kg" inputmode="decimal" enterkeyhint="done" value="${set.kg !== null ? kgTxt(set.kg) : ""}" placeholder="–" aria-label="Gewicht, ${unitTxt(e)}">
         <button data-a="adj" data-k="kg" data-d="1" aria-label="Mehr Gewicht">+</button></div>
+      ${unitOf(e) !== "b" ? `<p class="plates" id="platesTxt" aria-live="polite">${platesHtml(e, set.kg)}</p>` : ""}
     </div>
     <div class="stepper">
       <div class="cap"><span>Wiederholungen</span><span>Ziel ${repsTxt(x)}</span></div>
@@ -4167,6 +4290,10 @@ function recentKeys() {
   return keys;
 }
 
+// Essen planen: bis 14 Tage im Voraus (Regel der App); künftige Tage sind „geplant“
+const PLAN_AHEAD = 14;
+const maxFoodDay = () => dkey(new Date(Date.now() + PLAN_AHEAD * 864e5));
+const curFoodDay = () => foodDay && foodDay <= maxFoodDay() ? foodDay : dkey();
 let foodDay = null, foodCtx = { m: "f", d: null, q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }, nutrDraft = null;
 function foodRows(keys) {
   return keys.map(k => { const x = foodPool.get(k); return `<button class="li" data-a="foodPick" data-k="${esc(k)}">
@@ -4348,8 +4475,10 @@ function readNutrInputs() {
 }
 
 function vFood() {
-  const today = dkey(), d = foodDay && foodDay < today ? foodDay : today, G = nutrGoals(), t = dayTotals(d), list = state.food[d] || [];
-  const dl = d === today ? "Heute" : d === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : new Date(d + "T12:00").toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+  const today = dkey(), d = curFoodDay(), future = d > today, G = nutrGoals(), t = dayTotals(d), list = state.food[d] || [];
+  const dayTxt = x => new Date(x + "T12:00").toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+  const yest = dkey(new Date(Date.now() - 864e5)), tom = dkey(new Date(Date.now() + 864e5));
+  const dl = d === today ? "Heute" : d === yest ? "Gestern" : d === tom ? "Geplant · Morgen" : future ? `Geplant · ${dayTxt(d)}` : dayTxt(d);
   const bar = (v, goal, col) => `<div class="mtrack" style="height:10px"><div class="mfill" style="width:${Math.min(100, goal ? v / goal * 100 : 0)}%;background:${col}"></div></div>`;
   const macro = `<div class="nutgrid">${[["Eiweiß", t.p], ["Kohlenh.", t.c], ["Fett", t.f], ["Ballastst.", t.fib]].map(([l, v]) =>
     `<div class="stat"><div class="cap">${l}</div><div class="num">${fmtN(v)}<span class="small muted"> g</span></div></div>`).join("")}</div>`;
@@ -4364,11 +4493,11 @@ function vFood() {
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${dl}</div>
       <div class="row between"><h1 class="title">Essen</h1>
-        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= today ? "disabled" : ""}>›</button></div></div></div>
+        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= maxFoodDay() ? "disabled" : ""}>›</button></div></div></div>
     ${G ? `<section class="stack-sm" id="foodSum">
       <div class="kpi"><span class="num" style="font-size:48px">${fmtK(Math.abs(left))}</span><span class="sub">kcal ${left >= 0 ? "übrig" : "über dem Ziel"}</span></div>
       ${bar(t.k, G.kcal, left >= 0 ? "var(--accent)" : "var(--warn)")}
-      <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal gegessen</p>
+      <p class="small muted" style="margin:0">${fmtK(t.k)} von ${fmtK(G.kcal)} kcal ${future ? "geplant" : "gegessen"}</p>
       <div class="row between small" style="margin-top:var(--s3)"><span>Eiweiß</span><span><b>${fmtK(t.p)}</b> von ${G.prot} g</span></div>
       ${bar(t.p, G.prot, t.p >= G.prot ? "var(--ok)" : "var(--text-2)")}
       <div class="stack-sm" id="macroRows">${range("Kohlenhydrate", t.c, G.carbLo, G.carbHi)}${range("Fett", t.f, G.fatLo, G.fatHi)}
@@ -4376,13 +4505,13 @@ function vFood() {
     : `<div class="note" id="foodSetup"><div class="cap">Ziele festlegen</div><p class="small">Mit Alter, Größe, Gewicht, Aktivität und Ziel schätzt die App deinen Kalorienbedarf und dein Eiweißziel – nachvollziehbar und mit Quellen.</p>
         <button class="btn primary block" data-a="openNutr">Ziele festlegen</button></div>
       ${list.length ? `<section class="stack-sm"><div class="kpi"><span class="num" style="font-size:40px">${fmtK(t.k)}</span><span class="sub">kcal gegessen</span></div>${macro}</section>` : ""}`}
-    ${!state.nutrOpt.water ? "" : (() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
+    ${!state.nutrOpt.water || future ? "" : (() => { const ml = state.water[d] || 0, wg = waterGoal(), goal = wg || 2000;
       return `<section class="stack-sm" id="waterBox"><div class="row between"><h2 style="margin:0">Wasser</h2><span class="small"><b>${fmtL(ml)} L</b> von ${wg ? fmtL(wg) + " L" : "1,6–2,0 L"}</span></div>
         ${bar(ml, goal, ml >= goal ? "var(--ok)" : "var(--accent)")}
         <div class="row" style="gap:var(--s2)"><button class="btn sm" data-a="water" data-ml="-250" ${ml ? "" : "disabled"} aria-label="250 ml weniger">−</button>
           <button class="btn sm grow" data-a="water" data-ml="250">+ 1 Glas (250 ml)</button><button class="btn sm grow" data-a="water" data-ml="500">+ 500 ml</button></div>
         <button class="link small" data-a="waterInfo" style="justify-self:start">Wie viel solltest du trinken?</button></section>`; })()}
-    ${state.nutrOpt.fast || state.fast ? fastHtml() : ""}
+    ${!future && (state.nutrOpt.fast || state.fast) ? fastHtml() : ""}
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
@@ -5672,11 +5801,11 @@ const A = {
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
-  foodDay: el => { const today = dkey(), cur = foodDay && foodDay < today ? foodDay : today, dt = new Date(cur + "T12:00");
-    dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n >= today ? null : n; vFood(); },
-  foodAdd: el => { foodCtx = { m: el.dataset.m, d: foodDay && foodDay < dkey() ? foodDay : dkey(), q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }; openSheet(foodAddSheet()); },
+  foodDay: el => { const today = dkey(), dt = new Date(curFoodDay() + "T12:00");
+    dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n === today || n > maxFoodDay() ? (n > maxFoodDay() ? foodDay : null) : n; vFood(); },
+  foodAdd: el => { foodCtx = { m: el.dataset.m, d: curFoodDay(), q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }; openSheet(foodAddSheet()); },
   foodAddBack: () => openSheet(foodAddSheet()),
-  water: el => { const d = foodDay && foodDay < dkey() ? foodDay : dkey(), v = Math.max(0, Math.min(10000, (state.water[d] || 0) + +el.dataset.ml));
+  water: el => { const d = curFoodDay(), v = Math.max(0, Math.min(10000, (state.water[d] || 0) + +el.dataset.ml));
     if (v) state.water[d] = v; else delete state.water[d]; save(); vFood(); },
   waterInfo: () => openSheet(`${sheetHead("Wie viel trinken?")}
     <p>Die Europäische Behörde für Lebensmittelsicherheit (EFSA) nennt als angemessene Gesamtzufuhr an Wasser <b>2,0 Liter pro Tag für Frauen</b> und <b>2,5 Liter für Männer</b>.</p>
@@ -5685,7 +5814,7 @@ const A = {
       <li>Bei Hitze und an Trainingstagen brauchst du mehr – trinke dann nach Durst zusätzlich.</li></ul>
     <div class="cap">Quellen</div>${srcList(["efsa2010", "gandy2016"])}`),
   mealSaveOpen: el => {
-    const d = foodDay && foodDay < dkey() ? foodDay : dkey(), es = (state.food[d] || []).filter(e => e.m === el.dataset.m);
+    const d = curFoodDay(), es = (state.food[d] || []).filter(e => e.m === el.dataset.m);
     foodCtx = { m: el.dataset.m, d, q: "", off: null, offMsg: "", food: null, edit: null, g: 100 };
     openSheet(`${sheetHead("Als Mahlzeit speichern", "Abbrechen")}
       <div class="field"><label for="mealN">Name</label><input id="mealN" maxlength="40" value="${esc("Mein " + mealName(el.dataset.m))}" autocomplete="off"></div>
@@ -5736,7 +5865,7 @@ const A = {
     state.fast = null; save(); clearInterval(fastTimer); byId("fastBox").outerHTML = fastHtml();
   },
   copyMeal: el => {
-    const d = foodDay && foodDay < dkey() ? foodDay : dkey(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
+    const d = curFoodDay(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
     const src = (state.food[prev] || []).filter(e => e.m === el.dataset.m); if (!src.length) return;
     const list = state.food[d] || (state.food[d] = []);
     src.forEach(e => list.push(JSON.parse(JSON.stringify(Object.assign({}, e, { id: uid() })))));
@@ -5754,7 +5883,7 @@ const A = {
     save(); closeSheet(); vFood();
   },
   foodEdit: el => {
-    const d = foodDay && foodDay < dkey() ? foodDay : dkey(), e = (state.food[d] || []).find(x => x.id === el.dataset.id); if (!e) return;
+    const d = curFoodDay(), e = (state.food[d] || []).find(x => x.id === el.dataset.id); if (!e) return;
     foodCtx = { m: e.m, d, q: "", off: null, offMsg: "", edit: e.id, g: e.g ?? 100, food: null };
     if (e.g === null) return openSheet(quickSheet(e));
     state.myFoods.forEach(poolOwn);
@@ -5923,6 +6052,18 @@ const A = {
   motSlow: el => { const m = motOf(el); if (!m) return; const now = performance.now(), loc = motLocal(m, now);
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
   reloadApp: () => location.reload(),
+  openTag: el => { tagDay = el.dataset.d || null; go("tag"); },
+  tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt);
+    if (n >= dkey(new Date(Date.now() - 7 * 864e5)) && n <= maxFoodDay()) tagDay = n; vTag(); },
+  tagStep: el => { const dk = tagDay || dkey(), cur = stepsOn(dk); const v = Math.max(0, Math.min(100000, (cur == null ? (+el.dataset.d > 0 ? 7000 : 0) : cur + +el.dataset.d)));
+    state.dayPlan[dk] = { steps: v }; save(); vTag(); },
+  tagStepDefault: () => { const dk = tagDay || dkey(), v = stepsOn(dk); if (v == null) return; state.stepGoal = v;
+    for (const k of Object.keys(state.dayPlan)) if (state.dayPlan[k].steps === v) delete state.dayPlan[k]; save(); vTag(); },
+  tagFood: () => { const dk = tagDay || dkey(); foodDay = dk === dkey() ? null : dk; go("food"); },
+  plateToggle: el => { const v = +el.dataset.v, cur = state.plates || PLATE_SIZES.slice(), has = cur.includes(v);
+    if (has && cur.length === 1) return; // mindestens eine Scheibengröße
+    const next = has ? cur.filter(x => x !== v) : PLATE_SIZES.filter(x => x === v || cur.includes(x));
+    state.plates = next.length === PLATE_SIZES.length ? null : next; save(); render(); },
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
   voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
   nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
@@ -6072,7 +6213,7 @@ const A = {
     showSetError("");
     // gleiches Gewicht für die restlichen Sätze übernehmen
     if (el.dataset.k === "kg") x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
-    refreshProg(); save(); },
+    refreshProg(); refreshPlates(); save(); },
   doneSet: () => doneSet(),
   skipRest: () => endRest(),
   restAdd: el => { const s = S(); s.restEnd += +el.dataset.d * 1000; s.restTotal = Math.max(1, s.restTotal + +el.dataset.d); save(); tick(); },
@@ -6174,6 +6315,7 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
+  else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); }
   else if (k === "motScrub") { const m = motOf(el); if (m) { m._paused = true; m._pc = el.value / 1000 * MOT_T;
     const b = el.parentElement.querySelector("[data-a=motPlay]"); if (b) { b.textContent = "Abspielen"; b.setAttribute("aria-pressed", "true"); } motStart(); } }
   else if (k === "pickMuscle") { pickMuscle = MUSCLES[el.value] ? el.value : "alle"; refreshPicker(); }
@@ -6197,7 +6339,7 @@ document.addEventListener("input", ev => {
       t.kg = v === null ? null : v;                 // ungültige Werte bleiben sichtbar, „Satz fertig“ prüft
       if (v === null || (v > 0 && v <= 1000)) x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
     } else { const v = num(el.value); t.reps = v === null ? NaN : v; }
-    showSetError(""); refreshProg(); save();
+    showSetError(""); refreshProg(); if (k === "kg") refreshPlates(); save();
   }
 });
 document.addEventListener("keydown", ev => {
@@ -6217,7 +6359,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)

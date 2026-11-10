@@ -1,7 +1,7 @@
 // Offline-Unterstützung: App-Seite sofort aus dem Speicher – auch bei schlechtem Empfang im Studio kein Warten.
 // Im Hintergrund wird die neueste Version geholt; ist sie anders, bekommt die Seite eine Nachricht („Neu laden“).
 // Schriften und Symbole aus dem Speicher.
-const CACHE = "trainingsplan-v53";
+const CACHE = "trainingsplan-v55";
 const CORE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
