@@ -1,6 +1,7 @@
-// Offline-Unterstützung: App-Seite zuerst aus dem Netz (damit Updates sofort ankommen),
-// bei schlechtem Empfang nach 3 s aus dem Speicher. Schriften und Symbole aus dem Speicher.
-const CACHE = "trainingsplan-v51";
+// Offline-Unterstützung: App-Seite sofort aus dem Speicher – auch bei schlechtem Empfang im Studio kein Warten.
+// Im Hintergrund wird die neueste Version geholt; ist sie anders, bekommt die Seite eine Nachricht („Neu laden“).
+// Schriften und Symbole aus dem Speicher.
+const CACHE = "trainingsplan-v52";
 const CORE = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -15,17 +16,28 @@ self.addEventListener("activate", e => {
   );
 });
 
-function networkFirst(req) {
-  return new Promise(resolve => {
-    let done = false;
-    const fromCache = () => caches.match(req, { ignoreSearch: true })
-      .then(r => r || caches.match("./index.html"));
-    const timer = setTimeout(() => { if (!done) fromCache().then(r => { if (r && !done) { done = true; resolve(r); } }); }, 3000);
-    fetch(req).then(res => {
-      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
-      if (!done) { done = true; clearTimeout(timer); resolve(res); }
-    }).catch(() => fromCache().then(r => { if (!done) { done = true; clearTimeout(timer); resolve(r || Response.error()); } }));
+// Die App ist eine einzige Seite: gespeichert und gelesen immer unter einem Schlüssel
+const PAGE = "./index.html";
+function cachedPage(req) {
+  return caches.match(PAGE).then(r => r || caches.match(req, { ignoreSearch: true }));
+}
+// Neueste Seite holen, speichern und offene Fenster benachrichtigen, wenn sie sich geändert hat
+function refresh(req, old) {
+  const altP = old ? old.clone().text() : Promise.resolve(null); // sofort klonen, bevor der Browser die gespeicherte Seite liest
+  return fetch(req).then(res => {
+    if (!res || !res.ok) return res;
+    const forText = res.clone(), forPage = res.clone(), forRoot = res.clone();
+    return Promise.all([forText.text(), altP]).then(([neu, alt]) =>
+      caches.open(CACHE).then(c => Promise.all([c.put(PAGE, forPage), c.put("./", forRoot)])).then(() => {
+        if (alt !== null && neu !== alt) return self.clients.matchAll({ type: "window" }).then(L => L.forEach(cl => cl.postMessage({ type: "update" })));
+      })).then(() => res);
   });
+}
+// Sofort aus dem Speicher; ohne gespeicherte Seite (erster Besuch) aus dem Netz
+function staleWhileRevalidate(e, req) {
+  const hitP = cachedPage(req), netP = hitP.then(hit => refresh(req, hit));
+  e.waitUntil(netP.catch(() => {}));
+  return hitP.then(hit => hit || netP.catch(() => Response.error()));
 }
 
 function cacheFirst(req) {
@@ -41,7 +53,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   if (url.origin === location.origin && url.pathname.startsWith("/api/")) return; // Suche immer frisch aus dem Netz
   if (req.mode === "navigate" || (url.origin === location.origin && url.pathname.endsWith(".html"))) {
-    e.respondWith(networkFirst(req));
+    e.respondWith(staleWhileRevalidate(e, req));
   } else if (url.origin === location.origin || url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
     e.respondWith(cacheFirst(req));
   }

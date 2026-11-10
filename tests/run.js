@@ -363,9 +363,26 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v51)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v51")));
+      ok("Service Worker aktiv (Cache trainingsplan-v52)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v52")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
+      await ctx.close();
+    }
+    {
+      // Start sofort aus dem Speicher; neue Version im Hintergrund → Hinweis auf „Heute“, nie im Training
+      const sw = require("fs").readFileSync(require("path").join(__dirname, "..", "sw.js"), "utf8");
+      ok("Service Worker: App-Seite sofort aus dem Speicher, kein Warten auf das Netz", sw.includes("staleWhileRevalidate") && !/setTimeout/.test(sw) && sw.includes('postMessage({ type: "update" })'));
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const upd = () => page.evaluate(() => navigator.serviceWorker.dispatchEvent(new MessageEvent("message", { data: { type: "update" } })));
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await upd();
+      ok("Neue Version während des Trainings: kein Hinweis, Training läuft weiter", !(await page.$("#updNote")) && await page.isVisible("#kgIn"));
+      await page.click("[data-a=askStop]"); await page.click(".sheet [data-a=pauseT]").catch(() => {});
+      await page.evaluate(() => { document.querySelector("#sheet-root").innerHTML = ""; });
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Danach auf „Heute“: „Neue Version der App geladen“ mit „Neu laden“", (await page.textContent("#updNote")).includes("Neue Version") && !!(await page.$("#updNote [data-a=reloadApp]")) && !(await page.$("#updNote .btn.primary")));
+      await Promise.all([page.waitForNavigation(), page.click("#updNote [data-a=reloadApp]")]);
+      ok("„Neu laden“ lädt die App neu", !(await page.$("#updNote")));
       await ctx.close();
     }
 

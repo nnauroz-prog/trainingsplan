@@ -120,5 +120,5 @@ Designsystem „Instrument“ (CSS-Tokens in `src/app.html`): Inhalte direkt auf
 - Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)
 - `./build.sh` erzeugt daraus `index.html`
 - `node tests/run.js` startet die automatisierten Tests (Playwright + Chromium, python3 für den lokalen Server)
-- `sw.js`: Offline-Speicher (App-Seite zuerst aus dem Netz, damit Updates sofort ankommen)
+- `sw.js`: Offline-Speicher. Die App-Seite kommt sofort aus dem Speicher (auch bei schlechtem Empfang im Studio kein Warten); im Hintergrund holt der Service Worker die neueste Version. Ist sie anders, zeigt „Heute“ „Neue Version der App geladen · Neu laden“ – nie während eines Trainings. Gemessen mit simuliertem Update: Start aus dem Speicher ca. 45 ms, nach „Neu laden“ die neue Version, offline weiterhin nutzbar
 - Symbole: `icon.svg`, daraus gerenderte PNGs für iOS und Android
