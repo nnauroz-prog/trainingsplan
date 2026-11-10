@@ -3131,7 +3131,7 @@ async function finishAllSets(page, kg, reps) {
       // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
-        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: chest.includes('fill="var(--accent)" fill-opacity="0.4"'), plate: chest.includes('r="9" fill="var(--mgear)"'),
+        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: /fill="var\(--accent\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
           lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
           press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
           downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
@@ -3254,7 +3254,28 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("58. Konsole");
+    section("58. Gestaltung: eine Hauptaktion, Skala je Satz, Desktop-Leiste");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, weights: [{ d: "2026-01-01", kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "auf", kcal: null } });
+      const ins = await page.$("#coach .ins");
+      ok("Hinweiskarte: Signalpunkt, Aktionen neutral (Orange nur für „Training starten“)", !ins || !(await page.$("#coach .ins .btn.primary")));
+      ok("„Heute“: genau eine orange Fläche (Hauptaktion)", (await page.$$("#app .btn.primary")).length === 1);
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      const tk = await page.$eval(".t-top .bar.ticks", b => getComputedStyle(b).getPropertyValue("--n").trim());
+      ok("Training: Fortschritt als Skala mit einem Strich je Satz (4 Sätze)", tk === "4", tk);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      ok("Übungsseite: Bewegung direkt unter dem Titel, vor „Deine Werte“", await page.evaluate(() => !!(document.querySelector("#gMotion").compareDocumentPosition(document.querySelector("#exStats")) & Node.DOCUMENT_POSITION_FOLLOWING)));
+      await page.setViewportSize({ width: 1280, height: 800 });
+      const nav = await page.$eval("nav.tabs", n => { const r = n.getBoundingClientRect(); return { l: r.left, w: r.width, h: r.height }; });
+      ok("Ab 1024 px: Navigation als Leiste links über die ganze Höhe", nav.l === 0 && nav.w < 120 && nav.h >= 800, JSON.stringify(nav));
+      await ctx.close();
+    }
+
+    section("59. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
