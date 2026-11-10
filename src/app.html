@@ -1623,7 +1623,7 @@ const atTxt = ms => { const d = new Date(ms), days = Math.round((new Date().setH
   return `${days === 0 ? "heute" : days === 1 ? "gestern" : d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })} ${d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`; };
 const sessionEnd = s => s.paused || (s.lastAt && Date.now() - s.lastAt > IDLE_MS ? s.lastAt : Date.now());
 idlePause();
-let view = state.session && !state.session.paused ? "train" : "home";
+let view = state.session && !state.session.paused ? "train" : "home", updateReady = false;
 let summary = null;
 let pickerCtx = null;
 
@@ -2815,6 +2815,7 @@ function vHome() {
   $app.innerHTML = `<div class="page">
     <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><h1 class="title">Heute</h1></div>
     ${homeNote ? `<p class="note small" id="homeNote" role="status" style="margin:0">${esc(homeNote)}</p>` : ""}
+    ${updateReady && !(state.session && !state.session.paused) ? `<div class="note row between" id="updNote" role="status"><p class="small" style="margin:0">Neue Version der App geladen.</p><button class="btn sm" data-a="reloadApp">Neu laden</button></div>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
       return `<section class="hero">
         <div class="hero-meta"><div class="cap">Training pausiert</div><div class="hero-name">${esc(ses.dayName)}</div>
@@ -5919,6 +5920,7 @@ const A = {
     el.textContent = m._paused ? "Abspielen" : "Pause"; el.setAttribute("aria-pressed", String(!!m._paused)); motStart(); },
   motSlow: el => { const m = motOf(el); if (!m) return; const now = performance.now(), loc = motLocal(m, now);
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
+  reloadApp: () => location.reload(),
   voiceToggle: () => { state.voice = !state.voice; save(); if (state.voice) say("Sprachbegleitung an."); else try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} render(); },
   voiceSet: el => { state.voice = el.dataset.v === "1"; save(); render(); },
   nOpt: el => { state.nutrOpt[el.dataset.k] = el.dataset.v === "1"; save(); render(); },
@@ -6213,11 +6215,18 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (!state.session.paused) { awake(true); tick(); } });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
-  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, FAST_DB, offQuery, MUSCLES, figure, get state() { return state; } };
+  estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && window.top === window.self && !/claude/.test(location.hostname))
   navigator.serviceWorker.register("sw.js").catch(() => {});
+// Neue Version im Hintergrund geladen (Service Worker meldet sich): auf „Heute“ anbieten, nie während des Trainings
+if ("serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  const ready = () => { if (updateReady) return; updateReady = true; if (view === "home" && !(state.session && !state.session.paused)) render(); };
+  navigator.serviceWorker.addEventListener("message", e => { if (e.data && e.data.type === "update") ready(); });
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) ready(); });
+}
 })();
 </script>
