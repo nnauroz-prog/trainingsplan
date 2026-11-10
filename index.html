@@ -5358,7 +5358,7 @@ function vSummary() {
   $app.innerHTML = `<div class="page">
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
-      <div><div class="cap">${esc(r.day)} · beendet${r.adj ? " · zeitlich angepasst" : ""}</div><h1 class="title">Stark gemacht.</h1></div></div>
+      <div><div class="cap">Training beendet${r.adj ? " · zeitlich angepasst" : ""}</div><h1 class="title">${esc(r.day)}</h1></div></div>
     <div class="grid3">
       <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div></div>
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
