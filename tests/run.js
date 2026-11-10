@@ -363,7 +363,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v50)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v50")));
+      ok("Service Worker aktiv (Cache trainingsplan-v51)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v51")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1053,7 +1053,7 @@ async function finishAllSets(page, kg, reps) {
       // Aus: keine Buttons
       await page.click("[data-a=start]"); await page.fill("#kgIn", "30"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
       await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
-      ok("Ausgeschaltet: kein Health-Button nach dem Training", (await page.textContent("#app")).includes("Stark gemacht") && !(await page.$("[data-a=sendHealth]")));
+      ok("Ausgeschaltet: kein Health-Button nach dem Training", (await page.textContent("#app")).includes("Training beendet") && !(await page.$("[data-a=sendHealth]")));
       await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=history]"); await page.click("#discLog summary");
       ok("Ausgeschaltet: kein Health-Button im Verlauf", !(await page.$("[data-a=sendHealth]")));
       ok("Verlauf: „1 Eintrag“ statt „1 Einträge“", (await page.textContent("#discLog summary")).includes("1 Eintrag") && !(await page.textContent("#discLog summary")).includes("Einträge"));
@@ -3051,6 +3051,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Tag zeigt das neue Gerät, „Gewicht beim ersten Mal wählen“", (await page.textContent("#dayItems")).includes("Beinbeuger liegend") && (await page.textContent("#dayItems")).includes("Gewicht beim ersten Mal wählen"));
       // Meine Geräte: Häkchen direkt in der Liste, Liste bleibt an ihrer Stelle
       await page.click("[data-a=tab][data-v=plan]"); await page.click("#devsRow");
+      await page.waitForTimeout(350); // Sheet-Animation (0,24 s) abwarten, sonst misst der Test eine Zwischenposition
       await page.$eval(".sheet [data-a=devToggle][data-id=hs-legext]", el => el.scrollIntoView({ block: "center" }));
       const top = await page.evaluate(() => document.querySelector(".sheet").scrollTop);
       await page.click(".sheet [data-a=devToggle][data-id=hs-legext]");
