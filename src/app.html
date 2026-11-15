@@ -209,6 +209,10 @@
   .week .dot.miss{background:transparent;box-shadow:inset 0 0 0 1px var(--raise-3);color:var(--text-3);text-decoration:line-through}
   .week .dot.today{box-shadow:inset 0 0 0 2px var(--text);color:var(--text)}
   .week .dot.done.today{box-shadow:inset 0 0 0 2px var(--on-accent)}
+  .week .dot.sel{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent-ink)}
+  .week .dot.today.sel{box-shadow:inset 0 0 0 2px var(--text),0 0 0 2px var(--bg),0 0 0 4px var(--accent-ink)}
+  .week .dot.done.today.sel{box-shadow:inset 0 0 0 2px var(--on-accent),0 0 0 2px var(--bg),0 0 0 4px var(--accent-ink)}
+  .week .d:disabled{opacity:.35}
   .legend{display:flex;gap:var(--s4);flex-wrap:wrap;font-size:13px;color:var(--text-2)}
   .legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:0}
 
@@ -1462,7 +1466,9 @@ function normalize(raw) {
   s.watch = raw.watch === true;
   s.nutr = cleanNutr(raw.nutr); s.food = cleanFood(raw.food); s.myFoods = cleanMyFoods(raw.myFoods); s.water = cleanWater(raw.water); s.meals = cleanMeals(raw.meals); s.fast = cleanFastActive(raw.fast); s.fasts = cleanFasts(raw.fasts); s.fastH = [14, 16, 18, 20].includes(raw.fastH) ? raw.fastH : 16;
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
-  if (isObj(raw.dayPlan)) for (const [d, o] of Object.entries(raw.dayPlan)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && isObj(o) && Number.isInteger(o.steps) && o.steps >= 0 && o.steps <= 100000) s.dayPlan[d] = { steps: o.steps };
+  const okSteps = v => Number.isInteger(v) && v >= 0 && v <= 100000;
+  if (isObj(raw.dayPlan)) for (const [d, o] of Object.entries(raw.dayPlan)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && isObj(o)) {
+    const e = {}; if (okSteps(o.steps)) e.steps = o.steps; if (okSteps(o.act)) e.act = o.act; if (Object.keys(e).length) s.dayPlan[d] = e; }
   s.stepGoal = Number.isInteger(raw.stepGoal) && raw.stepGoal >= 0 && raw.stepGoal <= 100000 ? raw.stepGoal : null;
   s.stepLen = Number.isInteger(raw.stepLen) && raw.stepLen >= 30 && raw.stepLen <= 150 ? raw.stepLen : null;
   if (Array.isArray(raw.plates)) { const pl = PLATE_SIZES.filter(x => raw.plates.includes(x)); s.plates = pl.length && pl.length < PLATE_SIZES.length ? pl : null; }
@@ -2809,6 +2815,8 @@ function plannedOn(dk) {
   return null;
 }
 const stepsOn = dk => (state.dayPlan[dk] && state.dayPlan[dk].steps != null) ? state.dayPlan[dk].steps : state.stepGoal;
+// Tatsächlich gegangene Schritte (selbst eingetragen, z. B. vom Handy) – nur für heute und vergangene Tage
+const actOn = dk => dk <= dkey() && state.dayPlan[dk] && state.dayPlan[dk].act != null ? state.dayPlan[dk].act : null;
 // Schrittlänge: selbst gemessen oder Startwert der App aus der Körpergröße (0,415 × Größe, Frauen 0,413)
 const stepLenCm = () => state.stepLen || (state.nutr && state.nutr.cm ? Math.round(state.nutr.cm * (state.nutr.sex === "w" ? .413 : .415)) : null);
 // Verbrauch an einem Tag (Schätzung):
@@ -2820,57 +2828,97 @@ const stepLenCm = () => state.stepLen || (state.nutr && state.nutr.cm ? Math.rou
 // nach Tudor-Locke & Bassett 2004) – zusätzlich zählen Schritte darüber und das Krafttraining. Bei höherem Faktor ist Bewegung enthalten.
 function dayEnergy(dk) {
   const G = nutrGoals(); if (!G) return null;
-  const kg = G.kg, tr = plannedOn(dk), steps = stepsOn(dk), sl = stepLenCm(), low = state.nutr.pal < 1.7;
+  const kg = G.kg, tr = plannedOn(dk), plan = stepsOn(dk), act = actOn(dk), steps = act != null ? act : plan, sl = stepLenCm(), low = state.nutr.pal < 1.7;
   const trainKcal = tr ? Math.round(2.5 * kg * tr.min / 60) : 0;
   const v = 1.3, walk = (3.85 + 5.97 * v * v / ((state.nutr.cm || 175) / 100)) * 5 / (60 * v); // kcal je kg und km über dem Ruheumsatz
   const km = steps != null && sl ? steps * sl / 100000 : 0, stepKcal = Math.round(walk * kg * km);
   const extraSteps = low && steps != null && sl ? Math.max(0, steps - 5000) * sl / 100000 : 0, stepExtra = Math.round(walk * kg * extraSteps);
   const extra = low ? trainKcal + stepExtra : 0, total = G.tdee + extra, intake = Math.round(dayTotals(dk).k);
-  return { G, tr, steps, sl, km, trainKcal, stepKcal, stepExtra, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
+  return { G, tr, steps, plan, act, sl, km, trainKcal, stepKcal, stepExtra, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
+}
+const tagMin = () => dkey(new Date(Date.now() - 7 * 864e5));
+const mondayOf = dk => { const d = dateOf(dk); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; };
+const tagTitle = dk => dk === dkey() ? "Heute" : dk === dkey(new Date(Date.now() + 864e5)) ? "Morgen" : dk === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : dateOf(dk).toLocaleDateString("de-DE", { weekday: "long" });
+// Wochenleiste: Tag wählen, Training je Tag
+function tagWeek(dk) {
+  const today = dkey(), minD = tagMin(), maxD = maxFoodDay(), mon = mondayOf(dk);
+  return ["M", "D", "M", "D", "F", "S", "S"].map((n, i) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dkey(d), off = k < minD || k > maxD, tr = off ? null : plannedOn(k);
+    return `<button class="d" data-a="tagPick" data-d="${k}" ${off ? "disabled" : ""} aria-pressed="${k === dk}" aria-label="${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}${tr ? `, ${esc(tr.name)}${tr.done ? " erledigt" : ""}` : ""}">${n}<div class="dot ${tr && tr.done ? "done" : ""} ${k === today ? "today" : ""} ${k === dk ? "sel" : ""}">${d.getDate()}</div><span class="wp ${tr && tr.done ? "done" : ""}">${tr ? esc(tr.name) : ""}</span></button>`;
+  }).join("");
+}
+// Bilanz der Woche: nur Tage mit Essen, ohne heute (heute ist noch nicht vorbei)
+function tagWeekSum(dk) {
+  const today = dkey(), mon = mondayOf(dk); let n = 0, bal = 0, tgt = 0, hasToday = false;
+  for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dkey(d);
+    if (k === today) { hasToday = true; continue; }
+    if (!(state.food[k] || []).length) continue;
+    const E = dayEnergy(k); if (!E) return ""; n++; bal += E.balance; tgt += E.goalDiff; }
+  if (!n) return "";
+  return `<span class="muted">Woche${hasToday ? " ohne heute" : ""} · ${n} ${n === 1 ? "Tag" : "Tage"} mit Essen:</span> <b>${bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${fmtK(Math.abs(bal))} kcal</b>${tgt ? `<span class="muted"> · Ziel ≈ ${fmtK(Math.abs(tgt))} kcal ${tgt < 0 ? "Defizit" : "Überschuss"}</span>` : ""}`;
+}
+function tagStepInfo(dk) {
+  const E = dayEnergy(dk), plan = stepsOn(dk), act = actOn(dk), s = act != null ? act : plan, sl = stepLenCm();
+  if (s == null) return "Noch kein Ziel – mit + festlegen.";
+  if (!sl) return "Für die Strecke fehlt deine Körpergröße (Essen → Ziele).";
+  return `${act != null ? "Gegangen" : "Geplant"}: ≈ ${String(Math.round(s * sl / 10000) / 10).replace(".", ",")} km · ≈ ${E ? fmtK(E.stepKcal) : "–"} kcal beim Gehen${act != null && plan ? ` · ${Math.round(act / plan * 100)} % vom Ziel` : ""}`;
+}
+function tagBalInner(dk) {
+  const today = dkey(), E = dayEnergy(dk);
+  if (!E) return `<div class="note"><p class="small">Für die Bilanz braucht die App Alter, Größe, Gewicht und Aktivität.</p><button class="btn sm" data-a="openNutr">Ziele festlegen</button></div>`;
+  const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b>${v}</b></div>`;
+  return `<div class="note" style="gap:6px">
+      ${row("Grundumsatz × Aktivität", `Faktor ${String(state.nutr.pal).replace(".", ",")}`, `${fmtK(E.G.tdee)} kcal`)}
+      ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", E.act != null ? "gegangen" : "Ziel", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
+        : `<p class="small faint" style="margin:0">Training und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
+      ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
+      ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
+      <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
+      <p class="small faint" style="margin:0">Dein Ziel „${NGOAL[state.nutr.goal].label}“ plant ${E.goalDiff < 0 ? `etwa ${fmtK(-E.goalDiff)} kcal Defizit` : E.goalDiff > 0 ? `etwa ${fmtK(E.goalDiff)} kcal Überschuss` : "eine ausgeglichene Bilanz"} gegenüber dem Grundbedarf.</p></div>`;
+}
+// Nach Eingabe nur die abhängigen Teile neu zeichnen (Fokus im Feld bleibt)
+function tagRefresh() {
+  const dk = tagDay || dkey(), a = byId("tagStepInfo"), b = byId("tagBalIn"), w = byId("tagWeekSum");
+  if (a) a.innerHTML = tagStepInfo(dk); if (b) b.innerHTML = tagBalInner(dk); if (w) w.innerHTML = tagWeekSum(dk);
 }
 function vTag() {
-  const today = dkey(), dk = tagDay || today, d = dateOf(dk), E = dayEnergy(dk), tr = plannedOn(dk), steps = stepsOn(dk), sl = stepLenCm();
-  const minD = dkey(new Date(Date.now() - 7 * 864e5)), maxD = maxFoodDay(), t = dayTotals(dk), past = dk < today;
-  const title = dk === today ? "Heute" : dk === dkey(new Date(Date.now() + 864e5)) ? "Morgen" : dk === dkey(new Date(Date.now() - 864e5)) ? "Gestern" : d.toLocaleDateString("de-DE", { weekday: "long" });
-  const kc = v => `${v < 0 ? "−" : ""}${fmtK(Math.abs(v))}`;
-  const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b>${v}</b></div>`;
+  const today = dkey(), dk = tagDay || today, d = dateOf(dk), E = dayEnergy(dk), tr = plannedOn(dk), steps = stepsOn(dk), act = actOn(dk), sl = stepLenCm();
+  const minD = tagMin(), maxD = maxFoodDay(), t = dayTotals(dk), past = dk < today, nFood = (state.food[dk] || []).length;
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="tab" data-v="home">‹ Heute</button>
-      <div class="row between"><div><div class="cap">Tagesplan · ${d.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}</div><h1 class="title">${title}</h1></div>
+      <div class="row between"><div><div class="cap">Tagesplan · ${d.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}</div><h1 class="title">${tagTitle(dk)}</h1></div>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="tagDay" data-d="-1" aria-label="Vorheriger Tag" ${dk <= minD ? "disabled" : ""}>‹</button><button class="icon-btn" data-a="tagDay" data-d="1" aria-label="Nächster Tag" ${dk >= maxD ? "disabled" : ""}>›</button></div></div></div>
+    <section class="section" id="tagWeekSec" aria-label="Woche">
+      <div class="week tagweek">${tagWeek(dk)}</div>
+      <p class="small" id="tagWeekSum" style="margin:0">${tagWeekSum(dk)}</p>
+    </section>
     <section class="section" id="tagTrain"><h2>Training</h2>
       ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt · ${tr.min} Min.` : `geplant · ≈ ${tr.min} Min.`}</div></div>
           ${E ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
         : `<p class="small muted" style="margin:0">${state.sched ? "Kein Training geplant – Ruhetag." : "Ohne feste Termine. Unter Training → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
     </section>
     <section class="section" id="tagSteps"><h2>Schritte</h2>
+      <div class="cap" style="text-align:center">Ziel</div>
       <div class="mini-step" style="grid-template-columns:52px 1fr 52px"><button data-a="tagStep" data-d="-1000" aria-label="1.000 Schritte weniger">−</button>
-        <output id="tagStepsOut">${steps != null ? fmtK(steps) : "–"}</output><button data-a="tagStep" data-d="1000" aria-label="1.000 Schritte mehr">+</button></div>
-      <p class="small muted" style="margin:0;text-align:center">${steps != null && sl ? `≈ ${String(Math.round(steps * sl / 10000) / 10).replace(".", ",")} km · ≈ ${E ? fmtK(E.stepKcal) : "–"} kcal beim Gehen` : steps != null ? "Für die Strecke fehlt deine Körpergröße (Essen → Ziele)." : "Noch kein Ziel – mit + festlegen."}</p>
+        <output id="tagStepsOut" aria-label="Schritte-Ziel">${steps != null ? fmtK(steps) : "–"}</output><button data-a="tagStep" data-d="1000" aria-label="1.000 Schritte mehr">+</button></div>
+      ${dk <= today ? `<div class="field"><label for="tagAct">${dk === today ? "Heute gegangen" : "Gegangen"}</label><input id="tagAct" data-i="tagAct" inputmode="numeric" value="${act != null ? fmtK(act) : ""}" placeholder="Zahl vom Handy oder Schrittzähler" autocomplete="off"></div>` : ""}
+      <p class="small muted" id="tagStepInfo" style="margin:0;text-align:center">${tagStepInfo(dk)}</p>
       ${steps != null && steps !== state.stepGoal ? `<button class="link small" data-a="tagStepDefault" style="justify-self:center">${fmtK(steps)} Schritte als Ziel für jeden Tag</button>` : ""}
     </section>
     <section class="section" id="tagFood"><h2>Essen</h2>
-      <div class="row between"><div><div class="t" style="font-weight:600">${fmtK(t.k)} kcal · ${fmtK(t.p)} g Eiweiß</div><div class="small muted">${(state.food[dk] || []).length ? `${(state.food[dk] || []).length} ${(state.food[dk] || []).length === 1 ? "Eintrag" : "Einträge"}${dk > today ? " geplant" : ""}` : dk > today ? "Noch nichts geplant" : "Noch nichts eingetragen"}${E ? ` · Ziel ${fmtK(E.G.kcal)} kcal` : ""}</div></div>
+      <div class="row between"><div><div class="t" style="font-weight:600">${fmtK(t.k)} kcal · ${fmtK(t.p)} g Eiweiß</div><div class="small muted">${nFood ? `${nFood} ${nFood === 1 ? "Eintrag" : "Einträge"}${dk > today ? " geplant" : ""}` : dk > today ? "Noch nichts geplant" : "Noch nichts eingetragen"}${E ? ` · Ziel ${fmtK(E.G.kcal)} kcal` : ""}</div></div>
         <button class="btn sm" data-a="tagFood" ${past && dk < minD ? "disabled" : ""}>${dk > today ? "Essen planen" : "Ansehen"}</button></div>
     </section>
-    <section class="section" id="tagBal"><h2>Kalorienbilanz</h2>
-      ${E ? `<div class="note" style="gap:6px">
-          ${row("Grundumsatz × Aktivität", `Faktor ${String(state.nutr.pal).replace(".", ",")}`, `${fmtK(E.G.tdee)} kcal`)}
-          ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", "", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
-            : `<p class="small faint" style="margin:0">Training und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
-          ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
-          ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
-          <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
-          <p class="small faint" style="margin:0">Dein Ziel „${NGOAL[state.nutr.goal].label}“ plant ${E.goalDiff < 0 ? `etwa ${fmtK(-E.goalDiff)} kcal Defizit` : E.goalDiff > 0 ? `etwa ${fmtK(E.goalDiff)} kcal Überschuss` : "eine ausgeglichene Bilanz"} gegenüber dem Grundbedarf.</p></div>`
-        : `<div class="note"><p class="small">Für die Bilanz braucht die App Alter, Größe, Gewicht und Aktivität.</p><button class="btn sm" data-a="openNutr">Ziele festlegen</button></div>`}
-    </section>
+    <section class="section" id="tagBal"><h2>Kalorienbilanz</h2><div id="tagBalIn">${tagBalInner(dk)}</div></section>
     <details class="disc"><summary><div class="grow"><h3>So wird gerechnet</h3><div class="small muted">Schätzung mit Quellen</div></div><span class="chev">›</span></summary><div class="body">
       <ul class="glist small">
         <li>Grundbedarf: Grundumsatz nach Mifflin-St Jeor × Aktivitätsfaktor aus deinen Zielen.</li>
         <li>Krafttraining: 3,5 MET („mehrere Übungen, 8–15 Wiederholungen“, Compendium 2024). Gezählt wird der Anteil über dem Ruheumsatz: 2,5 × Körpergewicht × Stunden.</li>
         <li>Gehen in der Ebene: Verbrauch über dem Ruheumsatz nach Ludlow und Weyand (2016) aus Größe, Gewicht und Tempo – genauer als ältere Gleichungen, die meist zu niedrig lagen. Tempo 1,3 m/s (≈ 4,7 km/h) ist ein Startwert der App; bergauf ist es mehr.</li>
+        <li>Schritte: Für heute und vergangene Tage zählen die eingetragenen gegangenen Schritte, sonst das Ziel.</li>
         <li>Schrittlänge ${sl ? `${sl} cm` : "–"}${state.stepLen ? " (selbst gemessen)" : " – Startwert der App aus deiner Körpergröße (0,415 × Größe, Frauen 0,413). Genauer: 10 Schritte gehen, Strecke messen, durch 10 teilen."}</li>
         <li>Regel der App: Bei „Wenig aktiv“ sind etwa 5.000 Schritte am Tag im Alltag enthalten (Grenze „sitzender Lebensstil“ nach Tudor-Locke und Bassett); zusätzlich zählen Schritte darüber und das Krafttraining. Bei „Mäßig“ oder „Sehr aktiv“ ist Bewegung im Faktor enthalten und wird nicht doppelt gezählt.</li>
+        <li>Wochenbilanz: nur Tage mit eingetragenem oder geplantem Essen, heute erst ab morgen.</li>
         <li>Alles sind Schätzungen. Ob die Bilanz stimmt, zeigt dein Gewichtsverlauf nach zwei bis drei Wochen.</li>
       </ul>
       <div class="field"><label for="tagStepLen">Eigene Schrittlänge in cm (optional)</label><input id="tagStepLen" data-i="stepLen" inputmode="numeric" value="${state.stepLen || ""}" placeholder="${sl || ""}" autocomplete="off"></div>
@@ -2988,8 +3036,8 @@ function vHome() {
         <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
       </div>` : ""}
     <div class="plain-list">
-      ${(() => { const E = dayEnergy(dkey()), st = stepsOn(dkey());
-        return `<button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag"><div class="grow"><div class="s">Tagesplan</div><div class="t">${E ? `${E.balance <= 0 ? "Defizit" : "Überschuss"} bisher ≈ ${fmtK(Math.abs(E.balance))} kcal` : "Training, Schritte und Essen"}${st != null ? ` · ${fmtK(st)} Schritte` : ""}</div></div><span class="chev">›</span></button>`; })()}
+      ${(() => { const E = dayEnergy(dkey()), ac = actOn(dkey()), st = stepsOn(dkey());
+        return `<button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag"><div class="grow"><div class="s">Tagesplan</div><div class="t">${E ? `${E.balance <= 0 ? "Defizit" : "Überschuss"} bisher ≈ ${fmtK(Math.abs(E.balance))} kcal` : "Training, Schritte und Essen"}${ac != null ? ` · ${fmtK(ac)} Schritte gegangen` : st != null ? ` · Ziel ${fmtK(st)} Schritte` : ""}</div></div><span class="chev">›</span></button>`; })()}
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
 
@@ -6061,11 +6109,13 @@ const A = {
   reloadApp: () => location.reload(),
   openTag: el => { tagDay = el.dataset.d || null; go("tag"); },
   tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt);
-    if (n >= dkey(new Date(Date.now() - 7 * 864e5)) && n <= maxFoodDay()) tagDay = n; vTag(); },
+    if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
+  tagPick: el => { const n = el.dataset.d; if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   tagStep: el => { const dk = tagDay || dkey(), cur = stepsOn(dk); const v = Math.max(0, Math.min(100000, (cur == null ? (+el.dataset.d > 0 ? 7000 : 0) : cur + +el.dataset.d)));
-    state.dayPlan[dk] = { steps: v }; save(); vTag(); },
+    state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), steps: v }; save(); vTag(); },
   tagStepDefault: () => { const dk = tagDay || dkey(), v = stepsOn(dk); if (v == null) return; state.stepGoal = v;
-    for (const k of Object.keys(state.dayPlan)) if (state.dayPlan[k].steps === v) delete state.dayPlan[k]; save(); vTag(); },
+    for (const k of Object.keys(state.dayPlan)) if (state.dayPlan[k].steps === v) { delete state.dayPlan[k].steps; if (!Object.keys(state.dayPlan[k]).length) delete state.dayPlan[k]; }
+    save(); vTag(); },
   tagFood: () => { const dk = tagDay || dkey(); foodDay = dk === dkey() ? null : dk; go("food"); },
   plateToggle: el => { const v = +el.dataset.v, cur = state.plates || PLATE_SIZES.slice(), has = cur.includes(v);
     if (has && cur.length === 1) return; // mindestens eine Scheibengröße
@@ -6322,7 +6372,10 @@ document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
-  else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); }
+  else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); tagRefresh(); }
+  else if (k === "tagAct") { const dk = tagDay || dkey(), raw = String(el.value).replace(/[.\s']/g, ""), v = raw === "" ? NaN : Math.round(+raw);
+    const e = { ...(state.dayPlan[dk] || {}) }; if (Number.isInteger(v) && v >= 0 && v <= 100000) e.act = v; else delete e.act;
+    if (Object.keys(e).length) state.dayPlan[dk] = e; else delete state.dayPlan[dk]; save(); tagRefresh(); }
   else if (k === "motScrub") { const m = motOf(el); if (m) { m._paused = true; m._pc = el.value / 1000 * MOT_T;
     const b = el.parentElement.querySelector("[data-a=motPlay]"); if (b) { b.textContent = "Abspielen"; b.setAttribute("aria-pressed", "true"); } motStart(); } }
   else if (k === "pickMuscle") { pickMuscle = MUSCLES[el.value] ? el.value : "alle"; refreshPicker(); }
@@ -6365,7 +6418,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { actOn, tagWeekSum, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

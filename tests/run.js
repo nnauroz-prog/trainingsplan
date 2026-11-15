@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v57)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v57")));
+      ok("Service Worker aktiv (Cache trainingsplan-v58)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v58")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3420,7 +3420,72 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("61. Konsole");
+    section("61. Tagesplan: gegangene Schritte und Wochenleiste");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const wd = (new Date().getDay() + 6) % 7; // Montag = 0
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const per = { k: 100, p: 0, c: 25, f: 0 };
+      const { ctx, page } = await open({ plan, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null },
+        sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "18:00", planB: "next" }, stepGoal: 8000,
+        dayPlan: { [dk(-1)]: { steps: 10000, act: 6000 }, [dk(0)]: { act: 3000 }, [dk(2)]: { act: 4000 }, "x": { act: 5 }, [dk(-2)]: { act: -1 } },
+        food: { [dk(-1)]: [{ id: "f1", m: "m", n: "Testessen", src: "usda:1", g: 2000, per }], [dk(1)]: [{ id: "f2", m: "m", n: "Testessen", src: "usda:1", g: 1500, per }] } });
+      const r = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        return { dp: JSON.parse(JSON.stringify(T.state.dayPlan)), y: T.dayEnergy(k(-1)), t: T.dayEnergy(k(0)), f: T.dayEnergy(k(2)), a2: T.actOn(k(2)),
+          e1: T.dayEnergy(k(1)) }; });
+      ok("Gegangene Schritte gespeichert, ungültige verworfen; künftige zählen nicht als gegangen",
+        Object.keys(r.dp).length === 3 && r.dp[dk(-1)].act === 6000 && r.dp[dk(-1)].steps === 10000 && r.dp[dk(0)].act === 3000 && r.a2 === null && r.f.steps === 8000, JSON.stringify(r.dp));
+      ok("Gestern: gegangen 6.000 statt Ziel 10.000 → 4,5 km, 218 kcal beim Gehen, 36 kcal über 5.000; Bilanz −795",
+        r.y.steps === 6000 && r.y.plan === 10000 && r.y.act === 6000 && r.y.stepKcal === 218 && r.y.stepExtra === 36 && r.y.total === 2795 && r.y.intake === 2000 && r.y.balance === -795, JSON.stringify(r.y));
+      ok("Heute 3.000 gegangen: unter 5.000, also nichts extra", r.t.steps === 3000 && r.t.stepExtra === 0 && r.t.stepKcal === 109, JSON.stringify(r.t));
+      ok("Startseite: Tagesplan zeigt die gegangenen Schritte", (await page.textContent("#homeTag")).includes("3.000 Schritte gegangen"));
+      // Bedienung: heute
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      ok("Heute: Feld „Heute gegangen“ mit 3.000, 38 % vom Ziel", (await page.inputValue("#tagAct")) === "3.000" && (await page.textContent("label[for=tagAct]")) === "Heute gegangen"
+        && (await page.textContent("#tagStepInfo")).includes("Gegangen") && (await page.textContent("#tagStepInfo")).includes("38 % vom Ziel"));
+      await page.fill("#tagAct", "6.500");
+      ok("Eingabe 6.500: gespeichert, Anzeige und Bilanz sofort neu, Fokus bleibt im Feld",
+        (await stored(page)).dayPlan[dk(0)].act === 6500 && (await page.textContent("#tagStepInfo")).includes("81 % vom Ziel")
+        && (await page.textContent("#tagBalIn")).includes("gegangen") && (await page.evaluate(() => document.activeElement.id)) === "tagAct");
+      await page.fill("#tagAct", "");
+      ok("Feld leeren entfernt den Eintrag", !(await stored(page)).dayPlan[dk(0)] && (await page.textContent("#tagStepInfo")).includes("Geplant"));
+      // Wochenleiste
+      const strip = await page.$$eval(".tagweek .d", b => b.map(x => ({ d: x.dataset.d, on: x.getAttribute("aria-pressed"), dis: x.disabled })));
+      ok("Wochenleiste: 7 Tage, heute gewählt", strip.length === 7 && strip.filter(x => x.on === "true").length === 1 && strip.find(x => x.on === "true").d === dk(0), JSON.stringify(strip));
+      const exp = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        const mon = s => { const x = new Date(s + "T12:00"); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x.toDateString(); };
+        const days = [-1, 1].filter(n => mon(k(n)) === mon(k(0)));
+        return { n: days.length, bal: days.reduce((s, n) => s + T.dayEnergy(k(n)).balance, 0) }; });
+      const sumTxt = (await page.textContent("#tagWeekSum")).replace(/\s+/g, " ");
+      ok("Wochenbilanz: Tage mit Essen ohne heute, Summe stimmt", sumTxt.includes(`Woche ohne heute · ${exp.n} ${exp.n === 1 ? "Tag" : "Tage"} mit Essen`) && sumTxt.includes(`${exp.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${Math.abs(exp.bal).toLocaleString("de-DE")} kcal`), sumTxt + " / " + JSON.stringify(exp));
+      // Anderen Tag der Woche wählen: Sonntag → Samstag (gestern), sonst morgen
+      if (wd === 6) {
+        await page.click(`.tagweek [data-d="${dk(-1)}"]`);
+        ok("Tag in der Wochenleiste wählen: Gestern, Feld „Gegangen“ mit 6.000", (await page.textContent("main h1")) === "Gestern" && (await page.inputValue("#tagAct")) === "6.000" && (await page.textContent("label[for=tagAct]")) === "Gegangen");
+      } else {
+        await page.click(`.tagweek [data-d="${dk(1)}"]`);
+        ok("Tag in der Wochenleiste wählen: Morgen, ohne Feld „gegangen“", (await page.textContent("main h1")) === "Morgen" && !(await page.$("#tagAct")));
+        await page.click("[data-a=tagDay][data-d='-1']"); await page.click("[data-a=tagDay][data-d='-1']");
+        ok("Zurück zu gestern: Feld „Gegangen“ mit 6.000", (await page.textContent("main h1")) === "Gestern" && (await page.inputValue("#tagAct")) === "6.000");
+      }
+      ok("Gestern: Ziel 10.000 bleibt neben den gegangenen Schritten", (await page.textContent("#tagStepsOut")) === "10.000");
+      await page.click("[data-a=tagStepDefault]");
+      const st = await stored(page);
+      ok("Ziel als Standard übernehmen lässt die gegangenen Schritte stehen", st.stepGoal === 10000 && JSON.stringify(st.dayPlan[dk(-1)]) === '{"act":6000}', JSON.stringify(st.dayPlan));
+      // Tage außerhalb des Bereichs (7 Tage zurück bis 14 voraus) sind gesperrt
+      await page.click("[data-a=tagDay][data-d='1']"); // von gestern zurück zu heute (montags liegt gestern in der Vorwoche)
+      for (let i = 0; i < (wd ? 7 : 14); i++) await page.click(`[data-a=tagDay][data-d='${wd ? -1 : 1}']`);
+      const dis = await page.$$eval(".tagweek .d:disabled", b => b.length);
+      ok("Wochenleiste: Tage außerhalb des Planbereichs gesperrt", dis === (wd ? wd : 6), String(dis));
+      await page.setViewportSize({ width: 320, height: 640 });
+      await page.click(`.tagweek [data-d="${wd ? dk(-7) : dk(14)}"]`).catch(() => {});
+      ok("Tagesplan mit Wochenleiste bei 320 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("62. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
