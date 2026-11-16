@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v58)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v58")));
+      ok("Service Worker aktiv (Cache trainingsplan-v59)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v59")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3485,7 +3485,72 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("62. Konsole");
+    section("62. Tagesplan: Training je Tag ändern (anderes Training oder Ruhetag)");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const it = (id, exId) => [{ id, exId, sets: 3, rmin: 8, rmax: 12, rest: 90 }];
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Drücken", items: it("a1", "hs-chest") }, { id: "b", name: "Ziehen", items: it("b1", "hs-row") }, { id: "c", name: "Beine", items: it("c1", "hs-legpress") }] };
+      const { ctx, page } = await open({ plan, weights: [{ d: dk(0), kg: 80 }],
+        sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "23:59", planB: "next", since: new Date().toISOString() },
+        dayPlan: { [dk(5)]: { train: "zzz" }, [dk(6)]: { train: 7 } } });
+      const names = () => tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        return [0, 1, 2, 3, 4].map(n => { const p = T.plannedOn(k(n)); return p ? p.name : "-"; }).join(","); });
+      ok("Ohne Änderung: Ablauf an jedem Termin", (await names()) === "Drücken,Ziehen,Beine,Drücken,Ziehen", await names());
+      const bad = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        return { p5: T.plannedOn(k(5)), dp: JSON.parse(JSON.stringify(T.state.dayPlan)) }; });
+      ok("Ungültige Änderungen: Text bleibt, Zahl verworfen; unbekanntes Training fällt auf den Ablauf zurück", bad.p5 && bad.p5.dayId !== "zzz" && bad.dp[dk(5)].train === "zzz" && !bad.dp[dk(6)], JSON.stringify(bad));
+      // Morgen Beine statt Ziehen
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      await page.click("[data-a=tagDay][data-d='1']");
+      ok("Tagesplan morgen: Auswahl aller Trainingstage und Ruhetag, aktuelles markiert",
+        (await page.$$("#tagTrainPick [data-a=tagTrain]")).length === 4 && (await page.getAttribute("#tagTrainPick [data-v=b]", "aria-pressed")) === "true");
+      await page.click("#tagTrainPick [data-v=c]");
+      ok("Morgen Beine: gespeichert, als geändert markiert, danach geht der Ablauf mit Drücken weiter",
+        (await stored(page)).dayPlan[dk(1)].train === "c" && (await page.textContent("#tagTrain")).includes("geändert") && (await names()) === "Drücken,Beine,Drücken,Ziehen,Beine", await names());
+      // Übermorgen Ruhetag
+      await page.click("[data-a=tagDay][data-d='1']");
+      await page.click("#tagTrainPick [data-v=rest]");
+      ok("Übermorgen Ruhetag: kein Training, Ablauf rückt einen Tag weiter", (await names()) === "Drücken,Beine,-,Drücken,Ziehen" && (await page.textContent("#tagTrain")).includes("Ruhetag – von dir geplant"), await names());
+      ok("Termin-Logik: übermorgen ist kein Trainingstag mehr", await tp(page, () => { const T = window.__tp, x = new Date(Date.now() + 2 * 864e5); return !T.isTrainDate(x); }));
+      await page.click("[data-a=tagTrainAuto]");
+      ok("„Zurück zum Ablauf“ entfernt die Änderung", !(await stored(page)).dayPlan[dk(2)] && (await names()) === "Drücken,Beine,Drücken,Ziehen,Beine", await names());
+      // Wahl wie im Ablauf speichert nichts
+      await page.click("#tagTrainPick [data-v=a]");
+      ok("Training wählen, das ohnehin dran ist: keine Änderung gespeichert", !(await stored(page)).dayPlan[dk(2)]);
+      // Heute ändern: Startseite zeigt das gewählte Training
+      for (let i = 0; i < 2; i++) await page.click("[data-a=tagDay][data-d='-1']");
+      await page.click("#tagTrainPick [data-v=b]");
+      await page.click("[data-a=tab][data-v=home]");
+      ok("Heute Ziehen gewählt: Startseite schlägt Ziehen vor", (await page.textContent(".hero-name")) === "Ziehen" && (await tp(page, () => window.__tp.nextDay().name)) === "Ziehen");
+      // Heute Ruhetag: Startseite sagt trainingsfrei und nennt das nächste Training (morgen Beine)
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      await page.click("#tagTrainPick [data-v=rest]");
+      await page.click("[data-a=tab][data-v=home]");
+      const homeTxt = (await page.textContent("main")).replace(/\s+/g, " ");
+      ok("Heute Ruhetag: „Heute ist trainingsfrei“, nächstes Training morgen Beine", homeTxt.includes("Heute ist trainingsfrei") && homeTxt.includes("morgen um 23:59 – Beine") && (await page.textContent(".hero-name")) === "Beine", homeTxt.slice(0, 300));
+      // „Anderes Training wählen“ auf der Startseite ersetzt die Änderung für heute
+      await page.click("[data-a=pickDay]"); await page.click("[data-a=selDay][data-id=a]");
+      ok("„Anderes Training wählen“ ersetzt die Änderung für heute", !((await stored(page)).dayPlan[dk(0)] || {}).train && (await page.textContent(".hero-name")) === "Drücken");
+      // Vergangene Tage: keine Auswahl; geplanter Ruhetag zählt nicht als verpasst
+      const miss = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        T.state.sched.since = new Date(Date.now() - 4 * 864e5).toISOString(); T.state.dayPlan[k(-1)] = { train: "rest" };
+        const r = T.missToAsk(); T.state.sched.since = new Date().toISOString(); delete T.state.dayPlan[k(-1)]; return r; });
+      ok("Geplanter Ruhetag gilt nicht als verpasster Termin (gefragt wird nach dem Tag davor)", miss && miss.d === dk(-2), JSON.stringify(miss));
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`); await page.click("[data-a=tagDay][data-d='-1']");
+      ok("Gestern: keine Auswahl", !(await page.$("#tagTrainPick")));
+      await page.setViewportSize({ width: 320, height: 640 });
+      await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='1']");
+      ok("Auswahl bei 320 px ohne seitliches Scrollen", !!(await page.$("#tagTrainPick")) && await noOverflow(page));
+      await ctx.close();
+      // Ohne feste Termine keine Auswahl
+      const o2 = await open({ plan, weights: [{ d: dk(0), kg: 80 }] });
+      await o2.page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      ok("Ohne feste Termine: keine Auswahl, Hinweis auf Termine", !(await o2.page.$("#tagTrainPick")) && (await o2.page.textContent("#tagTrain")).includes("Ohne feste Termine"));
+      await o2.ctx.close();
+    }
+
+    section("63. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
