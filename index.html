@@ -1485,7 +1485,9 @@ function normalize(raw) {
   s.sched = cleanSched(raw.sched); s.voice = raw.voice === true;
   const okSteps = v => Number.isInteger(v) && v >= 0 && v <= 100000;
   if (isObj(raw.dayPlan)) for (const [d, o] of Object.entries(raw.dayPlan)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && isObj(o)) {
-    const e = {}; if (okSteps(o.steps)) e.steps = o.steps; if (okSteps(o.act)) e.act = o.act; if (Object.keys(e).length) s.dayPlan[d] = e; }
+    const e = {}; if (okSteps(o.steps)) e.steps = o.steps; if (okSteps(o.act)) e.act = o.act;
+    if (typeof o.train === "string" && o.train && o.train.length <= 40) e.train = o.train;
+    if (Object.keys(e).length) s.dayPlan[d] = e; }
   s.stepGoal = Number.isInteger(raw.stepGoal) && raw.stepGoal >= 0 && raw.stepGoal <= 100000 ? raw.stepGoal : null;
   s.stepLen = Number.isInteger(raw.stepLen) && raw.stepLen >= 30 && raw.stepLen <= 150 ? raw.stepLen : null;
   if (Array.isArray(raw.plates)) { const pl = PLATE_SIZES.filter(x => raw.plates.includes(x)); s.plates = pl.length && pl.length < PLATE_SIZES.length ? pl : null; }
@@ -1900,7 +1902,21 @@ function applyKeep(s, keep) {
   const i = list.findIndex(l => l.key === curKey);
   s.idx = i >= 0 && list[i].sets.some(t => !t.done) ? i : Math.max(0, list.findIndex(l => l.sets.some(t => !t.done)));
 }
+// Nächstes Training: im Tagesplan gewähltes Training für den nächsten Trainingstag, sonst der Ablauf
 function nextDay() {
+  const days = state.plan?.days || [];
+  if (!days.length) return null;
+  if (state.selDay) { const d = days.find(x => x.id === state.selDay); if (d) return d; }
+  if (state.sched) { const c = new Date(); c.setHours(12, 0, 0, 0);
+    for (let i = 0; i < 15; i++, c.setDate(c.getDate() + 1)) {
+      if (i === 0 && trainedOn(c)) continue;
+      const o = ovrDay(dkey(c)); if (o) { nextReason = ""; return o; }
+      if (isTrainDate(c)) break;
+    } }
+  return baseDay();
+}
+// Ablauf ohne Änderungen im Tagesplan: nach dem zuletzt trainierten Tag, mit Blick auf die Erholung
+function baseDay() {
   const days = state.plan?.days || [];
   if (!days.length) return null;
   if (state.selDay) { const d = days.find(x => x.id === state.selDay); if (d) return d; }
@@ -2816,6 +2832,16 @@ function go(v) {
 }
 /* ================= Tagesplan: Training, Schritte, Essen, Kalorienbilanz ================= */
 let tagDay = null;
+// Änderung im Tagesplan: "rest" = Ruhetag, sonst ID eines Trainingstags; wirkt nur mit festen Terminen
+function trainOvr(dk) { return (state.sched && state.dayPlan[dk] && state.dayPlan[dk].train) || null; }
+function ovrDay(dk) { const o = trainOvr(dk); return o && o !== "rest" && state.plan ? state.plan.days.find(x => x.id === o && x.items.length) || null : null; }
+// Trainingstag laut Terminen und Tagesplan
+function isTrainDate(d) {
+  if (!state.sched) return false; const k = dkey(d);
+  if (trainOvr(k) === "rest") return false; if (ovrDay(k)) return true;
+  return state.sched.days.includes(wdOf(d));
+}
+function clearTrainOvr(dk) { const e = state.dayPlan[dk]; if (!e || !e.train) return; delete e.train; if (!Object.keys(e).length) delete state.dayPlan[dk]; }
 // Training an einem Tag: erledigt (Verlauf) oder geplant laut Terminen und Ablauf
 function plannedOn(dk) {
   const h = state.history.find(x => dkey(new Date(x.date)) === dk);
@@ -2823,10 +2849,14 @@ function plannedOn(dk) {
   const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
   const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
   if (!days.length || !s || dk < dkey(today)) return null;
-  const nd = nextDay(); let k = Math.max(0, days.findIndex(x => nd && x.id === nd.id));
+  const nd = baseDay(); let k = Math.max(0, days.findIndex(x => nd && x.id === nd.id));
   for (const c = new Date(today); c <= d; c.setDate(c.getDate() + 1)) {
-    if (!s.days.includes(wdOf(c)) || (dkey(c) === dkey(today) && trainedOn(c))) continue;
-    if (dkey(c) === dk) { const day = days[k % days.length]; return { name: day.name, done: false, min: estMinutes(day), dayId: day.id }; }
+    const ck = dkey(c);
+    if ((ck === dkey(today) && trainedOn(c)) || !isTrainDate(c)) continue;
+    const o = ovrDay(ck);
+    // Geändertes Training: der Ablauf geht danach mit dem folgenden Trainingstag weiter
+    if (o) { if (ck === dk) return { name: o.name, done: false, min: estMinutes(o), dayId: o.id, ovr: true }; k = days.indexOf(o) + 1; continue; }
+    if (ck === dk) { const day = days[k % days.length]; return { name: day.name, done: false, min: estMinutes(day), dayId: day.id }; }
     k++;
   }
   return null;
@@ -2910,9 +2940,14 @@ function vTag() {
       <p class="small" id="tagWeekSum" style="margin:0">${tagWeekSum(dk)}</p>
     </section>
     <section class="section" id="tagTrain"><h2>Training</h2>
-      ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt · ${tr.min} Min.` : `geplant · ≈ ${tr.min} Min.`}</div></div>
+      ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt · ${tr.min} Min.` : `geplant · ≈ ${tr.min} Min.${tr.ovr ? " · geändert" : ""}`}</div></div>
           ${E ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
-        : `<p class="small muted" style="margin:0">${state.sched ? "Kein Training geplant – Ruhetag." : "Ohne feste Termine. Unter Training → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
+        : `<p class="small muted" style="margin:0">${state.sched ? (trainOvr(dk) === "rest" ? "Ruhetag – von dir geplant." : "Kein Training geplant – Ruhetag.") : "Ohne feste Termine. Unter Training → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
+      ${(() => { const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
+        if (!state.sched || !days.length || dk < today || (tr && tr.done)) return "";
+        const cur = tr ? tr.dayId : "rest", chip = (v, l) => `<button class="chip ${cur === v ? "on" : ""}" data-a="tagTrain" data-v="${v}" aria-pressed="${cur === v}">${esc(l)}</button>`;
+        return `<div class="chips wrap" id="tagTrainPick" role="group" aria-label="Training an diesem Tag">${days.map(x => chip(x.id, x.name)).join("")}${chip("rest", "Ruhetag")}</div>
+          ${trainOvr(dk) ? `<button class="link small" data-a="tagTrainAuto" style="justify-self:start">Zurück zum Ablauf</button>` : ""}`; })()}
     </section>
     <section class="section" id="tagSteps"><h2>Schritte</h2>
       <div class="cap" style="text-align:center">Ziel</div>
@@ -2924,7 +2959,7 @@ function vTag() {
     </section>
     <section class="section" id="tagFood"><h2>Essen</h2>
       <div class="row between"><div><div class="t" style="font-weight:600">${fmtK(t.k)} kcal · ${fmtK(t.p)} g Eiweiß</div><div class="small muted">${nFood ? `${nFood} ${nFood === 1 ? "Eintrag" : "Einträge"}${dk > today ? " geplant" : ""}` : dk > today ? "Noch nichts geplant" : "Noch nichts eingetragen"}${E ? ` · Ziel ${fmtK(E.G.kcal)} kcal` : ""}</div></div>
-        <button class="btn sm" data-a="tagFood" ${past && dk < minD ? "disabled" : ""}>${dk > today ? "Essen planen" : "Ansehen"}</button></div>
+        <button class="btn sm" data-a="tagFood" style="white-space:nowrap;flex:none" ${past && dk < minD ? "disabled" : ""}>${dk > today ? "Essen planen" : "Ansehen"}</button></div>
     </section>
     <section class="section" id="tagBal"><h2>Kalorienbilanz</h2><div id="tagBalIn">${tagBalInner(dk)}</div></section>
     <details class="disc"><summary><div class="grow"><h3>So wird gerechnet</h3><div class="small muted">Schätzung mit Quellen</div></div><span class="chev">›</span></summary><div class="body">
@@ -5004,7 +5039,7 @@ function cleanSched(x) {
 function schedAt(d) { const [h, m] = state.sched.time.split(":").map(Number), x = new Date(d); x.setHours(h, m, 0, 0); return x; }
 function nextSched(from = new Date()) {
   const s = state.sched; if (!s) return null;
-  for (let k = 0; k < 8; k++) { const d = new Date(from); d.setDate(from.getDate() + k); if (s.days.includes(wdOf(d))) { const at = schedAt(d); if (at > from) return at; } }
+  for (let k = 0; k < 8; k++) { const d = new Date(from); d.setDate(from.getDate() + k); if (isTrainDate(d)) { const at = schedAt(d); if (at > from) return at; } }
   return null;
 }
 const trainedOn = d => state.history.some(h => dkey(new Date(h.date)) === dkey(d));
@@ -5013,8 +5048,8 @@ function missedThisWeek() {
   const s = state.sched; if (!s) return null;
   const now = new Date(), w = wdOf(now), since = new Date(s.since); since.setHours(0, 0, 0, 0);
   for (let i = w - 1; i >= 0; i--) {
-    if (!s.days.includes(i)) continue;
     const d = new Date(now); d.setDate(now.getDate() - (w - i)); d.setHours(0, 0, 0, 0);
+    if (!isTrainDate(d)) continue;
     if (d < since) return null;
     return state.history.some(h => new Date(h.date) >= d) ? null : i;
   }
@@ -5040,7 +5075,7 @@ function missToAsk() {
     for (let k = 1; k <= 7; k++) {
       const d = new Date(now); d.setDate(now.getDate() - k); d.setHours(0, 0, 0, 0);
       if (d < since) break;
-      if (!s.days.includes(wdOf(d))) continue;
+      if (!isTrainDate(d)) continue;
       const next = new Date(d); next.setDate(d.getDate() + 1);
       if (trainedOn(d) || trainedOn(next)) return null;
       const key = dkey(d);
@@ -5072,11 +5107,11 @@ function weekPlan(monday) {
   const now = new Date(), out = Array(7).fill(null), days = state.plan ? state.plan.days.filter(d => d.items.length) : [];
   if (!days.length) return out;
   state.history.filter(h => new Date(h.date) >= monday).forEach(h => { out[wdOf(new Date(h.date))] = { name: h.day, done: true }; });
-  const nd = nextDay(); let k = Math.max(0, days.findIndex(d => nd && d.id === nd.id));
-  const s = state.sched, today = wdOf(now);
-  if (s) for (let i = today; i < 7; i++) {
-    if (out[i] || !s.days.includes(i) || (i === today && trainedOn(now))) continue;
-    out[i] = { name: days[k % days.length].name, done: false }; k++;
+  const today = wdOf(now);
+  if (state.sched) for (let i = today; i < 7; i++) {
+    if (out[i]) continue;
+    const d = new Date(monday); d.setDate(monday.getDate() + i); const p = plannedOn(dkey(d));
+    if (p && !p.done) out[i] = { name: p.name, done: false };
   }
   return out;
 }
@@ -5101,7 +5136,7 @@ function buddySays(day, thisWeek, goal, streak) {
     title = "Heute erledigt";
     text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
   } else if (mToday) {
-    title = s && s.days.includes(wdOf(now)) ? "Heute fällt aus" : "Heute Pause";
+    title = isTrainDate(now) ? "Heute fällt aus" : "Heute Pause";
     const later = nx2 ? `Nächster Termin: ${whenTxt(nx2)} – ${dn}.` : `Morgen nachholen – ${dn}.`;
     text = ({ krank: "Krank oder verletzt – gute Besserung. Trainiere erst wieder, wenn du dich fit fühlst, und steig dann etwas leichter ein.",
       zeit: `Keine Zeit. ${later} Wenn 30 Minuten drin sind: die Kurzversion.`, muede: `Zu müde. ${later} Wenn du magst, reicht heute die Kurzversion.`,
@@ -5112,7 +5147,7 @@ function buddySays(day, thisWeek, goal, streak) {
   } else if (sick) {
     title = "Erst mal gesund werden";
     text = `Du warst krank oder verletzt (${WD_LONG[wdOf(dateOf(sick.d))]}). Trainiere erst wieder, wenn du dich fit fühlst – und steig dann etwas leichter ein.`;
-  } else if (s && s.days.includes(wdOf(now))) {
+  } else if (isTrainDate(now)) {
     if (now < new Date(schedAt(now).getTime() + 90 * 60000)) {
       const diff = Math.round((schedAt(now) - now) / 60000);
       title = `Heute um ${s.time}: ${dn}`;
@@ -5138,7 +5173,7 @@ function buddySays(day, thisWeek, goal, streak) {
     act.push(["openSched", "Termine festlegen"]);
   } else { title = "Heute ist trainingsfrei"; text = nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""; }
   // Kurze Fakten in einer eigenen Zeile (höchstens drei): Ziel oder Bestwert, Warum, Wochenziel, Serie, letzter Ausfall
-  const gh = goalHint(done || mToday || sick ? null : day, !s || s.days.includes(wdOf(now))), pr = lastPR();
+  const gh = goalHint(done || mToday || sick ? null : day, !s || isTrainDate(now)), pr = lastPR();
   if (gh) facts.push(gh.trim().replace(/\.$/, ""));
   else if (pr && (now - new Date(pr.date)) / 864e5 <= 3) facts.push(`Zuletzt verbessert: ${pr.name} ${kgTxt(pr.from)} → ${kgTxt(pr.kg)} kg`);
   if (state.why && last && !done && !mToday && (now - new Date(last.date)) / 864e5 >= 4) facts.push(`Dein Warum: „${state.why}“`);
@@ -5269,7 +5304,7 @@ function schedHits() {
   const mon = monOf(new Date()), start = new Date(mon); start.setDate(mon.getDate() - 28);
   const per = {};
   for (let d = new Date(since > start ? since : start); d < mon; d.setDate(d.getDate() + 1)) {
-    const w = wdOf(d); if (!s.days.includes(w)) continue;
+    const w = wdOf(d); if (!s.days.includes(w) || trainOvr(dkey(d)) === "rest") continue;
     const m = missOn(dkey(d)); if (m && (m.r === "krank" || m.r === "weg")) continue;
     const end = new Date(d); end.setDate(d.getDate() + (s.days.includes((w + 1) % 7) ? 1 : 2));
     const hit = state.history.some(h => { const t = new Date(h.date); return t >= d && t < end; });
@@ -5871,7 +5906,7 @@ const A = {
   },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
-  selDay: el => { state.selDay = el.dataset.id; save(); closeSheet(); vHome(); },
+  selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
   foodDay: el => { const today = dkey(), dt = new Date(curFoodDay() + "T12:00");
     dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n === today || n > maxFoodDay() ? (n > maxFoodDay() ? foodDay : null) : n; vFood(); },
@@ -6062,7 +6097,7 @@ const A = {
   coachUndo: () => { if (!state.prevPlan) return; state.plan = state.prevPlan.plan; state.prevPlan = null; state.selDay = null; state.timeplan = null; save(); render(); },
   coachKeep: () => { state.prevPlan = null; save(); render(); },
   coachMinutes: el => { state.plan.minutes = +el.dataset.m; save(); render(); },
-  coachDay: el => { state.selDay = el.dataset.id; save(); go("home"); },
+  coachDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); go("home"); },
   missSet: el => { state.misses = cleanMisses([...(state.misses || []).filter(m => m.d !== el.dataset.d), { d: el.dataset.d, r: el.dataset.r }]); save(); closeSheet(); render(); },
   missSkip: el => { state.missSkip = el.dataset.d; save(); render(); },
   missToday: () => openSheet(missSheet()),
@@ -6127,6 +6162,13 @@ const A = {
   openTag: el => { tagDay = el.dataset.d || null; go("tag"); },
   tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt);
     if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
+  // Training für einen Tag wählen; entspricht die Wahl dem Ablauf, wird keine Änderung gespeichert
+  tagTrain: el => { const dk = tagDay || dkey(), v = el.dataset.v; if (dk < dkey()) return;
+    if (dk === dkey()) state.selDay = null; // eine Wahl für heute ersetzt „Anderes Training wählen“
+    clearTrainOvr(dk); const auto = plannedOn(dk), autoV = auto ? auto.dayId : "rest";
+    if (v !== autoV) state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), train: v };
+    save(); vTag(); },
+  tagTrainAuto: () => { const dk = tagDay || dkey(); clearTrainOvr(dk); save(); vTag(); },
   tagPick: el => { const n = el.dataset.d; if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   tagStep: el => { const dk = tagDay || dkey(), cur = stepsOn(dk); const v = Math.max(0, Math.min(100000, (cur == null ? (+el.dataset.d > 0 ? 7000 : 0) : cur + +el.dataset.d)));
     state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), steps: v }; save(); vTag(); },
@@ -6435,7 +6477,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { actOn, tagWeekSum, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
