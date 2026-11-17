@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v61)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v61")));
+      ok("Service Worker aktiv (Cache trainingsplan-v62)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v62")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3635,7 +3635,83 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("65. Konsole");
+    section("65. Tagesplan: Cardio (Crosstrainer, Fahrrad-Ergometer, Rudergerät)");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const seed = { plan: PLAN_SMALL, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null },
+        dayPlan: { [dk(0)]: { cardio: [{ t: "cross", i: "m", min: 30 }, { t: "zzz", i: "m", min: 30 }, { t: "bike", i: "v", min: 7.5 }, { t: "row", i: "v", min: 500 }, { t: "row", i: "x", min: 20 }] } } };
+      const { ctx, page } = await open(seed);
+      const r = await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+        const C = T.CARDIO, kc = (t, i, min) => T.cardioKcalOf({ t, i, min }, 80);
+        return { dp: JSON.parse(JSON.stringify(T.state.dayPlan[k])), E: T.dayEnergy(k),
+          met: Object.entries(C).map(([id, c]) => id + ":" + Object.values(c.lv).map(l => l.met + "/" + l.code).join(",")).join(" "),
+          kc: [kc("cross", "m", 30), kc("cross", "v", 20), kc("bike", "m", 20), kc("bike", "v", 20), kc("row", "m", 60), kc("row", "v", 30)] }; });
+      ok("MET-Werte und Codes wie im Compendium 2024", r.met === "cross:5/02048,9/02049 bike:5/01216,6/01220 row:5/02071,7.3/02070", r.met);
+      ok("Verbrauch netto (MET − 1) × kg × Stunden bei 80 kg: 160, 213, 107, 133, 320, 252 kcal", JSON.stringify(r.kc) === "[160,213,107,133,320,252]", JSON.stringify(r.kc));
+      ok("Ungültige Einträge verworfen (unbekanntes Gerät, halbe Minuten, über 300 Min., unbekannte Stufe)", JSON.stringify(r.dp) === '{"cardio":[{"t":"cross","i":"m","min":30}]}', JSON.stringify(r.dp));
+      ok("Tagesverbrauch: 2.759 + 160 kcal Cardio", r.E.cardioKcal === 160 && r.E.cardioMin === 30 && r.E.total === 2919 && r.E.extra === 160, JSON.stringify(r.E));
+      await page.click("#homeTag");
+      const sec = (await page.textContent("#tagCardio")).replace(/\s+/g, " ");
+      ok("Tagesplan: Abschnitt Cardio mit Eintrag und Kalorien, Zeile in der Bilanz", sec.includes("Crosstrainer · 30 Min.") && sec.includes("≈ 160 kcal") && sec.includes("+ Cardio eintragen")
+        && (await page.textContent("#tagBalIn")).replace(/\s+/g, " ").includes("Cardio · 30 Min.+ 160 kcal"), sec);
+      // Hinzufügen
+      await page.click("[data-a=tagCardioOpen]");
+      ok("Sheet: Crosstrainer, mäßig, 20 Min. voreingestellt → ≈ 107 kcal, 5,0 MET mit Quelle",
+        (await page.textContent(".sheet h2")) === "Cardio eintragen" && (await page.textContent("#cardioMinOut")) === "20 Min." && (await page.textContent("#cardioKcal")).includes("≈ 107 kcal")
+        && (await page.textContent("#cardioDesc")) === "Crosstrainer, mäßige Anstrengung: 5,0 MET (Compendium 2024)");
+      await page.click("#cardioType [data-v=bike]");
+      const b1 = await page.textContent("#cardioKcal"); await page.click("#cardioLv [data-v=v]");
+      ok("Fahrrad-Ergometer: 60 Watt ≈ 107 kcal, 90–100 Watt ≈ 133 kcal (6,0 MET)", b1.includes("≈ 107 kcal") && (await page.textContent("#cardioKcal")).includes("≈ 133 kcal")
+        && (await page.textContent("#cardioDesc")).includes("90–100 Watt, mäßige bis hohe Anstrengung: 6,0 MET") && (await page.textContent("#cardioLv")).replace(/\s+/g, "") === "60Watt90–100Watt");
+      await page.click("#cardioType [data-v=row]"); await page.click("[data-a=cardioMin][data-d='5']"); await page.click("[data-a=cardioMin][data-d='5']");
+      ok("Rudergerät anstrengend, 30 Min.: ≈ 252 kcal (7,3 MET)", (await page.textContent("#cardioMinOut")) === "30 Min." && (await page.textContent("#cardioKcal")).includes("≈ 252 kcal") && (await page.textContent("#cardioDesc")).includes("7,3 MET"));
+      await page.click("[data-a=cardioAdd]");
+      let st = await stored(page);
+      ok("Hinzugefügt und gespeichert; Bilanz zählt beide (60 Min., + 412 kcal)", JSON.stringify(st.dayPlan[dk(0)].cardio[1]) === '{"t":"row","i":"v","min":30}'
+        && (await page.textContent("#tagBalIn")).replace(/\s+/g, " ").includes("Cardio · 60 Min.+ 412 kcal") && !(await page.$(".sheet")));
+      // Grenzen der Dauer
+      await page.click("[data-a=tagCardioOpen]"); for (let i = 0; i < 3; i++) await page.click("[data-a=cardioMin][data-d='-5']");
+      ok("Dauer mindestens 5 Min.", (await page.textContent("#cardioMinOut")) === "5 Min." && !!(await page.$("[data-a=cardioMin][data-d='-5'][disabled]")));
+      await page.setViewportSize({ width: 320, height: 640 }); await page.waitForTimeout(350);
+      ok("Cardio-Sheet bei 320 px ohne seitliches Scrollen", await noOverflow(page) && await page.evaluate(() => { const s = document.querySelector(".sheet"); return s.scrollWidth <= s.clientWidth; }));
+      await page.click("[data-a=closeSheet].btn"); await page.setViewportSize({ width: 360, height: 780 });
+      // Wochenliste
+      await page.click("#tagSeg [data-v=woche]");
+      ok("Wochenansicht nennt Cardio", (await page.textContent(`#tagWeekList [data-d="${dk(0)}"]`)).includes("Cardio 60 Min."));
+      await page.click("#tagSeg [data-v=tag]");
+      // Entfernen
+      await page.click("[data-a=tagCardioDel][data-n='0']");
+      st = await stored(page);
+      ok("Entfernen: nur das Rudergerät bleibt", st.dayPlan[dk(0)].cardio.length === 1 && st.dayPlan[dk(0)].cardio[0].t === "row");
+      await page.click("[data-a=tagCardioDel][data-n='0']");
+      ok("Letzten Eintrag entfernen räumt den Tag auf", !(await stored(page)).dayPlan[dk(0)] && !(await page.textContent("#tagBalIn")).includes("Cardio ·"));
+      // Morgen planen
+      await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagCardioOpen]");
+      ok("Morgen: „Cardio planen“", (await page.textContent(".sheet h2")) === "Cardio planen");
+      await page.click("[data-a=cardioAdd]");
+      ok("Für morgen geplant", JSON.stringify((await stored(page)).dayPlan[dk(1)]) === '{"cardio":[{"t":"cross","i":"m","min":20}]}');
+      // Höchstens 6 Einträge
+      await tp(page, () => { const T = window.__tp, x = new Date(Date.now() + 864e5), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+        T.state.dayPlan[k].cardio = Array.from({ length: 6 }, () => ({ t: "bike", i: "m", min: 10 })); });
+      await page.click("[data-a=tagDay][data-d='-1']"); await page.click("[data-a=tagDay][data-d='1']");
+      ok("Sechs Einträge: kein weiterer möglich", (await page.$$("[data-a=tagCardioDel]")).length === 6 && !(await page.$("[data-a=tagCardioOpen]")));
+      // „Mäßig aktiv“: im Faktor enthalten
+      const mod = await tp(page, () => { const T = window.__tp, x = new Date(Date.now() + 864e5), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`;
+        T.state.nutr.pal = 1.85; const e = T.dayEnergy(k); return e; });
+      await page.click("[data-a=tagDay][data-d='-1']"); await page.click("[data-a=tagDay][data-d='1']");
+      ok("„Mäßig aktiv“: Cardio nicht doppelt gezählt, Hinweis nennt Cardio", mod.extra === 0 && mod.total === mod.G.tdee && mod.cardioKcal === 318 && (await page.textContent("#tagBalIn")).includes("Training, Cardio und Schritte sind in deinem Aktivitätsfaktor schon enthalten"), JSON.stringify(mod));
+      await page.click("#tagBal ~ details summary");
+      ok("Rechenweg nennt die Cardio-Werte und die Quelle", await page.evaluate(() => { const d = document.querySelector("details.disc"); return d.textContent.includes("Crosstrainer 5,0 MET") && d.textContent.includes("Rudergerät 5,0 MET") && d.textContent.includes("7,3 MET") && d.textContent.includes("2024 Adult Compendium"); }));
+      await ctx.close();
+      // Ohne Ziele: Einträge möglich, Kalorien fehlen mit Hinweis
+      const o2 = await open({ plan: PLAN_SMALL });
+      await o2.page.click("#homeTag"); await o2.page.click("[data-a=tagCardioOpen]");
+      const hint = await o2.page.textContent("#cardioKcal"); await o2.page.click("[data-a=cardioAdd]");
+      ok("Ohne Ziele: Eintrag ohne Kalorien, Hinweis auf die Ziele", hint.includes("fehlen deine Ziele") && (await o2.page.textContent("#tagCardio")).includes("Crosstrainer · 20 Min.") && !(await o2.page.textContent("#tagCardio")).includes("kcal"));
+      await o2.ctx.close();
+    }
+
+    section("66. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

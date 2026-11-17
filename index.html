@@ -1362,6 +1362,16 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 const STEPS = [1.25, 2.5, 5, 10];
 const SMALL = new Set(["schultern", "bizeps", "trizeps"]);
 /* ---------- Laden, Bereinigen, Speichern ---------- */
+// Cardio im Tagesplan: MET-Werte aus dem Compendium 2024 (Herrmann et al.), Code und Beschreibung dort:
+// 02048 Elliptical trainer, moderate effort · 02049 Elliptical trainer, vigorous effort
+// 01216 Bicycling, stationary, 60 watts, light to moderate effort · 01220 Bicycling, stationary, 90-100 watts, moderate to vigorous
+// 02071 Rowing, stationary ergometer, general, <100 watts, moderate effort · 02070 Rowing, stationary ergometer, general, vigorous effort
+const CARDIO = {
+  cross: { name: "Crosstrainer", lv: { m: { l: "Mäßig", d: "mäßige Anstrengung", met: 5.0, code: "02048" }, v: { l: "Anstrengend", d: "hohe Anstrengung", met: 9.0, code: "02049" } } },
+  bike: { name: "Fahrrad-Ergometer", lv: { m: { l: "60 Watt", d: "60 Watt, leichte bis mäßige Anstrengung", met: 5.0, code: "01216" }, v: { l: "90–100 Watt", d: "90–100 Watt, mäßige bis hohe Anstrengung", met: 6.0, code: "01220" } } },
+  row: { name: "Rudergerät", lv: { m: { l: "Mäßig", d: "unter 100 Watt, mäßige Anstrengung", met: 5.0, code: "02071" }, v: { l: "Anstrengend", d: "hohe Anstrengung", met: 7.3, code: "02070" } } }
+};
+const CARDIO_MAX = 6; // Einträge je Tag (Regel der App)
 function blank() { return { v: 6, plates: null, dayPlan: {}, stepGoal: null, stepLen: null, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
@@ -1487,6 +1497,8 @@ function normalize(raw) {
   if (isObj(raw.dayPlan)) for (const [d, o] of Object.entries(raw.dayPlan)) if (/^\d{4}-\d{2}-\d{2}$/.test(d) && isObj(o)) {
     const e = {}; if (okSteps(o.steps)) e.steps = o.steps; if (okSteps(o.act)) e.act = o.act;
     if (typeof o.train === "string" && o.train && o.train.length <= 40) e.train = o.train;
+    if (Array.isArray(o.cardio)) { const c = o.cardio.filter(isObj).filter(x => CARDIO[x.t] && CARDIO[x.t].lv[x.i] && Number.isInteger(x.min) && x.min >= 5 && x.min <= 300)
+      .slice(0, CARDIO_MAX).map(x => ({ t: x.t, i: x.i, min: x.min })); if (c.length) e.cardio = c; }
     if (Object.keys(e).length) s.dayPlan[d] = e; }
   s.stepGoal = Number.isInteger(raw.stepGoal) && raw.stepGoal >= 0 && raw.stepGoal <= 100000 ? raw.stepGoal : null;
   s.stepLen = Number.isInteger(raw.stepLen) && raw.stepLen >= 30 && raw.stepLen <= 150 ? raw.stepLen : null;
@@ -2873,6 +2885,9 @@ const stepLenCm = () => state.stepLen || (state.nutr && state.nutr.cm ? Math.rou
 // Tempo 1,3 m/s (≈ 4,7 km/h) ist ein Startwert der App.
 // Regel der App: Bei „Wenig aktiv“ (Faktor 1,55) sind etwa 5.000 Schritte im Alltag enthalten (Grenze „sitzender Lebensstil“
 // nach Tudor-Locke & Bassett 2004) – zusätzlich zählen Schritte darüber und das Krafttraining. Bei höherem Faktor ist Bewegung enthalten.
+const cardioOn = dk => (state.dayPlan[dk] && state.dayPlan[dk].cardio) || [];
+// Cardio netto wie beim Krafttraining: (MET − 1) × kg × Stunden
+const cardioKcalOf = (c, kg) => Math.round((CARDIO[c.t].lv[c.i].met - 1) * kg * c.min / 60);
 function dayEnergy(dk) {
   const G = nutrGoals(); if (!G) return null;
   const kg = G.kg, tr = plannedOn(dk), plan = stepsOn(dk), act = actOn(dk), steps = act != null ? act : plan, sl = stepLenCm(), low = state.nutr.pal < 1.7;
@@ -2880,8 +2895,9 @@ function dayEnergy(dk) {
   const v = 1.3, walk = (3.85 + 5.97 * v * v / ((state.nutr.cm || 175) / 100)) * 5 / (60 * v); // kcal je kg und km über dem Ruheumsatz
   const km = steps != null && sl ? steps * sl / 100000 : 0, stepKcal = Math.round(walk * kg * km);
   const extraSteps = low && steps != null && sl ? Math.max(0, steps - 5000) * sl / 100000 : 0, stepExtra = Math.round(walk * kg * extraSteps);
-  const extra = low ? trainKcal + stepExtra : 0, total = G.tdee + extra, intake = Math.round(dayTotals(dk).k);
-  return { G, tr, steps, plan, act, sl, km, trainKcal, stepKcal, stepExtra, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
+  const cardio = cardioOn(dk), cardioKcal = cardio.reduce((a, c) => a + cardioKcalOf(c, kg), 0), cardioMin = cardio.reduce((a, c) => a + c.min, 0);
+  const extra = low ? trainKcal + stepExtra + cardioKcal : 0, total = G.tdee + extra, intake = Math.round(dayTotals(dk).k);
+  return { G, tr, steps, plan, act, sl, km, trainKcal, stepKcal, stepExtra, cardioKcal, cardioMin, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
 }
 const tagMin = () => dkey(new Date(Date.now() - 7 * 864e5));
 const mondayOf = dk => { const d = dateOf(dk); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; };
@@ -2912,12 +2928,27 @@ function tagWeekList(dk) {
     const tr = off ? null : plannedOn(k), E = off ? null : dayEnergy(k), nf = (state.food[k] || []).length, ac = actOn(k), st = ac != null ? ac : stepsOn(k);
     const sub = off ? ["außerhalb des Planbereichs"] : [
       tr && tr.done ? "Training erledigt" : "",
+      cardioOn(k).length ? `Cardio ${cardioOn(k).reduce((a, c) => a + c.min, 0)} Min.` : "",
       st != null ? `${fmtK(st)} Schritte${ac != null ? " gegangen" : ""}` : "",
       nf ? `${fmtK(dayTotals(k).k)} kcal ${k > today ? "geplant" : "gegessen"}` : k > today ? "Essen nicht geplant" : "kein Essen eingetragen",
       E && nf ? `${E.balance <= 0 ? "Defizit" : "Überschuss"}${k === today ? " bisher" : ""} ≈ ${fmtK(Math.abs(E.balance))} kcal` : ""].filter(Boolean);
     const right = tr ? esc(tr.name) : state.sched && !off && k >= today ? "Ruhetag" : "";
     return `<button class="li" data-a="tagOpen" data-d="${k}" ${off ? "disabled" : ""}><div class="grow"><div class="t">${d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${k === today ? " · Heute" : ""}</div><div class="s">${sub.join(" · ")}</div></div>${right ? `<span class="small muted" style="text-align:right">${right}</span>` : ""}<span class="chev">›</span></button>`;
   }).join("");
+}
+let cardioCtx = null;
+function cardioSheet() {
+  const c = cardioCtx, dk = tagDay || dkey(), G = nutrGoals(), L = CARDIO[c.t].lv[c.i];
+  return `${sheetHead(dk > dkey() ? "Cardio planen" : "Cardio eintragen", "Abbrechen")}
+    <div class="chips wrap" id="cardioType" role="group" aria-label="Gerät">${Object.entries(CARDIO).map(([k, x]) => `<button class="chip ${c.t === k ? "on" : ""}" data-a="cardioType" data-v="${k}" aria-pressed="${c.t === k}">${x.name}</button>`).join("")}</div>
+    <div class="cap">Anstrengung</div>
+    <div class="seg" id="cardioLv">${Object.entries(CARDIO[c.t].lv).map(([k, x]) => `<button data-a="cardioLv" data-v="${k}" class="${c.i === k ? "on" : ""}" aria-pressed="${c.i === k}">${x.l}</button>`).join("")}</div>
+    <p class="small muted" id="cardioDesc" style="margin:0">${CARDIO[c.t].name}, ${L.d}: ${String(L.met.toFixed(1)).replace(".", ",")} MET (Compendium 2024)</p>
+    <div class="cap">Dauer</div>
+    <div class="mini-step" style="grid-template-columns:52px 1fr 52px"><button data-a="cardioMin" data-d="-5" aria-label="5 Minuten weniger" ${c.min <= 5 ? "disabled" : ""}>−</button>
+      <output id="cardioMinOut">${c.min} Min.</output><button data-a="cardioMin" data-d="5" aria-label="5 Minuten mehr" ${c.min >= 300 ? "disabled" : ""}>+</button></div>
+    <p class="small muted" id="cardioKcal" style="margin:0;text-align:center">${G ? `≈ ${fmtK(cardioKcalOf(c, G.kg))} kcal über dem Ruheumsatz` : "Für die Kalorien fehlen deine Ziele (Essen → Ziele)."}</p>
+    <button class="btn primary block" data-a="cardioAdd">Hinzufügen</button>`;
 }
 function tagStepInfo(dk) {
   const E = dayEnergy(dk), plan = stepsOn(dk), act = actOn(dk), s = act != null ? act : plan, sl = stepLenCm();
@@ -2931,8 +2962,8 @@ function tagBalInner(dk) {
   const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b>${v}</b></div>`;
   return `<div class="note" style="gap:6px">
       ${row("Grundumsatz × Aktivität", `Faktor ${String(state.nutr.pal).replace(".", ",")}`, `${fmtK(E.G.tdee)} kcal`)}
-      ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", E.act != null ? "gegangen" : "Ziel", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
-        : `<p class="small faint" style="margin:0">Training und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
+      ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.cardioKcal ? row("Cardio", `${E.cardioMin} Min.`, `+ ${fmtK(E.cardioKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", E.act != null ? "gegangen" : "Ziel", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
+        : `<p class="small faint" style="margin:0">Training, Cardio und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
       ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
       ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
       <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
@@ -2979,6 +3010,12 @@ function vTag() {
         return `<div class="chips wrap" id="tagTrainPick" role="group" aria-label="Training an diesem Tag">${days.map(x => chip(x.id, x.name)).join("")}${chip("rest", "Ruhetag")}</div>
           ${trainOvr(dk) ? `<button class="link small" data-a="tagTrainAuto" style="justify-self:start">Zurück zum Ablauf</button>` : ""}`; })()}
     </section>
+    <section class="section" id="tagCardio">${(() => { const L = cardioOn(dk);
+      return `<div class="section-head"><h2>Cardio</h2><span class="small muted">${L.length && E ? `≈ ${fmtK(E.cardioKcal)} kcal` : ""}</span></div>
+      ${L.length ? `<div class="group">${L.map((c, i) => `<div class="li"><div class="grow"><div class="t">${CARDIO[c.t].name} · ${c.min} Min.</div><div class="s">${CARDIO[c.t].lv[c.i].d}${E ? ` · ≈ ${fmtK(cardioKcalOf(c, E.G.kg))} kcal` : ""}</div></div>
+        <button class="icon-btn" data-a="tagCardioDel" data-n="${i}" style="font-size:20px" aria-label="${CARDIO[c.t].name}, ${c.min} Minuten entfernen">×</button></div>`).join("")}</div>` : ""}
+      ${L.length < CARDIO_MAX ? `<button class="btn sm" data-a="tagCardioOpen" style="justify-self:start">+ Cardio ${dk > today ? "planen" : "eintragen"}</button>` : ""}`; })()}
+    </section>
     <section class="section" id="tagSteps"><h2>Schritte</h2>
       <div class="cap" style="text-align:center">Ziel</div>
       <div class="mini-step" style="grid-template-columns:52px 1fr 52px"><button data-a="tagStep" data-d="-1000" aria-label="1.000 Schritte weniger">−</button>
@@ -2996,6 +3033,7 @@ function vTag() {
       <ul class="glist small">
         <li>Grundbedarf: Grundumsatz nach Mifflin-St Jeor × Aktivitätsfaktor aus deinen Zielen.</li>
         <li>Krafttraining: 3,5 MET („mehrere Übungen, 8–15 Wiederholungen“, Compendium 2024). Gezählt wird der Anteil über dem Ruheumsatz: 2,5 × Körpergewicht × Stunden.</li>
+        <li>Cardio (Compendium 2024): Crosstrainer 5,0 MET bei mäßiger und 9,0 MET bei hoher Anstrengung; Fahrrad-Ergometer 5,0 MET bei 60 Watt und 6,0 MET bei 90–100 Watt; Rudergerät 5,0 MET bei mäßiger Anstrengung unter 100 Watt und 7,3 MET bei hoher Anstrengung. Gezählt wird wie beim Krafttraining der Anteil über dem Ruheumsatz. Zählt dein Handy dabei Schritte mit, zieh sie bei „Gegangen“ ab – sonst zählen sie doppelt.</li>
         <li>Gehen in der Ebene: Verbrauch über dem Ruheumsatz nach Ludlow und Weyand (2016) aus Größe, Gewicht und Tempo – genauer als ältere Gleichungen, die meist zu niedrig lagen. Tempo 1,3 m/s (≈ 4,7 km/h) ist ein Startwert der App; bergauf ist es mehr.</li>
         <li>Schritte: Für heute und vergangene Tage zählen die eingetragenen gegangenen Schritte, sonst das Ziel.</li>
         <li>Schrittlänge ${sl ? `${sl} cm` : "–"}${state.stepLen ? " (selbst gemessen)" : " – Startwert der App aus deiner Körpergröße (0,415 × Größe, Frauen 0,413). Genauer: 10 Schritte gehen, Strecke messen, durch 10 teilen."}</li>
@@ -6237,6 +6275,16 @@ const A = {
     clearTrainOvr(dk); const auto = plannedOn(dk), autoV = auto ? auto.dayId : "rest";
     if (v !== autoV) state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), train: v };
     save(); vTag(); },
+  tagCardioOpen: () => { cardioCtx = { t: "cross", i: "m", min: 20 }; openSheet(cardioSheet()); },
+  cardioType: el => { if (!cardioCtx || !CARDIO[el.dataset.v]) return; cardioCtx.t = el.dataset.v; sheetKeep(cardioSheet()); },
+  cardioLv: el => { if (!cardioCtx || !CARDIO[cardioCtx.t].lv[el.dataset.v]) return; cardioCtx.i = el.dataset.v; sheetKeep(cardioSheet()); },
+  cardioMin: el => { if (!cardioCtx) return; cardioCtx.min = Math.max(5, Math.min(300, cardioCtx.min + +el.dataset.d)); sheetKeep(cardioSheet()); },
+  cardioAdd: () => { const c = cardioCtx, dk = tagDay || dkey(); if (!c || cardioOn(dk).length >= CARDIO_MAX) return;
+    const e = { ...(state.dayPlan[dk] || {}) }; e.cardio = cardioOn(dk).concat([{ t: c.t, i: c.i, min: c.min }]); state.dayPlan[dk] = e;
+    cardioCtx = null; save(); closeSheet(); vTag(); },
+  tagCardioDel: el => { const dk = tagDay || dkey(), e = state.dayPlan[dk]; if (!e || !e.cardio) return;
+    e.cardio = e.cardio.filter((_, i) => i !== +el.dataset.n); if (!e.cardio.length) delete e.cardio; if (!Object.keys(e).length) delete state.dayPlan[dk];
+    save(); vTag(); },
   tagTrainAuto: () => { const dk = tagDay || dkey(); clearTrainOvr(dk); save(); vTag(); },
   tagPick: el => { const n = el.dataset.d; if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   tagStep: el => { const dk = tagDay || dkey(), cur = stepsOn(dk); const v = Math.max(0, Math.min(100000, (cur == null ? (+el.dataset.d > 0 ? 7000 : 0) : cur + +el.dataset.d)));
@@ -6546,7 +6594,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
