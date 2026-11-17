@@ -535,6 +535,11 @@ const LIB = [
   ["lf-tripress","Trizepsdrücken","trizeps",["brust","schultern"],"stack","Triceps Press","lf","hs-dip"],
   ["lf-triext","Armstrecker","trizeps",[],"stack","Triceps Extension","lf","hs-triext"],
   ["lf-pushdown","Trizepsdrücken am Kabel","trizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-ohtri","Trizepsstrecken über Kopf","trizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablecurl","Armbeuger am Kabel","bizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-facepull","Zug zum Gesicht","schultern",["ruecken"],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablelat","Seitheben am Kabel","schultern",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablefly","Butterfly am Kabel","brust",["schultern"],"stack","Dual Adjustable Pulley","lf"],
   ["lf-legpress","Beinpresse","beinev",["po"],"stack","Leg Press","lf","hs-legpress"],
   ["lf-legext","Beinstrecker","beinev",[],"stack","Leg Extension","lf","hs-legext"],
   ["lf-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl","lf","hs-seatcurl"],
@@ -581,7 +586,7 @@ const LIB_PATTERN = {
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
   "hs-beltsquat": "squat", "hs-smith": "squat", "hs-legcurl": "knee_flex", "hs-abductor": "abd", "hs-adductor": "add",
   "lf-chest": "push_h", "lf-shoulder": "push_v", "lf-pulldown": "pull_v", "lf-row": "pull_h", "lf-fly": "fly", "lf-reardelt": "rear",
-  "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-legpress": "squat",
+  "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-ohtri": "tri", "lf-cablecurl": "bi", "lf-facepull": "rear", "lf-cablelat": "lateral", "lf-cablefly": "fly", "lf-legpress": "squat",
   "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core",
   "lf-adductor": "add", "lf-smith": "squat"
 };
@@ -1243,6 +1248,57 @@ const GUIDE = {
     tips: ["Mit Seil: unten die Enden leicht auseinanderziehen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."],
     src: ["tri2023"]
   },
+  "lf-ohtri": {
+    main: [M.tri], sup: [],
+    why: "Trizepsstrecken am Kabelzug mit den Oberarmen neben dem Kopf. In einer Studie (12 Wochen, 21 Untrainierte) wuchs der Trizeps so stärker als mit dem Arm am Körper: +20 % statt +14 %, der lange Kopf +29 % statt +20 %. Die Studie war klein.",
+    setup: ["Rolle etwa auf Kopfhöhe stellen und ein Seil einhängen.", "Mit dem Rücken zum Zug einen Schritt nach vorn gehen, ein Fuß vorn, Oberkörper leicht vorgeneigt."],
+    steps: ["Seil hinter dem Kopf halten, die Ellbogen zeigen nach vorn-oben.", "Unterarme nach vorn-oben strecken, bis die Arme fast gerade sind.", "Langsam zurück, bis die Hände wieder hinter dem Kopf sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogen klappen nach außen", "Ellbogen schulterbreit halten und nach vorn zeigen lassen."], ["Oberarme pendeln mit", "Die Oberarme bleiben neben dem Kopf, nur die Unterarme bewegen sich."], ["Hohlkreuz", "Bauch anspannen und den Oberkörper leicht vorneigen."]],
+    safety: ["Das Gewicht erst kontrolliert zurückführen, dann das Seil loslassen."],
+    tips: ["Den gebeugten Teil der Bewegung ganz mitnehmen – dort ist der lange Kopf des Trizeps gedehnt.", "Steht das Trizepsdrücken am Körper schon im Plan, nimm beide an verschiedenen Tagen."],
+    src: ["tri2023"]
+  },
+  "lf-cablecurl": {
+    main: [M.bic, M.brach], sup: [M.brachrad],
+    why: "Armbeugen im Stehen am Kabelzug, die Rolle steht ganz unten. Ohne Polster hältst du die Oberarme selbst ruhig – dafür passt die Übung an jeden Kabelzug.",
+    setup: ["Rolle ganz nach unten stellen und eine kurze Stange oder einen Einzelgriff einhängen.", "Aufrecht vor den Zug stellen, Stange im Untergriff fassen."],
+    steps: ["Arme lang, Ellbogen seitlich am Rumpf, Handflächen nach vorn.", "Unterarme nach oben beugen, bis die Hände auf Schulterhöhe sind.", "Langsam ablassen, bis die Arme wieder fast gestreckt sind."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Oberkörper schwingt mit", "Aufrecht stehen bleiben; hilft nur Schwung, ist das Gewicht zu hoch."], ["Ellbogen rutschen nach vorn", "Ellbogen an den Seiten lassen, nur der Unterarm bewegt sich."], ["Unten nicht gestreckt", "Jede Wiederholung mit fast gestreckten Armen beginnen."]],
+    safety: ["Den Griff am Satzende kontrolliert ablegen, nicht fallen lassen."],
+    tips: ["Mit dem Einzelgriff lässt sich jede Seite für sich trainieren.", "Handgelenke gerade halten, nicht einrollen."]
+  },
+  "lf-facepull": {
+    main: [M.dPost], sup: [M.trapM, M.rhomb, M.rotAuss],
+    why: "Mit dem Seil am Kabelzug zum Gesicht ziehen: trainiert die hintere Schulter und die Muskeln zwischen den Schulterblättern. Am Ende drehen die Oberarme nach außen, dabei arbeiten auch die Außenrotatoren der Schulter.",
+    setup: ["Rolle auf Kopfhöhe oder etwas darüber stellen, Seil einhängen.", "Seil mit beiden Händen fassen und zurückgehen, bis die Arme gestreckt sind und das Gewicht angehoben ist."],
+    steps: ["Aufrecht stehen, Arme nach vorn gestreckt.", "Seil Richtung Stirn ziehen: Die Ellbogen gehen hoch und nach außen, die Seil-Enden auseinander.", "Kurz halten, dann die Arme langsam wieder strecken."],
+    breath: BREATH_PULL,
+    mistakes: [["Zu viel Gewicht", "So leicht wählen, dass du das Ende eine Sekunde halten kannst."], ["Ellbogen hängen tief", "Ellbogen mindestens auf Schulterhöhe führen."], ["Oberkörper lehnt nach hinten", "Fest stehen und den Rumpf ruhig halten – nur die Arme ziehen."]],
+    safety: ["Erst sicher stehen, dann ziehen: Das Seil zieht dich sonst nach vorn."],
+    tips: ["Ein Fuß nach vorn gibt mehr Halt.", "Lieber sauber mit wenig Gewicht als mit Schwung."]
+  },
+  "lf-cablelat": {
+    main: [M.dLat], sup: [M.supra, M.trapU],
+    why: "Seitheben mit einem Arm am Kabelzug. Die Rolle steht unten, das Seil läuft vor dem Körper zur anderen Seite. Jede Seite arbeitet für sich.",
+    setup: ["Rolle ganz nach unten stellen, Einzelgriff einhängen.", "Seitlich zum Zug stellen und den Griff mit der Hand fassen, die weiter vom Zug entfernt ist."],
+    steps: ["Arm hängt vor dem Körper, Ellbogen leicht gebeugt.", "Arm seitlich anheben, bis die Hand etwa auf Schulterhöhe ist.", "Langsam ablassen; nach dem Satz die Seite wechseln."],
+    breath: "Beim Heben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Schulter zieht zum Ohr", "Schulter tief lassen, lieber weniger Gewicht."], ["Rumpf neigt sich zur Seite", "Mit der freien Hand am Rahmen festhalten und aufrecht bleiben."], ["Arm schwingt hoch", "Ohne Schwung heben und oben kurz halten."]],
+    safety: ["Zwickt es in der Schulter, nur so hoch heben, wie es schmerzfrei geht."],
+    tips: ["Beide Seiten mit gleich vielen Wiederholungen trainieren, die schwächere zuerst.", "Oft reicht die kleinste Gewichtsstufe – der Hebel ist lang."]
+  },
+  "lf-cablefly": {
+    main: [M.pec], sup: [M.dAnt],
+    why: "Butterfly im Stehen zwischen zwei Rollen: Die Arme führen in einem Bogen vor der Brust zusammen. Die Höhe der Rollen wählst du selbst, der Rumpf hält die Haltung ohne Lehne.",
+    setup: ["Beide Rollen auf Schulterhöhe stellen und je einen Einzelgriff einhängen.", "In die Mitte stellen, beide Griffe fassen und einen Schritt nach vorn gehen, ein Fuß vorn."],
+    steps: ["Arme seitlich geöffnet, Ellbogen leicht gebeugt, Brust aufgerichtet.", "Hände in einem weiten Bogen vor der Brust zusammenführen.", "Langsam öffnen, bis du die Dehnung in der Brust spürst."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Arme beugen und strecken sich", "Der Winkel im Ellbogen bleibt gleich – sonst wird daraus ein Drücken."], ["Schultern rollen nach vorn", "Brust raus, Schulterblätter hinten unten lassen."], ["Zu weit geöffnet", "Nur so weit öffnen, wie es in der Schulter schmerzfrei bleibt."]],
+    safety: ["Die Griffe nacheinander ablegen, nicht beide gleichzeitig loslassen."],
+    tips: ["Rollen höher gestellt führen die Hände nach unten, tiefer gestellt nach oben – nimm die Bahn, die du in der Brust am besten spürst.", "In der Schrittstellung das vordere Bein von Satz zu Satz wechseln."]
+  },
   "lf-legpress": {
     main: [M.quad, M.glut], sup: [M.add],
     why: "Beinpresse mit Steckgewicht. Rücken und Becken sind gestützt, der Rumpf muss nichts balancieren. Bei der neueren Arc Leg Press verläuft die Bahn in einem Bogen.",
@@ -1382,6 +1438,11 @@ const TIPS = {
   "lf-tripress":["Rücken an der schrägen Lehne","Bis fast gestreckt nach unten drücken","Hoch nur bis etwa rechtwinklig"],
   "lf-triext":["Ellbogen in Linie mit der Drehachse","Unterarme nach vorn-unten strecken","Oberarme bleiben liegen"],
   "lf-pushdown":["Rolle oben, Ellbogen am Körper","Nach unten strecken","Zurück bis Unterarme waagerecht"],
+  "lf-ohtri":["Seil hinter den Kopf, Ellbogen nach vorn-oben","Arme nach vorn-oben strecken","Langsam zurück hinter den Kopf"],
+  "lf-cablecurl":["Rolle unten, Ellbogen am Rumpf","Unterarme hochbeugen bis Schulterhöhe","Ablassen, bis die Arme fast gestreckt sind"],
+  "lf-facepull":["Rolle auf Kopfhöhe, Seil mit beiden Händen","Zur Stirn ziehen, Ellbogen hoch und außen","Kurz halten, Arme langsam strecken"],
+  "lf-cablelat":["Rolle unten, seitlich zum Zug, äußere Hand greift","Arm seitlich bis Schulterhöhe heben","Ohne Schwung ablassen"],
+  "lf-cablefly":["Rollen auf Schulterhöhe, Schritt nach vorn","Hände im Bogen vor der Brust zusammen","Öffnen bis zur Dehnung in der Brust"],
   "lf-legpress":["Knie zu Beginn etwa rechtwinklig","Über die ganze Sohle drücken","Oben nicht durchstrecken"],
   "lf-legext":["Polster knapp oberhalb des Sprunggelenks","Fast gerade strecken","Langsam zurück"],
   "lf-seatcurl":["Kniegelenk neben dem Drehpunkt","Fersen unter den Sitz ziehen","Gleichmäßig strecken"],
@@ -1638,7 +1699,7 @@ function refreshPlates() { const s = S(), el = byId("platesTxt"); if (!s || !el)
 const UNIT_SHORT = { s: "pro Seite", t: "insgesamt", b: "am Block" };
 const unitTxt = e => UNIT[unitOf(e)];
 // Gewichtsart: Scheiben an den Seiten (pro Seite oder insgesamt eingetragen) oder ein eingestelltes Gewicht am Block (Steckgewicht, bei Seilzug über ein Seil)
-const CABLE = new Set(["lf-pushdown", "hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"]);
+const CABLE = new Set(["lf-pushdown", "lf-ohtri", "lf-cablecurl", "lf-facepull", "lf-cablelat", "lf-cablefly", "hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"]);
 const loadShort = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug" : "Steckgewicht") : e.load === "side" ? "Scheiben je Seite" : "Scheiben";
 const loadTxt = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug, Steckgewicht" : "Steckgewicht") : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
@@ -2250,6 +2311,11 @@ const TRICK_X = {
   "lf-curl": [["Handflächen nach oben", "Handflächen die ganze Zeit nach oben gedreht lassen", "Der Bizeps dreht den Unterarm auch nach außen. Mit nach oben gedrehten Handflächen arbeitet er voll mit; kippen die Hände nach innen, übernimmt der Oberarmspeichenmuskel mehr."]],
   "lf-tripress": [["Griffart beibehalten", "Druck- oder Dip-Griff: einen wählen und dabei bleiben", "Beide trainieren vor allem den Trizeps. Wechselst du, sind die Gewichte nicht mehr vergleichbar – die App erkennt deinen Fortschritt dann schlechter."]],
   "lf-triext": [["Handgelenke neutral", "Handgelenke gerade halten, nicht abknicken", "Knicken die Handgelenke ab, wird das Handgelenk belastet. Gerade gehalten geht die Kraft direkt in den Griff."]],
+  "lf-ohtri": [["Gewicht neu finden", "Leichter starten als beim Trizepsdrücken am Körper", "Über Kopf stehst du weniger stabil als mit den Armen am Körper. Finde dein Gewicht für diese Übung neu, statt es zu übernehmen."]],
+  "lf-cablecurl": [["Abstand zum Zug", "So stehen, dass das Seil unten gespannt bleibt", "Stehst du zu nah, setzt das Gewicht unten auf und der Zug ist weg. Ein kleiner Schritt zurück hält das Seil über den ganzen Weg gespannt."]],
+  "lf-facepull": [["Daumen nach hinten", "Am Ende zeigen die Daumen hinter dich", "Zieh so, als wolltest du mit den Daumen hinter dich zeigen. Dann drehen die Oberarme am Ende von selbst nach außen."]],
+  "lf-cablelat": [["Ein Wert für beide Seiten", "Links und rechts dasselbe Gewicht eintragen", "Die App speichert einen Wert je Satz. Nimm für beide Seiten dasselbe Gewicht und trag die Wiederholungen der schwächeren Seite ein."]],
+  "lf-cablefly": [["Baum umarmen", "Stell dir vor, du umarmst einen dicken Baum", "Das Bild hält die Ellbogen leicht gebeugt und die Hände auf einem Bogen."]],
   "lf-pushdown": [["Übersetzung beachten", "Die Zahl am Block ist oft nicht das Gewicht am Griff", "Viele Kabelzüge sind übersetzt, bei Life Fitness je nach Modell 2:1 oder 4:1. Am Griff kommt dann nur die Hälfte bzw. ein Viertel an. Gewichte deshalb nur am selben Zug vergleichen."]],
   "lf-legpress": [["Im Sitzen einstellen", "Sitzschlitten im Sitzen verstellen und den Kniewinkel prüfen", "An der Arc Leg Press lässt sich der Sitzschlitten im Sitzen verstellen. So prüfst du den Kniewinkel in der Haltung, in der du gleich drückst."]],
   "lf-legext": [["Gesäß an die Lehne", "Gesäß ganz nach hinten setzen", "Rutscht das Gesäß nach vorn, liegt das Knie nicht mehr am Drehpunkt. Dann rutscht das Polster am Schienbein entlang."]],
@@ -2276,7 +2342,9 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "lf-chest": "Arme laufen nach vorn zusammen", "lf-shoulder": "Drücken über Kopf, zwei Griffpaare", "lf-pulldown": "Zwei getrennte Zugarme statt Stange",
   "lf-row": "Verstellbares Brustpolster, getrennte Arme", "lf-fly": "Brust isoliert, fünf Startpositionen", "lf-reardelt": "Am Butterfly-Kombigerät, Brust zum Polster",
   "lf-lateral": "Seitliche Schulter, Arme getrennt", "lf-curl": "Bizeps am Armpolster, Griffe drehen mit", "lf-tripress": "Trizeps mit Dip- oder Druckgriffen",
-  "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
+  "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-ohtri": "Am Kabelzug, Oberarme neben dem Kopf",
+  "lf-cablecurl": "Am Kabelzug von unten, im Stehen", "lf-facepull": "Seil zum Gesicht, hintere Schulter und oberer Rücken", "lf-cablelat": "Einarmig am Kabelzug, Rolle unten",
+  "lf-cablefly": "Im Stehen zwischen zwei Rollen", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
   "lf-legext": "Quadrizeps isoliert, Startwinkel verstellbar", "lf-seatcurl": "Griffe am Oberschenkelpolster", "lf-legcurl": "Bank an der Hüfte abgewinkelt",
   "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen",
   "lf-adductor": "Adduktoren, Startposition in 10°-Schritten", "lf-smith": "Multipresse mit ausgeglichener Stange" };
@@ -2284,7 +2352,9 @@ const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pat
 const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
 // Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
 const ALIAS = { "hs-lat": "Latziehen, Lat Pulldown, Kabelzug", "hs-lat-wide": "Latziehen breit, Wide Grip, weiter Griff, Kabelzug", "hs-lat-close": "Latziehen eng, V-Griff, Parallelgriff, neutraler Griff, Close Grip, Kabelzug",
-  "hs-lat-under": "Latziehen Untergriff, Kammgriff, supiniert, Reverse Grip, Kabelzug", "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
+  "hs-lat-under": "Latziehen Untergriff, Kammgriff, supiniert, Reverse Grip, Kabelzug", "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-ohtri": "Overhead Triceps Extension, Überkopf, Trizeps über Kopf, Cable Crossover, Kabelzug",
+  "lf-cablecurl": "Cable Curl, Bizeps am Kabel, Bizepscurl, Cable Crossover, Kabelzug", "lf-facepull": "Face Pull, Face Pulls, Seil, Cable Crossover, Kabelzug",
+  "lf-cablelat": "Cable Lateral Raise, seitliches Heben, Cable Crossover, Kabelzug", "lf-cablefly": "Cable Fly, Cable Crossover, Fliegende, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
   "hs-hipthrust": "Hip Thrust", "hs-beltsquat": "Hüftgurt, Gürtel", "hs-smith": "Multipresse, Kniebeuge", "lf-smith": "Multipresse, Smith Machine", "hs-legcurl": "Prone Leg Curl, Lying Leg Curl",
   "hs-abductor": "Hip Abductor, Abduktion", "hs-adductor": "Hip Adductor, Adduktion, Oberschenkel innen", "lf-adductor": "Hip Adductor, Adduktion, Oberschenkel innen" };
 const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
@@ -2349,9 +2419,15 @@ const MOTION = {
   "hs-curl": { A: Object.assign({}, SEATED, { t: -88, ua: 46, fa: 52 }), B: { fa: -112 }, hl: ["ua"], gear: ["seat", "armpad", "handle"] },
   "hs-triext": { A: Object.assign({}, SEATED, { t: -90, ua: 40, fa: -118 }), B: { fa: 42 }, hl: ["ua"], gear: ["seat", "back", "armpad", "handle"] },
   "lf-pushdown": { anchor: "ank", at: [74, 108], A: { t: -86, th: 92, sh: 88, ft: 0, ua: 97, fa: -14 }, B: { fa: 91 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [96, 6] },
+  // Kabelzug im Stehen: Rolle hinter dem Kopf (über Kopf strecken), unten vorn (Armbeugen), vorn auf Kopfhöhe (Zug zum Gesicht)
+  "lf-ohtri": { anchor: "ank", at: [78, 108], A: { t: -79, th: 95, sh: 86, ft: 0, ua: -68, fa: 150 }, B: { fa: -62 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [22, -34] },
+  "lf-cablecurl": { anchor: "ank", at: [64, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: 94, fa: 80 }, B: { fa: -64 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [118, 100] },
+  "lf-facepull": { anchor: "ank", at: [56, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: -6, fa: -4 }, B: { ua: 166, fa: -22 }, hl: ["sho"], gear: ["floor", "cable", "handle"], cable: [134, -28] },
   // Schultern: Vorder- und Draufsicht
   "hs-lateral": { v: "front", A: { ua: 98, fa: 94 }, B: { ua: 2, fa: 4 }, hl: ["sho"] },
   "hs-fly": { v: "top", A: { ua: 10, fa: -20 }, B: { ua: -95, fa: -125 }, hl: ["chest"] },
+  "lf-cablefly": { v: "top", cables: true, A: { ua: 14, fa: -4 }, B: { ua: -84, fa: -124 }, hl: ["chest"] },
+  "lf-cablelat": { v: "front", one: true, A: { ua: 100, fa: 112 }, B: { ua: 6, fa: 10 }, hl: ["sho"] },
   "hs-reardelt": { v: "top", A: { ua: -95, fa: -125 }, B: { ua: 8, fa: 2 }, hl: ["sho"], pad: true },
   "lf-abductor": { v: "top", legs: true, A: { th: -86 }, B: { th: -60 }, hl: ["hip"] },
   "hs-adductor": { v: "top", legs: true, inner: true, A: { th: -56 }, B: { th: -86 }, hl: ["th"] },
@@ -2689,7 +2765,8 @@ function mPlateRoll(c, r = 5) { return `<circle cx="${mF(c[0])}" cy="${mF(c[1])}
 // ---------- Draufsicht: Butterfly, hintere Schulter, Abduktoren, Adduktoren (vorn = oben) ----------
 function motTop(sp, P, R, act) {
   const c = [80, sp.legs ? 52 : 70], s = 15, out = [], mir = a => 180 - a, role = k => R[k] || 0;
-  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 8}" rx="40" ry="5" fill="${MGL}" fill-opacity=".15"/>`, mLimb([c[0] - 22, c[1] + 10], [c[0] + 22, c[1] + 10], 8, 8, MG));
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 8}" rx="40" ry="5" fill="${MGL}" fill-opacity=".15"/>`);
+  if (!sp.cables) out.push(mLimb([c[0] - 22, c[1] + 10], [c[0] + 22, c[1] + 10], 8, 8, MG));
   if (sp.pad) out.push(mLimb([c[0] - 12, c[1] - 17.5], [c[0] + 12, c[1] - 17.5], 7, 7, MG));
   if (sp.legs) {
     const hR = [c[0] + 8, c[1] + 2], hL = [c[0] - 8, c[1] + 2];
@@ -2706,7 +2783,9 @@ function motTop(sp, P, R, act) {
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]];
   for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 22));
-    out.push(mLimb(mSh(sp0, [0, 1], 4), h, 3.6, 3, MG), mLimb(sp0, e, 8, 6.2, MB), mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.6, MGL));
+    if (sp.cables) { const pul = [c[0] + (sp0 === sR ? 70 : -70), c[1] + 16]; out.push(mLine(pul, h, 1.4, MGL), mDot(pul, 4.2, MGL)); }
+    else out.push(mLimb(mSh(sp0, [0, 1], 4), h, 3.6, 3, MG));
+    out.push(mLimb(sp0, e, 8, 6.2, MB), mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.6, MGL));
   }
   out.push(mLimb(sL, sR, 13, 13, MB));
   for (const sx of [-1, 1]) {
@@ -2720,15 +2799,18 @@ function motTop(sp, P, R, act) {
 function motFront(sp, P, R, act) {
   const c = [80, 40], s = 14, out = [], mir = a => 180 - a, role = k => R[k] || 0;
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]], hR = [c[0] + 8, c[1] + 42], hL = [c[0] - 8, c[1] + 42];
-  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 96}" rx="34" ry="3" fill="${MGL}" fill-opacity=".15"/>`, mLimb([c[0] - 18, c[1] + 50], [c[0] + 18, c[1] + 50], 8, 8, MG));
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 96}" rx="34" ry="3" fill="${MGL}" fill-opacity=".15"/>`);
+  if (!sp.one) out.push(mLimb([c[0] - 18, c[1] + 50], [c[0] + 18, c[1] + 50], 8, 8, MG));
   for (const [h, dx] of [[hR, 1], [hL, -1]]) out.push(mLimb(h, [h[0] + 3 * dx, h[1] + 16], 11, 9, MB2), mLimb([h[0] + 3 * dx, h[1] + 16], [h[0] + 4 * dx, h[1] + 50], 8, 5.5, MB2));
   out.push(`<path d="M${sL[0] - 2} ${sL[1]} Q${c[0]} ${c[1] - 5} ${sR[0] + 2} ${sR[1]} L${hR[0] + 1} ${hR[1]} Q${c[0]} ${hR[1] + 3} ${hL[0] - 1} ${hL[1]} Z" fill="${MB}" stroke="${MB}" stroke-width="5" stroke-linejoin="round"/>`,
     `<path d="M${c[0] + 1} ${c[1] + 2} Q${c[0] + 12} ${c[1] + 4} ${hR[0]} ${hR[1] - 2} L${c[0] + 1} ${hR[1]} Z" fill="#000" fill-opacity=".08"/>`);
   out.push(mLimb([c[0], c[1] - 2], [c[0], c[1] - 12], 5.5, 5, MB));
-  for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
+  for (const [sp0, ua, fa, work] of [[sR, P.ua, P.fa, true], sp.one ? [sL, 84, 88, false] : [sL, mir(P.ua), mir(P.fa), true]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 20)), u = mUnit(sp0, e);
-    out.push(mLimb(sp0, e, 8, 6.2, MB), mMus(mBellyD(mSh(sp0, u, -3), e, mRot(u, ua > 90 ? 1 : -1), 0, .45, 5, 4, 1.4 + 1.2 * act * (role("delt") === 2)), role("delt"), act, MB),
-      mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.2, MB), mPlateRoll(mSh(e, mRot(u, ua > 90 ? -1 : 1), 0), 4.8));
+    if (sp.one && work) { const pul = [c[0] - 58, c[1] + 70]; out.push(mLine(pul, h, 1.4, MGL), mDot(pul, 4.2, MGL)); }
+    out.push(mLimb(sp0, e, 8, 6.2, MB), mMus(mBellyD(mSh(sp0, u, -3), e, mRot(u, ua > 90 ? 1 : -1), 0, .45, 5, 4, 1.4 + 1.2 * act * (work && role("delt") === 2)), work ? role("delt") : 0, act, MB),
+      mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.2, MB));
+    if (!sp.one) out.push(mPlateRoll(mSh(e, mRot(u, ua > 90 ? -1 : 1), 0), 4.8));
   }
   out.push(mDot([c[0], c[1] - 14], 7.6, MB));
   return out.join("");
@@ -6832,7 +6914,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { motionSvg, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
