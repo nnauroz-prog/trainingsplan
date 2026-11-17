@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v60)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v60")));
+      ok("Service Worker aktiv (Cache trainingsplan-v61)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v61")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3593,7 +3593,49 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("64. Konsole");
+    section("64. Essen: Tag auf andere Tage kopieren");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const e = (id, m, n, g) => ({ id, m, n, src: "usda:1", g, per: { k: 100, p: 10, c: 10, f: 2 } });
+      const { ctx, page } = await open({ plan: PLAN_SMALL, nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null }, weights: [{ d: dk(0), kg: 80 }],
+        food: { [dk(0)]: [e("a", "f", "Haferflocken", 200), e("b", "m", "Reis", 300)], [dk(2)]: [e("c", "a", "Brot", 100)] } });
+      await page.click("[data-a=tab][data-v=food]");
+      await page.click("#foodCopy");
+      const chips = await page.$$eval("#copyDays [data-a=copyTgt]", b => b.map(x => ({ d: x.dataset.d, t: x.textContent })));
+      ok("Kopieren: 14 Zieltage (bis 14 Tage voraus, ohne den Tag selbst), vorhandene Einträge angezeigt",
+        chips.length === 14 && !chips.some(c => c.d === dk(0)) && chips.find(c => c.d === dk(2)).t.includes("· 1") && (await page.textContent(".sheet")).includes("2 Einträge · 500 kcal von heute"), JSON.stringify(chips.slice(0, 3)));
+      ok("Ohne Auswahl: Kopieren aus", !!(await page.$("[data-a=copyDo][disabled]")));
+      await page.click(`#copyDays [data-d="${dk(1)}"]`); await page.click(`#copyDays [data-d="${dk(2)}"]`);
+      ok("Zwei Tage gewählt: „Auf 2 Tage kopieren“, „Behalten“ voreingestellt",
+        (await page.textContent("[data-a=copyDo]")) === "Auf 2 Tage kopieren" && (await page.getAttribute("#copyMode [data-v=add]", "aria-pressed")) === "true" && (await page.getAttribute(`#copyDays [data-d="${dk(1)}"]`, "aria-pressed")) === "true");
+      await page.click("[data-a=copyDo]");
+      let st = await stored(page);
+      const ids = new Set([...st.food[dk(0)], ...st.food[dk(1)], ...st.food[dk(2)]].map(x => x.id));
+      ok("Kopiert: morgen 2 Einträge, übermorgen 1 + 2, eigene IDs, Quelle unverändert",
+        st.food[dk(1)].length === 2 && st.food[dk(2)].length === 3 && st.food[dk(2)][0].n === "Brot" && st.food[dk(0)].length === 2 && ids.size === 7 && (await page.textContent("#foodNote")).includes("Auf 2 Tage kopiert"));
+      await page.click("[data-a=copyUndo]");
+      st = await stored(page);
+      ok("Rückgängig: Zieltage wie vorher", !st.food[dk(1)] && st.food[dk(2)].length === 1 && (await page.textContent("#foodNote")).includes("rückgängig gemacht"));
+      // Ersetzen
+      await page.click("#foodCopy"); await page.click(`#copyDays [data-d="${dk(2)}"]`); await page.click("#copyMode [data-v=replace]"); await page.click("[data-a=copyDo]");
+      st = await stored(page);
+      ok("Ersetzen: übermorgen genau die 2 Einträge von heute", st.food[dk(2)].length === 2 && st.food[dk(2)].map(x => x.n).join() === "Haferflocken,Reis");
+      // Rückgängig nach späterer Änderung verweigert
+      await page.click("#foodCopy"); await page.click(`#copyDays [data-d="${dk(3)}"]`); await page.click("[data-a=copyDo]");
+      await tp(page, () => { const k = new Date(Date.now() + 3 * 864e5), key = `${k.getFullYear()}-${String(k.getMonth() + 1).padStart(2, "0")}-${String(k.getDate()).padStart(2, "0")}`; window.__tp.state.food[key].pop(); });
+      await page.click("[data-a=copyUndo]");
+      const n3 = await tp(page, () => { const k = new Date(Date.now() + 3 * 864e5), key = `${k.getFullYear()}-${String(k.getMonth() + 1).padStart(2, "0")}-${String(k.getDate()).padStart(2, "0")}`; return window.__tp.state.food[key].length; });
+      ok("Rückgängig nach späterer Änderung: nichts überschrieben, Hinweis", n3 === 1 && (await page.textContent("#foodNote")).includes("Nicht mehr rückgängig"));
+      // Hinweis verschwindet beim Tageswechsel; Tag ohne Einträge hat keinen Knopf
+      await page.click("[data-a=foodDay][data-d='1']");
+      ok("Tageswechsel: Hinweis weg; Tag ohne Einträge: kein Kopieren-Knopf", !(await page.$("#foodNote")) && !(await page.$("#foodCopy")));
+      await page.click("[data-a=foodDay][data-d='-1']");
+      await page.setViewportSize({ width: 320, height: 640 }); await page.click("#foodCopy"); await page.waitForTimeout(350);
+      ok("Kopieren-Sheet bei 320 px ohne seitliches Scrollen", await noOverflow(page) && await page.evaluate(() => { const s = document.querySelector(".sheet"); return s.scrollWidth <= s.clientWidth; }));
+      await ctx.close();
+    }
+
+    section("65. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
