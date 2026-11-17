@@ -2819,7 +2819,7 @@ function tabOf(v) {
 }
 let homeNote = "";
 function go(v) {
-  view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = ""; if (v !== "food") { foodNote = ""; copyUndo = null; }
+  view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = ""; if (v !== "food") { foodNote = ""; copyUndo = null; } if (v !== "plan") { planNote = ""; planUndo = null; } if (v !== "tag") { tagNote = ""; tagCopyUndo = null; }
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
@@ -2841,7 +2841,7 @@ function clearTrainOvr(dk) { const e = state.dayPlan[dk]; if (!e || !e.train) re
 // Training an einem Tag: erledigt (Verlauf) oder geplant laut Terminen und Ablauf
 function plannedOn(dk) {
   const h = state.history.find(x => dkey(new Date(x.date)) === dk);
-  if (h) return { name: h.day, done: true, min: Math.max(1, Math.round(h.durationSec / 60)) };
+  if (h) return { name: h.day, done: true, min: Math.max(1, Math.round(h.durationSec / 60)), dayId: h.dayId };
   const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
   const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
   if (!days.length || !s || dk < dkey(today)) return null;
@@ -2922,6 +2922,32 @@ function tagWeekList(dk) {
     return `<button class="li" data-a="tagOpen" data-d="${k}" ${off ? "disabled" : ""}><div class="grow"><div class="t">${d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${k === today ? " · Heute" : ""}</div><div class="s">${sub.join(" · ")}</div></div>${right ? `<span class="small muted" style="text-align:right">${right}</span>` : ""}<span class="chev">›</span></button>`;
   }).join("");
 }
+/* Tagesplan: einen Tag 1:1 auf andere Tage kopieren (Training, Cardio, Schritte-Ziel, Essen) */
+let tagCopyCtx = null, tagCopyUndo = null, tagNote = "";
+// Was sich vom Quelltag kopieren lässt
+function tagCopyParts(src) {
+  const today = dkey(), P = [], tr = plannedOn(src), days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
+  if (state.sched && days.length) {
+    const d = tr && days.find(x => x.id === tr.dayId);
+    if (d) P.push({ k: "train", l: `Training: ${d.name}`, v: d.id }); else if (!tr && src >= today) P.push({ k: "train", l: "Ruhetag", v: "rest" });
+  }
+  const c = cardioOn(src); if (c.length) P.push({ k: "cardio", l: `Cardio: ${c.reduce((a, x) => a + x.min, 0)} Min.` });
+  const s = stepsOn(src); if (s != null) P.push({ k: "steps", l: `Schritte-Ziel: ${fmtK(s)}`, v: s });
+  const f = state.food[src] || []; if (f.length) P.push({ k: "food", l: `Essen: ${fmtK(dayTotals(src).k)} kcal` });
+  return P;
+}
+function tagCopySheet() {
+  const c = tagCopyCtx, today = dkey(), P = tagCopyParts(c.src), n = c.sel.size, np = P.filter(x => c.parts.has(x.k)).length;
+  const days = []; for (let i = 0; i <= PLAN_AHEAD; i++) { const k = dkey(new Date(Date.now() + i * 864e5)); if (k !== c.src) days.push(k); }
+  const lab = k => k === today ? "Heute" : dateOf(k).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+  return `${sheetHead("Tag kopieren", "Abbrechen")}
+    <div class="cap">Was</div>
+    <div class="chips wrap" id="tagCopyParts" role="group" aria-label="Was kopiert wird">${P.map(x => `<button class="chip ${c.parts.has(x.k) ? "on" : ""}" data-a="tagCopyPart" data-k="${x.k}" aria-pressed="${c.parts.has(x.k)}">${esc(x.l)}</button>`).join("")}</div>
+    <div class="cap">Auf diese Tage</div>
+    <div class="chips wrap" id="tagCopyDays" role="group" aria-label="Zieltage">${days.map(k => `<button class="chip ${c.sel.has(k) ? "on" : ""}" data-a="tagCopyTgt" data-d="${k}" aria-pressed="${c.sel.has(k)}">${lab(k)}</button>`).join("")}</div>
+    <p class="small faint" style="margin:0">1:1: Was an den Zieltagen dazu schon steht, wird ersetzt.</p>
+    <button class="btn primary block" data-a="tagCopyDo" ${n && np ? "" : "disabled"}>${!np ? "Nichts gewählt" : n ? `Auf ${n} ${n === 1 ? "Tag" : "Tage"} kopieren` : "Tage wählen"}</button>`;
+}
 let cardioCtx = null;
 function cardioSheet() {
   const c = cardioCtx, dk = tagDay || dkey(), G = nutrGoals(), L = CARDIO[c.t].lv[c.i];
@@ -2968,8 +2994,9 @@ function tagBalInner(dk) {
       ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.cardioKcal ? row("Cardio", `${E.cardioMin} Min.`, `+ ${fmtK(E.cardioKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", E.act != null ? "gegangen" : "Ziel", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
         : `<p class="small faint" style="margin:0">Training, Cardio und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
       ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
-      ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
-      <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
+      ${(state.food[dk] || []).length ? `${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
+      <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>`
+        : `<p class="small muted" id="tagNoFood" style="margin:0">${dk > today ? "Noch kein Essen geplant." : dk === today ? "Noch nichts eingetragen." : "Kein Essen eingetragen – keine Bilanz."}</p>`}
       ${tagGoalLine(dk, E)}</div>`;
 }
 // Nach Eingabe nur die abhängigen Teile neu zeichnen (Fokus im Feld bleibt)
@@ -3032,6 +3059,8 @@ function vTag() {
         <button class="btn sm" data-a="tagFood" style="white-space:nowrap;flex:none" ${past && dk < minD ? "disabled" : ""}>${dk > today ? "Essen planen" : "Ansehen"}</button></div>
     </section>
     <section class="section" id="tagBal"><h2>Kalorienbilanz</h2><div id="tagBalIn">${tagBalInner(dk)}</div></section>
+    ${tagNote ? `<p class="note small" id="tagNote" role="status" style="margin:0">${esc(tagNote)}${tagCopyUndo ? ` <button class="link small" data-a="tagCopyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
+    ${tagCopyParts(dk).length ? `<button class="btn sm block" data-a="tagCopyOpen" id="tagCopy">Diesen Tag auf andere Tage kopieren</button>` : ""}
     <details class="disc"><summary><div class="grow"><h3>So wird gerechnet</h3><div class="small muted">Schätzung mit Quellen</div></div><span class="chev">›</span></summary><div class="body">
       <ul class="glist small">
         <li>Grundbedarf: Grundumsatz nach Mifflin-St Jeor × Aktivitätsfaktor aus deinen Zielen.</li>
@@ -3161,7 +3190,8 @@ function vHome() {
       </div>` : ""}
     <div class="plain-list">
       ${(() => { const E = dayEnergy(dkey()), ac = actOn(dkey()), st = stepsOn(dkey());
-        return `<button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag"><div class="grow"><div class="s">Tagesplan</div><div class="t">${E ? `${E.balance <= 0 ? "Defizit" : "Überschuss"} bisher ≈ ${fmtK(Math.abs(E.balance))} kcal` : "Training, Schritte und Essen"}${ac != null ? ` · ${fmtK(ac)} Schritte gegangen` : st != null ? ` · Ziel ${fmtK(st)} Schritte` : ""}</div></div><span class="chev">›</span></button>`; })()}
+        return `<button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag"><div class="grow"><div class="s">Tagesplan</div><div class="t">${E ? (() => { const Z = E.total + E.goalDiff, rest = Z - E.intake;
+          return !(state.food[dkey()] || []).length ? `Tagesziel ≈ ${fmtK(Z)} kcal` : rest >= 0 ? `Noch ≈ ${fmtK(rest)} kcal bis zum Tagesziel` : `≈ ${fmtK(-rest)} kcal über dem Tagesziel`; })() : "Training, Schritte und Essen"}${ac != null ? ` · ${fmtK(ac)} Schritte gegangen` : st != null ? ` · Ziel ${fmtK(st)} Schritte` : ""}</div></div><span class="chev">›</span></button>`; })()}
       ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!tt.k) return "";
         return `<button class="li" data-a="tab" data-v="food" id="homeFood"><div class="grow"><div class="s">Essen heute</div><div class="t">${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß</div></div><span class="chev">›</span></button>`; })()}
 
@@ -3293,6 +3323,7 @@ function vPlan() {
     <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
       <div class="t">${state.sched ? `${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}` : "Noch keine festen Termine"}</div></div><span class="chev">›</span></button>
       <button class="li" data-a="openDevs" id="devsRow"><div class="grow"><div class="s">Geräte in deinem Studio</div><div class="t">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? ` · ${allEx().filter(e => e.fav).length} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
+    ${planNote ? `<p class="note small" id="planNote" role="status" style="margin:0">${esc(planNote)}${planUndo ? ` <button class="link small" data-a="dayCopyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
     <div class="group">${p.days.map((d, i) => `
       <button class="li day-row" data-a="editDay" data-id="${d.id}">
         <span class="idx">${i + 1}</span>
@@ -3399,7 +3430,34 @@ function vDay() {
       <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p></section>`
       : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
     <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
+    ${d.items.length ? `<button class="btn block" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}
   </div>`;
+}
+/* Trainingstag 1:1 kopieren: Geräte, Reihenfolge, Sätze, Wiederholungen und Pausen */
+let planNote = "", planUndo = null;
+const nGer = n => `${n} ${n === 1 ? "Gerät" : "Geräte"}`;
+function dayCopySheet() {
+  const d = curDay(), others = state.plan.days.filter(x => x.id !== d.id);
+  return `${sheetHead("Tag kopieren", "Abbrechen")}
+    <p class="small muted" style="margin:0">„${esc(d.name)}“ 1:1 kopieren – ${nGer(d.items.length)} mit Reihenfolge, Sätzen, Wiederholungen und Pausen – nach:</p>
+    <div class="group" id="dayCopyList">
+      <button class="li" data-a="dayCopyDo" data-to="new"><div class="grow"><div class="t" style="color:var(--accent-ink)">Neuer Trainingstag</div><div class="s">„${esc(d.name)} (Kopie)“ wird angelegt</div></div></button>
+      ${others.map(x => `<button class="li" data-a="${x.items.length ? "dayCopyAsk" : "dayCopyDo"}" data-to="${x.id}"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${x.items.length ? `${nGer(x.items.length)} ${x.items.length === 1 ? "wird" : "werden"} ersetzt` : "noch leer"}</div></div>${x.items.length ? `<span class="chev">›</span>` : ""}</button>`).join("")}
+    </div>`;
+}
+function dayCopyDo(to) {
+  const src = curDay(); if (!src || !src.items.length) return;
+  const items = () => src.items.map(it => Object.assign(JSON.parse(JSON.stringify(it)), { id: uid() }));
+  if (to === "new") {
+    const nd = { id: uid(), name: `${src.name} (Kopie)`.slice(0, 60), items: items() }; state.plan.days.push(nd);
+    planUndo = { kind: "new", id: nd.id, after: JSON.stringify(nd) }; planNote = `„${src.name}“ als neuer Tag „${nd.name}“ angelegt.`;
+  } else {
+    const tgt = state.plan.days.find(x => x.id === to); if (!tgt || tgt === src) return;
+    const before = JSON.stringify(tgt.items); tgt.items = items();
+    if (state.timeplan && state.timeplan.dayId === tgt.id) state.timeplan = null; // Zeit-Anpassung bezog sich auf die alten Geräte
+    planUndo = { kind: "items", id: tgt.id, before, after: JSON.stringify(tgt.items) }; planNote = `„${src.name}“ nach „${tgt.name}“ kopiert.`;
+  }
+  save(); closeSheet(); go("plan");
 }
 
 /* Geräteverwaltung */
@@ -4419,13 +4477,19 @@ function weightTrend() {
   const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0), sxy = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0);
   return { pct: sxy / sxx * 7 / my * 100, days: Math.round(span), n: pts.length };
 }
+// Satz zum Gewichtstrend außerhalb des Zielbereichs; lo = unter dem Bereich. Läuft das Gewicht in die Gegenrichtung, sagt der Satz das.
+function trendMsg(pct, goal, lo) {
+  const r = Math.round(pct * 10) / 10;
+  if (goal === "auf" && lo && r < 0) return "Du nimmst ab statt zu";
+  if (goal === "ab" && !lo && r > 0) return "Du nimmst zu statt ab";
+  return lo ? ({ ab: "Du nimmst schneller ab als geplant", halten: "Dein Gewicht sinkt", auf: "Du nimmst langsamer zu als geplant" })[goal]
+    : ({ ab: "Du nimmst langsamer ab als geplant", halten: "Dein Gewicht steigt", auf: "Du nimmst schneller zu als geplant" })[goal];
+}
 function trendHtml(G) {
   const tr = weightTrend(), g = state.nutr && NGOAL[state.nutr.goal];
   if (!tr || !g) return `<p class="small faint">Wiege dich regelmäßig (Fortschritt → Körpergewicht). Ab drei Einträgen über zwei Wochen zeigt die App hier, ob dein Kalorienziel zu deinem Gewichtsverlauf passt.</p>`;
   const ok = tr.pct >= g.lo && tr.pct <= g.hi;
-  const msg = ok ? "Das passt zu deinem Ziel." : tr.pct < g.lo
-    ? ({ ab: "Du nimmst schneller ab als geplant.", halten: "Dein Gewicht sinkt.", auf: "Du nimmst langsamer zu als geplant." })[state.nutr.goal]
-    : ({ ab: "Du nimmst langsamer ab als geplant.", halten: "Dein Gewicht steigt.", auf: "Du nimmst schneller zu als geplant." })[state.nutr.goal];
+  const msg = ok ? "Das passt zu deinem Ziel." : trendMsg(tr.pct, state.nutr.goal, tr.pct < g.lo) + ".";
   return `<div class="note ${ok ? "" : "warn"}" id="trendNote"><div class="cap">Gewichtstrend · ${tr.days} Tage, ${tr.n} Einträge</div>
     <p class="small"><b>${tr.pct > 0 ? "+" : tr.pct < 0 ? "−" : ""}${fmtN(Math.abs(tr.pct))} % pro Woche</b> · Ziel: ${g.rate}. ${msg}${ok ? "" : " Bleibt es so, passe dein Kalorienziel an."}</p></div>`;
 }
@@ -4991,7 +5055,7 @@ function vWeek() {
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="weekNav" data-d="1" aria-label="Vorherige Woche">‹</button><button class="icon-btn" data-a="weekNav" data-d="-1" aria-label="Nächste Woche" ${weekOff === 0 ? "disabled" : ""}>›</button></div></div></div>
     <section class="stack-sm" id="weekTrain"><h2 style="margin:0">Training</h2>
       <div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : "")}
-        ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
+        ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null || (!done && dv < 0) ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
       ${s.prs.length ? `<div class="group">${s.prs.map(p => `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">vorher ${kgTxt(p.from)} kg</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}</div>` : ""}
       ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}
       ${planLow.length ? `<p class="small faint" style="margin:0" id="weekPlanLow">${joinDe(planLow)}: Dein Plan sieht weniger als ${s.tmin} Sätze pro Woche vor. <button class="link small" data-a="tab" data-v="plan" style="display:inline">Zur Planprüfung</button></p>` : ""}</section>
@@ -5496,8 +5560,7 @@ function insights() {
   // 6. Ernährung: Gewichtstrend gegen das Ziel
   const tr = weightTrend(), ng = state.nutr && NGOAL[state.nutr.goal];
   if (tr && ng && (tr.pct < ng.lo || tr.pct > ng.hi)) {
-    const msg = tr.pct < ng.lo ? ({ ab: "Du nimmst schneller ab als geplant", halten: "Dein Gewicht sinkt", auf: "Du nimmst langsamer zu als geplant" })[state.nutr.goal]
-      : ({ ab: "Du nimmst langsamer ab als geplant", halten: "Dein Gewicht steigt", auf: "Du nimmst schneller zu als geplant" })[state.nutr.goal];
+    const msg = trendMsg(tr.pct, state.nutr.goal, tr.pct < ng.lo);
     add({ id: "trend:" + state.nutr.goal, prio: 55, kind: "warn", title: msg,
       text: `Gewicht ${Math.abs(tr.pct) < 0.05 ? "±0" : `${tr.pct > 0 ? "+" : "−"}${fmtN(Math.abs(tr.pct))}`} % pro Woche (${tr.days} Tage, ${tr.n} Einträge), Ziel: ${ng.rate}.${state.nutr.goal === "ab" && tr.pct < ng.lo ? " Langsameres Abnehmen hilft, Muskeln zu erhalten." : ""} Bleibt es so, passe dein Kalorienziel an.`,
       act: [{ a: "openNutr", l: "Kalorienziel anpassen", d: {} }], art: "kalorien", src: [state.nutr.goal === "auf" ? "iraki2019" : "helms2014"] });
@@ -6268,9 +6331,9 @@ const A = {
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
   reloadApp: () => location.reload(),
   openTag: el => { tagDay = el.dataset.d || null; tagMode = "tag"; go("tag"); },
-  tagMode: el => { tagMode = el.dataset.v === "woche" ? "woche" : "tag"; vTag(); },
-  tagOpen: el => { const n = el.dataset.d; if (n < tagMin() || n > maxFoodDay()) return; tagDay = n === dkey() ? null : n; tagMode = "tag"; vTag(); window.scrollTo(0, 0); },
-  tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d * (tagMode === "woche" ? 7 : 1)); let n = dkey(dt);
+  tagMode: el => { tagNote = ""; tagCopyUndo = null; tagMode = el.dataset.v === "woche" ? "woche" : "tag"; vTag(); },
+  tagOpen: el => { tagNote = ""; tagCopyUndo = null; const n = el.dataset.d; if (n < tagMin() || n > maxFoodDay()) return; tagDay = n === dkey() ? null : n; tagMode = "tag"; vTag(); window.scrollTo(0, 0); },
+  tagDay: el => { tagNote = ""; tagCopyUndo = null; const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d * (tagMode === "woche" ? 7 : 1)); let n = dkey(dt);
     if (tagMode === "woche") n = n < tagMin() ? tagMin() : n > maxFoodDay() ? maxFoodDay() : n; // Woche: bis an den Rand des Planbereichs
     if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   // Training für einen Tag wählen; entspricht die Wahl dem Ablauf, wird keine Änderung gespeichert
@@ -6279,6 +6342,31 @@ const A = {
     clearTrainOvr(dk); const auto = plannedOn(dk), autoV = auto ? auto.dayId : "rest";
     if (v !== autoV) state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), train: v };
     save(); vTag(); },
+  tagCopyOpen: () => { const src = tagDay || dkey(); tagCopyCtx = { src, sel: new Set(), parts: new Set(tagCopyParts(src).map(x => x.k)) }; openSheet(tagCopySheet()); },
+  tagCopyPart: el => { const c = tagCopyCtx; if (!c) return; const k = el.dataset.k; if (c.parts.has(k)) c.parts.delete(k); else c.parts.add(k); sheetKeep(tagCopySheet()); },
+  tagCopyTgt: el => { const c = tagCopyCtx; if (!c) return; const k = el.dataset.d; if (c.sel.has(k)) c.sel.delete(k); else c.sel.add(k); sheetKeep(tagCopySheet()); },
+  tagCopyDo: () => { const c = tagCopyCtx; if (!c || !c.sel.size) return;
+    const P = tagCopyParts(c.src).filter(x => c.parts.has(x.k)); if (!P.length) return;
+    const snap = k => JSON.stringify([state.dayPlan[k] || null, state.food[k] || null]), before = {}, after = {};
+    const cardio = JSON.stringify(cardioOn(c.src)), food = state.food[c.src] || [];
+    for (const k of c.sel) {
+      before[k] = snap(k); const e = { ...(state.dayPlan[k] || {}) };
+      for (const x of P) {
+        if (x.k === "train") { e.train = x.v; if (k === dkey()) state.selDay = null; }
+        else if (x.k === "cardio") e.cardio = JSON.parse(cardio);
+        else if (x.k === "steps") { if (x.v === state.stepGoal) delete e.steps; else e.steps = x.v; }
+        else if (x.k === "food") state.food[k] = food.map(f => JSON.parse(JSON.stringify(Object.assign({}, f, { id: uid() }))));
+      }
+      if (Object.keys(e).length) state.dayPlan[k] = e; else delete state.dayPlan[k];
+      after[k] = snap(k);
+    }
+    tagCopyUndo = { before, after }; tagNote = `Auf ${c.sel.size} ${c.sel.size === 1 ? "Tag" : "Tage"} kopiert.`; tagCopyCtx = null; save(); closeSheet(); vTag(); },
+  // Rückgängig nur, solange die Zieltage seitdem nicht geändert wurden
+  tagCopyUndo: () => { const u = tagCopyUndo; tagCopyUndo = null; if (!u) return;
+    const snap = k => JSON.stringify([state.dayPlan[k] || null, state.food[k] || null]);
+    if (Object.keys(u.after).some(k => snap(k) !== u.after[k])) { tagNote = "Nicht mehr rückgängig: Die Tage wurden inzwischen geändert."; vTag(); return; }
+    for (const [k, v] of Object.entries(u.before)) { const [dp, fd] = JSON.parse(v); if (dp) state.dayPlan[k] = dp; else delete state.dayPlan[k]; if (fd) state.food[k] = fd; else delete state.food[k]; }
+    tagNote = "Kopieren rückgängig gemacht."; save(); vTag(); },
   tagCardioOpen: () => { cardioCtx = { t: "cross", i: "m", min: 20 }; openSheet(cardioSheet()); },
   cardioType: el => { if (!cardioCtx || !CARDIO[el.dataset.v]) return; cardioCtx.t = el.dataset.v; sheetKeep(cardioSheet()); },
   cardioLv: el => { if (!cardioCtx || !CARDIO[cardioCtx.t].lv[el.dataset.v]) return; cardioCtx.i = el.dataset.v; sheetKeep(cardioSheet()); },
@@ -6290,7 +6378,7 @@ const A = {
     e.cardio = e.cardio.filter((_, i) => i !== +el.dataset.n); if (!e.cardio.length) delete e.cardio; if (!Object.keys(e).length) delete state.dayPlan[dk];
     save(); vTag(); },
   tagTrainAuto: () => { const dk = tagDay || dkey(); clearTrainOvr(dk); save(); vTag(); },
-  tagPick: el => { const n = el.dataset.d; if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
+  tagPick: el => { tagNote = ""; tagCopyUndo = null; const n = el.dataset.d; if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   tagStep: el => { const dk = tagDay || dkey(), cur = stepsOn(dk); const v = Math.max(0, Math.min(100000, (cur == null ? (+el.dataset.d > 0 ? 7000 : 0) : cur + +el.dataset.d)));
     state.dayPlan[dk] = { ...(state.dayPlan[dk] || {}), steps: v }; save(); vTag(); },
   tagStepDefault: () => { const dk = tagDay || dkey(), v = stepsOn(dk); if (v == null) return; state.stepGoal = v;
@@ -6363,6 +6451,17 @@ const A = {
   startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
   toTrain: () => { if (state.session) go("train"); },
   addDay: () => { const d = { id: uid(), name: "Tag " + (state.plan.days.length + 1), items: [] }; state.plan.days.push(d); save(); state.editDay = d.id; go("day"); },
+  dayCopyOpen: () => openSheet(dayCopySheet()),
+  dayCopyAsk: el => { const src = curDay(), tgt = state.plan.days.find(x => x.id === el.dataset.to); if (!src || !tgt) return;
+    openSheet(`${sheetHead("Geräte ersetzen?", "Zurück", "dayCopyOpen")}
+      <p style="margin:0">${tgt.items.length === 1 ? "Das Gerät" : `Die ${tgt.items.length} Geräte`} in „${esc(tgt.name)}“ ${tgt.items.length === 1 ? "wird" : "werden"} durch ${src.items.length === 1 ? "das Gerät" : `die ${src.items.length} Geräte`} aus „${esc(src.name)}“ ersetzt. Der Name „${esc(tgt.name)}“ bleibt, dein Verlauf auch.</p>
+      <button class="btn primary block" data-a="dayCopyDo" data-to="${tgt.id}">Ersetzen</button>`); },
+  dayCopyDo: el => dayCopyDo(el.dataset.to),
+  // Rückgängig nur, solange der Zieltag seitdem nicht geändert wurde
+  dayCopyUndo: () => { const u = planUndo; planUndo = null; if (!u) return; const tgt = state.plan.days.find(x => x.id === u.id);
+    if (!tgt || JSON.stringify(u.kind === "new" ? tgt : tgt.items) !== u.after) { planNote = "Nicht mehr rückgängig: Der Tag wurde inzwischen geändert."; vPlan(); return; }
+    if (u.kind === "new") { state.plan.days = state.plan.days.filter(x => x.id !== u.id); if (state.selDay === u.id) state.selDay = null; } else tgt.items = JSON.parse(u.before);
+    planNote = "Kopieren rückgängig gemacht."; save(); vPlan(); },
   delDay: () => openSheet(`<h2>Tag löschen?</h2><p class="muted">„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.</p>
     <button class="btn block" style="background:var(--bad);color:#fff" data-a="confirmDelDay">Löschen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
   confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); save(); closeSheet(); go("plan"); },
@@ -6598,7 +6697,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
