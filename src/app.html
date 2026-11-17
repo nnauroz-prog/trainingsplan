@@ -330,11 +330,20 @@
   .pick-row{padding:0 var(--s2) 0 0;min-height:60px}
   .pick-main,.dev-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0;text-align:left;padding:var(--s3) 0 var(--s3) var(--s4);min-height:60px}
   .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
-  .dev-main{flex-direction:column;align-items:flex-start;justify-content:center;gap:1px}
-  .dev-main>.t,.dev-main>.s{max-width:100%}
+  .dev-main .grow{display:block;min-width:0}
+  .dev-main .grow>.t,.dev-main .grow>.s{max-width:100%}
   .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:var(--r-sm);box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
   .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
   .pick-box svg{width:16px;height:16px}
+  /* Geräteauswahl: Bild der Bewegung je Gerät, Häkchen als Marke am Bild */
+  .pick-thumb{position:relative;overflow:visible;width:60px;flex:0 0 60px}
+  .pick-thumb .pick-box{position:absolute;right:-7px;bottom:-7px;flex:none;width:22px;height:22px;background:var(--raise);box-shadow:inset 0 0 0 2px var(--hair)}
+  .pick-thumb .pick-box svg{width:13px;height:13px}
+  .pick-row.on .pick-thumb .pick-box{box-shadow:0 0 0 2px var(--raise)}
+  .pick-row.on{box-shadow:inset 3px 0 0 var(--ok)}
+  .pick-main .s3{display:block;font-size:12px;color:var(--text-3);margin-top:2px}
+  .chip .n{margin-left:6px;font-family:var(--mono);font-size:12px;font-weight:500}
+  .swap-row{align-items:flex-start;gap:var(--s3)}
   .dev-row{padding:0 var(--s2) 0 0}
   .dev-check{flex:0 0 48px;height:48px;display:grid;place-items:center}
   .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -472,6 +481,9 @@ const LIB = [
   ["hs-pulldown","Latziehen zur Brust","ruecken",["bizeps"],"plate","Iso-Lateral Front Lat Pulldown"],
   ["hs-dyrow","Rudern Untergriff","ruecken",["bizeps","schultern"],"plate","Iso-Lateral D.Y. Row"],
   ["hs-lat","Latzug","ruecken",["bizeps"],"stack","Lat Pulldown"],
+  ["hs-lat-wide","Latzug breit","ruecken",["bizeps"],"stack","Lat Pulldown"],
+  ["hs-lat-close","Latzug eng","ruecken",["bizeps"],"stack","Lat Pulldown"],
+  ["hs-lat-under","Latzug Untergriff","ruecken",["bizeps"],"stack","Lat Pulldown"],
   ["hs-shoulder","Schulterpresse","schultern",["trizeps"],"plate","Iso-Lateral Shoulder Press"],
   ["hs-lateral","Seitheben","schultern",[],"plate","Lateral Raise"],
   ["hs-reardelt","Hintere Schulter","schultern",["ruecken"],"stack","Rear Delt"],
@@ -546,7 +558,7 @@ const PATTERNS = {
 const LIB_PATTERN = {
   "hs-chest": "push_h", "hs-decline": "push_h", "hs-widechest": "push_h", "hs-incline": "push_i", "hs-shoulder": "push_v",
   "hs-fly": "fly", "hs-row": "pull_h", "hs-lowrow": "pull_h", "hs-dyrow": "pull_h", "hs-highrow": "pull_v",
-  "hs-pulldown": "pull_v", "hs-lat": "pull_v", "hs-lateral": "lateral", "hs-reardelt": "rear", "hs-curl": "bi",
+  "hs-pulldown": "pull_v", "hs-lat": "pull_v", "hs-lat-wide": "pull_v", "hs-lat-close": "pull_v", "hs-lat-under": "pull_v", "hs-lateral": "lateral", "hs-reardelt": "rear", "hs-curl": "bi",
   "hs-triext": "tri", "hs-dip": "dip", "hs-legpress": "squat", "hs-isolegpress": "squat", "hs-vsquat": "squat",
   "hs-hack": "squat", "hs-hipthrust": "hinge", "hs-legext": "knee_ext", "hs-kneelcurl": "knee_flex",
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
@@ -573,6 +585,8 @@ const SOURCES = {
   curl2021: { t: "Maeo et al.: Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths", j: "Med Sci Sports Exerc 2021;53(4):825–837", url: "https://pubmed.ncbi.nlm.nih.gov/33009197/" },
   calf2023: { t: "Kinoshita et al.: Triceps surae muscle hypertrophy is greater after standing versus seated calf-raise training", j: "Front Physiol 2023;14:1272106", url: "https://doi.org/10.3389/fphys.2023.1272106" },
   bench2020: { t: "Rodríguez-Ridao et al.: Effect of five bench inclinations on the electromyographic activity of the pectoralis major, anterior deltoid, and triceps brachii during the bench press exercise", j: "Int J Environ Res Public Health 2020;17(19):7339", url: "https://doi.org/10.3390/ijerph17197339" },
+  lusk2010: { t: "Lusk SJ, Hale BD, Russell DM: Grip width and forearm orientation effects on muscle activity during the lat pull-down", j: "J Strength Cond Res 2010;24(7):1895–1900", url: "https://pubmed.ncbi.nlm.nih.gov/20543740/" },
+  andersen2014: { t: "Andersen V, Fimland MS, Wiik E, Skoglund A, Saeterbakken AH: Effects of grip width on muscle strength and activation in the lat pull-down", j: "J Strength Cond Res 2014;28(4):1135–1142", url: "https://pubmed.ncbi.nlm.nih.gov/24662157/" },
   mifflin1990: { t: "Mifflin MD, St Jeor ST, Hill LA et al.: A new predictive equation for resting energy expenditure in healthy individuals", j: "Am J Clin Nutr 1990;51(2):241–247", url: "https://pubmed.ncbi.nlm.nih.gov/2305711/" },
   frankenfield2005: { t: "Frankenfield D, Roth-Yousey L, Compher C: Comparison of predictive equations for resting metabolic rate in healthy nonobese and obese adults: a systematic review", j: "J Am Diet Assoc 2005;105(5):775–789", url: "https://pubmed.ncbi.nlm.nih.gov/15883556/" },
   fao2004: { t: "FAO/WHO/UNU: Human energy requirements – Report of a Joint FAO/WHO/UNU Expert Consultation, Kapitel 5: Energiebedarf Erwachsener", j: "FAO Food and Nutrition Technical Report Series 1, Rom 2004", url: "https://www.fao.org/4/y5686e/y5686e07.htm" },
@@ -844,6 +858,38 @@ const GUIDE = {
     mistakes: [["Ziehen hinter den Kopf", "Vor dem Kopf ziehen – hinter dem Kopf steht die Schulter ungünstig."], ["Zurücklehnen mit Schwung", "Nur leichte Rücklage, ruhiger Rumpf."], ["Halbe Bewegung oben", "Oben die Arme strecken, damit der Rücken gedehnt wird."]],
     safety: ["Am Satzende die Stange kontrolliert hochlassen, die Gewichtsplatten nicht aufschlagen lassen."],
     tips: ["Stören breite Griffe die Schultern: enger, neutraler Griff, falls das Gerät einen hat.", "Gedanklich die Ellbogen zur Hüfte ziehen – die Hände halten nur fest."]
+  },
+  "hs-lat-wide": {
+    main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach],
+    why: "Latziehen mit breitem Obergriff an der langen Stange. In einer Studie mit 15 trainierten Männern ging mit dem breiten Griff etwas weniger Gewicht als mit mittlerem oder engem (bei 6 Wiederholungen 77 statt 80 kg). Der breite Rückenmuskel war über die ganze Bewegung bei allen drei Griffbreiten ähnlich aktiv.",
+    setup: ["Sitz so einstellen, dass das Kniepolster die Oberschenkel festhält.", "Im Obergriff außen an den abgewinkelten Enden der Stange greifen, deutlich breiter als die Schultern."],
+    steps: ["Arme oben gestreckt, Brust aufgerichtet.", "Stange vor dem Gesicht zur oberen Brust ziehen, die Ellbogen zeigen nach außen-unten.", "Langsam nachgeben, bis die Arme wieder gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Zu breit gegriffen", "Nur so breit, dass die Stange die obere Brust noch erreicht."], ["Schultern ziehen zu den Ohren", "Erst die Schultern nach unten nehmen, dann die Arme beugen."], ["Stange wandert in den Nacken", "Die Stange bleibt vor dem Gesicht und endet an der Brust."]],
+    safety: ["Mit weniger Gewicht beginnen als am schulterbreiten Griff."],
+    tips: ["Die Griffbreite änderte in der Studie wenig an der Aktivität im Rücken – nimm die Breite, die sich für deine Schultern gut anfühlt.", "Stört der breite Griff die Schultern, wechsle auf den schulterbreiten oder engen Griff."],
+    src: ["andersen2014"]
+  },
+  "hs-lat-close": {
+    main: [M.lat, M.teres], sup: [M.trapL, M.rhomb, M.bic, M.brach, M.brachrad],
+    why: "Latziehen mit dem engen Parallelgriff (V-Griff): Die Handflächen zeigen zueinander, die Ellbogen laufen eng vor dem Körper nach unten. Eine Variante, wenn dir die Stange an Schultern oder Handgelenken unangenehm ist.",
+    setup: ["Kniepolster herunterstellen, bis du fest im Sitz klemmst.", "Stange aushängen und den V-Griff in den Karabiner einhängen."],
+    steps: ["Griff mit gestreckten Armen fassen, Handflächen zueinander.", "Griff zur oberen Brust ziehen, die Ellbogen bleiben nah am Körper.", "Kontrolliert nachgeben, bis die Arme ganz gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Weit nach hinten lehnen", "Nur leicht zurücklehnen – sonst wird aus dem Latziehen ein Rudern."], ["Griff zum Bauch ziehen", "Das Ziel ist die obere Brust."], ["Ellbogen weichen nach außen", "Ellbogen eng an den Rippen vorbeiführen."]],
+    safety: ["Vor dem ersten Satz prüfen, ob der Karabiner geschlossen ist und der Griff fest hängt."],
+    tips: ["Eigenes Gewicht finden: Werte von der Stange nicht übernehmen.", "Oben die Arme ganz strecken und den vollen Weg nutzen."]
+  },
+  "hs-lat-under": {
+    main: [M.lat, M.teres], sup: [M.bic, M.brach, M.trapL, M.rhomb],
+    why: "Latziehen im Untergriff, etwa schulterbreit: Die Handflächen zeigen zu dir. In einer Studie mit 12 Männern war der breite Rückenmuskel im Untergriff weniger aktiv als im Obergriff; beim Bizeps gab es keinen Unterschied. Gemessen wurde die Muskelaktivität, nicht der Muskelaufbau.",
+    setup: ["Polster fest auf die Oberschenkel stellen, die Füße stehen flach.", "Stange im Untergriff etwa schulterbreit greifen."],
+    steps: ["Arme oben gestreckt, Handflächen zu dir.", "Stange zur oberen Brust ziehen, die Ellbogen laufen vor dem Körper nach unten.", "Langsam nachgeben, bis die Arme fast gestreckt sind."],
+    breath: BREATH_PULL,
+    mistakes: [["Handgelenke knicken ab", "Handgelenke gerade halten, notfalls etwas enger oder weiter greifen."], ["Schwung aus dem Rumpf", "Der Oberkörper bleibt ruhig, nur leichte Rücklage."], ["Oben nicht gestreckt", "Zwischen den Wiederholungen die Arme wieder lang machen."]],
+    safety: ["Zieht es im Ellbogen oder Handgelenk, zum Obergriff oder Parallelgriff wechseln."],
+    tips: ["Willst du vor allem den Rücken treffen, spricht die Studie eher für den Obergriff.", "Gewicht für diesen Griff neu finden, nicht vom Obergriff übernehmen."],
+    src: ["lusk2010"]
   },
   "hs-shoulder": {
     main: [M.dAnt], sup: [M.dLat, M.tri, M.trapU, M.serr],
@@ -1283,6 +1329,9 @@ const TIPS = {
   "hs-pulldown":["Kniepolster fest auf die Oberschenkel","Griffe zur oberen Brust, Ellbogen nach unten","Oben ganz strecken, nicht nach hinten lehnen"],
   "hs-dyrow":["Brust ans Polster, Untergriff, Arme lang","Ellbogen eng Richtung Hüfte ziehen","Langsam zurück, Brust bleibt am Polster"],
   "hs-lat":["Oberschenkel unters Polster, Stange etwas breiter als schulterbreit","Stange vor dem Kopf zum Brustbein ziehen","Oben kontrolliert strecken"],
+  "hs-lat-wide":["Obergriff außen an den abgewinkelten Enden der Stange","Stange vor dem Gesicht zur oberen Brust","Arme oben wieder strecken"],
+  "hs-lat-close":["V-Griff einhängen, Handflächen zueinander","Griff zur oberen Brust, Ellbogen eng am Körper","Nachgeben, bis die Arme ganz gestreckt sind"],
+  "hs-lat-under":["Untergriff schulterbreit, Handflächen zu dir","Stange zur oberen Brust, Handgelenke gerade","Oben die Arme fast strecken"],
   "hs-shoulder":["Griffe zu Beginn auf Kinnhöhe","Gerade nach oben drücken, Rücken an der Lehne","Kein Hohlkreuz, oben nicht einrasten"],
   "hs-lateral":["Schulter auf Höhe der Drehachse, Polster an den Oberarmen","Arme seitlich bis Schulterhöhe heben","Langsam ablassen, nicht schwingen"],
   "hs-reardelt":["Brust ans Polster, Arme auf Schulterhöhe","Arme im weiten Bogen nach hinten","Schultern unten, langsam nach vorn"],
@@ -1572,7 +1621,7 @@ function refreshPlates() { const s = S(), el = byId("platesTxt"); if (!s || !el)
 const UNIT_SHORT = { s: "pro Seite", t: "insgesamt", b: "am Block" };
 const unitTxt = e => UNIT[unitOf(e)];
 // Gewichtsart: Scheiben an den Seiten (pro Seite oder insgesamt eingetragen) oder ein eingestelltes Gewicht am Block (Steckgewicht, bei Seilzug über ein Seil)
-const CABLE = new Set(["lf-pushdown", "hs-lat"]);
+const CABLE = new Set(["lf-pushdown", "hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"]);
 const loadShort = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug" : "Steckgewicht") : e.load === "side" ? "Scheiben je Seite" : "Scheiben";
 const loadTxt = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug, Steckgewicht" : "Steckgewicht") : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
@@ -2146,6 +2195,9 @@ const TRICK_X = {
   "hs-dyrow": [["Bizeps hilft mit", "Armbeuger am selben Tag erst danach", "Der Bizeps arbeitet hier stark mit. Steht der Armbeuger am selben Tag an, mach ihn danach – sonst ermüdet der Bizeps, bevor der Rücken genug gearbeitet hat."],
     ["Handgelenke im Untergriff", "Handgelenke nicht nach hinten abknicken", "Im Untergriff kippen die Handgelenke leicht nach hinten. Gerade gehalten sind sie entlastet."]],
   "hs-lat": [["Zwischenschritte nutzen", "Kleines Zusatzgewicht für Zwischenschritte", "Am Steckgewicht sind die Sprünge oft grob. Hat das Gerät ein kleines Zusatzgewicht, nutze es, statt Wiederholungen zu verlieren."]],
+  "hs-lat-wide": [["Gleiche Stelle greifen", "Jedes Mal an derselben Stelle der Stange greifen", "Die Griffbreite verändert, wie viel Gewicht geht. Greifst du immer gleich, bleiben deine Werte von Training zu Training vergleichbar."]],
+  "hs-lat-close": [["Brust zum Griff", "Brust dem Griff entgegenheben", "Heb beim Ziehen die Brust leicht dem Griff entgegen. Der Oberkörper bleibt dabei aufrecht und du holst keinen Schwung."]],
+  "hs-lat-under": [["Bei einem Griff bleiben", "Über mehrere Wochen denselben Griff nehmen", "Ober- und Untergriff sind in der App getrennte Übungen mit eigenen Werten. Bleibst du einige Wochen bei einem Griff, siehst du deinen Fortschritt."]],
   "hs-shoulder": [["Ellbogen leicht vorn", "Ellbogen leicht vor dem Körper, nicht ganz seitlich", "Leicht nach vorn geführte Ellbogen sind für die meisten Schultern angenehmer als ganz seitlich abgespreizte."],
     ["Kopf ruhig", "Kopf an der Lehne, Blick geradeaus", "Schiebt sich der Kopf beim Drücken nach vorn, arbeitet der Nacken mit."]],
   "hs-lateral": [["Über die Oberarme drücken", "Druck über die Oberarme ins Polster, Hände locker", "Lockere Hände halten Unterarme und Nacken aus der Bewegung; der seitliche Deltamuskel hebt den Oberarm."]],
@@ -2195,7 +2247,8 @@ const TRICK_X = {
 const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere Brust und vordere Schulter", "hs-decline": "Betont den unteren Brustanteil",
   "hs-widechest": "Weite Armführung, mehr Dehnung in der Brust", "hs-fly": "Brust isoliert, der Trizeps arbeitet kaum mit", "hs-row": "Grundübung für den mittleren Rücken",
   "hs-lowrow": "Zug zur Hüfte, betont den breiten Rückenmuskel", "hs-highrow": "Zug schräg von oben, zwischen Rudern und Latziehen", "hs-pulldown": "Zug von oben, Alternative zum Klimmzug",
-  "hs-dyrow": "Rudern im Untergriff, der Bizeps hilft mit", "hs-lat": "Latziehen an der Stange, Steckgewicht", "hs-shoulder": "Drücken über Kopf, Grundübung für die Schultern",
+  "hs-dyrow": "Rudern im Untergriff, der Bizeps hilft mit", "hs-lat": "Latziehen an der Stange, Steckgewicht", "hs-lat-wide": "Breiter Obergriff an der langen Stange",
+  "hs-lat-close": "Enger Parallelgriff, Handflächen zueinander", "hs-lat-under": "Untergriff schulterbreit, Handflächen zu dir", "hs-shoulder": "Drücken über Kopf, Grundübung für die Schultern",
   "hs-lateral": "Seitlicher Deltamuskel, prägt die Schulterbreite", "hs-reardelt": "Hintere Schulter und Muskeln zwischen den Schulterblättern", "hs-curl": "Bizeps isoliert, die Oberarme liegen auf",
   "hs-dip": "Drücken nach unten, vor allem für den Trizeps", "hs-triext": "Trizeps isoliert, alle drei Köpfe", "hs-legpress": "Grundübung für Oberschenkel und Gesäß",
   "hs-isolegpress": "Beinpresse mit getrennten Fußplatten", "hs-vsquat": "Geführte Kniebeuge mit Schulterpolstern", "hs-hack": "Geführte Kniebeuge, betont die Oberschenkelvorderseite",
@@ -2213,7 +2266,8 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
 const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pattern].label : "Eigenes Gerät"));
 const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
 // Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
-const ALIAS = { "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
+const ALIAS = { "hs-lat": "Latziehen, Lat Pulldown, Kabelzug", "hs-lat-wide": "Latziehen breit, Wide Grip, weiter Griff, Kabelzug", "hs-lat-close": "Latziehen eng, V-Griff, Parallelgriff, neutraler Griff, Close Grip, Kabelzug",
+  "hs-lat-under": "Latziehen Untergriff, Kammgriff, supiniert, Reverse Grip, Kabelzug", "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
   "hs-hipthrust": "Hip Thrust", "hs-beltsquat": "Hüftgurt, Gürtel", "hs-smith": "Multipresse, Kniebeuge", "lf-smith": "Multipresse, Smith Machine", "hs-legcurl": "Prone Leg Curl, Lying Leg Curl",
   "hs-abductor": "Hip Abductor, Abduktion", "hs-adductor": "Hip Adductor, Adduktion, Oberschenkel innen", "lf-adductor": "Hip Adductor, Adduktion, Oberschenkel innen" };
 const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
@@ -2301,7 +2355,9 @@ const MOTION = {
   "hs-ab": { A: Object.assign({}, SEATED, { t: -96, ua: 70, fa: -100 }), B: { t: -55, ua: 111, fa: -59 }, hl: ["t"], gear: ["seat", "handle"] }
 };
 // Gleiche Bewegung an mehreren Geräten
-Object.assign(MOTION, { "hs-lat": Object.assign({}, MOTION["hs-pulldown"], { gear: ["seat", "thighpad", "topcable"], _box: null, _rig: undefined, _floor: undefined }), "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
+Object.assign(MOTION, { "hs-lat": Object.assign({}, MOTION["hs-pulldown"], { gear: ["seat", "thighpad", "topcable"], _box: null, _rig: undefined, _floor: undefined }) });
+["hs-lat-wide", "hs-lat-close", "hs-lat-under"].forEach(id => { MOTION[id] = MOTION["hs-lat"]; });
+Object.assign(MOTION, { "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
   "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
   "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
   "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
@@ -3479,8 +3535,9 @@ function devListHtml() {
   const groups = [["hs", BRAND.hs], ["lf", BRAND.lf], ["c", "Eigene Geräte"]].map(([k, l]) => [l, list.filter(e => brandOf(e) === k)]).filter(([, a]) => a.length);
   const row = e => `<div class="li dev-row">
       <button class="dev-main" data-a="editDev" data-id="${e.id}" data-ret="list">
-        <span class="t" style="${e.off ? "opacity:.5" : ""}">${esc(e.name)}${e.fav ? ` <span class="badge fav">Bevorzugt</span>` : ""}</span>
-        <span class="s ellipsis">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</span></button>
+        <span class="thumbbox" aria-hidden="true" style="${e.off ? "opacity:.5" : ""}">${motionSvg(e.id, { cls: "thumb" })}</span>
+        <span class="grow"><span class="t" style="${e.off ? "opacity:.5" : ""}">${esc(e.name)}${e.fav ? ` <span class="badge fav">Bevorzugt</span>` : ""}</span>
+        <span class="s ellipsis">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadTxt(e)}${state.notes[e.id] ? " · " + esc(state.notes[e.id]) : ""}</span></span></button>
       <button class="dev-check${e.off ? "" : " on"}" data-a="devToggle" data-id="${e.id}" aria-pressed="${!e.off}" aria-label="${esc(e.name)} in meinem Studio"><span class="pick-box" aria-hidden="true">${e.off ? "" : ICON.check}</span></button></div>`;
   return `${sheetHead("Meine Geräte", "Fertig", "devsDone")}
     <p class="small muted" style="margin:0" id="devCount">${all.filter(e => !e.off).length} von ${all.length} im Studio${all.some(e => e.fav) ? ` · ${all.filter(e => e.fav).length} bevorzugt` : ""}. Häkchen = steht in deinem Studio.</p>
@@ -3551,24 +3608,31 @@ function pickerHtml() {
   const q = pickQuery.toLowerCase(), d = ses ? null : curDay(), order = Object.keys(MUSCLES);
   const inDay = new Set(ses ? ses.list.map(l => l.exId) : d ? d.items.map(i => i.exId) : []);
   const all = allEx(), hasCustom = all.some(isCustom);
-  const match = all.filter(e => (pickFilter === "alle" || brandOf(e) === pickFilter) && (pickMuscle === "alle" || e.muscle === pickMuscle) && findEx(e, q))
+  // Vorauswahl ohne Muskel-Filter: daraus zählen die Chips
+  const base = all.filter(e => (pickFilter === "alle" || brandOf(e) === pickFilter) && findEx(e, q));
+  const vis = e => !e.off || pickAll || inDay.has(e.id);
+  const match = base.filter(e => pickMuscle === "alle" || e.muscle === pickMuscle)
     .sort((a, b) => order.indexOf(a.muscle) - order.indexOf(b.muscle) || (b.fav ? 1 : 0) - (a.fav ? 1 : 0) || a.name.localeCompare(b.name, "de"));
-  const shown = match.filter(e => !e.off || pickAll || inDay.has(e.id)), hidden = match.length - shown.length;
-  const groups = [["hs", BRAND.hs], ["lf", BRAND.lf], ["c", "Eigene Geräte"]].map(([k, l]) => [l, shown.filter(e => brandOf(e) === k)]).filter(([, a]) => a.length);
-  const row = e => { const on = inDay.has(e.id);
+  const shown = match.filter(vis), hidden = match.length - shown.length;
+  const groups = order.map(m => [m, shown.filter(e => e.muscle === m)]).filter(([, a]) => a.length);
+  const cnt = k => base.filter(e => vis(e) && (k === "alle" || e.muscle === k)).length;
+  const row = e => { const on = inDay.has(e.id), lp = lastPerf(e.id), lk = lp ? Math.max(...lp.map(x => x.kg || 0)) : 0;
     return `<div class="li pick-row${on ? " on" : ""}">
-      <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}><span class="pick-box" aria-hidden="true">${on ? ICON.check : ""}</span>
-        <span class="grow"><span class="t">${esc(e.name)}</span><span class="s">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${MUSCLES[e.muscle]} · ${loadShort(e)}${e.off ? " · nicht im Studio" : ""}</span></span></button>
+      <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}>
+        <span class="thumbbox pick-thumb" aria-hidden="true">${motionSvg(e.id, { cls: "thumb", anim: on })}<span class="pick-box">${on ? ICON.check : ""}</span></span>
+        <span class="grow"><span class="t">${esc(e.name)}${e.fav ? ` <span class="badge fav">Bevorzugt</span>` : ""}</span><span class="s">${esc(aboutOf(e))}</span>
+          <span class="s3">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadShort(e)}${lk > 0 ? ` · zuletzt ${kgTxt(lk)} kg` : ""}${e.off ? " · nicht im Studio" : ""}</span></span></button>
       <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
   return `${ses ? sheetHead("Gerät dazunehmen", "Zurück", "pickSesBack") : sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
     ${ses ? `<p class="small muted" style="margin:0" id="pickCount">Kommt direkt nach der aktuellen Übung dran. Geräte mit Häkchen sind schon im Training.</p>
       ${sesDay ? `<div class="seg" id="pickPlanSeg"><button data-a="pickPlan" data-v="0" class="${pickPlan ? "" : "on"}">Nur heute</button><button data-a="pickPlan" data-v="1" class="${pickPlan ? "on" : ""}">Auch in „${esc(sesDay.name)}“</button></div>` : ""}`
-      : `<p class="small muted" style="margin:0" id="pickCount">${inDay.size ? `${inDay.size} ${inDay.size === 1 ? "Gerät" : "Geräte"} im Tag · ` : ""}Antippen nimmt ein Gerät auf oder wieder heraus.</p>`}
+      : `<p class="small muted" style="margin:0" id="pickCount">${inDay.size ? `<b style="color:var(--text)">${inDay.size} ${inDay.size === 1 ? "Gerät" : "Geräte"} im Tag · ≈ ${estMinutes(d)} Min.</b> · ` : ""}Antippen nimmt ein Gerät auf oder wieder heraus.</p>`}
     <input id="pickQ" data-i="pickQ" placeholder="Gerät suchen, z. B. Chest Press oder Rudern" value="${esc(pickQuery)}" autocomplete="off" enterkeyhint="search" type="search">
     <div class="chips">${[["alle", "Alle Geräte"], ["hs", BRAND.hs], ["lf", BRAND.lf], ...(hasCustom ? [["c", "Eigene"]] : [])].map(([k, l]) =>
       `<button class="chip ${pickFilter === k ? "on" : ""}" data-a="pickFilter" data-k="${k}">${l}</button>`).join("")}</div>
-    <select id="pickMuscle" data-i="pickMuscle" aria-label="Nach Muskel filtern"><option value="alle">Alle Muskeln</option>${Object.entries(MUSCLES).map(([k, l]) => `<option value="${k}" ${pickMuscle === k ? "selected" : ""}>${l}</option>`).join("")}</select>
-    <div id="pickList" class="stack" style="gap:var(--s4)">${groups.map(([l, a]) => `<section class="stack" style="gap:var(--s2)"><div class="cap">${l}</div><div class="group">${a.map(row).join("")}</div></section>`).join("") || `<p class="muted" style="margin:0">Nichts gefunden.</p>`}</div>
+    <div class="chips" id="pickMuscle" role="group" aria-label="Nach Muskel filtern" data-v="${pickMuscle}">${[["alle", "Alle"], ...Object.entries(MUSCLES)].filter(([k]) => k === "alle" || k === pickMuscle || cnt(k)).map(([k, l]) =>
+      `<button class="chip ${pickMuscle === k ? "on" : ""}" data-a="pickMuscle" data-k="${k}" aria-pressed="${pickMuscle === k}">${l}<span class="n">${cnt(k)}</span></button>`).join("")}</div>
+    <div id="pickList" class="stack" style="gap:var(--s4)">${groups.map(([m, a]) => `<section class="stack" style="gap:var(--s2)"><div class="cap">${MUSCLES[m]} · ${a.length}</div><div class="group">${a.map(row).join("")}</div></section>`).join("") || `<p class="muted" style="margin:0">Nichts gefunden.</p>`}</div>
     ${hidden || pickAll ? `<button class="link small" data-a="pickAll" style="justify-self:start">${pickAll ? "Nur Geräte im Studio zeigen" : `${hidden} ${hidden === 1 ? "Gerät" : "Geräte"} nicht im Studio – anzeigen`}</button>` : ""}
     <button class="btn block" data-a="newDev" data-ret="pick">+ Eigenes Gerät anlegen</button>`;
 }
@@ -3584,7 +3648,8 @@ function sesAdd(exId) {
   s.list.splice(Math.min(s.list.length, s.idx + 1), 0, en);
   save();
 }
-function refreshPicker() { sheetKeep(pickerHtml()); }
+// Neu zeichnen; die Muskel-Chips bleiben an ihrer seitlichen Position
+function refreshPicker() { const m = byId("pickMuscle"), x = m ? m.scrollLeft : 0; sheetKeep(pickerHtml()); const n = byId("pickMuscle"); if (n) n.scrollLeft = x; }
 // Offenes Sheet neu zeichnen: Scrollposition und Fokus im Suchfeld bleiben erhalten
 function sheetKeep(html) {
   const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html);
@@ -4046,7 +4111,8 @@ function swapSheet() {
   const used = new Set(s.list.map(l => l.exId));
   const { direct, other } = rankAlternatives(cur.id, used);
   const row = (a, kind) => { const e = a.e, lp = lastPerf(e.id);
-    return `<button class="li" data-a="swap" data-id="${e.id}" data-kind="${kind}" style="align-items:flex-start">
+    return `<button class="li swap-row" data-a="swap" data-id="${e.id}" data-kind="${kind}">
+      <span class="thumbbox" aria-hidden="true">${motionSvg(e.id, { cls: "thumb", anim: kind === "direct" })}</span>
       <div class="grow"><div class="row wrap" style="gap:6px"><span class="t">${esc(e.name)}</span>${e.fav ? `<span class="badge fav">Bevorzugt</span>` : ""}</div>
         <div class="s">${esc(aboutOf(e))}${kind === "other" ? ` · ${ALT_TAG[a.kind]}` : ""}</div>
         <div class="small" style="margin-top:4px;color:${lp ? "var(--text)" : "var(--text-3)"}">${lp ? `Zuletzt ${kgTxt(Math.max(...lp.map(t => t.kg)))} ${unitTxt(e)}` : "Noch nie genutzt: mit kontrollierbarem Einstiegsgewicht beginnen"}</div></div></button>`; };
@@ -6522,6 +6588,7 @@ const A = {
   pickPlan: el => { pickPlan = el.dataset.v === "1"; refreshPicker(); },
   pickSes: el => { sesAdd(el.dataset.id); render(); sheetTo(jumpSheet()); },
   // Antippen: Gerät in den Tag aufnehmen oder wieder herausnehmen. Wer ein Gerät einplant, hat es im Studio.
+  pickMuscle: el => { pickMuscle = MUSCLES[el.dataset.k] ? el.dataset.k : "alle"; refreshPicker(); },
   pick: el => { const id = el.dataset.id, d = curDay(); if (!d) return; const i = d.items.findIndex(x => x.exId === id);
     if (i >= 0) d.items.splice(i, 1);
     else { const g = rangeFor(state.plan.goal, id); d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });

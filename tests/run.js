@@ -206,7 +206,7 @@ async function finishAllSets(page, kg, reps) {
       const st = await stored(page);
       ok("Bestehender Plan bleibt unverändert", st.plan.days[0].items[0].exId === "hs-chest");
       ok("Historie bleibt unverändert", st.history[0].exercises[0].exId === "hs-chest" && st.history[0].exercises[0].sets.length === 3);
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.selectOption("#pickMuscle", "brust");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]"); await page.click("#pickMuscle [data-k=brust]");
       const picks = await page.$$eval(".sheet [data-a=pick]", a => a.map(x => ({ id: x.dataset.id, on: x.getAttribute("aria-pressed") === "true", t: x.textContent })));
       const chest = picks.find(x => x.id === "hs-chest");
       ok("Geräteauswahl: nicht vorhandenes Gerät nur sichtbar, weil es schon im Tag ist (mit Hinweis)", !!chest && chest.on && chest.t.includes("nicht im Studio") && picks.length > 1 && picks.every(x => x.id === "hs-chest" || !x.t.includes("nicht im Studio")));      await ctx.close();
@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v65)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v65")));
+      ok("Service Worker aktiv (Cache trainingsplan-v66)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v66")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -442,7 +442,7 @@ async function finishAllSets(page, kg, reps) {
       const rank = id => tp(page, id => { const r = window.__tp.rankAlternatives(id, new Set([id]));
         return { direct: r.direct.map(a => a.e.id), other: r.other.map(a => a.e.id), why: Object.fromEntries(r.direct.concat(r.other).map(a => [a.e.id, a.why])) }; }, id);
       const pats = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.pattern]));
-      ok("Alle 52 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 52 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
+      ok("Alle 55 Bibliotheksgeräte haben ein Bewegungsmuster", pats.length === 55 && pats.every(p => p[1]), pats.filter(p => !p[1]).join());
       let r = await rank("hs-chest");
       ok("Brustpresse: direkte Alternativen nur horizontales Drücken", r.direct.length > 0 && r.direct.every(id => ["hs-decline", "hs-widechest"].includes(id)), r.direct.join());
       ok("Bevorzugtes passendes Gerät steht oben", r.direct[0] === "hs-decline");
@@ -954,12 +954,12 @@ async function finishAllSets(page, kg, reps) {
         const txt = JSON.stringify([T.GUIDE, T.ARTICLES]);
         if (/TODO|lorem|xxx/i.test(txt)) bad.push("Platzhalter");
         return { n: ids.length, bad, arts: T.ARTICLES.length }; });
-      ok("Alle 52 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 52 && !chk.bad.length, chk.bad.join("; "));
+      ok("Alle 55 Geräte ausführlich beschrieben (Muskeln, Nutzen, Einstellung, ≥ 3 Ausführungsschritte, Atmung, ≥ 3 Fehler mit Korrektur, Sicherheit, ≥ 2 Tipps)", chk.n === 55 && !chk.bad.length, chk.bad.join("; "));
       ok("Jede zitierte Quelle existiert und ist vollständig verlinkt", !chk.bad.some(b => /Quelle/.test(b)));
       ok(`${chk.arts} Wissensartikel, jeder mit Quelle`, chk.arts >= 8);
       // Bibliothek
       await page.click("[data-a=tab][data-v=lib]");
-      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 53);
+      ok("Bibliothek listet alle Geräte inkl. eigener", (await page.$$("#libList [data-a=openEx]")).length === 56);
       await page.fill("#libQ", "Brust");
       const brust = await tp(page, () => window.__tp.allEx().filter(e => e.name.toLowerCase().includes("brust") || e.muscle === "brust").length);
       ok("Suche filtert (Name oder Muskel)", (await page.$$("#libList [data-a=openEx]")).length === brust && brust >= 5);
@@ -1854,7 +1854,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Planprüfung findet fehlende Muskelgruppen (Rücken fehlt)", pcTxt.includes("Planprüfung") && /Rücken\s*fehlt im Plan/.test(pcTxt) && pc.out.some(o => o.m === "ruecken" && o.v === 0));
       ok("Wochenmenge rechnet mit der Zahl der Termine (2 Termine bei 1 Trainingstag)", pc.per === 2 && pcTxt.includes("2 Termine pro Woche"));
       await page.click("#planCheck [data-a=checkFix][data-m=ruecken]");
-      ok("„Übung hinzufügen“ öffnet den Tag mit der Geräteauswahl für Rücken", await page.isVisible("#pickQ") && (await page.$eval("#pickMuscle", s => s.value)) === "ruecken");
+      ok("„Übung hinzufügen“ öffnet den Tag mit der Geräteauswahl für Rücken", await page.isVisible("#pickQ") && (await page.getAttribute("#pickMuscle", "data-v")) === "ruecken");
       await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.keyboard.press("Escape");
       ok("Übung landet im Plan", (await stored(page)).plan.days[0].items.some(i => i.exId === "hs-row"));
       // Artikel
@@ -2270,7 +2270,7 @@ async function finishAllSets(page, kg, reps) {
           generic: all.filter(k => ["Nah ans Limit", "Dehnung mitnehmen", "Pause nicht zu knapp", "Einstellung merken", "Drop-Satz spart Zeit"].includes(k.t)).length,
           seat: T.tricksFor(T.ex("hs-seatcurl"))[0].s, curl: T.tricksFor(T.ex("hs-curl"))[1].s, inc: T.tricksFor(T.ex("hs-incline"))[0].s, seatWhy: T.GUIDE["hs-seatcurl"].why, incWhy: T.GUIDE["hs-incline"].why,
           now: [T.trickNow(it("hs-chest"), 0).t, T.trickNow(it("hs-chest"), 1).t, T.trickNow(it("hs-chest"), 2).t], custom: T.tricksFor({ id: "c-x" }).length }; });
-      ok("Jedes der 52 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 52 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
+      ok("Jedes der 55 Geräte hat eigene Tricks (mindestens einen)", tr.n.length === 55 && tr.n.every(n => n >= 1), JSON.stringify(tr.n));
       ok("Kein Trick steht bei zwei Geräten (Titel, Kurztext und Erklärung jeweils einmalig)", !tr.dupT.length && !tr.dupShort.length && !tr.dupS.length, [...tr.dupT, ...tr.dupShort, ...tr.dupS].join(" | "));
       ok("Allgemeine Grundsätze nicht mehr bei den Geräten, sondern einmal gesammelt", tr.generic === 0 && tr.gen.includes("Nah ans Limit") && tr.gen.includes("Drop-Satz am Steckgewicht"));
       ok("Studienbelege einmal pro Seite: Armbeuger im Trick (+12,4 %), Beinbeuger sitzend und Schräge Brustpresse unter „Warum“ statt doppelt im Trick", tr.curl.includes("+12,4 %") && tr.seatWhy.includes("Studie") && tr.incWhy.includes("45°") && !tr.seat.includes("%") && !tr.inc.includes("45°"));
@@ -2286,7 +2286,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Kein Trick wiederholt, was auf derselben Geräteseite schon steht", ov.length === 0, ov.slice(0, 4).join(" | "));
       ok("Eigene Geräte ohne erfundene Tricks", tr.custom === 0);
       const ab = await tp(page, () => Object.values(window.__tp.ABOUT_X));
-      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (52, keine doppelt)", ab.length === 52 && new Set(ab).size === 52);
+      ok("Jedes Gerät hat eine eigene Kurzbeschreibung (55, keine doppelt)", ab.length === 55 && new Set(ab).size === 55);
       await page.click("[data-a=tab][data-v=lib]");
       const subs = await page.$$eval("#app .group .li .s", e => e.map(x => x.textContent.trim()));
       ok("Übungsliste: keine Beschreibung doppelt", subs.length >= 28 && new Set(subs).size === subs.length, subs.slice(0, 6).join(" | "));
@@ -2567,7 +2567,7 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: [{ id: "h", dayId: "d1", day: "Push", date: new Date(Date.now() - 2 * 864e5).toISOString(), durationSec: 1800,
         exercises: [{ exId: "hs-chest", name: "Iso-Lateral Chest Press", sets: [{ kg: 40, reps: 10 }] }] }] });
       const L = await tp(page, () => window.__tp.allEx().filter(e => !e.id.startsWith("c-")).map(e => [e.id, e.name, e.label]));
-      ok("Alle 52 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 52 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
+      ok("Alle 55 Geräte mit deutschem Namen, Bezeichnung am Gerät getrennt gespeichert", L.length === 55 && L.every(([, n, l]) => n && l && n !== l && !/Press|Row|Curl|Raise|Squat|Pulldown|Delt|Fly\b|Crunch|Thrust|Extension|Dip\b/.test(n)), JSON.stringify(L.filter(([, n]) => /Press|Row|Curl/.test(n))));
       ok("Gewicht pro Seite bleibt an der Gerätebezeichnung (Brustpresse: pro Seite, Beinpresse: insgesamt)", await tp(page, () => window.__tp.unitOf(window.__tp.ex("hs-chest")) === "s" && window.__tp.unitOf(window.__tp.ex("hs-legpress")) === "t" && window.__tp.unitOf(window.__tp.ex("hs-legext")) === "s"));
       const st = await tp(page, () => window.__tp.state);
       ok("Gespeicherte Einträge auf Deutsch umgestellt (Gerät und Trainingstag „Push“ → „Drücken“)", st.history[0].exercises[0].name === "Brustpresse" && st.history[0].day === "Drücken");
@@ -2578,7 +2578,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel in Akzentfarbe", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
       await page.click("[data-a=exBack]");
       const thumbs = await page.$$eval("#libList .thumbbox svg.motion", e => e.length);
-      ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 52 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
+      ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 55 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
       for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Übungsliste mit Vorschaubildern ohne seitliches Scrollen`, await noOverflow(page)); }
       await ctx.close();
     }
@@ -3050,14 +3050,14 @@ async function finishAllSets(page, kg, reps) {
       const H = [hist("hs-chest", [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }], 3, "s")];
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: H, dev: { "lf-pushdown": { off: false } } });
       await page.click("[data-a=tab][data-v=plan]");
-      ok("Tab „Training“: Geräte im Studio direkt erreichbar", (await page.textContent("#devsRow")).includes("von 52"));
+      ok("Tab „Training“: Geräte im Studio direkt erreichbar", (await page.textContent("#devsRow")).includes("von 55"));
       await page.click("[data-a=editDay]");
       const day = (await page.textContent("#app")).replace(/\s+/g, " ");
       ok("Trainingstag: „Test starten“ und je Gerät das Gewicht fürs nächste Mal", (await page.textContent("#dayStart")).includes("Test starten") && day.includes("2 × 42,5 kg pro Seite") && day.includes("Pause"));
       // Geräteauswahl
       await page.click("[data-a=openPicker]");
       const caps = await page.$$eval("#pickList .cap", e => e.map(x => x.textContent));
-      ok("Geräteauswahl: nach Marke gruppiert, Bezeichnung am Gerät sichtbar", caps.join() === "Hammer Strength,Life Fitness" && (await page.textContent(".sheet [data-a=pick][data-id=hs-row]")).includes("Iso-Lateral Row"));
+      ok("Geräteauswahl: nach Muskel gruppiert mit Anzahl, Bezeichnung am Gerät sichtbar", caps.length >= 8 && caps[0].startsWith("Brust · ") && caps[1].startsWith("Rücken · ") && caps.every(c => /^.+ · \d+$/.test(c)) && (await page.textContent(".sheet [data-a=pick][data-id=hs-row]")).includes("Iso-Lateral Row"));
       ok("Bereits im Tag: mit Häkchen", (await page.getAttribute(".sheet [data-a=pick][data-id=hs-chest]", "aria-pressed")) === "true");
       await page.fill("#pickQ", "pushdown");
       ok("Suche „pushdown“ findet das Kabelgerät", (await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id))).join() === "lf-pushdown");
@@ -3130,7 +3130,7 @@ async function finishAllSets(page, kg, reps) {
       const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60 }, { id: "i2", exId: "hs-legpress", sets: 1, rmin: 8, rmax: 12, rest: 60 }] }] };
       const { ctx, page } = await open({ plan, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
       const cov = await tp(page, () => { const T = window.__tp; return T.allEx().filter(e => !e.id.startsWith("c-")).filter(e => !T.motSpec(e.id)).map(e => e.id); });
-      ok("Alle 52 Geräte haben eine Bewegungsanimation", cov.length === 0, cov.join());
+      ok("Alle 55 Geräte haben eine Bewegungsanimation", cov.length === 0, cov.join());
       const cust = await tp(page, () => { const T = window.__tp; T.state.custom.push({ id: "c-k", name: "Kabelzug", muscle: "trizeps", sec: [], type: "stack", pattern: "tri" }); return !!T.motSpec("c-k"); });
       ok("Eigenes Gerät mit Bewegungsmuster bekommt die passende Animation", cust);
       ok("„Heute“: Geräte des Tages nacheinander, mit Name", (await page.textContent(".hero-mot .mcap")).includes("1/2 · Brustpresse") && !!(await page.$(".hero-mot svg[data-cycle]")));
@@ -3272,7 +3272,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Karte: „Im Plan fehlt: Beine hinten“, sagt was das ist und welches Gerät passt", home.includes("Im Plan fehlt: Beine hinten") && home.includes("Keine deiner Übungen trainiert die Oberschenkelrückseite. Passend: Beinbeuger – sitzend, liegend oder kniend.") && !home.includes("weder als Hauptmuskel"), home.slice(0, 300));
       await page.click("[data-a=checkFix][data-m=beineh]");
       const st = await tp(page, () => ({ day: window.__tp.state.editDay }));
-      ok("„+ Gerät wählen“ öffnet den Beintag (nicht den kürzeren Oberkörper-Tag) mit Beinbeugern", st.day === "u" && (await page.$eval("#pickMuscle", s => s.value)) === "beineh" && (await page.textContent(".sheet")).includes("Beinbeuger sitzend"));
+      ok("„+ Gerät wählen“ öffnet den Beintag (nicht den kürzeren Oberkörper-Tag) mit Beinbeugern", st.day === "u" && (await page.getAttribute("#pickMuscle", "data-v")) === "beineh" && (await page.textContent(".sheet")).includes("Beinbeuger sitzend"));
       await ctx.close();
     }
 
@@ -3967,7 +3967,7 @@ async function finishAllSets(page, kg, reps) {
       const plan = { goal: "kraft", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 4, rmax: 6, rest: 180 }] }] };
       const o2 = await open({ plan });
       await o2.page.click("[data-a=tab][data-v=plan]"); await o2.page.click("[data-a=editDay]"); await o2.page.click("[data-a=openPicker]");
-      await o2.page.selectOption("#pickMuscle", "schultern"); await o2.page.click(".sheet [data-a=pick][data-id=hs-lateral]");
+      await o2.page.click("#pickMuscle [data-k=schultern]"); await o2.page.click(".sheet [data-a=pick][data-id=hs-lateral]");
       const st = await stored(o2.page), added = st.plan.days[0].items.find(i => i.exId === "hs-lateral");
       ok("Seitheben zu einem Kraft-Plan hinzugefügt: 8–12 Wdh., 90 s", !!added && added.rmin === 8 && added.rmax === 12 && added.rest === 90, JSON.stringify(st.plan.days[0].items));
       await o2.ctx.close();
@@ -4027,7 +4027,54 @@ async function finishAllSets(page, kg, reps) {
       await o4.ctx.close();
     }
 
-    section("73. Konsole");
+    section("73. Latzug mit Griffvarianten; lebendige Geräteauswahl");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Ziehen", items: [
+        { id: "i1", exId: "hs-pulldown", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan, history: [hist("hs-lat", [{ kg: 55, reps: 10 }], 3, "b")], dev: { "hs-lat": { fav: true } } });
+      const v = await tp(page, () => { const T = window.__tp, ids = ["hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"];
+        return ids.map(id => { const e = T.ex(id), g = T.GUIDE[id]; return { id, name: e.name, label: e.label, off: !!e.off, pat: e.pattern, load: T.loadShort(e), src: (g.src || []).join(), why: g.why, about: T.ABOUT_X[id], tricks: T.tricksFor(e).length }; }); });
+      ok("Vier Latzug-Varianten: Latzug, breit, eng, Untergriff – alle im Studio, vertikales Ziehen, Seilzug, mit eigener Kurzbeschreibung und eigenem Trick",
+        v.map(x => x.name).join() === "Latzug,Latzug breit,Latzug eng,Latzug Untergriff" && v.every(x => !x.off && x.pat === "pull_v" && x.load === "Seilzug" && x.label === "Lat Pulldown" && x.tricks >= 1) && new Set(v.map(x => x.about)).size === 4, JSON.stringify(v.map(x => [x.name, x.load, x.pat, x.off])));
+      ok("Aussagen zu den Griffen mit Quelle: breit → Andersen 2014 (77 statt 80 kg, Aktivität ähnlich), Untergriff → Lusk 2010 (Rückenmuskel weniger aktiv, Bizeps gleich)",
+        v[1].src === "andersen2014" && v[1].why.includes("77 statt 80 kg") && v[1].why.includes("ähnlich aktiv") && v[3].src === "lusk2010" && v[3].why.includes("weniger aktiv als im Obergriff") && v[3].why.includes("beim Bizeps gab es keinen Unterschied") && v[2].src === "", JSON.stringify(v.map(x => x.src)));
+      const srcOk = await tp(page, () => { const S = window.__tp.SOURCES; return [S.lusk2010.url, S.andersen2014.url, S.lusk2010.j, S.andersen2014.j]; });
+      ok("Quellen mit Zeitschrift und PubMed-Link", srcOk.join("|") === "https://pubmed.ncbi.nlm.nih.gov/20543740/|https://pubmed.ncbi.nlm.nih.gov/24662157/|J Strength Cond Res 2010;24(7):1895–1900|J Strength Cond Res 2014;28(4):1135–1142", srcOk.join("|"));
+      // Geräteauswahl
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=openPicker]");
+      const chips = await page.$$eval("#pickMuscle [data-a=pickMuscle]", b => b.map(x => x.textContent.replace(/\s+/g, " ").trim()));
+      ok("Muskel-Filter als Chips mit Anzahl (Alle 36, Brust 5, Rücken 9 …)", chips[0] === "Alle36" && chips[1] === "Brust5" && chips[2] === "Rücken9" && (await page.getAttribute("#pickMuscle [data-k=alle]", "aria-pressed")) === "true", chips.join());
+      ok("Kopfzeile nennt Geräte und Dauer des Tages", (await page.textContent("#pickCount")).includes("2 Geräte im Tag · ≈") && (await page.textContent("#pickCount")).includes("Min."));
+      await page.click("#pickMuscle [data-k=ruecken]");
+      const rows = await page.$$eval(".sheet .pick-row", r => r.map(x => ({ id: x.querySelector("[data-a=pick]").dataset.id, on: x.classList.contains("on"), svg: !!x.querySelector(".pick-thumb svg.motion"), anim: !!x.querySelector(".pick-thumb svg.motion[data-anim]"), t: x.textContent.replace(/\s+/g, " ") })));
+      ok("Rücken: 9 Geräte, bevorzugter Latzug zuerst, alle vier Latzug-Varianten dabei", rows.length === 9 && rows[0].id === "hs-lat" && ["hs-lat-wide", "hs-lat-close", "hs-lat-under"].every(id => rows.some(r => r.id === id)) && (await page.textContent("#pickList .cap")) === "Rücken · 9", rows.map(r => r.id).join());
+      ok("Jede Zeile mit Bild der Bewegung; gewählte Geräte bewegen sich, die anderen stehen still", rows.every(r => r.svg) && rows.filter(r => r.anim).map(r => r.id).sort().join() === "hs-pulldown,hs-row" && rows.filter(r => r.on).length === 2, JSON.stringify(rows.map(r => [r.id, r.anim])));
+      const lat = rows.find(r => r.id === "hs-lat"), wide = rows.find(r => r.id === "hs-lat-wide");
+      ok("Zeile zeigt Beschreibung, Bezeichnung am Gerät, Gewichtsart und den letzten eigenen Wert", lat.t.includes("Latziehen an der Stange, Steckgewicht") && lat.t.includes("Lat Pulldown · Seilzug · zuletzt 55 kg") && lat.t.includes("Bevorzugt") && wide.t.includes("Breiter Obergriff an der langen Stange") && !wide.t.includes("zuletzt"), lat.t + " | " + wide.t);
+      await page.click(".sheet [data-a=pick][data-id=hs-lat-close]");
+      const st = await stored(page);
+      ok("Antippen nimmt „Latzug eng“ auf: im Tag, Bild bewegt sich, Zähler steigt", st.plan.days[0].items.some(i => i.exId === "hs-lat-close") && !!(await page.$(".sheet [data-a=pick][data-id=hs-lat-close] svg.motion[data-anim]")) && (await page.textContent("#pickCount")).includes("3 Geräte im Tag") && (await page.getAttribute("#pickMuscle", "data-v")) === "ruecken");
+      await page.fill("#pickQ", "v-griff");
+      ok("Suche „v-griff“ findet „Latzug eng“", (await page.$$eval(".sheet [data-a=pick]", a => a.map(x => x.dataset.id))).join() === "hs-lat-close");
+      await page.fill("#pickQ", "");
+      await page.setViewportSize({ width: 320, height: 640 }); await page.waitForTimeout(200);
+      ok("Geräteauswahl bei 320 px ohne seitliches Scrollen", await noOverflow(page) && await page.evaluate(() => { const s = document.querySelector(".sheet"); return s.scrollWidth <= s.clientWidth; }));
+      await page.setViewportSize({ width: 360, height: 780 });
+      await page.click("[data-a=closeSheet].btn");
+      // Meine Geräte mit Bild
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("#devsRow");
+      const dv = await page.$$eval(".sheet .dev-row", r => ({ n: r.length, svg: r.filter(x => x.querySelector(".thumbbox svg.motion")).length }));
+      ok("„Meine Geräte“: jede Zeile mit Bild, 36 von 55 im Studio", dv.n === 55 && dv.svg === 55 && (await page.textContent("#devCount")).includes("36 von 55"), JSON.stringify(dv));
+      await page.click("[data-a=devsDone]");
+      // Gerät tauschen: mehr Auswahl, mit Bild
+      await page.click("[data-a=editDay]"); await page.click("#dayStart"); await page.click("[data-a=findOff]"); await page.click("[data-a=openSwap]");
+      const sw = await page.$$eval("#swapDirect [data-a=swap]", r => r.map(x => ({ id: x.dataset.id, anim: !!x.querySelector(".thumbbox svg.motion[data-anim]") })));
+      ok("„Latziehen zur Brust besetzt?“: Latzug und die Griffvarianten, die noch nicht im Training sind, als direkte Alternativen mit bewegtem Bild",
+        ["hs-lat", "hs-lat-wide", "hs-lat-under"].every(id => sw.some(r => r.id === id)) && !sw.some(r => r.id === "hs-lat-close") && sw[0].id === "hs-lat" && sw.every(r => r.anim), JSON.stringify(sw));
+      await ctx.close();
+    }
+
+    section("74. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
