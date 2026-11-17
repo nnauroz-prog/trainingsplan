@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v59)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v59")));
+      ok("Service Worker aktiv (Cache trainingsplan-v60)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v60")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3526,9 +3526,12 @@ async function finishAllSets(page, kg, reps) {
       // Heute Ruhetag: Startseite sagt trainingsfrei und nennt das nächste Training (morgen Beine)
       await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
       await page.click("#tagTrainPick [data-v=rest]");
+      // Termine seit drei Tagen: ein ausgefallener Termin davor darf den geplanten Ruhetag nicht zu „heute nachholen“ machen
+      await tp(page, () => { window.__tp.state.sched.since = new Date(Date.now() - 3 * 864e5).toISOString(); });
       await page.click("[data-a=tab][data-v=home]");
       const homeTxt = (await page.textContent("main")).replace(/\s+/g, " ");
-      ok("Heute Ruhetag: „Heute ist trainingsfrei“, nächstes Training morgen Beine", homeTxt.includes("Heute ist trainingsfrei") && homeTxt.includes("morgen um 23:59 – Beine") && (await page.textContent(".hero-name")) === "Beine", homeTxt.slice(0, 300));
+      ok("Heute Ruhetag: „Heute ist trainingsfrei“, nächstes Training morgen Beine, kein „heute nachholen“", homeTxt.includes("Heute ist trainingsfrei") && homeTxt.includes("morgen um 23:59 – Beine") && !homeTxt.includes("heute nachholen") && (await page.textContent(".hero-name")) === "Beine", homeTxt.slice(0, 300));
+      await tp(page, () => { window.__tp.state.sched.since = new Date().toISOString(); });
       // „Anderes Training wählen“ auf der Startseite ersetzt die Änderung für heute
       await page.click("[data-a=pickDay]"); await page.click("[data-a=selDay][data-id=a]");
       ok("„Anderes Training wählen“ ersetzt die Änderung für heute", !((await stored(page)).dayPlan[dk(0)] || {}).train && (await page.textContent(".hero-name")) === "Drücken");
@@ -3550,7 +3553,47 @@ async function finishAllSets(page, kg, reps) {
       await o2.ctx.close();
     }
 
-    section("63. Konsole");
+    section("63. Tagesplan: Wochenansicht");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const wd = (new Date().getDay() + 6) % 7; // Montag = 0
+      const it = (id, exId) => [{ id, exId, sets: 3, rmin: 8, rmax: 12, rest: 90 }];
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Drücken", items: it("a1", "hs-chest") }, { id: "b", name: "Ziehen", items: it("b1", "hs-row") }] };
+      const per = { k: 100, p: 0, c: 25, f: 0 };
+      const { ctx, page } = await open({ plan, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null },
+        sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "23:59", planB: "next", since: new Date().toISOString() }, stepGoal: 8000, dayPlan: { [dk(0)]: { act: 5000 } },
+        food: { [dk(-1)]: [{ id: "f1", m: "m", n: "Testessen", src: "usda:1", g: 2000, per }], [dk(1)]: [{ id: "f2", m: "m", n: "Testessen", src: "usda:1", g: 1500, per }] } });
+      await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      ok("Tagesplan: Umschalter Tag/Woche, Tag gewählt", (await page.getAttribute("#tagSeg [data-v=tag]", "aria-pressed")) === "true" && (await page.getAttribute("#tagSeg [data-v=woche]", "aria-pressed")) === "false");
+      await page.click("#tagSeg [data-v=woche]");
+      const rows = await page.$$eval("#tagWeekList .li", b => b.map(x => ({ d: x.dataset.d, t: x.textContent.replace(/\s+/g, " ").trim(), dis: x.disabled })));
+      const row = n => rows.find(r => r.d === dk(n));
+      ok("Woche: Titel, 7 Tage von Montag an", (await page.textContent("main h1")) === "Woche" && rows.length === 7 && new Date(rows[0].d + "T12:00").getDay() === 1, JSON.stringify(rows.map(r => r.d)));
+      ok("Heute: „Heute“, gegangene Schritte, Training", row(0).t.includes("Heute") && row(0).t.includes("5.000 Schritte gegangen") && row(0).t.includes("Drücken") && row(0).t.includes("kein Essen eingetragen"), row(0).t);
+      const e = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        return { m: T.dayEnergy(k(1)).balance, g: T.dayEnergy(k(-1)).balance }; });
+      const other = wd === 6 ? { n: -1, kc: "2.000 kcal gegessen", bal: e.g } : { n: 1, kc: "1.500 kcal geplant", bal: e.m };
+      ok("Anderer Tag mit Essen: Kalorien und Bilanz in der Zeile", row(other.n).t.includes(other.kc) && row(other.n).t.includes(`${other.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${Math.abs(other.bal).toLocaleString("de-DE")}`), row(other.n).t);
+      // Zeile antippen öffnet den Tag
+      await page.click(`#tagWeekList [data-d="${dk(other.n)}"]`);
+      ok("Zeile antippen öffnet den Tag", (await page.textContent("main h1")) === (other.n === 1 ? "Morgen" : "Gestern") && (await page.getAttribute("#tagSeg [data-v=tag]", "aria-pressed")) === "true");
+      // Wochen blättern bis an den Rand des Planbereichs
+      await page.click("#tagSeg [data-v=woche]");
+      await page.click(`#tagWeekList [data-d="${dk(0)}"]`); await page.click("#tagSeg [data-v=woche]");
+      await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='1']");
+      const fwd = await page.$$eval("#tagWeekList .li:disabled", b => b.length);
+      ok("Zwei Wochen weiter: Tage nach dem Planbereich gesperrt, „Nächste Woche“ aus", fwd === 6 - wd && !!(await page.$("[data-a=tagDay][data-d='1'][disabled]")), String(fwd));
+      for (let i = 0; i < 3; i++) await page.click("[data-a=tagDay][data-d='-1']");
+      const back = await page.$$eval("#tagWeekList .li:disabled", b => b.length);
+      ok("Eine Woche zurück: Tage vor dem Planbereich gesperrt, „Vorherige Woche“ aus", back === wd && !!(await page.$("[data-a=tagDay][data-d='-1'][disabled]")), String(back));
+      ok("Wochenansicht bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Von der Startseite öffnet sich immer der Tag
+      await page.click("[data-a=tab][data-v=home]"); await page.click(`.week [data-a=openTag][data-d="${dk(0)}"]`);
+      ok("Von der Startseite: Tagesansicht", (await page.textContent("main h1")) === "Heute");
+      await ctx.close();
+    }
+
+    section("64. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

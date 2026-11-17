@@ -2814,7 +2814,7 @@ function go(v) {
   render(); window.scrollTo(0, 0);
 }
 /* ================= Tagesplan: Training, Schritte, Essen, Kalorienbilanz ================= */
-let tagDay = null;
+let tagDay = null, tagMode = "tag"; // tagMode: "tag" oder "woche"
 // Änderung im Tagesplan: "rest" = Ruhetag, sonst ID eines Trainingstags; wirkt nur mit festen Terminen
 function trainOvr(dk) { return (state.sched && state.dayPlan[dk] && state.dayPlan[dk].train) || null; }
 function ovrDay(dk) { const o = trainOvr(dk); return o && o !== "rest" && state.plan ? state.plan.days.find(x => x.id === o && x.items.length) || null : null; }
@@ -2887,6 +2887,21 @@ function tagWeekSum(dk) {
   if (!n) return "";
   return `<span class="muted">Woche${hasToday ? " ohne heute" : ""} · ${n} ${n === 1 ? "Tag" : "Tage"} mit Essen:</span> <b>${bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${fmtK(Math.abs(bal))} kcal</b>${tgt ? `<span class="muted"> · Ziel ≈ ${fmtK(Math.abs(tgt))} kcal ${tgt < 0 ? "Defizit" : "Überschuss"}</span>` : ""}`;
 }
+// Woche als Liste: je Tag Training, Schritte, Essen und Bilanz; Antippen öffnet den Tag
+function tagWeekList(dk) {
+  const today = dkey(), minD = tagMin(), maxD = maxFoodDay(), mon = mondayOf(dk);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dkey(d), off = k < minD || k > maxD;
+    const tr = off ? null : plannedOn(k), E = off ? null : dayEnergy(k), nf = (state.food[k] || []).length, ac = actOn(k), st = ac != null ? ac : stepsOn(k);
+    const sub = off ? ["außerhalb des Planbereichs"] : [
+      tr && tr.done ? "Training erledigt" : "",
+      st != null ? `${fmtK(st)} Schritte${ac != null ? " gegangen" : ""}` : "",
+      nf ? `${fmtK(dayTotals(k).k)} kcal ${k > today ? "geplant" : "gegessen"}` : k > today ? "Essen nicht geplant" : "kein Essen eingetragen",
+      E && nf ? `${E.balance <= 0 ? "Defizit" : "Überschuss"}${k === today ? " bisher" : ""} ≈ ${fmtK(Math.abs(E.balance))} kcal` : ""].filter(Boolean);
+    const right = tr ? esc(tr.name) : state.sched && !off && k >= today ? "Ruhetag" : "";
+    return `<button class="li" data-a="tagOpen" data-d="${k}" ${off ? "disabled" : ""}><div class="grow"><div class="t">${d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${k === today ? " · Heute" : ""}</div><div class="s">${sub.join(" · ")}</div></div>${right ? `<span class="small muted" style="text-align:right">${right}</span>` : ""}<span class="chev">›</span></button>`;
+  }).join("");
+}
 function tagStepInfo(dk) {
   const E = dayEnergy(dk), plan = stepsOn(dk), act = actOn(dk), s = act != null ? act : plan, sl = stepLenCm();
   if (s == null) return "Noch kein Ziel – mit + festlegen.";
@@ -2912,12 +2927,27 @@ function tagRefresh() {
   if (a) a.innerHTML = tagStepInfo(dk); if (b) b.innerHTML = tagBalInner(dk); if (w) w.innerHTML = tagWeekSum(dk);
 }
 function vTag() {
-  const today = dkey(), dk = tagDay || today, d = dateOf(dk), E = dayEnergy(dk), tr = plannedOn(dk), steps = stepsOn(dk), act = actOn(dk), sl = stepLenCm();
-  const minD = tagMin(), maxD = maxFoodDay(), t = dayTotals(dk), past = dk < today, nFood = (state.food[dk] || []).length;
+  const today = dkey(), dk = tagDay || today, d = dateOf(dk), minD = tagMin(), maxD = maxFoodDay();
+  const segHtml = `<div class="seg" id="tagSeg">${[["tag", "Tag"], ["woche", "Woche"]].map(([v, l]) => `<button data-a="tagMode" data-v="${v}" class="${tagMode === v ? "on" : ""}" aria-pressed="${tagMode === v}">${l}</button>`).join("")}</div>`;
+  if (tagMode === "woche") {
+    const mon = mondayOf(dk), sun = new Date(mon); sun.setDate(mon.getDate() + 6); const f = x => x.toLocaleDateString("de-DE", { day: "numeric", month: "short" });
+    $app.innerHTML = `<div class="page">
+    <div class="head"><button class="link" data-a="tab" data-v="home">‹ Heute</button>
+      <div class="row between"><div><div class="cap">Tagesplan · ${f(mon)} – ${f(sun)}</div><h1 class="title">Woche</h1></div>
+        <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="tagDay" data-d="-1" aria-label="Vorherige Woche" ${dkey(mon) <= minD ? "disabled" : ""}>‹</button><button class="icon-btn" data-a="tagDay" data-d="1" aria-label="Nächste Woche" ${dkey(sun) >= maxD ? "disabled" : ""}>›</button></div></div></div>
+    ${segHtml}
+    <section class="section"><div class="group" id="tagWeekList">${tagWeekList(dk)}</div>
+      <p class="small" id="tagWeekSum" style="margin:0">${tagWeekSum(dk)}</p></section>
+  </div>`;
+    return;
+  }
+  const E = dayEnergy(dk), tr = plannedOn(dk), steps = stepsOn(dk), act = actOn(dk), sl = stepLenCm();
+  const t = dayTotals(dk), past = dk < today, nFood = (state.food[dk] || []).length;
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="tab" data-v="home">‹ Heute</button>
       <div class="row between"><div><div class="cap">Tagesplan · ${d.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}</div><h1 class="title">${tagTitle(dk)}</h1></div>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="tagDay" data-d="-1" aria-label="Vorheriger Tag" ${dk <= minD ? "disabled" : ""}>‹</button><button class="icon-btn" data-a="tagDay" data-d="1" aria-label="Nächster Tag" ${dk >= maxD ? "disabled" : ""}>›</button></div></div></div>
+    ${segHtml}
     <section class="section" id="tagWeekSec" aria-label="Woche">
       <div class="week tagweek">${tagWeek(dk)}</div>
       <p class="small" id="tagWeekSum" style="margin:0">${tagWeekSum(dk)}</p>
@@ -5139,7 +5169,7 @@ function buddySays(day, thisWeek, goal, streak) {
     }
     else if (s.planB === "short") { title = `Dein Termin war um ${s.time}`; text = "Plan B: die 30-Minuten-Version – die wichtigsten Übungen, Pausen bleiben gleich."; short(); }
     else { title = `Dein Termin war um ${s.time}`; text = `Plan B: morgen nachholen – ${dn}.`; }
-  } else if (missed !== null) {
+  } else if (missed !== null && trainOvr(dkey(now)) !== "rest") { // geplanter Ruhetag: kein „heute nachholen“
     title = `${WD_LONG[missed]} ist ausgefallen${mw ? ` – ${MISS_L[mw.r]}` : ""}`;
     if (s.planB === "short") { text = `Plan B: heute die 30-Minuten-Version von ${dn}.`; short(); } else text = `Plan B: heute nachholen – ${dn}, ca. ${min} Min.`;
   } else if (last && (now - new Date(last.date)) / 864e5 >= 7) {
@@ -6142,8 +6172,11 @@ const A = {
   motSlow: el => { const m = motOf(el); if (!m) return; const now = performance.now(), loc = motLocal(m, now);
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
   reloadApp: () => location.reload(),
-  openTag: el => { tagDay = el.dataset.d || null; go("tag"); },
-  tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt);
+  openTag: el => { tagDay = el.dataset.d || null; tagMode = "tag"; go("tag"); },
+  tagMode: el => { tagMode = el.dataset.v === "woche" ? "woche" : "tag"; vTag(); },
+  tagOpen: el => { const n = el.dataset.d; if (n < tagMin() || n > maxFoodDay()) return; tagDay = n === dkey() ? null : n; tagMode = "tag"; vTag(); window.scrollTo(0, 0); },
+  tagDay: el => { const dt = dateOf(tagDay || dkey()); dt.setDate(dt.getDate() + +el.dataset.d * (tagMode === "woche" ? 7 : 1)); let n = dkey(dt);
+    if (tagMode === "woche") n = n < tagMin() ? tagMin() : n > maxFoodDay() ? maxFoodDay() : n; // Woche: bis an den Rand des Planbereichs
     if (n >= tagMin() && n <= maxFoodDay()) tagDay = n === dkey() ? null : n; vTag(); },
   // Training für einen Tag wählen; entspricht die Wahl dem Ablauf, wird keine Änderung gespeichert
   tagTrain: el => { const dk = tagDay || dkey(), v = el.dataset.v; if (dk < dkey()) return;
