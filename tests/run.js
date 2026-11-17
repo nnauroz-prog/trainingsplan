@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v62)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v62")));
+      ok("Service Worker aktiv (Cache trainingsplan-v63)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v63")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3711,7 +3711,87 @@ async function finishAllSets(page, kg, reps) {
       await o2.ctx.close();
     }
 
-    section("66. Konsole");
+    section("66. Startseite: „Angepasst“ nur beim Vorschlag der App, nicht bei selbst gewähltem Training");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const it = (id, exId) => [{ id, exId, sets: 4, rmin: 8, rmax: 12, rest: 90 }];
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Brust A", items: it("a1", "hs-chest") }, { id: "b", name: "Brust B", items: it("b1", "hs-fly") }, { id: "c", name: "Beine", items: it("c1", "hs-legpress") }] };
+      const history = [{ id: "h1", dayId: "a", day: "Brust A", date: new Date(Date.now() - 20 * 3600e3).toISOString(), durationSec: 2400,
+        exercises: [{ exId: "hs-chest", name: "hs-chest", u: "s", planned: 4, rmin: 8, rmax: 12, sets: Array.from({ length: 4 }, () => ({ kg: 40, reps: 10 })) }] }];
+      // Uhrzeit fest auf 12:00, damit das letzte Training (vor 20 Stunden) sicher gestern liegt
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme: "dark", serviceWorkers: "block" });
+      const noon = new Date(); noon.setHours(12, 0, 0, 0); await ctx.clock.install({ time: noon });
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message));
+      await page.goto(URL);
+      await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify({ plan, history: [Object.assign({}, history[0], { date: new Date(noon.getTime() - 20 * 3600e3).toISOString() })], hints: { units: true },
+        backupAt: noon.toISOString(), sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "23:59", planB: "next", since: noon.toISOString() } })]);
+      await page.reload();
+      const read = async () => ({ cap: await page.textContent(".hero-meta .cap"), name: await page.textContent(".hero-name"), txt: (await page.textContent(".hero")).replace(/\s+/g, " ") });
+      let h = await read();
+      ok("Vorschlag der App: Brust nicht erholt → „Angepasst“, Beine, mit Begründung", h.cap === "Angepasst" && h.name === "Beine" && h.txt.includes("Heute lieber Beine, Brust B danach"), JSON.stringify(h));
+      const kToday = await page.evaluate(() => { const x = new Date(); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; });
+      await page.click(`.week [data-a=openTag][data-d="${kToday}"]`);
+      ok("Tagesplan zeigt für heute denselben Vorschlag (Beine)", (await page.textContent("#tagTrain .t")) === "Beine" && (await page.getAttribute("#tagTrainPick [data-v=c]", "aria-pressed")) === "true");
+      await page.click("#tagTrainPick [data-v=b]"); await page.click("[data-a=tab][data-v=home]");
+      h = await read();
+      ok("Im Tagesplan Brust B gewählt: kein „Angepasst“, keine fremde Begründung", h.cap !== "Angepasst" && h.name === "Brust B" && !h.txt.includes("Heute lieber"), JSON.stringify(h));
+      await page.click(`.week [data-a=openTag][data-d="${kToday}"]`); await page.click("[data-a=tagTrainAuto]"); await page.click("[data-a=tab][data-v=home]");
+      h = await read();
+      ok("Zurück zum Ablauf: wieder der Vorschlag mit Begründung", h.cap === "Angepasst" && h.name === "Beine", JSON.stringify(h));
+      await page.click("[data-a=pickDay]"); await page.click("[data-a=selDay][data-id=b]");
+      h = await read();
+      ok("„Anderes Training wählen“ → Brust B: kein „Angepasst“ (vorher erst nach Neuladen richtig)", h.cap !== "Angepasst" && h.name === "Brust B" && !h.txt.includes("Heute lieber"), JSON.stringify(h));
+      await ctx.close();
+    }
+
+    section("67. Tagesplan: Tagesziel und Ausgleich");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const e = (id, g) => [{ id, m: "m", n: "Testessen", src: "usda:1", g, per: { k: 100, p: 0, c: 25, f: 0 } }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null }, stepGoal: 8000,
+        food: { [dk(0)]: e("f0", 2700), [dk(1)]: e("f1", 1500), [dk(-1)]: e("f2", 2600) } });
+      const txt = async id => (await page.$(id)) ? (await page.textContent(id)).replace(/\s+/g, " ").trim() : null;
+      const rerender = async () => { await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='-1']"); };
+      await page.click("#homeTag");
+      // Verbrauch 2.759 + 109 (Schritte) = 2.868, Tagesziel 2.868 − 409 = 2.459, gegessen 2.700 → 241 darüber
+      ok("Heute über dem Ziel: 241 kcal über dem Tagesziel, Rechenweg dabei", (await txt("#tagGoal")) === "241 kcal über deinem Tagesziel." && (await txt("#tagGoalHow")) === "Tagesziel 2.459 kcal = Verbrauch 2.868 − 409 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      // 241 kcal: 241 / (0,6061 × 80 × 0,75 m / 1000) ≈ 6.627 → 6.700 Schritte; 241 / (4 × 80 / 60) ≈ 45,2 → 50 Min.
+      ok("Ausgleich: weniger essen, ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer", (await txt("#tagComp")) === "Ausgleich: 241 kcal weniger essen oder ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer (mäßig).", await txt("#tagComp"));
+      await page.fill("#tagAct", "14.700"); // 9.700 Schritte über 5.000 → + 353 kcal, Tagesziel 2.703
+      ok("Gegangene Schritte eingetragen: Zeile rechnet sofort neu (noch 3 kcal), Ausgleich weg", (await txt("#tagGoal")) === "Noch 3 kcal bis zu deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
+      await page.fill("#tagAct", "");
+      await page.click("[data-a=tagDay][data-d='1']");
+      ok("Morgen geplant 1.500 kcal: 959 kcal unter dem Tagesziel", (await txt("#tagGoal")) === "Geplant: 959 kcal unter deinem Tagesziel.", await txt("#tagGoal"));
+      await page.click("[data-a=tagDay][data-d='1']");
+      ok("Übermorgen ohne Essen: „Zu deinem Ziel passen an diesem Tag 2.459 kcal“", (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag 2.459 kcal.", await txt("#tagGoal"));
+      for (let i = 0; i < 3; i++) await page.click("[data-a=tagDay][data-d='-1']");
+      ok("Gestern 2.600 kcal: 141 kcal über dem Tagesziel, kein Ausgleich für vergangene Tage", (await txt("#tagGoal")) === "141 kcal über deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
+      await page.click("[data-a=tagDay][data-d='-1']");
+      ok("Vorgestern ohne Essen: nur der Rechenweg", !(await page.$("#tagGoal")) && !!(await page.$("#tagGoalHow")));
+      for (let i = 0; i < 2; i++) await page.click("[data-a=tagDay][data-d='1']");
+      // Sehr viel über dem Ziel: unrealistische Vorschläge entfallen
+      await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 4500; });
+      await rerender();
+      ok("2.041 kcal darüber: nur „weniger essen“ (über 15.000 Schritte oder 90 Min. schlägt die App nicht vor)", (await txt("#tagComp")) === "Ausgleich: 2.041 kcal weniger essen.", await txt("#tagComp"));
+      // „Mäßig aktiv“: Bewegung im Faktor, kein Ausgleich über Bewegung
+      await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 3000; T.state.nutr.pal = 1.85; });
+      await rerender();
+      ok("„Mäßig aktiv“ (Verbrauch 3.293, Ziel 2.800): 200 kcal darüber, ohne Ausgleichsvorschlag", (await txt("#tagGoal")) === "200 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 2.800 kcal = Verbrauch 3.293 − 493 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      // Aufbauen: Ziel über dem Verbrauch, kein Ausgleich
+      await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 3300; T.state.nutr.pal = 1.55; T.state.nutr.goal = "auf"; });
+      await rerender();
+      ok("„Aufbauen“: Tagesziel 3.139 kcal = Verbrauch 2.868 + 271, 161 kcal darüber, kein Ausgleich", (await txt("#tagGoal")) === "161 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 3.139 kcal = Verbrauch 2.868 + 271 kcal („Aufbauen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      await tp(page, () => { window.__tp.state.nutr.goal = "halten"; });
+      await rerender();
+      ok("„Halten“: Tagesziel gleich Verbrauch", (await txt("#tagGoalHow")) === "Tagesziel 2.868 kcal = Verbrauch 2.868 kcal („Halten“).", await txt("#tagGoalHow"));
+      await page.setViewportSize({ width: 320, height: 640 });
+      await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.nutr.goal = "ab"; T.state.food[k][0].g = 2700; });
+      await rerender();
+      ok("Mit Ausgleichszeile bei 320 px ohne seitliches Scrollen", !!(await page.$("#tagComp")) && await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("68. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

@@ -1901,7 +1901,8 @@ function applyKeep(s, keep) {
 function nextDay() {
   const days = state.plan?.days || [];
   if (!days.length) return null;
-  if (state.selDay) { const d = days.find(x => x.id === state.selDay); if (d) return d; }
+  // Selbst gewähltes Training: keine Begründung „Angepasst“ (die gilt nur für den Vorschlag der App)
+  if (state.selDay) { const d = days.find(x => x.id === state.selDay); if (d) { nextReason = ""; return d; } }
   if (state.sched) { const c = new Date(); c.setHours(12, 0, 0, 0);
     for (let i = 0; i < 15; i++, c.setDate(c.getDate() + 1)) {
       if (i === 0 && trainedOn(c)) continue;
@@ -2844,7 +2845,8 @@ function plannedOn(dk) {
   const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
   const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
   if (!days.length || !s || dk < dkey(today)) return null;
-  const nd = baseDay(); let k = Math.max(0, days.findIndex(x => nd && x.id === nd.id));
+  const keep = nextReason, nd = baseDay(); nextReason = keep; // die Begründung gehört zum Vorschlag der Startseite, nicht zur Vorschau
+  let k = Math.max(0, days.findIndex(x => nd && x.id === nd.id));
   for (const c = new Date(today); c <= d; c.setDate(c.getDate() + 1)) {
     const ck = dkey(c);
     if ((ck === dkey(today) && trainedOn(c)) || !isTrainDate(c)) continue;
@@ -2880,7 +2882,8 @@ function dayEnergy(dk) {
   const extraSteps = low && steps != null && sl ? Math.max(0, steps - 5000) * sl / 100000 : 0, stepExtra = Math.round(walk * kg * extraSteps);
   const cardio = cardioOn(dk), cardioKcal = cardio.reduce((a, c) => a + cardioKcalOf(c, kg), 0), cardioMin = cardio.reduce((a, c) => a + c.min, 0);
   const extra = low ? trainKcal + stepExtra + cardioKcal : 0, total = G.tdee + extra, intake = Math.round(dayTotals(dk).k);
-  return { G, tr, steps, plan, act, sl, km, trainKcal, stepKcal, stepExtra, cardioKcal, cardioMin, low, extra, total, intake, balance: intake - total, goalDiff: G.kcal - G.tdee };
+  return { G, tr, steps, plan, act, sl, km, walk, trainKcal, stepKcal, stepExtra, cardioKcal, cardioMin, low, extra, total, intake, balance: intake - total,
+    goalDiff: Math.abs(G.kcal - G.tdee) < 10 ? 0 : G.kcal - G.tdee }; // unter 10 kcal ist nur Rundung (Ziele auf 10 kcal gerundet)
 }
 const tagMin = () => dkey(new Date(Date.now() - 7 * 864e5));
 const mondayOf = dk => { const d = dateOf(dk); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; };
@@ -2939,10 +2942,27 @@ function tagStepInfo(dk) {
   if (!sl) return "Für die Strecke fehlt deine Körpergröße (Essen → Ziele).";
   return `${act != null ? "Gegangen" : "Geplant"}: ≈ ${String(Math.round(s * sl / 10000) / 10).replace(".", ",")} km · ≈ ${E ? fmtK(E.stepKcal) : "–"} kcal beim Gehen${act != null && plan ? ` · ${Math.round(act / plan * 100)} % vom Ziel` : ""}`;
 }
+// Tagesziel = geschätzter Verbrauch + Zielabstand aus den Ernährungszielen (z. B. −15 % beim Abnehmen).
+// Liegt das Essen darüber, nennt die App für heute und künftige Tage beim Ziel „Abnehmen“, was es ausgleicht (reine Rechnung, Regel der App).
+function tagGoalLine(dk, E) {
+  const today = dkey(), Z = E.total + E.goalDiff, rest = Z - E.intake, n = fmtK(Math.abs(rest)), has = (state.food[dk] || []).length > 0;
+  const main = dk === today ? (rest >= 0 ? `Noch <b>${n} kcal</b> bis zu deinem Tagesziel.` : `<b>${n} kcal</b> über deinem Tagesziel.`)
+    : !has ? (dk > today ? `Zu deinem Ziel passen an diesem Tag <b>${fmtK(Z)} kcal</b>.` : "")
+    : `${dk > today ? "Geplant: " : ""}<b>${n} kcal</b> ${rest >= 0 ? "unter" : "über"} deinem Tagesziel.`;
+  let comp = "";
+  if (rest < 0 && E.goalDiff < 0 && dk >= today && E.low) {
+    const over = -rest, kg = E.G.kg, alt = [];
+    if (E.steps != null && E.sl) { const s = Math.ceil((Math.max(0, 5000 - E.steps) + over / (E.walk * kg * E.sl / 100000)) / 100) * 100; if (s <= 15000) alt.push(`≈ ${fmtK(s)} Schritte mehr`); }
+    const m = Math.ceil(over / ((CARDIO.cross.lv.m.met - 1) * kg / 60) / 5) * 5; if (m <= 90) alt.push(`≈ ${m} Min. Crosstrainer (mäßig)`);
+    comp = `<p class="small muted" id="tagComp" style="margin:0">Ausgleich: ${fmtK(over)} kcal weniger essen${alt.length ? ` oder ${alt.join(" oder ")}` : ""}.</p>`;
+  }
+  return `${main ? `<p class="small" id="tagGoal" style="margin:0">${main}</p>` : ""}${comp}
+    <p class="small faint" id="tagGoalHow" style="margin:0">Tagesziel ${fmtK(Z)} kcal = Verbrauch ${fmtK(E.total)}${E.goalDiff ? ` ${E.goalDiff < 0 ? "−" : "+"} ${fmtK(Math.abs(E.goalDiff))}` : ""} kcal („${NGOAL[state.nutr.goal].label}“).</p>`;
+}
 function tagBalInner(dk) {
   const today = dkey(), E = dayEnergy(dk);
   if (!E) return `<div class="note"><p class="small">Für die Bilanz braucht die App Alter, Größe, Gewicht und Aktivität.</p><button class="btn sm" data-a="openNutr">Ziele festlegen</button></div>`;
-  const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b>${v}</b></div>`;
+  const row = (l, s, v) => `<div class="row between small"><span>${l}${s ? `<span class="faint"> · ${s}</span>` : ""}</span><b style="white-space:nowrap">${v}</b></div>`;
   return `<div class="note" style="gap:6px">
       ${row("Grundumsatz × Aktivität", `Faktor ${String(state.nutr.pal).replace(".", ",")}`, `${fmtK(E.G.tdee)} kcal`)}
       ${E.low ? `${E.tr ? row("Krafttraining", `≈ ${E.tr.min} Min.`, `+ ${fmtK(E.trainKcal)} kcal`) : ""}${E.cardioKcal ? row("Cardio", `${E.cardioMin} Min.`, `+ ${fmtK(E.cardioKcal)} kcal`) : ""}${E.stepExtra ? row("Schritte über 5.000", E.act != null ? "gegangen" : "Ziel", `+ ${fmtK(E.stepExtra)} kcal`) : ""}`
@@ -2950,7 +2970,7 @@ function tagBalInner(dk) {
       ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
       ${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
       <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">${fmtK(Math.abs(E.balance))}<span class="small muted"> kcal</span></span></div>
-      <p class="small faint" style="margin:0">Dein Ziel „${NGOAL[state.nutr.goal].label}“ plant ${E.goalDiff < 0 ? `etwa ${fmtK(-E.goalDiff)} kcal Defizit` : E.goalDiff > 0 ? `etwa ${fmtK(E.goalDiff)} kcal Überschuss` : "eine ausgeglichene Bilanz"} gegenüber dem Grundbedarf.</p></div>`;
+      ${tagGoalLine(dk, E)}</div>`;
 }
 // Nach Eingabe nur die abhängigen Teile neu zeichnen (Fokus im Feld bleibt)
 function tagRefresh() {
@@ -3021,6 +3041,7 @@ function vTag() {
         <li>Schritte: Für heute und vergangene Tage zählen die eingetragenen gegangenen Schritte, sonst das Ziel.</li>
         <li>Schrittlänge ${sl ? `${sl} cm` : "–"}${state.stepLen ? " (selbst gemessen)" : " – Startwert der App aus deiner Körpergröße (0,415 × Größe, Frauen 0,413). Genauer: 10 Schritte gehen, Strecke messen, durch 10 teilen."}</li>
         <li>Regel der App: Bei „Wenig aktiv“ sind etwa 5.000 Schritte am Tag im Alltag enthalten (Grenze „sitzender Lebensstil“ nach Tudor-Locke und Bassett); zusätzlich zählen Schritte darüber und das Krafttraining. Bei „Mäßig“ oder „Sehr aktiv“ ist Bewegung im Faktor enthalten und wird nicht doppelt gezählt.</li>
+        <li>Tagesziel: geschätzter Verbrauch des Tages${E ? (E.goalDiff ? ` ${E.goalDiff < 0 ? "minus" : "plus"} ${fmtK(Math.abs(E.goalDiff))} kcal – so weit liegt dein Kalorienziel ${E.goalDiff < 0 ? "unter" : "über"} deinem Grundbedarf` : " – dein Kalorienziel entspricht dem Grundbedarf") : " plus der Abstand zwischen Kalorienziel und Grundbedarf"}. Mit Training, Cardio und mehr Schritten steigt es; unter „Essen“ steht weiter das feste Ziel ohne diese Bewegung.</li>
         <li>Wochenbilanz: nur Tage mit eingetragenem oder geplantem Essen, heute erst ab morgen.</li>
         <li>Alles sind Schätzungen. Ob die Bilanz stimmt, zeigt dein Gewichtsverlauf nach zwei bis drei Wochen.</li>
       </ul>
