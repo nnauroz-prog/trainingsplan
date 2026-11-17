@@ -271,6 +271,7 @@
     .stepper .ctl button{width:56px;height:56px;font-size:26px}
     .stepper input{font-size:54px;min-height:56px}
     .warm{padding:var(--s2) var(--s3)} .warm .btn.sm{min-height:40px}
+    #findKg{padding:var(--s3);gap:6px} .seg.find button{min-height:40px}
     .training .stepper{gap:2px} .training .plates{min-height:18px;font-size:12px} .training .plates .pl{height:calc(12px + var(--p) * .2px);min-height:14px;font-size:11px}
     .bar.ticks{height:4px}
     .set-pill{height:34px}
@@ -425,6 +426,8 @@
   .sh-head .btn{flex:0 0 auto}
   .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
   .warm .t{font-weight:700;font-size:15px}
+  .seg.find button{display:grid;align-content:center;gap:0;line-height:1.2;padding:4px 2px}
+  .seg.find small{font-size:12px;font-weight:500;color:var(--text-2)}
   .warm .s{font-size:13px;color:var(--text-2)}
   .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);color:var(--text);font-size:15px;text-align:left}
   .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);flex:none}
@@ -641,7 +644,7 @@ const ARTICLES = [
     body: [
       "Eine Meta-Analyse von 21 Studien verglich leichte (bis 60 % des Maximums) mit schweren Gewichten, jeweils mit Sätzen bis zum Muskelversagen. Der Muskelzuwachs war ähnlich, die Maximalkraft stieg mit schweren Gewichten stärker.",
       "Leichte Gewichte wirken dabei nur, wenn die Sätze wirklich anstrengend sind. 20 lockere Wiederholungen ersetzen keinen harten Satz.",
-      "Die Startwerte der App je Ziel: 8–12 Wiederholungen für Muskelaufbau, 4–6 für Kraft, 12–15 für Fitness."
+      "Die Startwerte der App je Ziel: 8–12 Wiederholungen für Muskelaufbau, 4–6 für Kraft, 12–15 für Fitness. Beim Ziel Kraft gelten die 4–6 für Grundübungen mit mehreren Gelenken; Übungen mit nur einem Gelenk wie Seitheben oder Beinbeuger starten mit 8–12."
     ], src: ["load2017"] },
   { id: "rir", title: "Wie nah ans Limit? Wiederholungen in Reserve",
     lead: "Für Muskelaufbau lohnt es sich, Sätze nah an das Limit zu führen. Für Kraft scheint das weniger wichtig zu sein.",
@@ -1459,6 +1462,8 @@ function normalize(raw) {
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
       trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
       ord: Number.isInteger(x.ord) ? x.ord : undefined, adv: x.adv === true ? true : undefined,
+      findOff: x.findOff === true ? true : undefined,
+      find: isObj(x.find) ? { lo: typeof x.find.lo === "number" ? x.find.lo : null, hi: typeof x.find.hi === "number" ? x.find.hi : null, n: clampInt(x.find.n, 0, 99, 0) } : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length + (Array.isArray(x.trim) ? x.trim.length : 0)),
       short: typeof x.short === "string" ? x.short : undefined, recKg: typeof x.recKg === "number" ? x.recKg : undefined,
       rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
@@ -1601,6 +1606,13 @@ function pickForSlot(id, used) {
   return alt ? alt.id : null;
 }
 
+// Isolationsübungen (ein Gelenk, z. B. Seitheben, Beinbeuger, Wadenheben): Beim Ziel „Kraft“ starten sie mit 8–12 Wiederholungen
+// und 90 s Pause statt 4–6 und 180 s (Startwerte der App). Schwere Gewichte sind vor allem für die Maximalkraft im Vorteil
+// (Schoenfeld et al. 2017, Quelle load2017) – die wird an den Grundübungen aufgebaut.
+const ISO_PAT = new Set(["fly", "lateral", "rear", "bi", "tri", "knee_ext", "knee_flex", "calf", "abd", "add", "core"]);
+const KRAFT_ISO = { rmin: 8, rmax: 12, rest: 90 };
+const isIso = exId => ISO_PAT.has(ex(exId).pattern);
+function rangeFor(goal, exId) { return goal === "kraft" && isIso(exId) ? KRAFT_ISO : GOALS[goal] || GOALS.aufbau; }
 function generatePlan(goal, days, level, minutes) {
   const g = GOALS[goal];
   const gaps = [];
@@ -1612,8 +1624,8 @@ function generatePlan(goal, days, level, minutes) {
       else if (ex(id).off) gaps.push({ day: name, name: ex(id).name, pattern: ex(id).pattern });
       return a;
     }).filter(Boolean);
-    const items = ids.map((id, i) => ({ id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
-      rmin: g.rmin, rmax: g.rmax, rest: i < 2 ? g.rest : Math.max(60, g.rest - 30) }));
+    const items = ids.map((id, i) => { const r = rangeFor(goal, id); return { id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
+      rmin: r.rmin, rmax: r.rmax, rest: i < 2 ? r.rest : Math.max(60, r.rest - 30) }; });
     const day = { id: uid(), name, items };
     // An die gewünschte Trainingszeit anpassen: erst Übungen am Ende kürzen, dann Sätze
     const over = () => minutes && estimateSec(day.items) / 60 > minutes;
@@ -1678,7 +1690,7 @@ function addExerciseFor(plan, m, ms, fits, tmax) {
   const same = d => d.items.some(i => LEG_M.includes(ex(i.exId).muscle) === LEG_M.includes(m));
   const days = [...plan.days].sort((a, b) => (same(b) - same(a)) || estimateSec(a.items) - estimateSec(b.items));
   for (const d of days) for (const sets of [3, 2]) {
-    const it = { id: uid(), exId: e.id, sets, rmin: g.rmin, rmax: g.rmax, rest: Math.max(60, g.rest - 30) }; d.items.push(it);
+    const r = rangeFor(plan.goal, e.id), it = { id: uid(), exId: e.id, sets, rmin: r.rmin, rmax: r.rmax, rest: Math.max(60, r.rest - 30) }; d.items.push(it);
     const ms2 = muscleSets(plan);
     if (fits(d) && !Object.keys(ms2).some(k => ms2[k] > tmax && ms2[k] > ms[k])) return true;
     d.items.pop();
@@ -3112,7 +3124,7 @@ function vSetup() {
       <h1 class="title">Dein Training</h1>
       <p class="sub">Ein paar Angaben, dann steht dein Plan – mit festen Tagen. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
-      <p class="small faint">Startwerte der App: ${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen · ${GOALS[setup.goal].rest} s Pause</p></div>
+      <p class="small faint" id="setupRange">Startwerte der App: ${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen · ${GOALS[setup.goal].rest} s Pause${setup.goal === "kraft" ? `. Übungen mit nur einem Gelenk (z. B. Seitheben, Beinbeuger): ${KRAFT_ISO.rmin}–${KRAFT_ISO.rmax} · ${KRAFT_ISO.rest} s` : ""}</p></div>
     <div class="section"><h3>An welchen Tagen trainierst du?</h3>
       <div class="chips wrap" id="setupDays">${WD.map((w, i) => `<button class="chip ${setup.wd.includes(i) ? "on" : ""}" data-a="setupDay" data-d="${i}">${w}</button>`).join("")}</div>
       <p class="small faint" id="setupDaysTxt">${TEMPLATES[setup.wd.length] ? `${setup.wd.length} Tage · ${TEMPLATES[setup.wd.length].map(t => t[0]).join(" · ")}` : "Wähle 2 bis 4 Tage."}</p>
@@ -3582,7 +3594,7 @@ function openPicker(muscle) { pickMode = "day"; pickQuery = ""; pickFilter = "al
 function sesAdd(exId) {
   const s = S(); if (!s || s.list.some(l => l.exId === exId)) return;
   const g = GOALS[state.plan?.goal] || GOALS.aufbau, day = pickPlan && state.plan?.days.find(x => x.id === s.dayId);
-  const it = { id: day ? uid() : null, exId, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest };
+  const r = rangeFor(state.plan?.goal, exId), it = { id: day ? uid() : null, exId, sets: 3, rmin: r.rmin, rmax: r.rmax, rest: r.rest };
   if (day && !day.items.some(i => i.exId === exId)) day.items.push(Object.assign({}, it));
   if (ex(exId).off) state.dev[exId] = Object.assign({}, state.dev[exId] || {}, { off: false });
   const en = makeEntry(it); delete en.ord;
@@ -3810,6 +3822,33 @@ function endRest() { const s = S(); s.phase = "set"; save(); render(); sayCurren
 // Satz-Coach (Regel der App): Liegt der gerade beendete Satz deutlich über oder unter dem Wiederholungsziel, schlägt die App
 // für die restlichen Sätze dieser Übung einen Gewichtsschritt mehr bzw. weniger vor. Geändert wird nur nach einem Tipp.
 // Mehr: 2+ Wdh. über dem Ziel, oder am oberen Ziel und „leicht“ bzw. RIR 3+. Weniger: 2+ Wdh. unter dem Ziel, oder darunter und „schwer“ bzw. RIR 0.
+/* „Gewicht finden“ an einem Gerät ohne eigene Werte: Probesätze mit halber Wiederholungszahl, bis das Gewicht passt.
+   Regel der App: „Zu leicht“ → +50 % (mindestens ein Schritt), „Zu schwer“ → −25 % (mindestens ein Schritt);
+   liegt schon ein zu leichtes und ein zu schweres Gewicht vor, geht es in die Mitte dazwischen. Probesätze werden nicht gespeichert. */
+const isNewDev = x => /Neu an diesem Gerät|Noch keine gültigen/.test(x.why || "");
+const findProbe = x => Math.max(3, Math.round(x.rmax / 2));
+function findNext(x, e, kg) {
+  const F = x.find || {}, st = e.step, r = v => Math.round(Math.round(v / st) * st * 100) / 100;
+  const lo = F.lo != null && F.lo < kg ? F.lo : null, hi = F.hi != null && F.hi > kg ? F.hi : null;
+  let up, down, downFinal = false;
+  if (hi != null) { up = r((kg + hi) / 2); if (up <= kg || up >= hi) up = null; } else up = Math.max(r(kg + st), r(kg * 1.5));
+  if (lo != null) { down = r((kg + lo) / 2); if (down <= lo || down >= kg) { down = lo; downFinal = true; } }
+  else { down = Math.max(st, r(kg * .75)); if (down >= kg) down = kg - st > 0 ? r(kg - st) : null; }
+  return { up, down, downFinal };
+}
+function findHtml(x, e, set) {
+  const p = findProbe(x), F = x.find || {}, kg = typeof set.kg === "number" && set.kg > 0 && set.kg <= 1000 ? set.kg : null;
+  if (kg === null) return `<div class="ins" id="findKg"><div class="t">Gewicht finden</div>
+    <p class="small" style="margin:0">Stell ein leichtes Gewicht ein und trag es unten ein. Dann ${p} Wiederholungen zur Probe.</p>
+    <button class="link small" data-a="findOff" style="justify-self:start">Ich kenne mein Gewicht</button></div>`;
+  const nx = findNext(x, e, kg), b = (d, l, v) => `<button data-a="findSet" data-d="${d}" ${d !== "ok" && v == null ? "disabled" : ""}>${l}<small>${d === "ok" ? "weiter" : v == null ? "–" : `→ ${kgTxt(v)} kg`}</small></button>`;
+  return `<div class="ins" id="findKg"><div class="t">Gewicht finden · Probe ${(F.n || 0) + 1}</div>
+    <p class="small" style="margin:0">${p} Wiederholungen mit ${kgTxt(kg)} kg. Passt, wenn danach noch etwa ${p} gingen.</p>
+    <div class="seg find">${b("up", "Zu leicht", nx.up)}${b("ok", "Passt", 0)}${b("down", "Zu schwer", nx.down)}</div>
+    <p class="small faint" style="margin:0">Probesätze zählen nicht mit. <button class="link small" data-a="findOff" style="display:inline">Überspringen</button></p></div>`;
+}
+// Karte folgt der Gewichtseingabe, ohne die Ansicht neu zu zeichnen (Fokus im Feld bleibt)
+function refreshFind() { const s = S(), el = byId("findKg"); if (!s || !el) return; const x = s.list[s.idx], t = x.sets[curSetIdx(x)]; if (t) el.outerHTML = findHtml(x, ex(x.exId), t); }
 function setAdvice(s) {
   const ld = s.lastDone, x = ld && s.list.find(l => l.key === ld.key); if (!x) return null;
   const t = x.sets[ld.si], open = x.sets.filter(o => !o.done);
@@ -3909,7 +3948,8 @@ function vTrain() {
   const note = state.notes[e.id];
   const firstOfSession = s.list.every(l => l.sets.every(t => !t.done));
   const warm = firstOfSession && set.kg ? Math.max(e.step, Math.round(set.kg * .5 / e.step) * e.step) : null;
-  const warmPending = !!warm && !s.warmDone && si === 0;
+  const finding = isNewDev(x) && !x.findOff && si === 0 && !x.sets.some(t => t.done);
+  const warmPending = !finding && !!warm && !s.warmDone && si === 0;
   const pg = progShort(x, e, si);
   const lastTxt = lastSet ? `Letztes Mal ${lastSet.kg !== null ? kgTxt(lastSet.kg) : "–"} × ${lastSet.reps}` : "Noch keine Werte an diesem Gerät";
   $app.innerHTML = `${top}<div class="page" style="gap:var(--s5)">
@@ -3924,6 +3964,7 @@ function vTrain() {
     ${warmPending ? (() => { const w2 = Math.min(set.kg - e.step, Math.round(set.kg * .75 / e.step) * e.step);
       return `<div class="warm" id="warmup"><div class="grow"><div class="t">Erst aufwärmen</div><div class="s">${kgTxt(warm)} × 10${w2 > warm ? `, dann ${kgTxt(w2)} × 5` : ""} – locker, nicht eintragen. Danach ${kgTxt(set.kg)} ${unitTxt(e)}.</div></div>
         <button class="btn sm" data-a="warmDone">Erledigt</button></div>`; })() : ""}
+    ${finding ? findHtml(x, e, set) : ""}
     <div class="sets" aria-label="Satzfortschritt">${x.sets.map((t, i) => t.done
       ? `<button class="set-pill done" data-a="editSet" data-key="${x.key}" data-i2="${i}" aria-label="Satz ${i + 1} ändern">${t.kg !== null ? kgTxt(t.kg) : "–"}×${t.reps}</button>`
       : `<span class="set-pill ${i === si ? "cur" : ""}">${i === si ? "Satz " + (i + 1) : i + 1}</span>`).join("")}</div>
@@ -6500,7 +6541,7 @@ const A = {
   // Antippen: Gerät in den Tag aufnehmen oder wieder herausnehmen. Wer ein Gerät einplant, hat es im Studio.
   pick: el => { const id = el.dataset.id, d = curDay(); if (!d) return; const i = d.items.findIndex(x => x.exId === id);
     if (i >= 0) d.items.splice(i, 1);
-    else { const g = GOALS[state.plan.goal] || GOALS.aufbau; d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });
+    else { const g = rangeFor(state.plan.goal, id); d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });
       if (ex(id).off) state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: false }); }
     save(); vDay(); refreshPicker(); },
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
@@ -6566,7 +6607,7 @@ const A = {
     showSetError("");
     // gleiches Gewicht für die restlichen Sätze übernehmen
     if (el.dataset.k === "kg") x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
-    refreshProg(); refreshPlates(); save(); },
+    refreshProg(); refreshPlates(); if (el.dataset.k === "kg") refreshFind(); save(); },
   doneSet: () => doneSet(),
   skipRest: () => endRest(),
   restAdd: el => { const s = S(); s.restEnd += +el.dataset.d * 1000; s.restTotal = Math.max(1, s.restTotal + +el.dataset.d); save(); tick(); },
@@ -6649,6 +6690,16 @@ const A = {
     if (res.fits) { applyKeep(s, res.keep); s.timeAdj = { minutes: m }; s.timeHintOff = true; save(); render(); } else { timeSel = m; openSheet(liveTimeSheet()); } },
   timeHintOff: () => { S().timeHintOff = true; save(); render(); },
   warmDone: () => { S().warmDone = true; S().lastAt = Date.now(); save(); render(); },
+  // Probesatz bewertet: Gewicht für alle offenen Sätze anpassen; „Passt“ beendet die Suche (die Proben waren das Aufwärmen)
+  findSet: el => { const s = S(), x = s.list[s.idx], e = ex(x.exId), set = x.sets[curSetIdx(x)]; if (!set || !(set.kg > 0 && set.kg <= 1000)) return;
+    const kg = set.kg, d = el.dataset.d, nx = findNext(x, e, kg), F = x.find || (x.find = { lo: null, hi: null, n: 0 });
+    if (d === "ok") { x.findOff = true; s.warmDone = true; }
+    else { const v = d === "up" ? nx.up : nx.down; if (v == null) return;
+      if (d === "up") F.lo = kg; else F.hi = kg; F.n++;
+      x.sets.forEach(o => { if (!o.done) o.kg = v; });
+      if (d === "down" && nx.downFinal) { x.findOff = true; s.warmDone = true; } }
+    s.lastAt = Date.now(); save(); render(); },
+  findOff: () => { const s = S(); s.list[s.idx].findOff = true; save(); render(); },
   advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
     x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
   advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
@@ -6657,7 +6708,7 @@ const A = {
   stopDiscard: () => finish(false)
 };
 function addToDay(exId) {
-  const d = curDay(), g = GOALS[state.plan.goal] || GOALS.aufbau;
+  const d = curDay(), g = rangeFor(state.plan.goal, exId);
   d.items.push({ id: uid(), exId, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest }); save(); vDay();
 }
 document.addEventListener("click", ev => {
@@ -6695,7 +6746,7 @@ document.addEventListener("input", ev => {
       t.kg = v === null ? null : v;                 // ungültige Werte bleiben sichtbar, „Satz fertig“ prüft
       if (v === null || (v > 0 && v <= 1000)) x.sets.forEach(o => { if (!o.done) o.kg = t.kg; });
     } else { const v = num(el.value); t.reps = v === null ? NaN : v; }
-    showSetError(""); refreshProg(); if (k === "kg") refreshPlates(); save();
+    showSetError(""); refreshProg(); if (k === "kg") { refreshPlates(); refreshFind(); } save();
   }
 });
 document.addEventListener("keydown", ev => {
@@ -6714,7 +6765,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

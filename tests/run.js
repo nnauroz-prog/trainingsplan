@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v64)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v64")));
+      ok("Service Worker aktiv (Cache trainingsplan-v65)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v65")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3942,7 +3942,92 @@ async function finishAllSets(page, kg, reps) {
       await o2.ctx.close();
     }
 
-    section("71. Konsole");
+    section("71. Ziel „Kraft“: Wiederholungen je Übungsart");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp;
+        const sig = goal => T.generatePlan(goal, 3, "einsteiger", 90).days.flatMap(d => d.items.map(it => `${T.isIso(it.exId) ? "iso" : "grund"}:${it.rmin}-${it.rmax}:${it.rest}`));
+        const f = (g, id) => { const x = T.rangeFor(g, id); return `${x.rmin}-${x.rmax}/${x.rest}`; };
+        return { kraft: sig("kraft"), aufbau: sig("aufbau"), fit: sig("fit"),
+          rf: [f("kraft", "hs-lateral"), f("kraft", "hs-seatcurl"), f("kraft", "hs-calf"), f("kraft", "hs-chest"), f("kraft", "hs-legpress"), f("kraft", "hs-dip"), f("aufbau", "hs-lateral"), f("fit", "hs-lateral"), f("kraft", "gibt-es-nicht")] }; });
+      const iso = r.kraft.filter(x => x.startsWith("iso")), grund = r.kraft.filter(x => x.startsWith("grund"));
+      ok("Kraft-Plan: Grundübungen 4–6 Wdh. mit 180 oder 150 s Pause", grund.length >= 4 && grund.every(x => /^grund:4-6:(180|150)$/.test(x)), JSON.stringify(grund));
+      ok("Kraft-Plan: Übungen mit einem Gelenk 8–12 Wdh. mit 90 oder 60 s Pause", iso.length >= 2 && iso.every(x => /^iso:8-12:(90|60)$/.test(x)), JSON.stringify(iso));
+      ok("Muskelaufbau und Fitness unverändert: alle Übungen 8–12 bzw. 12–15", r.aufbau.every(x => /:8-12:/.test(x)) && r.fit.every(x => /:12-15:/.test(x)));
+      ok("Regel je Gerät: Seitheben, Beinbeuger, Wadenheben 8–12/90; Brustpresse, Beinpresse, Dips 4–6/180; andere Ziele und unbekannte Geräte wie bisher",
+        JSON.stringify(r.rf) === JSON.stringify(["8-12/90", "8-12/90", "8-12/90", "4-6/180", "4-6/180", "4-6/180", "8-12/90", "12-15/60", "4-6/180"]), JSON.stringify(r.rf));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=newPlan]");
+      const a0 = await page.textContent("#setupRange");
+      await page.click("[data-a=setup][data-k=goal][data-val=kraft]");
+      ok("Plan-Assistent nennt bei „Kraft“ beide Startwerte, bei „Muskelaufbau“ nur einen",
+        !a0.includes("einem Gelenk") && (await page.textContent("#setupRange")) === "Startwerte der App: 4–6 Wiederholungen · 180 s Pause. Übungen mit nur einem Gelenk (z. B. Seitheben, Beinbeuger): 8–12 · 90 s", await page.textContent("#setupRange"));
+      ok("Bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+      // Gerät zu einem Kraft-Plan hinzufügen
+      const plan = { goal: "kraft", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 4, rmax: 6, rest: 180 }] }] };
+      const o2 = await open({ plan });
+      await o2.page.click("[data-a=tab][data-v=plan]"); await o2.page.click("[data-a=editDay]"); await o2.page.click("[data-a=openPicker]");
+      await o2.page.selectOption("#pickMuscle", "schultern"); await o2.page.click(".sheet [data-a=pick][data-id=hs-lateral]");
+      const st = await stored(o2.page), added = st.plan.days[0].items.find(i => i.exId === "hs-lateral");
+      ok("Seitheben zu einem Kraft-Plan hinzugefügt: 8–12 Wdh., 90 s", !!added && added.rmin === 8 && added.rmax === 12 && added.rest === 90, JSON.stringify(st.plan.days[0].items));
+      await o2.ctx.close();
+    }
+
+    section("72. Training: „Gewicht finden“ an einem neuen Gerät");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const card = async () => (await page.$("#findKg")) ? (await page.textContent("#findKg")).replace(/\s+/g, " ").trim() : null;
+      const btn = async d => ({ t: (await page.textContent(`#findKg [data-a=findSet][data-d=${d}]`)).replace(/\s+/g, " ").trim(), dis: await page.isDisabled(`#findKg [data-a=findSet][data-d=${d}]`) });
+      const kgs = () => tp(page, () => window.__tp.state.session.list[0].sets.map(t => t.kg).join());
+      await page.click("[data-a=start]");
+      ok("Neues Gerät: Karte „Gewicht finden“ mit Probe über die halbe Wiederholungszahl (6 bei 8–12), kein Aufwärm-Hinweis",
+        (await card()).includes("Gewicht finden") && (await card()).includes("Stell ein leichtes Gewicht ein") && (await card()).includes("6 Wiederholungen zur Probe") && !(await page.$("#warmup")), await card());
+      await page.fill("#kgIn", "20");
+      const b1 = [await btn("up"), await btn("ok"), await btn("down")];
+      ok("Gewicht eingetragen: Probe 1 mit 20 kg; „Zu leicht“ → 30 kg (+50 %), „Zu schwer“ → 15 kg (−25 %); Fokus bleibt im Feld",
+        (await card()).includes("Probe 1") && (await card()).includes("6 Wiederholungen mit 20 kg. Passt, wenn danach noch etwa 6 gingen") && b1[0].t === "Zu leicht→ 30 kg" && b1[2].t === "Zu schwer→ 15 kg" && b1[1].t === "Passtweiter"
+        && (await page.evaluate(() => document.activeElement.id)) === "kgIn" && !(await page.$("#warmup")), JSON.stringify(b1));
+      await page.click("#findKg [data-d=up]");
+      ok("„Zu leicht“: 30 kg für alle offenen Sätze, Probe 2; zurück ginge es in die Mitte (25 kg)", (await page.inputValue("#kgIn")) === "30" && (await kgs()) === "30,30" && (await card()).includes("Probe 2") && (await btn("up")).t === "Zu leicht→ 45 kg" && (await btn("down")).t === "Zu schwer→ 25 kg", await card());
+      await page.click("#findKg [data-d=up]"); await page.click("#findKg [data-d=down]");
+      ok("45 kg zu schwer: Mitte zwischen 30 und 45 → 37,5 kg; danach 42,5 oder 35", (await page.inputValue("#kgIn")) === "37,5" && (await btn("up")).t === "Zu leicht→ 42,5 kg" && (await btn("down")).t === "Zu schwer→ 35 kg", await card());
+      await page.click("#findKg [data-d=down]");
+      const b5 = await btn("up");
+      ok("35 kg: kein Schritt mehr bis 37,5 → „Zu leicht“ aus", (await page.inputValue("#kgIn")) === "35" && b5.dis && b5.t === "Zu leicht–" && (await card()).includes("Probe 5"), JSON.stringify(b5));
+      await page.reload(); if (await page.$("[data-a=toTrain]")) await page.click("[data-a=toTrain]"); else if (await page.$("[data-a=resumeT]")) await page.click("[data-a=resumeT]");
+      const f = await tp(page, () => window.__tp.state.session.list[0].find);
+      ok("Suche übersteht Neuladen (zu leicht 30, zu schwer 37,5, 4 Proben)", f && f.lo === 30 && f.hi === 37.5 && f.n === 4 && (await card()).includes("Probe 5"), JSON.stringify(f));
+      await page.click("#findKg [data-d=ok]");
+      const s1 = await tp(page, () => { const s = window.__tp.state.session; return { off: s.list[0].findOff, warm: s.warmDone, done: s.list[0].sets.filter(t => t.done).length, hist: window.__tp.state.history.length }; });
+      ok("„Passt“: Karte weg, 35 kg bleiben, kein Aufwärm-Hinweis mehr, Proben nicht gespeichert", !(await page.$("#findKg")) && (await page.inputValue("#kgIn")) === "35" && s1.off === true && s1.warm === true && s1.done === 0 && s1.hist === 0 && !(await page.$("#warmup")), JSON.stringify(s1));
+      await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Zweiter Satz am selben Gerät: keine Karte", !(await page.$("#findKg")));
+      await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      ok("Nächstes neues Gerät: Karte wieder da", (await page.textContent("h1")).includes("Beinpresse") && (await card()).includes("Stell ein leichtes Gewicht ein"), await card());
+      await page.click("[data-a=findOff]");
+      ok("„Ich kenne mein Gewicht“ schließt die Karte", !(await page.$("#findKg")));
+      await ctx.close();
+      // Rechenregel direkt
+      const o2 = await open({ plan: PLAN_SMALL });
+      const fn = await tp(o2.page, () => { const f = window.__tp.findNext, j = (find, st, kg) => { const r = f({ find }, { step: st }, kg); return `${r.up}/${r.down}${r.downFinal ? "!" : ""}`; };
+        return [j({}, 2.5, 2.5), j({}, 5, 10), j({ lo: 30, hi: null }, 2.5, 32.5), j({ lo: null, hi: 40 }, 5, 35), j({ lo: 20, hi: 60 }, 5, 40), j({}, 1.25, 5)]; });
+      ok("Regel: kleinster Schritt nach unten gesperrt; Mitte zwischen zu leicht und zu schwer; ohne Platz zurück auf das leichtere Gewicht",
+        JSON.stringify(fn) === JSON.stringify(["5/null", "15/5", "50/30!", "null/25", "50/30", "7.5/3.75"]), JSON.stringify(fn));
+      await o2.ctx.close();
+      // Gerät mit eigenen Werten: keine Karte, Aufwärm-Hinweis wie bisher
+      const o3 = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3, "s")] });
+      await o3.page.click("[data-a=start]");
+      ok("Gerät mit eigenen Werten: keine Karte, Aufwärm-Hinweis wie bisher", !(await o3.page.$("#findKg")) && !!(await o3.page.$("#warmup")));
+      await o3.ctx.close();
+      // Kraft: Probe mit 3 Wiederholungen; 320 px
+      const o4 = await open({ plan: { goal: "kraft", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [{ id: "i1", exId: "hs-legpress", sets: 2, rmin: 4, rmax: 6, rest: 0 }] }] } });
+      await o4.page.setViewportSize({ width: 320, height: 640 });
+      await o4.page.click("[data-a=start]"); await o4.page.fill("#kgIn", "60");
+      ok("4–6 Wiederholungen: Probe mit 3; bei 320 px ohne seitliches Scrollen", (await o4.page.textContent("#findKg")).includes("3 Wiederholungen mit 60 kg. Passt, wenn danach noch etwa 3 gingen") && await noOverflow(o4.page));
+      await o4.ctx.close();
+    }
+
+    section("73. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
