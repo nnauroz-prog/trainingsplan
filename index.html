@@ -2823,7 +2823,7 @@ function tabOf(v) {
 }
 let homeNote = "";
 function go(v) {
-  view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = "";
+  view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = ""; if (v !== "food") { foodNote = ""; copyUndo = null; }
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
@@ -4658,6 +4658,8 @@ function vFood() {
           <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button>
           ${es.length >= 2 ? `<button class="li addrow" data-a="mealSaveOpen" data-m="${m}" style="color:var(--text-2);font-weight:500">Als Mahlzeit speichern</button>` : ""}
           ${pes.length ? `<button class="li addrow" data-a="copyMeal" data-m="${m}">Wie am Vortag · ${pes.length} ${pes.length === 1 ? "Eintrag" : "Einträge"}, ${fmtK(pes.reduce((a, e) => a + entryVals(e).k, 0))} kcal</button>` : ""}</div></section>`; }).join("")}
+    ${foodNote ? `<p class="note small" id="foodNote" role="status" style="margin:0">${esc(foodNote)}${copyUndo ? ` <button class="link small" data-a="copyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
+    ${list.length ? `<button class="btn sm block" data-a="foodCopyOpen" id="foodCopy">Diesen Tag auf andere Tage kopieren</button>` : ""}
     ${G ? `<section class="section"><h2>Letzte 7 Tage</h2>
       ${days.length ? `<p class="small" style="margin:0">Ø <b>${fmtK(avg("k"))}</b> kcal und Ø <b>${fmtK(avg("p"))}</b> g Eiweiß an ${days.length} ${days.length === 1 ? "Tag" : "Tagen"} mit Einträgen · Ziel ${fmtK(G.kcal)} kcal und ${G.prot} g</p>` : ""}
       ${trendHtml(G)}</section>` : ""}
@@ -4670,6 +4672,23 @@ function vFood() {
     <p class="small faint">Nährwerte: USDA FoodData Central (Grundnahrungsmittel) und Open Food Facts (Packungsangaben). Das sind Durchschnitts- bzw. Herstellerangaben; tatsächliche Gehalte schwanken.</p>
   </div>`;
   fastLive();
+}
+
+/* ================= Essen planen: einen Tag auf andere Tage kopieren (z. B. Meal Prep) ================= */
+let copyCtx = null, copyUndo = null, foodNote = "";
+const foodDayName = k => k === dkey() ? "heute" : k === dkey(new Date(Date.now() + 864e5)) ? "morgen" : k === dkey(new Date(Date.now() - 864e5)) ? "gestern" : dateOf(k).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+function copySheet() {
+  const c = copyCtx, today = dkey(), src = state.food[c.src] || [], kc = src.reduce((a, e) => a + entryVals(e).k, 0), n = c.sel.size;
+  const days = []; for (let i = 0; i <= PLAN_AHEAD; i++) { const k = dkey(new Date(Date.now() + i * 864e5)); if (k !== c.src) days.push(k); }
+  const lab = k => k === today ? "Heute" : dateOf(k).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" });
+  return `${sheetHead("Tag kopieren", "Abbrechen")}
+    <p class="small muted" style="margin:0">${src.length} ${src.length === 1 ? "Eintrag" : "Einträge"} · ${fmtK(kc)} kcal von ${esc(foodDayName(c.src))} auf diese Tage:</p>
+    <div class="chips wrap" id="copyDays" role="group" aria-label="Zieltage">${days.map(k => { const m = (state.food[k] || []).length, on = c.sel.has(k);
+      return `<button class="chip ${on ? "on" : ""}" data-a="copyTgt" data-d="${k}" aria-pressed="${on}">${lab(k)}${m ? ` · ${m}` : ""}</button>`; }).join("")}</div>
+    <p class="small faint" style="margin:0">Zahl hinter dem Tag: so viele Einträge stehen dort schon.</p>
+    <div class="cap">Einträge an diesen Tagen</div>
+    <div class="seg" id="copyMode">${[["add", "Behalten"], ["replace", "Ersetzen"]].map(([v, l]) => `<button data-a="copyMode" data-v="${v}" class="${c.mode === v ? "on" : ""}" aria-pressed="${c.mode === v}">${l}</button>`).join("")}</div>
+    <button class="btn primary block" data-a="copyDo" ${n ? "" : "disabled"}>${n ? `Auf ${n} ${n === 1 ? "Tag" : "Tage"} kopieren` : "Tage wählen"}</button>`;
 }
 
 /* ================= Barcode-Scan (Kamera, eigener Decoder) ================= */
@@ -5938,7 +5957,7 @@ const A = {
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
-  foodDay: el => { const today = dkey(), dt = new Date(curFoodDay() + "T12:00");
+  foodDay: el => { foodNote = ""; copyUndo = null; const today = dkey(), dt = new Date(curFoodDay() + "T12:00");
     dt.setDate(dt.getDate() + +el.dataset.d); const n = dkey(dt); foodDay = n === today || n > maxFoodDay() ? (n > maxFoodDay() ? foodDay : null) : n; vFood(); },
   foodAdd: el => { foodCtx = { m: el.dataset.m, d: curFoodDay(), q: "", off: null, offMsg: "", food: null, edit: null, g: 100 }; openSheet(foodAddSheet()); },
   foodAddBack: () => openSheet(foodAddSheet()),
@@ -6001,6 +6020,23 @@ const A = {
     if (Date.now() - new Date(f.s) >= 60000) state.fasts = [...state.fasts, { s: f.s, e, h: f.h }].slice(-120);
     state.fast = null; save(); clearInterval(fastTimer); byId("fastBox").outerHTML = fastHtml();
   },
+  foodCopyOpen: () => { copyCtx = { src: curFoodDay(), sel: new Set(), mode: "add" }; openSheet(copySheet()); },
+  copyTgt: el => { if (!copyCtx) return; const k = el.dataset.d; if (copyCtx.sel.has(k)) copyCtx.sel.delete(k); else copyCtx.sel.add(k); sheetKeep(copySheet()); },
+  copyMode: el => { if (!copyCtx) return; copyCtx.mode = el.dataset.v === "replace" ? "replace" : "add"; sheetKeep(copySheet()); },
+  copyDo: () => { const c = copyCtx, src = c ? state.food[c.src] || [] : []; if (!src.length || !c.sel.size) return;
+    const before = {}, after = {};
+    for (const k of c.sel) {
+      before[k] = state.food[k] ? JSON.parse(JSON.stringify(state.food[k])) : null;
+      const base = c.mode === "replace" ? [] : (state.food[k] || []).slice();
+      state.food[k] = base.concat(src.map(e => JSON.parse(JSON.stringify(Object.assign({}, e, { id: uid() })))));
+      after[k] = JSON.stringify(state.food[k]);
+    }
+    copyUndo = { before, after }; foodNote = `Auf ${c.sel.size} ${c.sel.size === 1 ? "Tag" : "Tage"} kopiert.`; copyCtx = null; save(); closeSheet(); vFood(); },
+  // Rückgängig nur, solange die Zieltage seitdem nicht geändert wurden
+  copyUndo: () => { const u = copyUndo; if (!u) return; copyUndo = null;
+    if (Object.keys(u.after).some(k => JSON.stringify(state.food[k] || null) !== u.after[k])) { foodNote = "Nicht mehr rückgängig: Die Tage wurden inzwischen geändert."; vFood(); return; }
+    for (const [k, v] of Object.entries(u.before)) { if (v && v.length) state.food[k] = v; else delete state.food[k]; }
+    foodNote = "Kopieren rückgängig gemacht."; save(); vFood(); },
   copyMeal: el => {
     const d = curFoodDay(), prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5));
     const src = (state.food[prev] || []).filter(e => e.m === el.dataset.m); if (!src.length) return;
