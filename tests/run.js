@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v63)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v63")));
+      ok("Service Worker aktiv (Cache trainingsplan-v64)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v64")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1409,7 +1409,9 @@ async function finishAllSets(page, kg, reps) {
       ok("Trend passt zum Ziel „Abnehmen“ (0,5–1 %)", (await page.textContent("#trendNote")).includes("passt") && (await page.textContent("#trendNote")).includes("−0,5 % pro Woche"));
       await tp(page, () => { const s = window.__tp.state; s.nutr.goal = "auf"; });
       await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=food]");
-      ok("Gleicher Trend bei „Aufbauen“: Hinweis zum Anpassen", (await page.textContent("#trendNote")).includes("langsamer zu") && (await page.textContent("#trendNote")).includes("passe dein Kalorienziel an"));
+      ok("Gleicher Trend (−0,5 %) bei „Aufbauen“: „Du nimmst ab statt zu“, Hinweis zum Anpassen", (await page.textContent("#trendNote")).includes("Du nimmst ab statt zu.") && !(await page.textContent("#trendNote")).includes("langsamer zu") && (await page.textContent("#trendNote")).includes("passe dein Kalorienziel an"));
+      const tm = await tp(page, () => { const f = window.__tp.trendMsg; return [f(0.1, "auf", true), f(0, "auf", true), f(-0.3, "auf", true), f(0.3, "ab", false), f(-0.2, "ab", false), f(-1.4, "ab", true), f(0.4, "halten", false), f(0.9, "auf", false)]; });
+      ok("Trend-Satz nennt die Richtung richtig (auch wenn das Gewicht in die Gegenrichtung läuft)", JSON.stringify(tm) === JSON.stringify(["Du nimmst langsamer zu als geplant", "Du nimmst langsamer zu als geplant", "Du nimmst ab statt zu", "Du nimmst zu statt ab", "Du nimmst langsamer ab als geplant", "Du nimmst schneller ab als geplant", "Dein Gewicht steigt", "Du nimmst schneller zu als geplant"]), JSON.stringify(tm));
       await ctx.close();
       const p2 = await open({ plan: PLAN_SMALL, nutr, weights: [{ d: iso(5), kg: 80 }, { d: iso(0), kg: 79 }] });
       ok("Zu wenige Daten: kein Trend, sondern Erklärung", (await tp(p2.page, () => window.__tp.weightTrend())) === null);
@@ -3752,6 +3754,7 @@ async function finishAllSets(page, kg, reps) {
         food: { [dk(0)]: e("f0", 2700), [dk(1)]: e("f1", 1500), [dk(-1)]: e("f2", 2600) } });
       const txt = async id => (await page.$(id)) ? (await page.textContent(id)).replace(/\s+/g, " ").trim() : null;
       const rerender = async () => { await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='-1']"); };
+      ok("Startseite: Zeile „Tagesplan“ nennt den Abstand zum Tagesziel statt „Defizit bisher“", (await page.textContent("#homeTag")).includes("≈ 241 kcal über dem Tagesziel") && !(await page.textContent("#homeTag")).includes("Defizit"), await page.textContent("#homeTag"));
       await page.click("#homeTag");
       // Verbrauch 2.759 + 109 (Schritte) = 2.868, Tagesziel 2.868 − 409 = 2.459, gegessen 2.700 → 241 darüber
       ok("Heute über dem Ziel: 241 kcal über dem Tagesziel, Rechenweg dabei", (await txt("#tagGoal")) === "241 kcal über deinem Tagesziel." && (await txt("#tagGoalHow")) === "Tagesziel 2.459 kcal = Verbrauch 2.868 − 409 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
@@ -3791,7 +3794,155 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("68. Konsole");
+    section("68. Plan: Trainingstag 1:1 kopieren");
+    {
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Drücken", items: [{ id: "a1", exId: "hs-chest", sets: 4, rmin: 6, rmax: 10, rest: 120 }, { id: "a2", exId: "hs-fly", sets: 2, rmin: 12, rmax: 15, rest: 60 }] },
+        { id: "b", name: "Ziehen", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Leer", items: [] }] };
+      const { ctx, page } = await open({ plan });
+      const strip = items => JSON.stringify(items.map(({ id, ...r }) => r));
+      const sig = items => items.map(i => [i.exId, i.sets, i.rmin, i.rmax, i.rest].join("/")).join(), A = "hs-chest/4/6/10/120,hs-fly/2/12/15/60";
+      const openDay = async id => { await page.click("[data-a=tab][data-v=plan]"); await page.click(`[data-a=editDay][data-id="${id}"]`); };
+      await openDay("c");
+      ok("Leerer Tag: kein „Tag kopieren“", !(await page.$("#dayCopy")));
+      await openDay("a"); await page.click("#dayCopy");
+      const rows = await page.$$eval("#dayCopyList .li", b => b.map(x => x.textContent.replace(/\s+/g, " ").trim()));
+      ok("Sheet: neuer Tag, „Ziehen“ (1 Gerät wird ersetzt), „Leer“ (noch leer); Quelle nicht als Ziel",
+        rows.length === 3 && rows[0].includes("Neuer Trainingstag") && rows[0].includes("„Drücken (Kopie)“") && rows[1].includes("Ziehen") && rows[1].includes("1 Gerät wird ersetzt") && rows[2].includes("noch leer")
+        && (await page.textContent(".sheet")).includes("2 Geräte mit Reihenfolge, Sätzen, Wiederholungen und Pausen"), JSON.stringify(rows));
+      await page.click("[data-a=dayCopyDo][data-to=new]");
+      let st = await stored(page), nd = st.plan.days[3];
+      const ids = st.plan.days.flatMap(d => d.items.map(i => i.id));
+      ok("Als neuer Tag: am Ende angelegt, Geräte 1:1 (Reihenfolge, Sätze, Wdh., Pausen), eigene IDs, Quelle unverändert",
+        st.plan.days.length === 4 && nd.name === "Drücken (Kopie)" && sig(nd.items) === A && strip(nd.items) === strip(st.plan.days[0].items) && sig(st.plan.days[0].items) === A && new Set(ids).size === ids.length
+        && (await page.textContent("main h1")) === "Training" && (await page.textContent("#planNote")).includes("als neuer Tag „Drücken (Kopie)“ angelegt"), JSON.stringify(nd));
+      await page.click("[data-a=dayCopyUndo]");
+      st = await stored(page);
+      ok("Rückgängig entfernt den neuen Tag", st.plan.days.length === 3 && (await page.textContent("#planNote")).includes("rückgängig gemacht"));
+      // In vorhandenen Tag: erst nachfragen, dann ersetzen
+      await openDay("a"); await page.click("#dayCopy"); await page.click("[data-a=dayCopyAsk][data-to=b]");
+      ok("Vorhandener Tag mit Geräten: Nachfrage nennt, was ersetzt wird", (await page.textContent(".sheet")).replace(/\s+/g, " ").includes("Das Gerät in „Ziehen“ wird durch die 2 Geräte aus „Drücken“ ersetzt. Der Name „Ziehen“ bleibt") && (await stored(page)).plan.days[1].items.length === 1);
+      await tp(page, () => { window.__tp.state.timeplan = { dayId: "b", date: "2000-01-01", minutes: 30, keep: {}, replace: {}, ex: 1, sets: 1, est: 10 }; });
+      await page.click("[data-a=dayCopyDo][data-to=b]");
+      st = await stored(page);
+      ok("Ersetzt: „Ziehen“ hat die Geräte von „Drücken“ 1:1, Name bleibt, alte Zeit-Anpassung verworfen",
+        st.plan.days[1].name === "Ziehen" && sig(st.plan.days[1].items) === A && strip(st.plan.days[1].items) === strip(st.plan.days[0].items) && st.plan.days[1].items[0].id !== "a1" && !st.timeplan && (await page.textContent("#planNote")).includes("„Drücken“ nach „Ziehen“ kopiert"));
+      await page.click("[data-a=dayCopyUndo]");
+      st = await stored(page);
+      ok("Rückgängig stellt „Ziehen“ wieder her", st.plan.days[1].items.length === 1 && st.plan.days[1].items[0].id === "b1" && sig(st.plan.days[1].items) === "hs-row/3/8/12/90");
+      // Leerer Zieltag: ohne Nachfrage
+      await openDay("a"); await page.click("#dayCopy"); await page.click("[data-a=dayCopyDo][data-to=c]");
+      st = await stored(page);
+      ok("Leerer Zieltag: direkt kopiert", sig(st.plan.days[2].items) === A && !(await page.$(".sheet")));
+      // Rückgängig nach späterer Änderung verweigert
+      await tp(page, () => { window.__tp.state.plan.days[2].items.pop(); });
+      await page.click("[data-a=dayCopyUndo]");
+      ok("Rückgängig nach späterer Änderung: nichts überschrieben, Hinweis", (await tp(page, () => window.__tp.state.plan.days[2].items.length)) === 1 && (await page.textContent("#planNote")).includes("Nicht mehr rückgängig"));
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]");
+      ok("Hinweis verschwindet beim Verlassen", !(await page.$("#planNote")));
+      await page.setViewportSize({ width: 320, height: 640 }); await openDay("a"); await page.click("#dayCopy"); await page.waitForTimeout(350);
+      ok("Sheet bei 320 px ohne seitliches Scrollen", await noOverflow(page) && await page.evaluate(() => { const s = document.querySelector(".sheet"); return s.scrollWidth <= s.clientWidth; }));
+      await ctx.close();
+    }
+
+    section("69. Tagesplan: Tag 1:1 auf andere Tage kopieren (Training, Cardio, Schritte, Essen)");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const it = (id, exId) => [{ id, exId, sets: 3, rmin: 8, rmax: 12, rest: 90 }];
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Drücken", items: it("a1", "hs-chest") }, { id: "b", name: "Ziehen", items: it("b1", "hs-row") }, { id: "c", name: "Beine", items: it("c1", "hs-legpress") }] };
+      const e = (id, n, g) => ({ id, m: "m", n, src: "usda:1", g, per: { k: 100, p: 10, c: 10, f: 2 } });
+      const seed = { plan, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "ab", kcal: null }, stepGoal: 8000,
+        sched: { days: [0, 1, 2, 3, 4, 5, 6], time: "23:59", planB: "next", since: new Date().toISOString() },
+        dayPlan: { [dk(1)]: { train: "c", steps: 12000, cardio: [{ t: "cross", i: "m", min: 30 }] }, [dk(4)]: { steps: 12000 } },
+        food: { [dk(1)]: [e("x1", "Reis", 300), e("x2", "Huhn", 200)], [dk(3)]: [e("y1", "Brot", 100)] } };
+      const { ctx, page } = await open(seed);
+      await page.click("#homeTag"); await page.click("[data-a=tagDay][data-d='1']");
+      await page.click("#tagCopy");
+      const parts = await page.$$eval("#tagCopyParts [data-a=tagCopyPart]", b => b.map(x => x.textContent + "|" + x.getAttribute("aria-pressed")));
+      const tg = await page.$$eval("#tagCopyDays [data-a=tagCopyTgt]", b => b.map(x => x.dataset.d));
+      ok("Sheet: Training, Cardio, Schritte-Ziel und Essen wählbar und vorgewählt; 14 Zieltage ohne den Tag selbst",
+        JSON.stringify(parts) === JSON.stringify(["Training: Beine|true", "Cardio: 30 Min.|true", "Schritte-Ziel: 12.000|true", "Essen: 500 kcal|true"]) && tg.length === 14 && !tg.includes(dk(1)) && tg[0] === dk(0), JSON.stringify(parts));
+      ok("Ohne Zieltag: Kopieren aus", !!(await page.$("[data-a=tagCopyDo][disabled]")));
+      await page.click(`#tagCopyDays [data-d="${dk(2)}"]`); await page.click(`#tagCopyDays [data-d="${dk(3)}"]`);
+      await page.click("[data-a=tagCopyDo]");
+      let st = await stored(page);
+      const fids = [dk(1), dk(2), dk(3)].flatMap(k => st.food[k].map(x => x.id));
+      ok("Kopiert auf 2 Tage: Training, Schritte und Cardio gleich; Essen 1:1 (vorhandenes ersetzt), eigene IDs",
+        canon(st.dayPlan[dk(2)]) === canon(seed.dayPlan[dk(1)]) && canon(st.dayPlan[dk(3)]) === canon(seed.dayPlan[dk(1)])
+        && st.food[dk(2)].map(x => x.n).join() === "Reis,Huhn" && st.food[dk(3)].map(x => x.n).join() === "Reis,Huhn" && new Set(fids).size === 6
+        && (await page.textContent("#tagNote")).includes("Auf 2 Tage kopiert"), JSON.stringify(st.dayPlan));
+      const names = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+        return [1, 2, 3].map(n => T.plannedOn(k(n)).name).join(); });
+      ok("Kalender zeigt an allen drei Tagen Beine", names === "Beine,Beine,Beine", names);
+      await page.click("[data-a=tagCopyUndo]");
+      st = await stored(page);
+      ok("Rückgängig: Zieltage wie vorher (auch das ersetzte Essen)", !st.dayPlan[dk(2)] && !st.dayPlan[dk(3)] && !st.food[dk(2)] && st.food[dk(3)].length === 1 && st.food[dk(3)][0].id === "y1" && (await page.textContent("#tagNote")).includes("rückgängig gemacht"));
+      // Nur Training und Cardio
+      await page.click("#tagCopy"); await page.click("#tagCopyParts [data-k=food]"); await page.click("#tagCopyParts [data-k=steps]");
+      await page.click(`#tagCopyDays [data-d="${dk(5)}"]`); await page.click("[data-a=tagCopyDo]");
+      st = await stored(page);
+      ok("Nur Training und Cardio gewählt: Schritte und Essen bleiben unberührt", canon(st.dayPlan[dk(5)]) === canon({ train: "c", cardio: [{ t: "cross", i: "m", min: 30 }] }) && !st.food[dk(5)]);
+      await page.click("#tagCopy"); for (const k of ["train", "cardio", "steps", "food"]) await page.click(`#tagCopyParts [data-k=${k}]`);
+      await page.click(`#tagCopyDays [data-d="${dk(6)}"]`);
+      ok("Nichts gewählt: Kopieren aus", (await page.textContent("[data-a=tagCopyDo]")) === "Nichts gewählt" && !!(await page.$("[data-a=tagCopyDo][disabled]")));
+      await page.click("[data-a=closeSheet].btn");
+      // Ruhetag und Standard-Schrittziel kopieren: übermorgen (Ruhetag, 8.000) → Tag 4 (hatte 12.000 Schritte)
+      await page.click("[data-a=tagDay][data-d='1']"); await page.click("#tagTrainPick [data-v=rest]"); await page.click("#tagCopy");
+      const p2 = await page.$$eval("#tagCopyParts [data-a=tagCopyPart]", b => b.map(x => x.textContent));
+      await page.click(`#tagCopyDays [data-d="${dk(4)}"]`); await page.click("[data-a=tagCopyDo]");
+      st = await stored(page);
+      ok("Ruhetag kopiert; Schritte-Ziel wie Standard entfernt das abweichende Tagesziel", JSON.stringify(p2) === JSON.stringify(["Ruhetag", "Schritte-Ziel: 8.000"]) && JSON.stringify(st.dayPlan[dk(4)]) === '{"train":"rest"}', JSON.stringify(p2) + JSON.stringify(st.dayPlan[dk(4)]));
+      // Rückgängig nach späterer Änderung verweigert
+      await tp(page, () => { const T = window.__tp, x = new Date(Date.now() + 4 * 864e5), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.dayPlan[k].steps = 5000; });
+      await page.click("[data-a=tagCopyUndo]");
+      ok("Rückgängig nach späterer Änderung: nichts überschrieben, Hinweis", (await tp(page, () => { const T = window.__tp, x = new Date(Date.now() + 4 * 864e5), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; return T.state.dayPlan[k].train; })) === "rest"
+        && (await page.textContent("#tagNote")).includes("Nicht mehr rückgängig"));
+      await page.click("[data-a=tagDay][data-d='1']");
+      ok("Hinweis verschwindet beim Tageswechsel", !(await page.$("#tagNote")));
+      await page.setViewportSize({ width: 320, height: 640 }); await page.click("[data-a=tagDay][data-d='-1']"); await page.click("[data-a=tagDay][data-d='-1']"); await page.click("#tagCopy"); await page.waitForTimeout(350);
+      ok("Sheet bei 320 px ohne seitliches Scrollen", await noOverflow(page) && await page.evaluate(() => { const s = document.querySelector(".sheet"); return s.scrollWidth <= s.clientWidth; }));
+      await ctx.close();
+      // Erledigtes Training als Quelle; ohne Termine kein Training im Angebot; Tag ohne Inhalt: kein Knopf
+      const hist = [{ id: "h1", dayId: "b", day: "Ziehen", date: new Date(Date.now() - 864e5).toISOString(), durationSec: 1800, exercises: [{ exId: "hs-row", name: "hs-row", u: "s", planned: 3, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 10 }] }] }];
+      const o2 = await open({ plan, history: hist, sched: seed.sched });
+      await o2.page.click("#homeTag"); await o2.page.click("[data-a=tagDay][data-d='-1']"); await o2.page.click("#tagCopy");
+      ok("Gestern trainiert (Ziehen): als Training kopierbar", JSON.stringify(await o2.page.$$eval("#tagCopyParts [data-a=tagCopyPart]", b => b.map(x => x.textContent))) === '["Training: Ziehen"]');
+      await o2.ctx.close();
+      const o3 = await open({ plan, dayPlan: { [dk(0)]: { cardio: [{ t: "row", i: "m", min: 20 }] } } });
+      await o3.page.click("#homeTag"); await o3.page.click("#tagCopy");
+      const p3 = await o3.page.$$eval("#tagCopyParts [data-a=tagCopyPart]", b => b.map(x => x.textContent)); await o3.page.click("[data-a=closeSheet].btn");
+      await o3.page.click("[data-a=tagDay][data-d='1']");
+      ok("Ohne feste Termine: nur Cardio im Angebot; Tag ohne Inhalt hat keinen Kopieren-Knopf", JSON.stringify(p3) === '["Cardio: 20 Min."]' && !(await o3.page.$("#tagCopy")));
+      await o3.ctx.close();
+    }
+
+    section("70. Ohne Essens-Einträge keine Bilanz-Zahl; Wochenvergleich erst, wenn er etwas aussagt");
+    {
+      const dk = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
+      const { ctx, page } = await open({ plan: PLAN_SMALL, weights: [{ d: dk(0), kg: 80 }], nutr: { sex: "m", age: 30, cm: 180, pal: 1.55, goal: "auf", kcal: null } });
+      const txt = async id => (await page.$(id)) ? (await page.textContent(id)).replace(/\s+/g, " ").trim() : null;
+      // Aufbauen: Verbrauch 2.759, Ziel 3.030 → Tagesziel 3.030
+      ok("Startseite ohne Einträge: „Tagesziel ≈ 3.030 kcal“, kein „Defizit“", (await txt("#homeTag")).includes("Tagesziel ≈ 3.030 kcal") && !(await txt("#homeTag")).includes("Defizit"), await txt("#homeTag"));
+      await page.click("#homeTag");
+      ok("Heute ohne Einträge: „Noch nichts eingetragen“, keine Defizit-Zahl, Tagesziel genannt", (await txt("#tagNoFood")) === "Noch nichts eingetragen." && !(await page.$("#tagBalNum")) && !(await txt("#tagBalIn")).includes("Defizit") && (await txt("#tagGoal")) === "Noch 3.030 kcal bis zu deinem Tagesziel.", await txt("#tagBalIn"));
+      await page.click("[data-a=tagDay][data-d='-1']");
+      ok("Gestern ohne Einträge: „Kein Essen eingetragen – keine Bilanz“", (await txt("#tagNoFood")) === "Kein Essen eingetragen – keine Bilanz." && !(await page.$("#tagBalNum")) && !(await txt("#tagBalIn")).includes("Defizit"));
+      await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='1']");
+      ok("Morgen ohne Plan: „Noch kein Essen geplant“ und was zum Ziel passt", (await txt("#tagNoFood")) === "Noch kein Essen geplant." && (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag 3.030 kcal.");
+      await ctx.close();
+      // Wochenrückblick: laufende Woche ohne Minus-Vergleich, abgeschlossene Woche mit
+      const X = (kg, n) => ({ exId: "hs-chest", name: "Brustpresse", u: "s", planned: n, rmin: 8, rmax: 12, sets: Array.from({ length: n }, () => ({ kg, reps: 10 })) });
+      const H = (id, days, n) => ({ id, dayId: "d1", day: "Test", date: new Date(Date.now() - days * 864e5).toISOString(), durationSec: 1800, exercises: [X(40, n)] });
+      const o2 = await open({ plan: PLAN_SMALL, history: [H("h1", 14, 4), H("h2", 7, 2)] });
+      await o2.page.click("#homeWeek");
+      ok("Laufende Woche, noch kein Training: kein „−100 % zur Vorwoche“", !(await o2.page.textContent("#weekTrain")).includes("zur Vorwoche"), await o2.page.textContent("#weekTrain"));
+      await o2.page.click("[data-a=weekNav][data-d='1']");
+      ok("Abgeschlossene Woche: Vergleich bleibt (−50 % zur Vorwoche)", (await o2.page.textContent("#weekTrain")).includes("−50 % zur Vorwoche"), await o2.page.textContent("#weekTrain"));
+      await o2.ctx.close();
+    }
+
+    section("71. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
