@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v66)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v66")));
+      ok("Service Worker aktiv (Cache trainingsplan-v67)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v67")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2296,7 +2296,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=exBack]");
       await page.click("[data-a=tab][data-v=home]");
       await page.click("[data-a=start]");
-      ok("Training: Trick der Brustpresse für den ersten Satz", (await page.textContent("#trickNow")).includes("Ellbogen leicht unter Schulterhöhe führen"));
+      ok("Training: Trick der Brustpresse für den ersten Satz", (await page.textContent("#trickNow")).includes("Halt die Ellbogen knapp unter Schulterhöhe"));
       ok("360 px: Training mit Trick ohne seitliches Scrollen", await noOverflow(page));
       await page.click("#trickNow");
       ok("Antippen: Tricks der Brustpresse, der aktuelle aufgeklappt", (await page.textContent(".sheet")).includes("Tricks: Brustpresse") && await page.isVisible(".sheet details[data-trick=x0][open]") && (await page.$$(".sheet details.trk")).length === 2);
@@ -2306,7 +2306,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Zurück zu den Tricks des Geräts", (await page.textContent(".sheet")).includes("Tricks: Brustpresse"));
       await page.keyboard.press("Escape");
       await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
-      ok("Zweiter Satz: der andere Trick der Brustpresse", (await page.textContent("#trickNow")).includes("Hinten eine Sekunde halten"));
+      ok("Zweiter Satz: der andere Trick der Brustpresse", (await page.textContent("#trickNow")).includes("Halt hinten eine Sekunde, dann drück"));
       await page.click(".tool[data-a=openDevInfo]");
       ok("Gerät & Technik: So geht's und die zwei Tricks des Geräts", (await page.textContent(".sheet")).includes("So geht's") && (await page.$$("#devTricks details.trk")).length === 2);
       await page.click("text=Ausführliche Anleitung");
@@ -4074,7 +4074,42 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("74. Konsole");
+    section("74. Übungen am Kabelzug; Texte in einfacher Sprache");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const ids = ["lf-ohtri", "lf-cablecurl", "lf-facepull", "lf-cablelat", "lf-cablefly"];
+      const v = await tp(page, ids => { const T = window.__tp;
+        return ids.map(id => { const e = T.ex(id), g = T.GUIDE[id]; return { name: e.name, brand: e.brand, off: !!e.off, label: e.label, load: T.loadShort(e), pat: e.pattern, m: e.muscle, src: (g.src || []).join(), why: g.why }; }); }, ids);
+      ok("Fünf Übungen am Kabelzug: Life Fitness, ab Werk nicht im Studio, Gewichtsart Seilzug",
+        v.map(x => x.name).join() === "Trizepsstrecken über Kopf,Armbeuger am Kabel,Zug zum Gesicht,Seitheben am Kabel,Butterfly am Kabel" && v.every(x => x.brand === "lf" && x.off && x.load === "Seilzug" && x.label === "Dual Adjustable Pulley"), JSON.stringify(v.map(x => [x.name, x.load, x.off])));
+      ok("Muskel und Bewegung je Übung: Trizeps, Bizeps, Schultern (hinten), Schultern (seitlich), Brust", v.map(x => x.m + "/" + x.pat).join() === "trizeps/tri,bizeps/bi,schultern/rear,schultern/lateral,brust/fly", v.map(x => x.m + "/" + x.pat).join());
+      ok("Studienaussage nur beim Trizepsstrecken über Kopf (Maeo 2023: +20 % statt +14 %)", v[0].src === "tri2023" && v[0].why.includes("+20 % statt +14 %") && v.slice(1).every(x => x.src === "" && !/Studie/.test(x.why)), JSON.stringify(v.map(x => x.src)));
+      const mot = await tp(page, ids => { const T = window.__tp, d = document.createElement("div");
+        return ids.map(id => { d.innerHTML = T.motionSvg(id, { p: 1 }); const s = d.querySelector("svg"); return { ok: !!s, box: s && s.getAttribute("viewBox"), lines: s ? s.querySelectorAll("line").length : 0 }; }); }, ids);
+      ok("Jede Übung mit eigener Zeichnung", mot.every(m => m.ok), JSON.stringify(mot));
+      await page.click("[data-a=tab][data-v=lib]"); await page.fill("#libQ", "face pull");
+      const hit = await page.$$eval("#libList [data-a=openEx]", a => a.map(x => x.dataset.id));
+      ok("Suche „face pull“ findet „Zug zum Gesicht“", hit.join() === "lf-facepull", hit.join());
+      await page.click("[data-a=openEx][data-id=lf-facepull]");
+      const pg = (await page.textContent("#app")).replace(/\s+/g, " ");
+      ok("Seite der Übung: Schritte, Trick und Gewichtsart", pg.includes("Zieh das Seil zur Stirn, die Ellbogen gehen hoch und nach außen.") && pg.includes("Zeig am Ende mit den Daumen hinter dich") && pg.includes("Seilzug") && !!(await page.$("#gMotion svg.motion")), pg.slice(0, 200));
+      ok("Bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      // Einfache Sprache
+      const txt = await tp(page, () => { const T = window.__tp, bad = [], JARGON = /Drehachse|Bewegungsmuster|Übersetzung beachten|Widerstandsverlauf|Raste\b/;
+        for (const e of T.allEx().filter(x => !x.id.startsWith("c-"))) {
+          const tips = T.TIPS[e.id] || [];
+          if (tips.length !== 3) bad.push(e.id + ": " + tips.length + " Schritte");
+          tips.forEach(s => { if (!/^[A-ZÄÖÜ]/.test(s) || !/[.!]$/.test(s)) bad.push(e.id + ": kein ganzer Satz – " + s); if (s.length > 130) bad.push(e.id + ": zu lang – " + s); if (JARGON.test(s)) bad.push(e.id + ": Fachwort – " + s); });
+          T.tricksFor(e).forEach(k => { if (JARGON.test(k.t + k.short + k.s)) bad.push(e.id + ": Fachwort im Trick – " + k.t); if (k.short.length > 75) bad.push(e.id + ": Trick-Zeile zu lang – " + k.short);
+            if (k.s.split(/(?<=[.!?])\s+/).length > 3) bad.push(e.id + ": Trick-Erklärung über drei Sätze – " + k.t); });
+        }
+        return bad; });
+      ok("„So geht's“: je Gerät drei ganze Sätze, höchstens 130 Zeichen, ohne Fachwörter wie „Drehachse“", txt.filter(x => !/Trick/.test(x)).length === 0, txt.filter(x => !/Trick/.test(x)).slice(0, 4).join(" | "));
+      ok("Tricks: Anweisung in einer kurzen Zeile, Erklärung in höchstens drei Sätzen, ohne Fachwörter", txt.filter(x => /Trick/.test(x)).length === 0, txt.filter(x => /Trick/.test(x)).slice(0, 4).join(" | "));
+      await ctx.close();
+    }
+
+    section("75. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
