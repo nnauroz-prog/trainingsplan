@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v67)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v67")));
+      ok("Service Worker aktiv (Cache trainingsplan-v68)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v68")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2575,7 +2575,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Suche findet auch die Bezeichnung am Gerät (chest press → Brustpresse)", (await page.textContent("#app")).includes("Brustpresse"));
       await page.fill("#libQ", ""); await page.click("[data-a=openEx][data-id=hs-row]");
       ok("Geräteseite: deutscher Name, darunter „Am Gerät steht: Iso-Lateral Row“", (await page.textContent(".head .title")) === "Rudern" && (await page.textContent("#exLabel")) === "Am Gerät steht: Iso-Lateral Row");
-      ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel in Akzentfarbe", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--accent)'], #gMotion svg [fill='var(--accent)']", e => e.length)) >= 1);
+      ok("Anleitung: Bewegungsanimation statt Muskelkarte, Hauptmuskel rot", !!(await page.$("#gMotion svg.motion")) && !(await page.$(".gfig .fig")) && (await page.$$eval("#gMotion svg [stroke='var(--mhot)'], #gMotion svg [fill='var(--mhot)']", e => e.length)) >= 1);
       await page.click("[data-a=exBack]");
       const thumbs = await page.$$eval("#libList .thumbbox svg.motion", e => e.length);
       ok("Übungsliste: kleines Bild der Bewegung je Gerät (ohne Animation)", thumbs === 60 && !(await page.$("#libList svg.motion[data-anim]")), String(thumbs));
@@ -3153,7 +3153,7 @@ async function finishAllSets(page, kg, reps) {
       // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
-        return { glow: chest.includes('stroke="var(--accent)" stroke-width="6"'), sec: /fill="var\(--accent\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
+        return { glow: chest.includes('stroke="var(--mhot)" stroke-width="6"'), sec: /fill="var\(--mhot\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
           lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
           press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
           downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
@@ -4109,7 +4109,44 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("75. Konsole");
+    section("75. Zeichnungen: Figur von vorn oder hinten am Gerät, arbeitende Muskeln rot");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, cs = getComputedStyle(document.documentElement);
+        const one = (id, p) => { const s = T.motionSvg(id, { p }); return { fig: T.motSpec(id).v === "fig", box: /viewBox="0 0 160 120"/.test(s), hot: (s.match(/fill="var\(--mhot\)"/g) || []).length, frame: s.includes("var(--mframe)"), pad: s.includes("var(--mpad)"),
+          lines: (s.match(/<line /g) || []).length, len: s.length, scale: s.includes('scale(.825)') }; };
+        const ids = ["hs-fly", "lf-fly", "hs-reardelt", "lf-reardelt", "hs-lateral", "lf-lateral", "lf-cablefly", "lf-cablelat"];
+        return { v: Object.fromEntries(ids.map(id => [id, one(id, 1)])), open: T.motionSvg("hs-fly", { p: 0 }) !== T.motionSvg("hs-fly", { p: 1 }),
+          side: T.motSpec("hs-chest").v || "side", hot: cs.getPropertyValue("--mhot").trim(), frame: cs.getPropertyValue("--mframe").trim(), pad: cs.getPropertyValue("--mpad").trim(),
+          oldGone: typeof T.motSpec("hs-fly").A.h === "number" && T.motSpec("hs-fly").A.ua === undefined }; });
+      const V = r.v, ids = Object.keys(V);
+      ok("Butterfly, hintere Schulter, Seitheben und die Kabel-Varianten nutzen die neue Figur von vorn oder hinten", ids.every(id => V[id].fig && V[id].box && V[id].len > 3000) && r.oldGone, JSON.stringify(ids.filter(id => !V[id].fig)));
+      ok("Arbeitende Muskeln rot (eigene Farbe, nicht mehr Akzentgelb); Start- und Endstellung unterscheiden sich", ids.every(id => V[id].hot >= 1) && r.open && /^#[0-9A-F]{6}$/i.test(r.hot), JSON.stringify([r.hot, ids.map(id => V[id].hot)]));
+      ok("Gerät mit hellem Rahmen und dunklen Polstern; Geräte im Sitzen mit Polster, Kabel-Übungen im Stehen ohne",
+        ["hs-fly", "hs-reardelt", "hs-lateral"].every(id => V[id].frame && V[id].pad && !V[id].scale) && V["lf-cablefly"].scale && V["lf-cablelat"].scale && V["lf-cablefly"].frame, JSON.stringify(V["lf-cablefly"]));
+      ok("Seile: Butterfly am Kabel mit zwei, Seitheben am Kabel mit einem", V["lf-cablefly"].lines >= 2 && V["lf-cablelat"].lines >= 1);
+      ok("Übrige Geräte bleiben in der Seitenansicht", r.side === "side");
+      const lat = await tp(page, () => { const T = window.__tp, ids = ["hs-lat-close", "hs-lat-under", "hs-lat", "hs-lat-wide"];
+        const hands = id => { const s = T.motionSvg(id, { p: 1 }); return { back: T.motSpec(id).back === true, g: T.motSpec(id).pull.g, box: /viewBox="-16 -26 192 144"/.test(s), hot: (s.match(/var\(--mhot\)/g) || []).length };
+        };
+        return { v: ids.map(hands), still: T.motSpec("hs-fly").still, diff: T.motionSvg("hs-lat", { p: 0 }) !== T.motionSvg("hs-lat", { p: 1 }), wideVsStd: T.motionSvg("hs-lat", { p: 1 }) !== T.motionSvg("hs-lat-wide", { p: 1 }) }; });
+      ok("Latzug von hinten, Bildausschnitt mit Platz über dem Kopf, Rücken rot", lat.v.every(x => x.back && x.box && x.hot >= 2) && lat.diff, JSON.stringify(lat.v));
+      ok("Jede Latzug-Variante mit eigener Griffbreite: eng < Untergriff < Standard < breit", lat.v.map(x => x.g).join() === "4.5,15,23,31" && lat.wideVsStd, lat.v.map(x => x.g).join());
+      ok("Standbild des Butterfly zeigt die geöffnete Stellung", lat.still === .3);
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-fly]");
+      ok("Butterfly-Seite: Zeichnung von vorn, Hinweis nennt Rot", !!(await page.$("#gMotion svg.motion[viewBox='0 0 160 120']")) && (await page.textContent("#gMotion .mnote")).includes("rot arbeitet, blassrot hilft mit"));
+      ok("Butterfly-Seite bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+      // Farben in beiden Designs gesetzt
+      for (const light of [false, true]) {
+        const o = await open({ plan: PLAN_SMALL }, { light });
+        const c = await tp(o.page, () => { const cs = getComputedStyle(document.documentElement); return ["--mhot", "--mframe", "--mpad"].map(k => cs.getPropertyValue(k).trim()); });
+        ok(`${light ? "Hell" : "Dunkel"}: Farben für Muskel, Rahmen und Polster gesetzt`, c.every(x => /^#[0-9A-F]{6}$/i.test(x)) && c[1] !== c[2], c.join());
+        await o.ctx.close();
+      }
+    }
+
+    section("76. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
