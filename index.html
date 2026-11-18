@@ -3073,7 +3073,8 @@ function motFig(sp, P, R, act, p, st) {
     const go = (a, b, off) => { let u = mUnit(a, b); if (Math.hypot(b[0] - a[0], b[1] - a[1]) < .01) return ""; if (flip < 0) u = [-u[0], -u[1]]; return mLine(mSh(a, u, off), mSh(a, u, off + 4.5), 1.8, MH) + mArrow(mSh(a, u, off + 10), u, 6, dr.op); };
     if (pull) for (const dx of [-1, 1]) { const x = cx + dx * (pull.g + 12); out.push(go([x, barY], [x, barAt(P2)], 0)); }
     else if (hipRig) for (const dx of [-1, 1]) { const kx = l => cx + dx * (7.5 + 32 * Math.sin(mRad(l))) + dx * (rig === "abd" ? 13 : -2); out.push(go([kx(P.l), 88], [kx(P2.l), 88], rig === "abd" ? 0 : -14)); }
-    else for (const dx of sp.one ? [1] : [-1, 1]) { const a = armPts(dx, false).ha, b = armPts(dx, false, P2).ha; out.push(go(a, b, 6)); } }
+    // Butterfly und hintere Schulter: Pfeil hinter der Hand (schiebt sie), damit sich die Pfeile vor der Brust nicht kreuzen
+    else for (const dx of sp.one ? [1] : [-1, 1]) { const a = armPts(dx, false).ha, b = armPts(dx, false, P2).ha; out.push(P.h != null ? go(a, b, -15.5) : go(a, b, 6)); } }
   const body = out.join("");
   // Stehend: die ganze Figur etwas kleiner, damit sie bis zu den Füßen ins Bild passt
   return stand ? `<g transform="translate(14 4) scale(.825)">${body}</g>` : body;
