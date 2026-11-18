@@ -13,7 +13,7 @@
     /* Farben (dunkel = Standard): Stahl und Signalgelb */
     --bg:#121212; --raise:#1C1C1C; --raise-2:#272727; --raise-3:#343434;
     --hair:rgba(255,255,255,.12); --text:#F2F2F0; --text-2:#BDBDB8; --text-3:#9A9A95;
-    --mbody:#A8A8A3; --mbody2:#6E6E6A; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
+    --mbody:#D9A585; --mbody2:#AE7C5F; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#2E2E2B; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
     --accent:#FFD21F; --accent-press:#E9BE00; --accent-stripe:#F2C200; --accent-tint:rgba(255,210,31,.12); --on-accent:#111111; --accent-ink:#FFD21F;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#FF8A3D; --warn-tint:rgba(255,138,61,.13); --bad:#FF6A61;
     --fig:#262626; --muscle:#3A3A3A; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.62);
@@ -35,7 +35,7 @@
     --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
     --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
     --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858580; --mbody2:#AEAEA9; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
+    --mbody:#D6A080; --mbody2:#C08B6C; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
     :root:not([data-theme="dark"]) .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}}
   :root[data-theme="light"] .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}
   :root[data-theme="light"]{
@@ -45,7 +45,7 @@
     --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
     --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
     --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858580; --mbody2:#AEAEA9; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
+    --mbody:#D6A080; --mbody2:#C08B6C; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -285,7 +285,7 @@
   .ghead{display:grid;grid-template-columns:minmax(0,1fr) clamp(96px, 30vw, 140px);gap:var(--s4);align-items:start}
   .motion{display:block;width:100%;height:auto}
   /* Hammer Strength: Rahmen, Polster und Scheiben schwarz wie im Studio (dunkles Design: aufgehellt, damit sie sichtbar bleiben) */
-  .motion.b-hs{--mframe:#383835;--mgear-line:#96968F;--mpad:#46463F}
+  .motion.b-hs{--mframe:#4A4A46;--mgear-line:#A6A69F;--mpad:#3A3A36}
   .gmot{display:grid;gap:var(--s2);background:var(--raise);border-radius:var(--r-lg);padding:var(--s3)}
   .gmot .motion{max-width:340px;margin:0 auto}
   .mcue{display:grid;gap:8px;width:100%;max-width:340px;margin:0 auto}
@@ -445,7 +445,25 @@
   .gdet>summary::after{content:"›";color:var(--text-3);font-size:20px;transition:transform .15s}
   .gdet[open]>summary::after{transform:rotate(90deg)}
   .gdet-in{display:grid;gap:var(--s3);padding-bottom:var(--s4)}
-  .tiplist{margin:0;padding-left:20px;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
+  .tiplist{margin:0;padding:0;list-style:none;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
+  .tiplist li{display:flex;gap:var(--s3);align-items:flex-start;background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4)}
+  .tipn{flex:0 0 28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;display:grid;place-items:center;font-size:15px;line-height:1}
+  /* Geräteseite: Zeichnung groß über die ganze Breite, sanftes Licht dahinter */
+  .exv{gap:var(--s5)}
+  .exhero{margin:calc(-1 * var(--s3)) calc(-1 * var(--gutter)) 0;padding:var(--s3) var(--gutter) var(--s2);display:grid;gap:var(--s2);
+    background:radial-gradient(110% 80% at 50% 40%, var(--hero-hi) 0%, var(--bg) 72%)}
+  .exhero .exback{justify-self:start}
+  .exhero .gmot{background:none;padding:0}
+  .exhero .gmot .motion{max-width:460px}
+  .exhead .title{font-size:clamp(32px, 10vw, 44px)}
+  .exfacts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
+  .exfacts span{padding:6px 12px;border-radius:999px;background:var(--raise);font-size:14px;color:var(--text-2)}
+  .exfacts span b{color:var(--text)}
+  .exfacts .hot{color:var(--text);display:inline-flex;align-items:center;gap:6px}
+  .exfacts .hot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mhot)}
+  .exv .gmus{gap:var(--s2)}
+  .exv .gmus>div{background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4);display:grid;gap:var(--s2);align-content:start}
+  .exv .gmus>div:first-child{box-shadow:inset 3px 0 0 var(--mhot)}
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -2499,7 +2517,19 @@ function motBox(sp) {
   if (w / h < 4 / 3) w = h * 4 / 3; else h = w * 3 / 4;
   return (sp._box = `${mF(cx - w / 2)} ${mF(cy - h / 2)} ${mF(w)} ${mF(h)}`);
 }
-const MB2 = "var(--mbody2)";
+const MB2 = "var(--mbody2)", MHR = "var(--mhair)", MSH = "var(--mshorts)";
+// Plastische Wirkung wie bei einem gerenderten Modell: weiche Kanten, Glanzlicht von oben links, Schatten unten rechts
+const M3D = `<defs><filter id="m3d" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">`
+  + `<feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b"/>`
+  + `<feSpecularLighting in="b" surfaceScale="3.2" specularConstant=".38" specularExponent="18" lighting-color="#fff" result="s"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>`
+  + `<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>`
+  + `<feDiffuseLighting in="b" surfaceScale="3.2" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="55"/></feDiffuseLighting>`
+  + `<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.05" k2="0" k3="0" k4="0" result="lit"/>`
+  + `<feComposite in="sp" in2="lit" operator="arithmetic" k1="0" k2=".7" k3="1" k4="0"/></filter>`
+  + `<filter id="m3dm" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".9" result="b"/>`
+  + `<feSpecularLighting in="b" surfaceScale="2" specularConstant=".5" specularExponent="16" lighting-color="#fff" result="s"><feDistantLight azimuth="225" elevation="40"/></feSpecularLighting>`
+  + `<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/><feDiffuseLighting in="b" surfaceScale="2" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="60"/></feDiffuseLighting>`
+  + `<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.04" k2="0" k3="0" k4="0" result="lit"/><feComposite in="sp" in2="lit" operator="arithmetic" k1="0" k2=".6" k3="1" k4="0"/></filter></defs>`;
 // Pfeilspitze bei q in Richtung u (Akzentfarbe mit dunklem Rand, auch auf hellem Grund sichtbar)
 function mArrow(q, u, sz, op) {
   const n = [-u[1], u[0]], b = mSh(q, u, -sz), w = sz * .42;
@@ -2698,6 +2728,8 @@ function mDeltD(so, uaD, bN, tN, k) {
   const P = (s, n, w) => [so[0] + uaD[0] * s + n[0] * w, so[1] + uaD[1] * s + n[1] * w];
   return mSmooth([P(-4, bN, 1.2), P(-2, bN, 4 * k), P(3, bN, 4.5 * k), P(8, bN, 2.6), P(11.4, bN, .4), P(8, tN, 2.8), P(3, tN, 4.7 * k), P(-2, tN, 4.2 * k), P(-4, tN, 1.2)]);
 }
+// Shorts am Oberschenkel (oberes Drittel)
+const mShortsLeg = (hip, kn, qN, op = 1) => `<path d="${mSilD(hip, kn, qN, [[-.06, 6.6], [.2, 7.3], [.4, 6.9]], [[-.06, 7.2], [.2, 7], [.4, 6.5]])}" fill="${MSH}"${op < 1 ? ` fill-opacity="${op}"` : ""}${MOL}/>`;
 // Schuh: Ferse hinter dem Knöchel, Sohle, runde Spitze
 function mShoe(an, to, shD, c, op) {
   // Oberseite des Fußes zeigt zum Schienbein (auch wenn der Fuß fast in Verlängerung des Schienbeins steht)
@@ -2819,7 +2851,7 @@ function motDraw(sp, s, e) {
   // Umrisse wie beim Menschen: Muskelwölbungen, schmalere Gelenke, Kopf im Profil. Jeder Muskel läuft vom Ursprung zum Ansatz
   // über das Gelenk (Sehne bis zum nächsten Körperteil). Wird er kürzer, wird er dicker – so sieht man, wie er arbeitet.
   const body = [], far = q => [q[0] - 2.5, q[1] - 1.6], role = k => R[k] || 0;
-  const mMusE = (d, r, ac, base, fib) => mMus(d, r, ac, base, fib) + (r ? "" : mEdge(d));
+  const mMusE = (d, r, ac, base, fib) => `<g filter="url(#m3dm)">${mMus(d, r, ac, base, fib)}</g>` + (r ? "" : mEdge(d));
   const ML = mMusLen(j), ML0 = sp._ml || (sp._ml = (() => { const a = mMusLen(mJoints(sp, mPose(sp, 0))), b = mMusLen(mJoints(sp, mPose(sp, 1))), o = {}; for (const k in a) o[k] = (a[k] + b[k]) / 2; return o; })());
   const vol = k => Math.max(.84, Math.min(1.4, 1 + .6 * (ML0[k] / ML[k] - 1))) + (role(k) === 2 ? .07 * act : 0);
   const tendon = (r, pts) => r ? `<path d="M${pts.map(q => `${mF(q[0])} ${mF(q[1])}`).join("L")}" fill="none" stroke="${MHOT}" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${r === 2 ? .7 : .4}"/>` : "";
@@ -2829,7 +2861,7 @@ function motDraw(sp, s, e) {
     const c = near ? MB : MB2, thD = mUnit(hip, kn), shD = mUnit(kn, an), qN = mRot(thD, -1), sF = mRot(shD, -1), out = [];
     out.push(mSilFull(kn, an, sF, M_SH_F, M_SH_B, c), mSilFull(hip, kn, qN, M_TH_F, M_TH_B, c), mShoe(an, to, shD, near ? MB2 : MB2, near ? 1 : .8));
     if (!near) { out.push(farMus(mSpD(hip, kn, qN, M_TH_F, .1, .88, .4, vol("quad")), role("quad")), farMus(mSpD(hip, kn, [-qN[0], -qN[1]], M_TH_B, .12, .86, .4, vol("ham")), role("ham")),
-      farMus(mSpD(kn, an, [-sF[0], -sF[1]], M_SH_B, .04, .6, .3, vol("calf")), role("calf"))); return out.join(""); }
+      farMus(mSpD(kn, an, [-sF[0], -sF[1]], M_SH_B, .04, .6, .3, vol("calf")), role("calf")), mShortsLeg(hip, kn, qN, .85)); return out.join(""); }
     out.push(mSilShade(kn, an, sF, M_SH_F, M_SH_B), mSilShade(hip, kn, qN, M_TH_F, M_TH_B));
     // Schienbeinmuskel (nur Kontur), Wade mit Achillessehne zur Ferse
     out.push(mMusE(mSpD(kn, an, sF, M_SH_F, .12, .72, .3, 1), 0, act, MB));
@@ -2841,6 +2873,9 @@ function motDraw(sp, s, e) {
     const rQ = role("quad"), qD = mSpD(hip, kn, qN, M_TH_F, .08, .9, .5, vol("quad")), pat = mSh(kn, mUnit([0, 0], mAdd(qN, sF)), 4.4);
     out.push(mMusE(qD, rQ, act, MB, rQ ? mSpFib(hip, kn, qN, M_TH_F, .08, .9, .5, vol("quad")) : ""), tendon(rQ, [mSh(mLerp(hip, kn, .9), qN, 3.6), pat, mSh(mSh(kn, shD, 5), sF, 3)]));
     out.push(`<ellipse cx="${mF(pat[0])}" cy="${mF(pat[1])}" rx="2.3" ry="1.9" fill="${MB}"${MOL}/>`);
+    out.push(mShortsLeg(hip, kn, qN));
+    if (rQ) out.push(mMusE(qD, rQ, act, MB, mSpFib(hip, kn, qN, M_TH_F, .08, .9, .5, vol("quad"))));
+    if (rH) out.push(mMusE(hD, rH, act, MB, mSpFib(hip, kn, hN, M_TH_B, .1, .88, .5, vol("ham"))));
     return out.join("");
   };
   const armBody = (near, so, el, ha) => {
@@ -2871,7 +2906,11 @@ function motDraw(sp, s, e) {
     `<path d="${mSmooth([T(.08, 5.6), T(.5, 6.2), T(.86, 7.6), T(.86, 5.2), T(.5, 4.4), T(.12, 4.2)])}" fill="#fff" fill-opacity=".1"/>`);
   // Gesäß hinter dem Hüftgelenk, setzt am Oberschenkel an
   const glR = role("glute"), gk = vol("glute"), glD = mSmooth([T(.16, -7.4), T(.02, -8.6 * gk), sh(sh(j.hip, back, 8.4 * gk), thD, 3), sh(sh(j.hip, mRot(thD, 1), 6.2 * gk), thD, 8.5), sh(j.hip, thD, 6), sh(j.hip, back, 2.6), T(.12, -4.2)]);
-  body.push(mMusE(glD, glR, act, MB));
+  // Shorts über Becken und Gesäß; arbeitet das Gesäß, liegt es sichtbar darüber
+  if (!glR) body.push(mMusE(glD, 0, act, MB));
+  body.push(`<path d="${mSmooth([T(.2, 7.1), T(.03, 7.2), T(-.13, 6.2), T(-.13, -7.6), sh(sh(j.hip, back, 8.8 * gk), thD, 3), T(.03, -8.9 * gk), T(.2, -6.9)])}" fill="${MSH}"${MOL}/>`,
+    mLine(T(.2, 7), T(.2, -6.8), 1.1, "rgba(0,0,0,.25)"));
+  if (glR) body.push(mMusE(glD, glR, act, MB));
   // Brust: vom Brustbein fächerförmig zum Oberarm (wird lang, wenn der Arm nach hinten geht)
   const insF = sh(sh(j.sho, uaD, 6), mRot(uaD, -1), 1.2), insB = sh(sh(j.sho, uaD, 6), mRot(uaD, 1), 1), ck = vol("chest"), lk = vol("lats");
   const chestD = mSmooth([T(.58, 7), T(.72, 7.4 + 1.6 * ck), T(.9, 7.2 + 1.4 * ck), T(.99, 6), insF, T(.82, 3.4), T(.62, 3.6)]);
@@ -2890,12 +2929,12 @@ function motDraw(sp, s, e) {
   // Hals und Kopf im Profil (Stirn, Nase, Kinn, Ohr, Haare)
   const hd = mDir(P.t + (P.hd || 0), 1), face = [-hd[1], hd[0]], H = (x, y) => [j.head[0] + face[0] * x * .9 + hd[0] * y * .9, j.head[1] + face[1] * x * .9 + hd[1] * y * .9];
   body.push(`<path d="${mSilD(j.sho, j.head, face, [[.05, 3.6], [.55, 3.1], [.8, 3]], [[.05, 4.6], [.55, 3.4], [.8, 3.2]])}" fill="${MB}"${MOL}/>`);
-  body.push(`<path d="${mSmooth(M_HEAD.map(([x, y]) => H(x, y)))}" fill="${MB}"${MOL}/>`, `<path d="${mSmooth(M_HAIR.map(([x, y]) => H(x, y)))}" fill="${MB2}"/>`,
+  body.push(`<path d="${mSmooth(M_HEAD.map(([x, y]) => H(x, y)))}" fill="${MB}"${MOL}/>`, `<path d="${mSmooth(M_HAIR.map(([x, y]) => H(x, y)))}" fill="${MHR}"/>`,
     `<ellipse cx="${mF(H(-1.2, -.4)[0])}" cy="${mF(H(-1.2, -.4)[1])}" rx="1.5" ry="2.3" fill="${MB}"${MOL} transform="rotate(${mF(P.t + (P.hd || 0) + 90)} ${mF(H(-1.2, -.4)[0])} ${mF(H(-1.2, -.4)[1])})"/>`,
     `<path d="${mSmooth([H(-4, 4.4), H(0, 6.4), H(3.6, 4.8), H(0, 3.6)])}" fill="#fff" fill-opacity=".1"/>`);
   body.push(legBody(true, j.hip, j.knee, j.ank, j.toe));
   body.push(armBody(true, j.sho, j.elb, j.hand));
-  return g.join("") + body.join("") + gf.join("");
+  return g.join("") + `<g filter="url(#m3d)">${body.join("")}</g>` + gf.join("");
 }
 // Rolle/Polster von der Seite
 function mPlateRoll(c, r = 5) { return `<circle cx="${mF(c[0])}" cy="${mF(c[1])}" r="${r}" fill="${MPD}" stroke="${MGL}" stroke-width=".6"/><circle cx="${mF(c[0] - r * .25)}" cy="${mF(c[1] - r * .3)}" r="${mF(r * .45)}" fill="#fff" fill-opacity=".12"/><circle cx="${mF(c[0])}" cy="${mF(c[1])}" r="1.4" fill="${MGL}"/>`; }
@@ -2919,12 +2958,12 @@ function mHeadF(cx, back) {
   const H = [[0, 8.4], [5, 9.6], [6.6, 13.6], [6.3, 18.2], [4.8, 21.8], [2.4, 24], [0, 24.6], [-2.4, 24], [-4.8, 21.8], [-6.3, 18.2], [-6.6, 13.6], [-5, 9.6]].map(([x, y]) => [cx + x, y]);
   const ear = s => `<ellipse cx="${cx + s * 6.5}" cy="17.4" rx="1.5" ry="2.6" fill="var(--mbody)" stroke="#000" stroke-opacity=".28" stroke-width=".5"/>`;
   const hair = back ? [[0, 7.6], [5.4, 9], [7, 13.4], [6.6, 19.6], [4, 21.6], [0, 22.2], [-4, 21.6], [-6.6, 19.6], [-7, 13.4], [-5.4, 9]] : [[0, 7.6], [5.4, 9], [7, 13.4], [6.4, 14.6], [4.6, 11.6], [0, 11], [-4.6, 11.6], [-6.4, 14.6], [-7, 13.4], [-5.4, 9]];
-  return ear(-1) + ear(1) + `<path d="${mSmooth(H)}" fill="var(--mbody)" stroke="#000" stroke-opacity=".28" stroke-width=".5"/>` + `<path d="${mSmooth(hair.map(([x, y]) => [cx + x, y]))}" fill="var(--mbody2)"/>`
+  return ear(-1) + ear(1) + `<path d="${mSmooth(H)}" fill="var(--mbody)" stroke="#000" stroke-opacity=".28" stroke-width=".5"/>` + `<path d="${mSmooth(hair.map(([x, y]) => [cx + x, y]))}" fill="var(--mhair)"/>`
     + (back ? "" : `<path d="M${cx} 15.6L${cx + .9} 19.4L${cx - .4} 19.8" fill="none" stroke="#000" stroke-opacity=".22" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="${cx - 2.2}" cy="13.4" rx="3" ry="1.6" fill="#fff" fill-opacity=".12"/>`);
 }
 function motFig(sp, P, R, act, p, st, e) {
   // Scheibengerät (z. B. Seitheben von Hammer Strength, laut Hersteller vier Scheibenhörner an den Hebelarmen): kein Gewichtsblock, niedriger Rahmen
-  const plateRig = !!(e && e.type === "plate");
+  const plateRig = !!(e && e.type === "plate"), late = [], KN = {};
   const cx = 80, out = [], role = k => R[k] || 0, back = !!sp.back, stand = !!sp.stand, rig = sp.rig, Lu = 21, Lf = 18;
   const ol = ` stroke="#000" stroke-opacity=".28" stroke-width=".5" stroke-linejoin="round"`;
   const shape = (d, c) => `<path d="${d}" fill="${c}"${ol}/>`;
@@ -2965,7 +3004,7 @@ function motFig(sp, P, R, act, p, st, e) {
   // Beine
   for (const dx of [-1, 1]) {
     if (stand) {
-      const hip = [cx + dx * 7.6, 76], knee = [cx + dx * 8.8, 101], ank = [cx + dx * 9.4, 124.5];
+      const hip = [cx + dx * 7.6, 76], knee = [cx + dx * 8.8, 101], ank = [cx + dx * 9.4, 124.5]; KN[dx] = { hip, knee };
       out.push(mSilFull(knee, ank, mOut(knee, ank, dx), F_SH_O, F_SH_I, MB), `<ellipse cx="${mF(ank[0] + dx * 1.2)}" cy="127" rx="4.8" ry="2.6" fill="${MB2}"${ol}/>`, mSilFull(hip, knee, mOut(hip, knee, dx), F_TH_O, F_TH_I, MB));
       const q = back ? role("ham") : role("quad");
       out.push(mMus(mBlob([[hip[0] - dx * 3.4, hip[1] + 3], [hip[0] + dx * 4.4, hip[1] + 3], [knee[0] + dx * 3.6, knee[1] - 4], [knee[0], knee[1] - 1.5], [knee[0] - dx * 3.4, knee[1] - 4.5]]), q, act, MB), def(`M${mF(hip[0] + dx * .5)} ${hip[1] + 5}L${mF(knee[0])} ${knee[1] - 4}`));
@@ -2974,7 +3013,7 @@ function motFig(sp, P, R, act, p, st, e) {
       const kn = [cx + dx * 11.5, 81], ank = [cx + dx * 12.5, 108.5];
       out.push(mSilFull(kn, ank, mOut(kn, ank, dx), F_SH_O, F_SH_I, MB2), mEdge(mBellyD(kn, ank, mOut(kn, ank, -dx), .06, .55, 4, 3, 1)), `<ellipse cx="${mF(ank[0])}" cy="111.2" rx="4.4" ry="2.6" fill="${MB2}"${ol}/>`);
     } else {
-      const op = P.l != null ? 32 * Math.sin(mRad(P.l)) : 5, hip = [cx + dx * 7.5, 75], knee = [cx + dx * (7.5 + op), 89], ank = [knee[0] + dx * .5, 108.5];
+      const op = P.l != null ? 32 * Math.sin(mRad(P.l)) : 5, hip = [cx + dx * 7.5, 75], knee = [cx + dx * (7.5 + op), 89], ank = [knee[0] + dx * .5, 108.5]; KN[dx] = { hip, knee };
       const pd = [knee[0] + dx * (rig === "abd" ? 8.4 : -8.4), knee[1] - 1];
       if (hipRig) out.push(bar([cx + dx * 3, 99], [pd[0], pd[1] + 8], 2.2), mLimb([ank[0] - 5, 113.2], [ank[0] + 6, 113.2], 2.6, 2.6, MPD));
       out.push(mSilFull(knee, ank, mOut(knee, ank, dx), F_SH_O, F_SH_I, MB2), `<ellipse cx="${mF(ank[0] + dx * .6)}" cy="111.2" rx="4.6" ry="2.7" fill="${MB2}"${ol}/>`, mLimb(hip, knee, 12.5, 11.5, MB, null, 1));
@@ -2984,8 +3023,8 @@ function motFig(sp, P, R, act, p, st, e) {
         const u = mUnit(hip, knee), no = u[1] * dx > 0 ? [u[1], -u[0]] : [-u[1], u[0]], ni = [-no[0], -no[1]], on = (f, n, d) => mSh(mLerp(hip, knee, f), n, d);
         // Seitliches Gesäß (außen an Becken und Oberschenkel) und Innenseite des Oberschenkels
         const gl = role("glute"), ad = role("add"), bg = gl === 2 ? 1.2 * act : 0, ba = ad === 2 ? 1.2 * act : 0;
-        out.push(mMus(mBlob([[cx + dx * 10.2, 61.5], [cx + dx * (15.2 + bg * .5), 67], on(.46, no, 7.2 + bg), on(.36, no, 2.2), [cx + dx * 10.4, 72.5]]), gl, act, MB));
-        out.push(mMus(mBlob([[cx + dx * 1.6, 76.6], on(.16, ni, 5.8 + ba), on(.72, ni, 5 + ba), on(.82, ni, 1.8), on(.24, ni, 1.4)]), ad, act, MB));
+        late.push(mMus(mBlob([[cx + dx * 10.2, 61.5], [cx + dx * (15.2 + bg * .5), 67], on(.46, no, 7.2 + bg), on(.36, no, 2.2), [cx + dx * 10.4, 72.5]]), gl, act, MB));
+        late.push(mMus(mBlob([[cx + dx * 1.6, 76.6], on(.16, ni, 5.8 + ba), on(.72, ni, 5 + ba), on(.82, ni, 1.8), on(.24, ni, 1.4)]), ad, act, MB));
         // Polster außen oder innen am Knie (der Hebel dazu liegt hinter dem Bein)
         out.push(mLimb([pd[0], pd[1] - 8], [pd[0], pd[1] + 7], 5.4, 5.4, MPD, null, 1));
       }
@@ -3058,6 +3097,12 @@ function motFig(sp, P, R, act, p, st, e) {
     }
     out.push(def(`M${cx} 34.4L${cx} 48.4`), def(`M${cx - 9} 32.4Q${cx} 34.6 ${cx + 9} 32.4`));
   }
+  // Shorts über Becken und Oberschenkeln; arbeitende Hüftmuskeln liegen darüber
+  { const y0 = stand ? 67 : 65.5, leg = dx => { const k = KN[dx]; if (!k) return null; const m = mLerp(k.hip, k.knee, stand ? .42 : .55), no = mOut(k.hip, k.knee, dx); return [mSh(m, no, stand ? 7 : 7.4), mSh(m, no, stand ? -5.6 : -6)]; };
+    const L = leg(-1), Rr = leg(1);
+    const pts = L && Rr ? [[cx - 11.2, y0], [cx + 11.2, y0], [cx + 12.8, y0 + 6.5], Rr[0], Rr[1], [cx, y0 + 13.5], L[1], L[0], [cx - 12.8, y0 + 6.5]]
+      : [[cx - 11.5, 64], [cx + 11.5, 64], [cx + 13, 72], [cx + 12, 79], [cx - 12, 79], [cx - 13, 72]];
+    out.push(`<path d="${mSmooth(pts)}" fill="${MSH}"${ol}/>`, mLine([cx - 11, y0 + .8], [cx + 11, y0 + .8], 1, "rgba(0,0,0,.25)"), ...late); }
   if (!armsBehind) arms();
   // Richtung: Pfeile an den Händen (bei Seitheben mit einem Arm nur dort), an der Stange oder an den Knien
   { const dr = mDirOf(sp, st), w = st ? .05 : .4, q = Math.max(0, Math.min(1, p + (dr.inc ? w : -w))), P2 = mPose(sp, q === p ? (dr.inc ? Math.max(0, p - w) : Math.min(1, p + w)) : q), flip = q === p ? -1 : 1;
@@ -3066,7 +3111,8 @@ function motFig(sp, P, R, act, p, st, e) {
     else if (hipRig) for (const dx of [-1, 1]) { const kx = l => cx + dx * (7.5 + 32 * Math.sin(mRad(l))) + dx * (rig === "abd" ? 13 : -2); out.push(go([kx(P.l), 88], [kx(P2.l), 88], rig === "abd" ? 0 : -14)); }
     // Butterfly und hintere Schulter: Pfeil hinter der Hand (schiebt sie), damit sich die Pfeile vor der Brust nicht kreuzen
     else for (const dx of sp.one ? [1] : [-1, 1]) { const a = armPts(dx, false).ha, b = armPts(dx, false, P2).ha; out.push(P.h != null ? go(a, b, -15.5) : go(a, b, 6)); } }
-  const body = out.join("");
+  const arrowsAt = out.length;
+  const body = `<g filter="url(#m3d)">${out.slice(0, arrowsAt - (sp.pull || hipRig ? 2 : sp.one ? 1 : 2)).join("")}</g>${out.slice(arrowsAt - (sp.pull || hipRig ? 2 : sp.one ? 1 : 2)).join("")}`;
   // Stehend: die ganze Figur etwas kleiner, damit sie bis zu den Füßen ins Bild passt
   return stand ? `<g transform="translate(14 4) scale(.825)">${body}</g>` : body;
 }
@@ -3077,7 +3123,7 @@ function motionSvg(id, o = {}) {
   const still = !o.anim || motReduce(), e = ex(id);
   const inner = o.anim && still ? `<g opacity=".3">${motDraw(sp, { p: 0, act: .35 }, e)}</g>${motDraw(sp, { p: 1, act: 1 }, e)}`
     : motDraw(sp, o.anim ? motState(0, sp.down) : { p: o.p ?? sp.still ?? 1, act: (o.p ?? sp.still ?? 1) ? 1 : .35 }, e);
-  const svg = `<svg class="motion${e.brand === "hs" ? " b-hs" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(e.name)}"><g class="mfig">${inner}</g></svg>`;
+  const svg = `<svg class="motion${e.brand === "hs" ? " b-hs" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(e.name)}">${M3D}<g class="mfig">${inner}</g></svg>`;
   if (still && o.cue && musStill(sp, e)) return svg + `<p class="mcue-m still">${musStill(sp, e)}</p>`;
   if (still || !o.cue) return svg;
   return svg + `<div class="mcue" aria-hidden="true"><div class="mcue-t">${motCue(sp, e, "start")}</div><div class="mcue-bar" style="background:${motBar(sp.down)}"><i style="left:0%"></i></div><div class="mcue-m">${musCue(sp, e, "start")}</div></div>`
@@ -3098,7 +3144,7 @@ function motTick(ts) {
       if (el.dataset.cycle) { const L = el.dataset.cycle.split(","), i = Math.floor(loc / (2 * MOT_T)) % L.length;
         if (el.dataset.m !== L[i]) { el.dataset.m = L[i]; el.classList.toggle("b-hs", ex(L[i]).brand === "hs"); const s2 = motSpec(L[i]); if (s2) el.setAttribute("viewBox", motBox(s2));
           const cap = el.parentElement && el.parentElement.querySelector(".mcap"); if (cap) cap.textContent = `${i + 1}/${L.length} · ${ex(L[i]).name}`; } }
-      const sp = motSpec(el.dataset.m), g = el.firstElementChild; if (!sp || !g) return;
+      const sp = motSpec(el.dataset.m), g = el.querySelector(".mfig"); if (!sp || !g) return;
       const e = ex(el.dataset.m), st = motState(loc, sp.down); g.innerHTML = motDraw(sp, st, e);
       const cue = el.nextElementSibling;
       if (cue && cue.classList.contains("mcue")) { const t = motCue(sp, e, st.st); if (cue._t !== t) { cue._t = t; cue.firstElementChild.innerHTML = t; }
@@ -3138,9 +3184,9 @@ function guideHtml(id, o = {}) {
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
   const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
   return `${head}
-    ${TIPS[id] ? sec("So geht's", `<ol class="tiplist">${TIPS[id].map(x => `<li>${esc(x)}</li>`).join("")}</ol>`) : ""}
+    ${TIPS[id] ? sec("So geht's", `<ol class="tiplist">${TIPS[id].map((x, i) => `<li><span class="tipn" aria-hidden="true">${i + 1}</span><span>${esc(x)}</span></li>`).join("")}</ol>`) : ""}
     ${e.label && /Iso-Lateral/.test(e.label) ? `<p class="small muted" style="margin:0" id="isoNote">Getrennte Seiten: beidseitig, einseitig oder abwechselnd möglich – Kraftunterschiede zwischen links und rechts werden sichtbar.</p>` : ""}
-    ${sec("Tricks für dieses Gerät", tricksHtml(e, null))}
+    ${sec("Tricks für dieses Gerät", tricksHtml(e, null))}${o.mid || ""}
     <section class="gsec" id="gMore"><h2>Mehr zur Übung</h2><div class="gdets">
     ${det("Warum diese Übung", `<p>${esc(g.why)}</p>`)}
     ${det("Einstellen", ol(g.setup))}
@@ -3174,16 +3220,16 @@ function vLib() {
 }
 function vEx() {
   const id = exDetail, e = ex(id);
-  $app.innerHTML = `<div class="page guide">
-    <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
+  $app.innerHTML = `<div class="page guide exv">
+    <div class="exhero"><button class="link exback" data-a="exBack">‹ Zurück</button>${guideMot(id)}</div>
+    <div class="head exhead">
       <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
-      <h1 class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</h1>
+      <h1 class="title">${esc(e.name)}</h1>
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
-      <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
-    ${guideMot(id)}${gmusHtml(id)}
+      <div class="exfacts"><span class="hot">${MUSCLES[e.muscle]}</span><span>${loadTxt(e)}</span><span>Schritt ${stepTxt(e)}</span>${state.notes[id] ? `<span>Deine Einstellung: <b>${esc(state.notes[id])}</b></span>` : ""}</div></div>
+    ${guideHtml(id, { noMot: true, noMus: true, mid: `<section class="gsec" id="exMus"><h2>Muskeln</h2>${gmusHtml(id)}</section>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
-    <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
-    ${guideHtml(id, { noMot: true, noMus: true })}
+    <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>` })}
     <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
 }
