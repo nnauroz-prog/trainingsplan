@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v80)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v80")));
+      ok("Service Worker aktiv (Cache trainingsplan-v81)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v81")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4279,6 +4279,12 @@ async function finishAllSets(page, kg, reps) {
         const bad = []; for (const e of T.allEx()) { const sp = T.motSpec(e.id); if (!sp) continue; const f = T.m3Check(sp, e); if (f.length) bad.push(e.id + ": " + f[0]); }
         // Prüfung erkennt Fehler: ein Teil ohne Verbindung schwebt, eines am Boden nicht
         const fl = T.m3Float([{ t: "ball", c: [0, 30, 0], r: 2 }, { t: "cap", A: [0, -44, 0], B: [0, 10, 0], rA: 1.6, rB: 1.6 }], -44).length;
+        // Gegenproben: Unterarm durch den Rumpf wird erkannt; Hebel, der durch einen festen Kasten schwenkt, wird erkannt
+        const J0 = T.m3Pose(T.motSpec("hs-chest"), 0), Jb = JSON.parse(JSON.stringify(J0)); Jb.haR = [0, 25, 0]; Jb.elR = [10, 30, 14];
+        const self = [T.m3Self(J0).length, T.m3Self(Jb).length], bx = { t: "box", c: [0, 0, 0], ax: [5, 0, 0], ay: [0, 5, 0], az: [0, 0, 5] };
+        const cross = T.m3Cross([[bx, { t: "cap", A: [-20, 20, 0], B: [-20, 30, 0], rA: 1.5, rB: 1.5 }], [bx, { t: "cap", A: [-10, 0, 0], B: [10, 0, 0], rA: 1.5, rB: 1.5 }]]).length;
+        // Seilzug: zwischen Hand und Rolle bleibt Seil
+        const cab = ["lf-pushdown", "lf-ohtri", "lf-cablecurl", "lf-facepull"].map(id => { const sp = T.motSpec(id); return Math.min(...[0, .25, .5, .75, 1].map(q => d(T.mJoints(sp, T.mPose(sp, q)).hand, sp.cable))); });
         // Multipresse: Stange auf einer Geraden, 7° zur Senkrechten (Hersteller)
         const sm = T.motSpec("hs-smith"), H = Q.map(q => T.mJoints(sm, T.mPose(sm, q)).hand), sDeg = Math.atan2(Math.abs(H[10][0] - H[0][0]), Math.abs(H[10][1] - H[0][1])) * 180 / Math.PI;
         const sDev = Math.max(...H.map(h => Math.abs((H[10][0] - H[0][0]) * (H[0][1] - h[1]) - (H[0][0] - h[0]) * (H[10][1] - H[0][1])) / d(H[0], H[10])));
@@ -4292,10 +4298,13 @@ async function finishAllSets(page, kg, reps) {
         // Kontaktstellen auf der Körperoberfläche (Mitte des Polsters: Dicke des Körperteils + Polsterradius quer zur Gliedachse)
         const segD = (q, a, b) => { const ab = [b[0] - a[0], b[1] - a[1]], L2 = ab[0] ** 2 + ab[1] ** 2, f = Math.max(0, Math.min(1, ((q[0] - a[0]) * ab[0] + (q[1] - a[1]) * ab[1]) / L2)); return d(q, [a[0] + ab[0] * f, a[1] + ab[1] * f]); };
         const pad = (id, fx, seg) => { const sp = T.motSpec(id), P = T.mPose(sp, .5), j = T.mJoints(sp, P); return segD(T.mEff(fx, j, P), j[seg[0]], j[seg[1]]); };
-        return { n: T.allEx().filter(e => T.motSpec(e.id)).length, bad, fl, sDeg, sDev, hDeg, par: Math.abs(back - path) * 180 / Math.PI, lDeg, bL: Math.max(...bL) - Math.min(...bL), chain,
+        return { n: T.allEx().filter(e => T.motSpec(e.id)).length, bad, fl, self, cross, cab, sDeg, sDev, hDeg, par: Math.abs(back - path) * 180 / Math.PI, lDeg, bL: Math.max(...bL) - Math.min(...bL), chain,
           front: B.every(x => x.b.H[0] > x.j.toe[0] && x.b.P[0] < x.j.hip[0]), pads: [pad("hs-legext", "shin", ["knee", "ank"]), pad("hs-seatcurl", "heel", ["knee", "ank"]), pad("hs-seatcalf", "knee", ["hip", "knee"])] }; });
-      ok("3D-Prüfung: bei allen 60 Geräten hält die Hand etwas, kein Geräteteil steckt im Körper, kein Teil schwebt", r.n === 60 && r.bad.length === 0, r.bad.slice(0, 3).join(" | "));
+      ok("3D-Prüfung: bei allen 60 Geräten hält die Hand etwas, kein Geräteteil im Körper, kein Teil schwebt, keine Durchdringung von Körper oder Teilen", r.n === 60 && r.bad.length === 0, r.bad.slice(0, 3).join(" | "));
       ok("3D-Prüfung erkennt schwebende Teile (Gegenprobe)", r.fl === 1, String(r.fl));
+      ok("Körper durchdringt sich nicht: Gegenprobe Unterarm im Rumpf wird erkannt", r.self[0] === 0 && r.self[1] > 0, JSON.stringify(r.self));
+      ok("Bewegte Teile durch feste Teile: Gegenprobe wird erkannt", r.cross > 0, String(r.cross));
+      ok("Seilzüge: zwischen Hand und Umlenkrolle bleibt immer Seil (mind. 15)", r.cab.every(x => x >= 15), r.cab.map(x => x.toFixed(0)).join());
       ok("Multipresse: Stange läuft gerade, 7° zur Senkrechten (Herstellerangabe)", Math.abs(r.sDeg - 7) < .5 && r.sDev < .3, r.sDeg.toFixed(1) + "° / " + r.sDev.toFixed(2));
       ok("Hackenschmidt: Schulterpolster auf 45°, parallel zum Rückenpolster (Herstellerangabe)", Math.abs(r.hDeg - 45) < 1 && r.par < 1, r.hDeg.toFixed(1) + "° / " + r.par.toFixed(1));
       ok("Beinpresse: Fußplatte auf 45° (Herstellerangabe)", Math.abs(r.lDeg - 45) < 1, r.lDeg.toFixed(1) + "°");
