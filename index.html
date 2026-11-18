@@ -2466,16 +2466,16 @@ const MOTION = {
   "hs-adductor": { v: "fig", rig: "add", A: { l: 40 }, B: { l: 6 }, hl: ["th"] },
   // Beine
   // Linear Leg Press: laut Hersteller Schlitten auf einer Schiene im 45°-Winkel nach oben
-  "hs-legpress": { at: [50, 82], A: { t: -168, th: -78, sh: -8, ft: -98, ua: 53, fa: -18 }, B: { th: -44, sh: -38, ft: -128 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  "hs-legpress": { railDeg: 45, at: [50, 82], A: { t: -168, th: -78, sh: -8, ft: -98, ua: 53, fa: -18 }, B: { th: -44, sh: -38, ft: -128 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // Life Fitness Leg Press: aufrecht sitzen, Fußplatte vorn, nach vorn wegdrücken
   "lf-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // Iso-Lateral Leg Press: getrennte Fußplatten an Hebelarmen (Bogen statt Schiene)
   "hs-isolegpress": { arc: true, at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // V-Squat: laut Hersteller gebogene Bahn; Lage des Drehpunkts nicht belegt, deshalb ohne Schiene und ohne Hebel gezeichnet
-  "hs-vsquat": { down: true, norail: true, anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 100, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
-  "hs-beltsquat": { down: true, anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -102, th: 14, sh: 112, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
-  "hs-smith": { down: true, anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 104, fa: -76 }, B: { t: -71, th: 10, sh: 108, ua: 129, fa: -51 }, hl: ["th"], gear: ["smith"] },
-  "hs-hack": { down: true, anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-vsquat": { down: true, arc: true, pvBack: 70, anchor: "ank", at: [96, 106], A: { t: -100, th: 80, sh: 82, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-beltsquat": { down: true, platH: 27.3, anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -97, th: 20, sh: 124, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
+  "hs-smith": { down: true, anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 104, fa: -96 }, B: { t: -71, th: 10, sh: 108, ua: 129, fa: -72 }, hl: ["th"], gear: ["smith"] },
+  "hs-hack": { down: true, railDeg: 45, anchor: "ank", at: [104, 104], A: { t: -135, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
   "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
   // Iso-Lateral Kneeling Leg Curl: laut Hersteller aufrecht kniend, Hüfte und Brust an zwei Polstern, Drehpunkt auf Kniehöhe
@@ -2502,7 +2502,7 @@ Object.assign(MOTION, { "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["h
 // Wie weit die Oberarme seitlich abgespreizt sind (Grad): Brust- und Schulterpressen, Latziehen und Rudern mit nach außen gehenden Ellbogen;
 // Armbeugen und -strecken mit eng am Körper liegenden Oberarmen
 Object.entries({ "hs-chest": [[70, 15], 10], "hs-widechest": [[75, 20], 14], "hs-decline": [[65, 15], 10], "hs-incline": [[65, 20], 10], "hs-shoulder": [75, 8], "hs-dip": [12, 4],
-  "hs-row": [25, 6], "hs-lowrow": [20, 6], "hs-dyrow": [15, 4], "hs-highrow": [45, 8], "hs-pulldown": [62, 10], "hs-smith": [70, 16], "hs-calf": [60, 8], "hs-ab": [45, 6],
+  "hs-row": [25, 6], "hs-lowrow": [20, 6], "hs-dyrow": [15, 4], "hs-highrow": [45, 8], "hs-pulldown": [62, 10], "hs-smith": [54, 14], "hs-calf": [60, 8], "hs-ab": [45, 6],
   "lf-facepull": [70, 6], "hs-curl": [10, 4], "hs-triext": [10, 4], "lf-pushdown": [10, 4], "lf-cablecurl": [8, 4], "lf-ohtri": [15, 4] })
   .forEach(([id, [a, hw]]) => { if (MOTION[id]) { MOTION[id].abd = a; MOTION[id].hw = hw; } });
 // Eigene Geräte: Bewegung über das Bewegungsmuster
@@ -2548,8 +2548,34 @@ function mJoints(sp, P, raw) {
       let a0 = Math.atan2(rig.a[1] - pv[1], rig.a[0] - pv[0]), a1 = Math.atan2(rig.b[1] - pv[1], rig.b[0] - pv[0]); if (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; if (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
       const ang = a0 + (a1 - a0) * P._p, rr = (ra + rb) / 2, H = [pv[0] + Math.cos(ang) * rr, pv[1] + Math.sin(ang) * rr];
       [j.elb, j.hand] = mIk2(j.sho, H, A.Lp, A.Fp, j.elb); }
-    if (rig && rig.kind === "rail" && rig.fx === "foot") { const E = mLerp(rig.a, rig.b, P._p), cur = mLerp(j.ank, j.toe, .5), d = [E[0] - cur[0], E[1] - cur[1]], A = mAdd(j.ank, d), T = mAdd(j.toe, d);
-      [j.knee, j.ank] = mIk2(j.hip, A, MSEG.th, MSEG.sh, j.knee); j.toe = mAdd(j.ank, [T[0] - A[0], T[1] - A[1]]); } }
+    // Ziel der Kontaktstelle: auf der Schiene (gerade) bzw. auf dem Bogen um den Drehpunkt (gleicher Radius)
+    const onPath = () => { if (rig.kind === "rail") return mLerp(rig.a, rig.b, P._p); const pv = rig.pv, ra = Math.hypot(rig.a[0] - pv[0], rig.a[1] - pv[1]), rb = Math.hypot(rig.b[0] - pv[0], rig.b[1] - pv[1]);
+      let a0 = Math.atan2(rig.a[1] - pv[1], rig.a[0] - pv[0]), a1 = Math.atan2(rig.b[1] - pv[1], rig.b[0] - pv[0]); if (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; if (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
+      const ang = a0 + (a1 - a0) * P._p, rr = (ra + rb) / 2; return [pv[0] + Math.cos(ang) * rr, pv[1] + Math.sin(ang) * rr]; };
+    // Schulterpolster, Füße fest (Hackenschmidt, V-Kniebeuge): Rumpf folgt dem Polster, Knie aus den Beinlängen
+    if (rig && rig.fx === "sho" && (sp.anchor || "hip") === "ank") for (let it = 0; it < 3; it++) { const T = onPath(), E = mEff("sho", j, P), dv = [T[0] - E[0], T[1] - E[1]];
+      for (const k of ["hip", "sho", "elb", "hand", "head"]) j[k] = mAdd(j[k], dv); [j.knee, j.hip] = mIk2(j.ank, j.hip, MSEG.sh, MSEG.th, j.knee); const td = mUnit(j.hip, j.sho);
+      const ns = mAdd(j.hip, [td[0] * MSEG.t, td[1] * MSEG.t]), dd = [ns[0] - j.sho[0], ns[1] - j.sho[1]]; for (const k of ["sho", "elb", "hand", "head"]) j[k] = mAdd(j[k], dd); }
+    // Schulterpolster beim Wadenheben (Zehen fest): der gestreckte Körper kippt minimal um das Sprunggelenk, bis das Polster auf dem Bogen liegt
+    if (rig && rig.fx === "sho" && rig.kind === "lever" && sp.anchor === "toe") { const E = mEff("sho", j, P), Rb = Math.hypot(E[0] - j.ank[0], E[1] - j.ank[1]), pv = rig.pv, rr = Math.hypot(onPath()[0] - pv[0], onPath()[1] - pv[1]);
+      const dx = pv[0] - j.ank[0], dy = pv[1] - j.ank[1], d = Math.hypot(dx, dy), a = (Rb * Rb - rr * rr + d * d) / (2 * d), h = Math.sqrt(Math.max(0, Rb * Rb - a * a)), m = [j.ank[0] + dx * a / d, j.ank[1] + dy * a / d];
+      const c1 = [m[0] - dy * h / d, m[1] + dx * h / d], c2 = [m[0] + dy * h / d, m[1] - dx * h / d], T = Math.hypot(c1[0] - E[0], c1[1] - E[1]) < Math.hypot(c2[0] - E[0], c2[1] - E[1]) ? c1 : c2;
+      const phi = Math.atan2(T[1] - j.ank[1], T[0] - j.ank[0]) - Math.atan2(E[1] - j.ank[1], E[0] - j.ank[0]), c = Math.cos(phi), s = Math.sin(phi);
+      for (const k of ["knee", "hip", "sho", "elb", "hand", "head"]) { const v = [j[k][0] - j.ank[0], j[k][1] - j.ank[1]]; j[k] = [j.ank[0] + v[0] * c - v[1] * s, j.ank[1] + v[0] * s + v[1] * c]; } }
+    if (rig && rig.fx === "foot") { const E = onPath(), cur = mLerp(j.ank, j.toe, .5), d = [E[0] - cur[0], E[1] - cur[1]], A = mAdd(j.ank, d), T = mAdd(j.toe, d);
+      [j.knee, j.ank] = mIk2(j.hip, A, MSEG.th, MSEG.sh, j.knee); j.toe = mAdd(j.ank, [T[0] - A[0], T[1] - A[1]]); }
+    // Multipresse: Die Stange läuft auf der Führung (laut Hersteller 7° geneigt) und liegt auf dem oberen Rücken. Der Körper folgt:
+    // Hüfte aus Stangenlage und Rumpfwinkel, Knie aus den Beinlängen, Hände an der Stange
+    if (G.includes("smith")) { const r0 = mJoints(sp, mPose(sp, 0), true), r1 = mJoints(sp, mPose(sp, 1), true), L = Math.hypot(r1.hand[0] - r0.hand[0], r1.hand[1] - r0.hand[1]), w = mRad(7);
+      const T1 = [r0.hand[0] + Math.sign(r1.hand[0] - r0.hand[0] || 1) * L * Math.sin(w), r0.hand[1] + Math.sign(r1.hand[1] - r0.hand[1] || 1) * L * Math.cos(w)], T = mLerp(r0.hand, T1, P._p);
+      const loc = q => { const td = mUnit(q.hip, q.sho), fw = mRot(td, 1), v = [q.hand[0] - q.hip[0], q.hand[1] - q.hip[1]]; return [v[0] * td[0] + v[1] * td[1], v[0] * fw[0] + v[1] * fw[1]]; }, o = mLerp(loc(r0), loc(r1), P._p);
+      const td = mUnit(j.hip, j.sho), fw = mRot(td, 1), Ht = [T[0] - td[0] * o[0] - fw[0] * o[1], T[1] - td[1] * o[0] - fw[1] * o[1]], [kn, hp] = mIk2(j.ank, Ht, MSEG.sh, MSEG.th, j.knee), dv = [hp[0] - j.hip[0], hp[1] - j.hip[1]];
+      for (const k of ["hip", "sho", "elb", "hand", "head"]) j[k] = mAdd(j[k], dv); j.knee = kn; [j.elb, j.hand] = mIk2(j.sho, T, A.Lp, A.Fp, j.elb); }
+    // lange Griffe: die Hand bleibt auf der Griffstange; reicht der Arm nicht bis zur Stelle, rutscht sie an der Stange entlang bis in Reichweite
+    if (G.includes("belt") && G.includes("handle")) { const h0 = mJoints(sp, mPose(sp, 0), true).hand, h1 = mJoints(sp, mPose(sp, 1), true).hand, reach = A.Lp + A.Fp - 1;
+      let H = mLerp(h0, h1, P._p); if (Math.hypot(H[0] - j.sho[0], H[1] - j.sho[1]) > reach) { const u = mUnit(h0, h1), w = [h0[0] - j.sho[0], h0[1] - j.sho[1]], bq = w[0] * u[0] + w[1] * u[1], c = w[0] * w[0] + w[1] * w[1] - reach * reach, disc = bq * bq - c;
+        if (disc >= 0) { const s1 = -bq - Math.sqrt(disc), s2 = -bq + Math.sqrt(disc), sc = (H[0] - h0[0]) * u[0] + (H[1] - h0[1]) * u[1], s = Math.abs(s1 - sc) < Math.abs(s2 - sc) ? s1 : s2; H = mSh(h0, u, s); } }
+      [j.elb, j.hand] = mIk2(j.sho, H, A.Lp, A.Fp, j.elb); } }
   return j;
 }
 // Bildausschnitt: umfasst die ganze Bewegung mit Rand, Seitenverhältnis 4:3, Figur mittig
@@ -2571,7 +2597,9 @@ function motCheck(sp) {
     // Ellbogenwinkel im Raum: Oberarm mit seitlichem Anteil, Unterarm mit Anteil nach innen
     const ua = mUnit(j.sho, j.elb), fa = mUnit(j.elb, j.hand), bic = mRot(ua, -1), u3 = [ua[0] * AR.Lp, ua[1] * AR.Lp, AR.lat], f3 = [fa[0] * AR.Fp, fa[1] * AR.Fp, -AR.gi];
     const ef = Math.acos(Math.max(-1, Math.min(1, (u3[0] * f3[0] + u3[1] * f3[1] + u3[2] * f3[2]) / (MSEG.ua * MSEG.fa)))) * 180 / Math.PI;
-    if (dot(fa, bic) < -.14) add(p, "Ellbogen überstreckt"); if (ef > 155) add(p, "Ellbogen über 155° gebeugt");
+    // Überstreckung in der Seitenansicht beurteilbar, solange der Oberarm wenig abgespreizt ist (bis 30°); bei weit abgespreiztem Arm
+    // (z. B. Stange auf dem Rücken) liegt die Beugung fast waagerecht und die Seitenansicht täuscht – dann zählt nur der Winkel im Raum
+    if (AR.lat < MSEG.ua * .5 && dot(fa, bic) < -.14) add(p, "Ellbogen überstreckt"); if (ef > 155) add(p, "Ellbogen über 155° gebeugt");
     // Knie: nicht überstreckt, nicht über 160° gebeugt (beide Beine)
     for (const [kn, an] of [[j.knee, j.ank], ...(j.knee2 ? [[j.knee2, j.ank2]] : [])]) { const th = mUnit(j.hip, kn), sh = mUnit(kn, an), kf = Math.acos(Math.max(-1, Math.min(1, dot(th, sh)))) * 180 / Math.PI;
       if (dot(sh, mRot(th, 1)) < -.14) add(p, "Knie überstreckt"); if (kf > 160) add(p, "Knie über 160° gebeugt"); }
@@ -2584,7 +2612,13 @@ function motCheck(sp) {
       if (!sp._stackOnly) { const o = mUnit(e2, rig.pv), plt = rig.mid ? mLerp(rig.pv, e2, .42) : mSh(rig.pv, o, Math.max(12, Math.min(18, d(e2, rig.pv) * .3))); if (plt[1] + 9 > floor + .5) add(p, "Scheiben im Boden"); } } }
   // Sitzgeräte ohne Bein-Polster: Füße bleiben am Boden stehen
   if (G.includes("seat") && !legFree && ankMax - ankMin > 2.5) out.push("Füße heben vom Boden ab");
-  if (rig && rig.kind === "lever" && rig.fx === "hand" && !G.includes("armpad")) { const L = [0, .5, 1].map(q => d(rig.pv, mJoints(sp, mPose(sp, q)).hand)); if (Math.max(...L) - Math.min(...L) > .3) out.push("Hebel ändert die Länge"); }
+  // Jeder Hebel bleibt gleich lang (Drehpunkt bis Kontaktstelle), jede Schiene ist gerade; Multipresse: Stange auf der Geraden
+  const effAt = q => { const P = mPose(sp, q); return mEff(rig.fx, mJoints(sp, P), P); }, Q = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1];
+  if (rig && rig.kind === "lever") { const L = Q.map(q => d(rig.pv, effAt(q))); if (Math.max(...L) - Math.min(...L) > .5) out.push(`Hebel ändert die Länge (um ${(Math.max(...L) - Math.min(...L)).toFixed(1)})`); }
+  if (rig && rig.kind === "rail") { const dev = Q.map(q => segD(effAt(q), mSh(rig.a, rig.u, -200), mSh(rig.a, rig.u, 200))); if (Math.max(...dev) > .5) out.push(`verlässt die Schiene (um ${Math.max(...dev).toFixed(1)})`);
+    if (sp.railDeg != null) { const e0 = effAt(0), e1 = effAt(1), deg = Math.atan2(Math.abs(e1[1] - e0[1]), Math.abs(e1[0] - e0[0])) * 180 / Math.PI; if (Math.abs(deg - sp.railDeg) > 1) out.push(`Bahn ${deg.toFixed(0)}° statt ${sp.railDeg}° (Hersteller)`); } }
+  if (G.includes("smith")) { const H = Q.map(q => mJoints(sp, mPose(sp, q)).hand), dev = H.map(h => segD(h, mSh(H[0], mUnit(H[0], H[10]), -200), mSh(H[0], mUnit(H[0], H[10]), 200))); if (Math.max(...dev) > .5) out.push(`Stange verlässt die Führung (um ${Math.max(...dev).toFixed(1)})`);
+    const deg = Math.atan2(Math.abs(H[10][0] - H[0][0]), Math.abs(H[10][1] - H[0][1])) * 180 / Math.PI; if (Math.abs(deg - 7) > 1) out.push(`Führung ${deg.toFixed(0)}° statt 7° (Hersteller)`); }
   return [...new Set(out.map(s => s.replace(/ \(Stellung [\d.]+\)$/, "")))].map(s => { const ps = out.filter(o => o.startsWith(s + " (")).map(o => o.match(/Stellung ([\d.]+)/)[1]); return ps.length ? `${s} bei ${ps.join(", ")}` : s; });
 }
 function motBox(sp) {
@@ -2597,13 +2631,13 @@ function motBox(sp) {
   const at = sp.at || [64, 84]; let fl = -Infinity;
   for (const p of [0, .5, 1]) { const jj = mJoints(sp, mPose(sp, p)); fl = Math.max(fl, jj.toe[1], jj.ank[1]); }
   if ((sp.gear || []).includes("seat")) fl = Math.max(fl, at[1] + 30);
-  sp._floor = fl + 4; y1 = Math.max(y1, sp._floor + 2);
+  sp._floor = fl + 4 + (sp.platH || 0); y1 = Math.max(y1, sp._floor + 2);
   if ((sp.gear || []).includes("benchpad")) x0 = Math.min(x0, at[0] - 100);
   // Gerät mit im Bild: Drehpunkt und Scheiben, Schiene, Hüftgurt-Hebel, Multipresse; Platz für Seilrolle über dem Steckgewicht
   const inc = (q, r) => { x0 = Math.min(x0, q[0] - r); x1 = Math.max(x1, q[0] + r); y0 = Math.min(y0, q[1] - r); y1 = Math.max(y1, q[1] + r); }, rig = mRig(sp), G = sp.gear || [];
   if (rig && rig.kind === "lever") { inc(rig.pv, 6); for (const ef of [rig.a, rig.b]) inc(mSh(rig.pv, mUnit(ef, rig.pv), Math.max(12, Math.min(18, Math.hypot(ef[0] - rig.pv[0], ef[1] - rig.pv[1]) * .3))), 11); }
   if (rig && rig.kind === "rail" && !sp.norail) { inc(mSh(rig.a, rig.u, -8), 3); inc(mSh(rig.b, rig.u, 18), 3); }
-  if (G.includes("belt")) inc([at[0] - 52, sp._floor - 4], 6);
+  if (G.includes("belt")) for (const q of [0, 1]) { const b = mBelt(sp, mJoints(sp, mPose(sp, q))); inc(b.P, 6); inc(b.H, 11); }
   if (G.includes("smith")) for (const q of [0, 1]) inc(mJoints(sp, mPose(sp, q)).hand, 15);
   if (G.includes("topcable")) { const hA = mJoints(sp, mPose(sp, 0)).hand; inc([hA[0], hA[1] - 19], 4); }
   y0 = Math.min(y0, sp._floor - 60); x0 -= 20;
@@ -2738,15 +2772,41 @@ const motBar = down => down
 
 // ---------- Gerät: Hebel mit Drehpunkt oder Schiene ----------
 // Kontaktpunkt des Geräts: Griff, Schulterpolster, Schienbein- oder Fersenrolle, Hüftpolster, Kniepolster, Fußplatte
+// Wo das Gerät den Körper berührt (Mitte des Polsters): auf der Körperoberfläche, quer zur Gliedachse,
+// Abstand = Dicke des Körperteils + Radius des Polsters. Eine Stelle für Bewegung, 2D und 3D.
 function mEff(fx, j, P) {
   if (fx === "hand") return j.hand;
-  if (fx === "sho") return mSh(j.sho, [0, -1], 6.5);
-  if (fx === "shin") return mLerp(j.knee, j.ank, .88);
-  if (fx === "heel") return mSh(mLerp(j.knee, j.ank, .9), mDir(P.sh + 90, 1), 6);
-  if (fx === "hip") return mSh(j.hip, [0, -1], 7);
-  if (fx === "knee") return mSh(j.knee, [0, -1], 7);
+  // Schulterpolster liegen oben auf den Schultern (in Richtung des Rumpfs)
+  if (fx === "sho") return mSh(j.sho, mUnit(j.hip, j.sho), 9.5);
+  // Rolle vor dem Schienbein über dem Sprunggelenk (Beinstrecker) bzw. dahinter (Beinbeuger)
+  if (fx === "shin") return mSh(mLerp(j.knee, j.ank, .82), mRot(mUnit(j.knee, j.ank), -1), 7.5);
+  if (fx === "heel") return mSh(mLerp(j.knee, j.ank, .86), mRot(mUnit(j.knee, j.ank), 1), 7.5);
+  // Hüftpolster vorn auf dem Becken, Kniepolster oben auf dem Oberschenkel kurz vor dem Knie
+  if (fx === "hip") { const td = mUnit(j.hip, j.sho); return mSh(mSh(j.hip, mRot(td, 1), 11), td, 3.5); }
+  if (fx === "knee") return mSh(mLerp(j.hip, j.knee, .85), mRot(mUnit(j.hip, j.knee), -1), 9.6);
   return mLerp(j.ank, j.toe, .5);
 }
+// Hüftgurt-Kniebeuge nach Herstellerangaben: zwei Fußplattformen 27,3 cm über dem Boden mit Spalt für Gurt und Kette;
+// Hebelarm mit einem Drehpunkt (hier hinten am Boden), Kette am Gurt vorn am Becken, straff zum Ankerpunkt am Hebel;
+// lange Scheibenhalter vorn (weit vom Drehpunkt), kurze hinten. Lage des Drehpunkts und Hebellänge: vereinfacht (keine Maße in den Quellen)
+const mBeltPt = j => { const td = mUnit(j.hip, j.sho); return mSh(mSh(j.hip, td, 9), mRot(td, 1), 8.3); };
+function mBelt(sp, j) {
+  if (!sp._belt0) { let top = -Infinity, hb = null; for (const q of [0, .5, 1]) { const jj = mJoints(sp, mPose(sp, q)); top = Math.max(top, jj.toe[1], jj.ank[1]); if (!hb || jj.hip[1] > hb.hip[1]) hb = jj; }
+    // Gerät 198 cm lang (Hersteller): langer Hebel, Drehpunkt weit hinten; Ankerpunkt mittig unter dem Weg des Gurts, damit die Kette nur wenig schräg läuft
+    top += 4; const floor = top + (sp.platH || 0), J0 = mJoints(sp, mPose(sp, 0), true), J1 = mJoints(sp, mPose(sp, 1), true), P = [Math.min(J0.hip[0], J1.hip[0]) - 62, floor - 10], Bb = mBeltPt(hb), Ab = [mBeltPt(J1)[0] + 16, top + 8];
+    sp._belt0 = { top, floor, P, rA: Math.hypot(Ab[0] - P[0], Ab[1] - P[1]), L: Ab[1] - Bb[1] }; }
+  const { P, rA, L, top, floor } = sp._belt0, B = mBeltPt(j);
+  // Ankerpunkt: Schnitt Kreis um den Drehpunkt (Hebel) mit Kreis um den Gurtpunkt (Kette), die Lösung unter dem Gurt
+  const dx = B[0] - P[0], dy = B[1] - P[1], d = Math.hypot(dx, dy), a = (rA * rA - L * L + d * d) / (2 * d), h = Math.sqrt(Math.max(0, rA * rA - a * a)), m = [P[0] + dx * a / d, P[1] + dy * a / d];
+  const c1 = [m[0] - dy * h / d, m[1] + dx * h / d], c2 = [m[0] + dy * h / d, m[1] - dx * h / d], A = (c1[1] > c2[1]) ? c1 : c2, u = mUnit(P, A);
+  return { P, A, B, top, floor, H: mSh(P, u, rA + 42), rear: mSh(P, u, 14) };
+}
+// Armpolster (Curl, Trizeps): unter den Oberarmen, beginnt erst dort, wo es vor dem Brustkorb liegt (Brust ≈ 9 vor der Rumpfachse + halbe Polsterstärke)
+function mArmPad(j, P) { const n = mDir(P.ua + 90, 1), fw = mRot(mUnit(j.hip, j.sho), 1), at = f => mSh(mLerp(j.sho, j.elb, f), n, 6.5);
+  let f0 = .32; while (f0 < .8 && (at(f0)[0] - j.sho[0]) * fw[0] + (at(f0)[1] - j.sho[1]) * fw[1] < 12) f0 += .02;
+  return [at(f0), at(1.1)]; }
+// Rückenpolster beim Hüftheben: hinter dem oberen Rücken (Schulterblatthöhe) in der Ausgangsstellung, Abstand Rumpftiefe + Polsterradius
+function mBackRoll(sp) { const j = mJoints(sp, mPose(sp, 0)), td = mUnit(j.hip, j.sho); return mSh(mLerp(j.hip, j.sho, .82), mRot(td, -1), 15.5); }
 function mCirc(a, b, c) {
   const d = 2 * (a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])); if (Math.abs(d) < 1e-6) return null;
   const A = a[0] ** 2 + a[1] ** 2, B = b[0] ** 2 + b[1] ** 2, C = c[0] ** 2 + c[1] ** 2;
@@ -2760,12 +2820,18 @@ function mRig(sp) {
     : G.includes("hippad") ? "hip" : G.includes("kneetop") ? "knee" : G.includes("handle") || G.includes("armpad") ? "hand" : null);
   if (!fx) return (sp._rig = null);
   const E = q => { const P = mPose(sp, q); return mEff(fx, mJoints(sp, P, true), P); }, a = E(0), m = E(.5), b = E(1);
-  if (!sp.arc && (G.includes("plat") || (G.includes("shopad") && G.includes("floorplat")))) return (sp._rig = { kind: "rail", fx, a, b, u: mUnit(a, b) });
+  // Schiene; Neigung laut Hersteller (railDeg, Winkel zur Waagerechten), Länge des Wegs wie in den Haltungen
+  if (!sp.arc && (G.includes("plat") || (G.includes("shopad") && G.includes("floorplat")))) { let b2 = b;
+    // Schulterschlitten (Hackenschmidt) läuft parallel zum Rückenpolster nach unten, Fußplatte (Beinpresse) in Richtung des Wegs;
+    // Länge: Anteil des Wegs aus den Haltungen in dieser Richtung
+    if (sp.railDeg != null) { const w = mRad(sp.railDeg), jA = mJoints(sp, mPose(sp, 0), true), dir = fx === "sho" ? mUnit(jA.sho, jA.hip) : [(Math.sign(b[0] - a[0]) || 1) * Math.cos(w), (Math.sign(b[1] - a[1]) || 1) * Math.sin(w)];
+      b2 = mSh(a, dir, (b[0] - a[0]) * dir[0] + (b[1] - a[1]) * dir[1]); }
+    return (sp._rig = { kind: "rail", fx, a, b: b2, u: mUnit(a, b2) }); }
   // Drehpunkt: Mittelpunkt der Bahn (Gelenk wie Knie oder Ellbogen); passt der nicht, gleich weit von Start und Ende, auf der vom Kopf abgewandten Seite
   const j0 = mJoints(sp, mPose(sp, 0), true), j1 = mJoints(sp, mPose(sp, 1), true), dist = (q, r) => Math.hypot(q[0] - r[0], q[1] - r[1]);
-  let pv = sp.pvSho ? mAdd(mJoints(sp, mPose(sp, .5), true).sho, sp.pvSho) : sp.pvo ? mAdd(a, sp.pvo) : mCirc(a, m, b);
+  let pv = sp.pvBack ? (() => { const bk = mRot(mUnit(j0.hip, j0.sho), -1), u = mUnit(a, b), n = [-u[1], u[0]], s = n[0] * bk[0] + n[1] * bk[1] > 0 ? 1 : -1; return mSh(mLerp(a, b, .5), n, s * sp.pvBack); })() : sp.pvSho ? mAdd(mJoints(sp, mPose(sp, .5), true).sho, sp.pvSho) : sp.pvo ? mAdd(a, sp.pvo) : mCirc(a, m, b);
   const bad = q => !q || !(dist(q, a) > 10 && dist(q, a) < 110) || [j0, j1].some(jj => dist(q, jj.head) < 24 || dist(q, jj.sho) < 20);
-  if (!sp.pvo && !sp.pvSho && (bad(pv) || (fx === "hand" && !G.includes("armpad")))) { const mid = mLerp(a, b, .5), u = mUnit(a, b), n = [-u[1], u[0]], d = fx === "hand" ? Math.max(52, Math.min(78, dist(a, b) * 1.5)) : Math.max(34, Math.min(60, dist(a, b) * .9)), c1 = mSh(mid, n, d), c2 = mSh(mid, n, -d);
+  if (!sp.pvo && !sp.pvSho && !sp.pvBack && (bad(pv) || (fx === "hand" && !G.includes("armpad")))) { const mid = mLerp(a, b, .5), u = mUnit(a, b), n = [-u[1], u[0]], d = fx === "hand" ? Math.max(52, Math.min(78, dist(a, b) * 1.5)) : Math.max(34, Math.min(60, dist(a, b) * .9)), c1 = mSh(mid, n, d), c2 = mSh(mid, n, -d);
     // Griffe (Hand): Bogen beult vom Körper weg (Mitte des Bogens weiter weg von der Schulter); sonst: Drehpunkt weg vom Kopf
     // Drehpunkt auf der vom Kopf abgewandten Seite; bei Griffen mit langem Hebel, damit der Bogen flach bleibt
     pv = dist(c1, j0.head) > dist(c2, j0.head) ? c1 : c2;
@@ -2903,32 +2969,33 @@ function motDraw(sp, s, e) {
     if (!stack) g.push(mPlate(sh(sh(car, side, 6), [1.4, -.9], 1), 9.5), mPlate(sh(car, side, 6), 9.5));
   }
   if (G.includes("seat")) { const sx = j.hip[0] - 1, sy = at[1] + 8; g.push(post([sx, sy], Math.max(4, floorY - sy - 1)), `<rect x="${mF(sx - 15)}" y="${mF(floorY - 2.6)}" width="30" height="3.4" rx="1.7" fill="${MFR}" stroke="${MGL}" stroke-width=".6"/>`,
-    mPad([j.hip[0] - 14, j.hip[1] + 7.5], [j.hip[0] + 12, j.hip[1] + 7.5], 7, 7)); }
+    mPad([j.hip[0] - 14, j.hip[1] + 10.5], [j.hip[0] + 12, j.hip[1] + 10.5], 7, 7)); }
   if (G.includes("back")) { const b0 = sh(sh(j.hip, back, 11.5), td, -2), b1 = sh(sh(j.sho, back, 11.5), td, 8); g.push(mPad(b0, b1, 8, 8)); }
   if (G.includes("chestpad")) { const c = sh(along(j.hip, j.sho, .62), fwd, 14.8); gf.push(mPad(sh(c, td, -7), sh(c, td, 7), 8, 8)); }
   if (G.includes("chestpad2")) g.push(mPad(sh(along(j.hip, j.sho, .25), [0, 1], 9.5), sh(along(j.hip, j.sho, 1.05), [0, 1], 9.5), 7, 7));
   if (G.includes("thighpad")) gf.push(mPad(...[-3, 3].map(d => sh(sh(along(j.hip, j.knee, .8), [0, -1], 8.5), mUnit(j.hip, j.knee), d)), 6.5, 6.5));
-  if (G.includes("shinpad")) gf.push(mPlateRoll(sh(along(j.knee, j.ank, .88), mDir(P.sh - 90, 1), 0)));
-  if (G.includes("heelpad")) gf.push(mPlateRoll(sh(along(j.knee, j.ank, .9), mDir(P.sh + 90, 1), 6)));
+  if (G.includes("shinpad")) gf.push(mPlateRoll(mEff("shin", j, P)));
+  if (G.includes("heelpad")) gf.push(mPlateRoll(mEff("heel", j, P)));
   if (G.includes("kneepad")) g.push(mPad(sh(sh(j.knee2, [0, 1], 6), [1, 0], 3), sh(j.ank2, [0, 1], 5.5), 6, 6));
-  if (G.includes("armpad")) g.push(mPad(sh(along(j.sho, j.elb, .15), mDir(P.ua + 90, 1), 6.5), sh(along(j.sho, j.elb, 1.1), mDir(P.ua + 90, 1), 6.5), 6, 6));
-  if (G.includes("shopad")) gf.push(mPlateRoll(sh(j.sho, [0, -1], 6.5)));
-  if (G.includes("kneetop")) gf.push(mPlateRoll(sh(j.knee, [0, -1], 7)));
+  if (G.includes("armpad")) g.push(mPad(...mArmPad(j, P), 6, 6));
+  if (G.includes("shopad")) gf.push(mPlateRoll(mEff("sho", j, P)));
+  if (G.includes("kneetop")) gf.push(mPlateRoll(mEff("knee", j, P)));
   if (G.includes("bench")) { g.push(mPad(sh(j.hip, [0, 1], 9.5), sh(j.sho, [0, 1], 9.5), 7, 7), mPad(sh(j.hip, [0, 1], 9.5), sh(along(j.hip, j.knee, .7), [0, 1], 9.5), 7, 7));
     g.push(post(sh(along(j.hip, j.sho, .5), [0, 1], 12), Math.max(4, floorY - j.hip[1] - 13))); }
   if (G.includes("benchpad")) g.push(`<rect x="${mF(at[0] - 96)}" y="${mF(at[1] - 36)}" width="26" height="36" rx="4" fill="${MPD}" stroke="${MGL}" stroke-width=".6"/>`);
-  if (G.includes("backroll")) { const s0 = mJoints(sp, mPose(sp, 0)).sho, c = sh(s0, [0, 1], 8.5); g.push(post([c[0], c[1] + 6], Math.max(4, floorY - c[1] - 7)), mPlateRoll(c, 7.5)); }
+  if (G.includes("backroll")) { const c = mBackRoll(sp); g.push(post([c[0], c[1] + 6], Math.max(4, floorY - c[1] - 7)), mPlateRoll(c, 7.5)); }
   if (G.includes("footramp")) { const a = sh(sh(j.ank, [0, 1], 4.6), [1, 0], -7), b = mAdd(a, mDir(-15, 24)); g.push(mFrame(a, b, 3.6, 3.6)); }
   if (G.includes("strap")) gf.push(`<path d="M${mF(sh(j.hip, fwd, -6)[0])} ${mF(sh(j.hip, fwd, -6)[1] - 5)}Q${mF(sh(j.hip, [0, -1], 10)[0])} ${mF(sh(j.hip, [0, -1], 10)[1])} ${mF(sh(j.hip, fwd, 7)[0])} ${mF(sh(j.hip, fwd, 7)[1] - 5)}" fill="none" stroke="${MPD}" stroke-width="2.6" stroke-linecap="round"/>`);
-  if (G.includes("hippad")) gf.push(mPad(sh(sh(j.hip, [0, -1], 7), fwd, -6), sh(sh(j.hip, [0, -1], 7), fwd, 6), 6, 6));
-  if (G.includes("floorplat")) g.push(mFrame(sh(sh(j.ank, [0, 1], 4.5), [1, 0], -4), sh(sh(j.toe, [0, 1], 4.5), [1, 0], 3), 4.4, 4.4));
+  if (G.includes("hippad")) { const c = mEff("hip", j, P); gf.push(mPad(sh(c, td, -6), sh(c, td, 6), 8, 8)); }
+  if (sp.platH) g.push(`<rect x="${mF(j.ank[0] - 14)}" y="${mF(floorY - sp.platH)}" width="34" height="${mF(sp.platH)}" rx="2" fill="${MFR}" stroke="${MGL}" stroke-width=".6"/>`);
+  else if (G.includes("floorplat")) g.push(mFrame(sh(sh(j.ank, [0, 1], 4.5), [1, 0], -4), sh(sh(j.toe, [0, 1], 4.5), [1, 0], 3), 4.4, 4.4));
   if (G.includes("step")) g.push(`<rect x="${mF(at[0] - 6)}" y="${mF(at[1] + 3)}" width="22" height="9" rx="2" fill="${MFR}" stroke="${MGL}" stroke-width=".6"/>`);
-  if (G.includes("plat")) gf.push(mFrame(sh(j.ank, mDir(P.ft || 0, 1), -7), sh(j.toe, mDir(P.ft || 0, 1), 7), 5, 5));
+  if (G.includes("plat")) { const so = mRot(mUnit(j.ank, j.toe), 1); gf.push(mFrame(sh(sh(j.ank, mDir(P.ft || 0, 1), -7), so, 4.5), sh(sh(j.toe, mDir(P.ft || 0, 1), 7), so, 4.5), 5, 5)); }
   if (G.includes("belt")) { // Hüftgurt: Kette zum Hebel am Boden, Hebel dreht hinten, Scheiben vorn
-    const st = mJoints(sp, mPose(sp, 1)).hip, pv = [at[0] - 52, floorY - 4], chain = (floorY - 4) - st[1] - 5, cp = [j.hip[0], j.hip[1] + chain], u = mUnit(pv, cp), tip = sh(cp, u, 16);
-    g.push(`<line x1="${mF(j.hip[0])}" y1="${mF(j.hip[1])}" x2="${mF(cp[0])}" y2="${mF(cp[1])}" stroke="${MGL}" stroke-width="1.6" stroke-dasharray="2.2 1.6"/>`,
-      mFrame(pv, tip, 4, 3.4), mHub(pv), mPlate(sh(tip, [1.4, -.9], 1), 9), mPlate(tip, 9));
-    gf.push(`<ellipse cx="${mF(j.hip[0])}" cy="${mF(j.hip[1])}" rx="8.5" ry="4.2" fill="none" stroke="${MGL}" stroke-width="2.2" transform="rotate(${mF(P.t + 90)} ${mF(j.hip[0])} ${mF(j.hip[1])})"/>`); }
+    const bl = mBelt(sp, j);
+    g.push(`<line x1="${mF(bl.B[0])}" y1="${mF(bl.B[1])}" x2="${mF(bl.A[0])}" y2="${mF(bl.A[1])}" stroke="${MGL}" stroke-width="1.6" stroke-dasharray="2.2 1.6"/>`,
+      mFrame(bl.P, bl.H, 4, 3.4), mHub(bl.P), mPlate(bl.rear, 6.5), mPlate(sh(bl.H, [1.4, -.9], 1), 9), mPlate(bl.H, 9));
+    { const c = sh(j.hip, td, 9); gf.push(`<ellipse cx="${mF(c[0])}" cy="${mF(c[1])}" rx="8.3" ry="3.4" fill="none" stroke="${MGL}" stroke-width="2.2" transform="rotate(${mF(P.t + 90)} ${mF(c[0])} ${mF(c[1])})"/>`); } }
   if (G.includes("smith")) { const a = mJoints(sp, mPose(sp, 0)).hand, b = mJoints(sp, mPose(sp, 1)).hand, d = [a[0] - b[0], a[1] - b[1]], k = (floorY - b[1]) / (d[1] || 1), top = box[1] + 2, k2 = (top - b[1]) / (d[1] || 1);
     g.push(mBar([b[0] + d[0] * k2, top], [b[0] + d[0] * k, floorY], 2.4), mPlate(j.hand, 14, .7));
     gf.push(mDot(j.hand, 4.4, MGL), mDot(j.hand, 3.2, MFR), mDot(j.hand, 1.4, MGL)); }
@@ -3225,6 +3292,8 @@ function motFig(sp, P, R, act, p, st, e) {
 // Körper aus Kapseln (Gliedmaßen), Ringen (Rumpf) und Kugeln (Kopf); Gerät aus Kästen, Rollen und Scheiben. Alles wird nach Tiefe sortiert gezeichnet.
 // Die Kamera lässt sich um die Figur drehen (yaw), sie schaut leicht von oben.
 const M3S = { sw: 18, hw: 8, Lu: 29.5, Lf: 23.5 };
+// Latziehen: Stange so weit vorn, dass sie am Gesicht vorbeiläuft (Nasenspitze ≈ 11 vor der Kopfmitte)
+const M3_LATX = 14;
 const v3 = { add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]], sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
   dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2], len: a => Math.hypot(a[0], a[1], a[2]) || 1e-9,
   cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]] };
@@ -3260,7 +3329,7 @@ function m3Pose(sp, p) {
     else { const l = mRad(P.l != null ? P.l : 9); J["kn" + k] = [40 * Math.cos(l), -2, s * (M3S.hw + 40 * Math.sin(l))]; J["an" + k] = v3.add(J["kn" + k], [3, -38, s * .5]); J["to" + k] = v3.add(J["an" + k], [11, -1, s * .5]); }
     const idle = (sp.one && s < 0) || sp.rig === "abd" || sp.rig === "add";
     let E, H;
-    if (sp.pull && !idle) { const by = 45 + (34.5 - (sp.pull.y0 + (sp.pull.y1 - sp.pull.y0) * P.b)) * 1.24; H = [7, by, s * sp.pull.g * 1.24]; E = m3Ik(S, H, [-.25, -.6, s]); }
+    if (sp.pull && !idle) { const by = 45 + (34.5 - (sp.pull.y0 + (sp.pull.y1 - sp.pull.y0) * P.b)) * 1.24; H = [M3_LATX, by, s * sp.pull.g * 1.24]; E = m3Ik(S, H, [-.25, -.6, s]); }
     else if (P.h != null && !idle) { const th = mRad(P.h), be = mRad(sp.bend ?? 24), u = v3.nrm([Math.sin(th), -.12, s * Math.cos(th)]), f = v3.nrm([Math.sin(th + be), -.06, s * Math.cos(th + be)]);
       E = v3.add(S, v3.mul(u, M3S.Lu)); H = v3.add(E, v3.mul(f, M3S.Lf)); }
     else { const a = mRad(idle ? (sp.rig === "abd" || sp.rig === "add" ? 22 : 7) : P.a), a2 = mRad(idle ? 4 : P.a - (sp.bend ?? 8));
@@ -3334,73 +3403,102 @@ function m3Draw(sp, s, e, yaw, pts, mk) {
     for (let i = 0; i < 6; i++) { const upP = i >= 4; K.box([x + 6.4, floorY + 4 + i * 6 + (upP ? lift : 0), z], [.6, 0, 0], [0, 2.4, 0], [0, 0, 4.4], upP ? MH : PD, { dz: 3 }); } };
   if (J.side) {
     const j = J.j2, rig = mRig(sp), P2 = J.P, fwd2 = (() => { const td = mUnit(j.hip, j.sho); return [-td[1], td[0]]; })(), back2 = [-fwd2[0], -fwd2[1]];
-    if (e.type === "stack") stack(-38, -22);
-    if (G.includes("seat")) { const c = W([j.hip[0] - 1, j.hip[1] + 7.5]); K.box([c[0], c[1], 0], [13, 0, 0], [0, 3.5, 0], [0, 0, 14], PD); post(c[0], 0, c[1] - 3.5); K.box([c[0], floorY + 1.2, 0], [14, 0, 0], [0, 1.2, 0], [0, 0, 10], FR); }
+    if (e.type === "stack") stack(-38, -46);
+    if (G.includes("seat")) { const c = W([j.hip[0] - 1, j.hip[1] + 10.5]); K.box([c[0], c[1], 0], [13, 0, 0], [0, 3.5, 0], [0, 0, 14], PD); post(c[0], 0, c[1] - 3.5); K.box([c[0], floorY + 1.2, 0], [14, 0, 0], [0, 1.2, 0], [0, 0, 10], FR); }
     if (G.includes("back")) { const b0 = W(mSh(mSh(j.hip, back2, 11.5), mUnit(j.hip, j.sho), -2)), b1 = W(mSh(mSh(j.sho, back2, 11.5), mUnit(j.hip, j.sho), 8)), c = [(b0[0] + b1[0]) / 2, (b0[1] + b1[1]) / 2, 0];
-      const ax = v3.mul(v3.nrm([b1[0] - b0[0], b1[1] - b0[1], 0]), Math.hypot(b1[0] - b0[0], b1[1] - b0[1]) / 2); K.box(c, ax, v3.mul(v3.nrm([-ax[1], ax[0], 0]), 4), [0, 0, 12], PD); }
-    if (G.includes("chestpad")) { const c = W(mSh(mLerp(j.hip, j.sho, .62), fwd2, 14.8)); K.box([c[0], c[1], 0], v3.mul(fw, 4), v3.mul(up, 7.5), [0, 0, 10], PD); }
+      const ax = v3.mul(v3.nrm([b1[0] - b0[0], b1[1] - b0[1], 0]), Math.hypot(b1[0] - b0[0], b1[1] - b0[1]) / 2); K.box(c, ax, v3.mul(v3.nrm([-ax[1], ax[0], 0]), 4), [0, 0, 12], PD, { tag: "Rückenpolster" });
+      if (!(rig && rig.fx === "sho")) { const bk = W(mSh(mLerp(j.hip, j.sho, .35), back2, 17.1)); K.cap([bk[0], bk[1], 0], [bk[0], floorY, 0], 1.8, 1.8, FR, { flat: true, edge: true, tag: "Lehnenstütze" }); } }
+    if (G.includes("chestpad")) { const c = W(mSh(mLerp(j.hip, j.sho, .62), fwd2, 14.8)), sx = Math.sign(fw[0]) || 1, cf = v3.add([c[0], c[1], 0], v3.mul(fw, 4)); K.box([c[0], c[1], 0], v3.mul(fw, 4), v3.mul(up, 7.5), [0, 0, 10], PD, { tag: "Brustpolster" });
+      K.cap(cf, [c[0] + sx * 34, c[1], 0], 1.6, 1.6, FR, { flat: true, edge: true, tag: "Polsterträger" }); post(c[0] + sx * 34, 0, c[1]); }
     if (G.includes("chestpad2")) { const a = W(mSh(mLerp(j.hip, j.sho, .25), [0, 1], 9.5)), b = W(mSh(mLerp(j.hip, j.sho, 1.05), [0, 1], 9.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], [0, 3.5, 0], [0, 0, 11], PD); post((a[0] + b[0]) / 2, 0, (a[1] + b[1]) / 2 - 3); }
-    const roll = (q2, r, zw) => { const c = W(q2); K.cap([c[0], c[1], -zw], [c[0], c[1], zw], r, r, PD, { edge: true }); };
-    if (G.includes("thighpad")) roll(mSh(mLerp(j.hip, j.knee, .8), [0, -1], 8.5), 3.4, 13);
-    if (G.includes("shinpad")) roll(mLerp(j.knee, j.ank, .88), 5, 13);
-    if (G.includes("heelpad")) roll(mSh(mLerp(j.knee, j.ank, .9), mDir(P2.sh + 90, 1), 6), 5, 13);
-    if (G.includes("shopad")) roll(mSh(j.sho, [0, -1], 6.5), 5, 20);
-    if (G.includes("kneetop")) roll(mSh(j.knee, [0, -1], 7), 5, 13);
+    const roll = (q2, r, zw) => { const c = W(q2), z0 = j.knee2 ? M3S.hw - 5 : -zw; K.cap([c[0], c[1], z0], [c[0], c[1], j.knee2 ? M3S.hw + 6 : zw], r, r, PD, { edge: true, tag: "Polster" }); };
+    if (G.includes("thighpad")) { const q = mSh(mLerp(j.hip, j.knee, .8), [0, -1], 8.5), c = W(q), s0 = G.includes("seat") ? W([j.hip[0] + 12, j.hip[1] + 7]) : [c[0], floorY]; roll(q, 3.4, 13); K.cap([c[0], c[1], 0], [s0[0], s0[1], 0], 1.5, 1.5, FR, { flat: true, edge: true, tag: "Polsterstütze" }); }
+    if (G.includes("shinpad")) roll(mEff("shin", j, P2), 5, 13);
+    if (G.includes("heelpad")) roll(mEff("heel", j, P2), 5, 13);
+    if (G.includes("shopad")) { const c = W(mEff("sho", j, P2)); for (const s2 of [1, -1]) K.cap([c[0], c[1], s2 * 13.5], [c[0], c[1], s2 * 20], 5, 5, PD, { edge: true, tag: "Schulterpolster" });
+      if (G.includes("back")) { const b1 = W(mSh(mSh(j.sho, back2, 11.5), mUnit(j.hip, j.sho), 8)); for (const s2 of [1, -1]) K.cap([c[0], c[1], s2 * 12], [b1[0], b1[1], s2 * 12], 1.6, 1.6, FR, { flat: true, tag: "Polsterhalter" }); } }
+    if (G.includes("kneetop")) roll(mEff("knee", j, P2), 5, 13);
     if (G.includes("kneepad")) { const a = W(mSh(j.knee2, [0, 1], 6)), b = W(mSh(j.ank2, [0, 1], 5.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, -M3S.hw], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], [0, 3, 0], [0, 0, 5], PD); }
-    if (G.includes("armpad")) { const a = W(mSh(mLerp(j.sho, j.elb, .15), mDir(P2.ua + 90, 1), 6.5)), b = W(mSh(mLerp(j.sho, j.elb, 1.1), mDir(P2.ua + 90, 1), 6.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], v3.mul(v3.nrm([-(b[1] - a[1]), b[0] - a[0], 0]), 3), [0, 0, 18], PD); }
+    if (G.includes("armpad")) { const [a0, b0] = mArmPad(j, P2), a = W(a0), b = W(b0), m2 = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; K.cap([m2[0], m2[1], 0], [m2[0], floorY, 0], 1.8, 1.8, FR, { flat: true, edge: true, tag: "Polstersäule" }); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], v3.mul(v3.nrm([-(b[1] - a[1]), b[0] - a[0], 0]), 3), [0, 0, 18], PD); }
     if (G.includes("bench")) { const a = W(mSh(j.knee, [0, 1], 9.5)), b = W(mSh(j.sho, [0, 1], 9.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], [0, 3.5, 0], [0, 0, 12], PD); post((a[0] + b[0]) / 2, 0, (a[1] + b[1]) / 2 - 3); }
     if (G.includes("benchpad")) { const at = sp.at || [64, 84], c = W([at[0] - 83, at[1] - 18]); K.box([c[0], c[1], 0], [13, 0, 0], [0, 18, 0], [0, 0, 16], PD); }
-    if (G.includes("hippad")) roll(mSh(j.hip, [0, -1], 7), 4, 16);
-    if (G.includes("backroll")) { const s0 = mJoints(sp, mPose(sp, 0)).sho, c = W(mSh(s0, [0, 1], 8.5)); K.cap([c[0], c[1], -18], [c[0], c[1], 18], 7.5, 7.5, PD, { edge: true }); post(c[0], 0, c[1] - 6); }
+    if (G.includes("hippad")) roll(mEff("hip", j, P2), 4, 16);
+    if (G.includes("backroll")) { const c = W(mBackRoll(sp)); K.cap([c[0], c[1], -8], [c[0], c[1], 8], 7.5, 7.5, PD, { edge: true, tag: "Rückenpolster" }); post(c[0], 0, c[1] - 6); }
     if (G.includes("footramp")) { const a = W(mSh(mSh(j.ank, [0, 1], 4.6), [1, 0], -7)), d = mDir(-15, 12), c = [a[0] + d[0], a[1] - d[1], 0]; K.box(c, [d[0], -d[1], 0], v3.mul(v3.nrm([d[1], d[0], 0]), 1.8), [0, 0, 17], FR); }
-    if (G.includes("strap")) { const h = W(j.hip); K.cap([h[0], h[1] + 6, -10], [h[0], h[1] + 6, 10], 1.6, 1.6, PD, { flat: true, dz: 8 }); }
-    if (G.includes("floorplat") || G.includes("step")) { const c = W(G.includes("step") ? [J.j2.toe[0] + 2, J.j2.toe[1] + 7] : mSh(mLerp(j.ank, j.toe, .4), [0, 1], 4.5)); K.box([c[0], c[1], 0], [12, 0, 0], [0, G.includes("step") ? 4.5 : 1.6, 0], [0, 0, 16], FR); }
-    if (G.includes("plat")) { const a = W(mSh(j.ank, mDir(P2.ft || 0, 1), -7)), b = W(mSh(j.toe, mDir(P2.ft || 0, 1), 7)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], v3.mul(v3.nrm([-(b[1] - a[1]), b[0] - a[0], 0]), 1.6), [0, 0, 18], FR); }
+    if (G.includes("strap")) { const h = W(mSh(mEff("hip", j, P2), mRot(mUnit(j.hip, j.sho), 1), 4.5)); K.cap([h[0], h[1], -15], [h[0], h[1], 15], 1, 1, PD, { flat: true, dz: 8, tag: "Hüftgurt" }); }
+    if (sp.platH) { const a = W([j.ank[0] + 3, sp._floor - sp.platH / 2]); for (const s2 of [1, -1]) K.box([a[0], a[1], s2 * 15], [17, 0, 0], [0, sp.platH / 2, 0], [0, 0, 10], FR, { tag: "Plattform" }); }
+    else if (G.includes("floorplat") || G.includes("step")) { const c = W(G.includes("step") ? [J.j2.toe[0] + 2, J.j2.toe[1] + 7] : mSh(mLerp(j.ank, j.toe, .4), [0, 1], 4.5)); K.box([c[0], c[1], 0], [12, 0, 0], [0, G.includes("step") ? 4.5 : 1.6, 0], [0, 0, 16], FR); }
+    if (G.includes("plat")) { const so = mRot(mUnit(j.ank, j.toe), 1), a = W(mSh(mSh(j.ank, mDir(P2.ft || 0, 1), -7), so, 4.5)), b = W(mSh(mSh(j.toe, mDir(P2.ft || 0, 1), 7), so, 4.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], v3.mul(v3.nrm([-(b[1] - a[1]), b[0] - a[0], 0]), 1.6), [0, 0, 18], FR); }
     // Hebel: Arm vom Drehpunkt zum Kontakt, auf jeder Seite; Scheiben an der Verlängerung
     if (rig && rig.kind === "lever") { const ef = mEff(rig.fx, j, P2), pv = W(rig.pv), e2 = W(ef), o2 = mUnit(ef, rig.pv), pl = W(rig.mid ? mLerp(rig.pv, ef, .42) : mSh(rig.pv, o2, Math.max(12, Math.min(18, Math.hypot(ef[0] - rig.pv[0], ef[1] - rig.pv[1]) * .3))));
-      const zz = rig.fx === "hand" ? M3S.sw + 3 : M3S.hw + 7;
-      for (const z of [zz, -zz]) { K.cap([pv[0], pv[1], z], [e2[0], e2[1], z], 2.3, 1.8, FR, { flat: true, edge: true }); K.ball([pv[0], pv[1], z], 3, FR, { flat: true });
-        if (pv[1] > floorY + 4) post(pv[0], z, pv[1]);
-        if (e.type !== "stack") { const zs = z + Math.sign(z) * 3; K.disc([pl[0], pl[1], zs], [0, 0, 1], 9, PD); K.disc([pl[0], pl[1], zs + Math.sign(z) * 2], [0, 0, 1], 9, PD); } } }
+      // Hand am Hebel: Griff liegt in der Hand, der Hebel setzt am äußeren Griffende an. Die Hände wandern beim Drücken/Ziehen
+      // nach innen oder außen, darum laufen die Hebel vom festen Drehpunkt aus zusammen bzw. auseinander (konvergierend)
+      const hand = rig.fx === "hand", hz = q => { const A2 = mArm(sp, q); return M3S.sw + A2.lat - A2.gi; }, zE = hand ? hz(p) + 4.5 : rig.fx === "sho" ? 26 : M3S.hw + 7;
+      let zP = zE; if (hand) { for (const q of [0, .25, .5, .75, 1]) zP = Math.max(zP, hz(q) + 4.5); if (Math.hypot(pv[0] - J.elR[0], pv[1] - J.elR[1]) < 14) zP = Math.max(zP, J.elR[2] + 7); }
+      for (const s2 of [1, -1]) { const zp = s2 * zP, ze = s2 * zE;
+        K.cap([pv[0], pv[1], zp], [e2[0], e2[1], ze], 2.3, 1.8, FR, { flat: true, edge: true, tag: "Hebel" }); K.ball([pv[0], pv[1], zp], 3, FR, { flat: true, tag: "Drehpunkt" });
+        if (hand) K.cap([e2[0], e2[1], s2 * (zE - 8.5)], [e2[0], e2[1], ze], 1.6, 1.6, PD, { flat: true, tag: "Griff" });
+        if (rig.fx === "sho") K.cap([e2[0], e2[1], s2 * 19], [e2[0], e2[1], ze], 1.6, 1.6, FR, { flat: true, tag: "Halter" });
+        // Säule außen neben dem Hebel, Achse von der Säule zum Drehpunkt
+        if (pv[1] > floorY + 4) { const zo = s2 * (zP + 7); post(pv[0], zo, pv[1]); K.cap([pv[0], pv[1], zo], [pv[0], pv[1], zp], 1.6, 1.6, FR, { flat: true, edge: true, tag: "Achse" }); }
+        if (e.type !== "stack") { const zl = rig.mid ? zp + (ze - zp) * .42 : zp, zs = zl + s2 * 3.5; if (!rig.mid) K.cap([pv[0], pv[1], zp], [pl[0], pl[1], zp], 2.1, 2.1, FR, { flat: true, edge: true, tag: "Hebel" });
+          K.cap([pl[0], pl[1], zl], [pl[0], pl[1], zs + s2 * 4], 1.3, 1.3, FR, { flat: true, tag: "Scheibenhorn" }); K.disc([pl[0], pl[1], zs], [0, 0, 1], 9, PD, { tag: "Scheibe" }); K.disc([pl[0], pl[1], zs + s2 * 2.2], [0, 0, 1], 9, PD, { tag: "Scheibe" }); } } }
     if (rig && rig.kind === "rail") { const a = W(rig.a), b = W(rig.b), u = v3.nrm([b[0] - a[0], b[1] - a[1], 0]), ef = W(mEff(rig.fx, j, P2));
-      for (const z of [17, -17]) K.cap(v3.add([a[0], a[1], z], v3.mul(u, -10)), v3.add([b[0], b[1], z], v3.mul(u, 20)), 1.3, 1.3, FR, { flat: true, edge: true });
-      if (e.type !== "stack") for (const z of [20, -20]) K.disc([ef[0], ef[1], z], [0, 0, 1], 9.5, PD); }
-    if (G.includes("smith")) { const h = W(j.hand); K.cap([h[0], h[1], -32], [h[0], h[1], 32], 1.4, 1.4, FR, { flat: true, edge: true }); for (const z of [26, -26]) K.disc([h[0], h[1], z], [0, 0, 1], 14, PD);
+      const zr = rig.fx === "sho" ? 32 : 17, so2 = rig.fx === "foot" ? mRot(mUnit(j.ank, j.toe), 1) : [0, 0], off = [so2[0] * 7.4, -so2[1] * 7.4, 0], pc = rig.fx === "foot" ? v3.add([ef[0], ef[1], 0], [so2[0] * 4.5, -so2[1] * 4.5, 0]) : [ef[0], ef[1], 0];
+      for (const z of [zr, -zr]) { const r0 = v3.add(v3.add([a[0], a[1], z], v3.mul(u, -10)), off), r1 = v3.add(v3.add([b[0], b[1], z], v3.mul(u, 20)), off);
+        K.cap(r0, r1, 1.3, 1.3, FR, { flat: true, edge: true, tag: "Schiene" }); for (const r of [r0, r1]) if (r[1] > floorY + 2) K.cap([r[0], floorY, z], r, 1.5, 1.5, FR, { flat: true, edge: true, tag: "Schienenstütze" });
+        if (rig.fx === "sho") K.cap([ef[0], ef[1], Math.sign(z) * 19], [ef[0], ef[1], z], 1.6, 1.6, FR, { flat: true, tag: "Halter" }); }
+      if (e.type !== "stack") for (const z of rig.fx === "foot" ? [19.5, -19.5] : [zr + 2.4, -zr - 2.4]) K.disc([pc[0], pc[1], z], [0, 0, 1], 9.5, PD, { tag: "Scheibe" }); }
+    if (G.includes("smith")) { const h = W(j.hand); K.cap([h[0], h[1], -64], [h[0], h[1], 64], 1.4, 1.4, FR, { flat: true, edge: true, tag: "Stange" }); for (const z of [50, -50]) K.disc([h[0], h[1], z], [0, 0, 1], 14, PD, { tag: "Scheibe" });
       const a = W(mJoints(sp, mPose(sp, 0)).hand), b = W(mJoints(sp, mPose(sp, 1)).hand), u = v3.nrm([a[0] - b[0], a[1] - b[1], 0]);
-      for (const z of [34, -34]) { const k1 = (floorY - b[1]) / (u[1] || 1e-6), k2 = (b[1] + 40 - b[1]) / (u[1] || 1e-6); K.cap([b[0] + u[0] * k1, floorY, z], [b[0] + u[0] * (k1 + 140), floorY + u[1] * 140, z], 1.5, 1.5, FR, { flat: true, edge: true }); } }
-    if (G.includes("belt")) { const st = mJoints(sp, mPose(sp, 1)).hip, pv = W([J.o[0] - 52, sp._floor - 4]), h = W(j.hip), chain = (sp._floor - 4) - st[1] - 5, cp = [h[0], h[1] - chain], u = v3.nrm([cp[0] - pv[0], cp[1] - pv[1], 0]), tip = v3.add([cp[0], cp[1], 0], v3.mul(u, 16));
-      K.cap([pv[0], pv[1], 0], tip, 2.2, 1.8, FR, { flat: true, edge: true }); K.line([h[0], h[1], 0], [cp[0], cp[1], 0], 1.4, MGL); for (const z of [9, -9]) K.disc(v3.add(tip, [0, 0, z]), [0, 0, 1], 9, PD);
-      K.cap([h[0], h[1], -11], [h[0], h[1], 11], 2.2, 2.2, MGL, { flat: true, dz: 6 }); }
+      for (const z of [57, -57]) { const k1 = (floorY - b[1]) / (u[1] || 1e-6), k2 = (b[1] + 40 - b[1]) / (u[1] || 1e-6); K.cap([b[0] + u[0] * k1, floorY, z], [b[0] + u[0] * (k1 + 140), floorY + u[1] * 140, z], 1.5, 1.5, FR, { flat: true, edge: true }); } }
+    if (G.includes("belt")) { const bl = mBelt(sp, j), P3 = [...W(bl.P), 0], A3 = [...W(bl.A), 0], H3 = [...W(bl.H), 0], R3 = [...W(bl.rear), 0], B3 = [...W(bl.B), 0];
+      // Hebel im Spalt zwischen den Plattformen, Lagerbock am Boden, Kette vom Gurt zum Ankerpunkt, Scheibenhalter vorn (lang) und hinten (kurz)
+      K.cap(P3, H3, 2.2, 1.8, FR, { flat: true, edge: true, tag: "Hebel" }); K.ball(P3, 3, FR, { flat: true, tag: "Drehpunkt" }); K.box([P3[0], (P3[1] + floorY) / 2, 0], [3, 0, 0], [0, (P3[1] - floorY) / 2, 0], [0, 0, 4], FR, { tag: "Lagerbock" });
+      K.line(B3, A3, 1.4, MGL); K.cap(v3.add(H3, [0, 0, -9]), v3.add(H3, [0, 0, 9]), 1.3, 1.3, FR, { flat: true, tag: "Scheibenhorn" }); K.cap(v3.add(R3, [0, 0, -7]), v3.add(R3, [0, 0, 7]), 1.3, 1.3, FR, { flat: true, tag: "Scheibenhorn" });
+      for (const z of [6, -6]) { K.disc(v3.add(H3, [0, 0, z]), [0, 0, 1], 9, PD, { tag: "Scheibe" }); K.disc(v3.add(R3, [0, 0, z * .9]), [0, 0, 1], 6.5, PD, { tag: "Scheibe" }); }
+      // Gurt um das Becken (knapp über der Körperoberfläche)
+      { const hm = [(J.hpR[0] + J.hpL[0]) / 2, (J.hpR[1] + J.hpL[1]) / 2, 0], ring = []; for (let i = 0; i < 12; i++) { const th = i / 12 * Math.PI * 2, sz = Math.sin(th); ring.push(v3.add(v3.add(v3.add(hm, v3.mul(up, 9)), v3.mul(lat, Math.cos(th) * 12.8)), v3.mul(fw, sz > 0 ? sz * 8.2 : sz * 7.7))); }
+        ring.forEach((q, i) => K.cap(q, ring[(i + 1) % 12], 1.1, 1.1, MGL, { flat: true, tag: "Hüftgurt" })); } }
     if (G.includes("topcable")) { const hA = W(mJoints(sp, mPose(sp, 0)).hand), pul = [hA[0] + 1, hA[1] + 14, 0], h = W(j.hand);
       post(-34, 0, pul[1] + 4); K.cap([-34, pul[1] + 4, 0], [pul[0] + 4, pul[1] + 4, 0], 1.8, 1.8, FR, { flat: true, edge: true }); K.ball(pul, 3, FR, { flat: true });
       K.line(pul, [h[0], h[1], 0], 1, MGL); K.cap([h[0], h[1], -20], [h[0], h[1], 20], 1.3, 1.3, FR, { flat: true, edge: true, dz: 8 }); }
     if (G.includes("cable")) { const c = W(sp.cable), tx = c[0] + (sp.cable[0] > j.hip[0] ? 5 : -5);
       post(tx, -18, Math.max(c[1] + 30, 60)); K.ball([c[0], c[1], -18], 3.2, FR, { flat: true });
       for (const k of ["R", "L"]) K.line([c[0], c[1], -18], J["ha" + k], 1, MGL); }
-    if (G.includes("handle")) for (const k of ["R", "L"]) { const h = J["ha" + k]; K.cap(v3.add(h, [0, 0, -3]), v3.add(h, [0, 0, 3]), 1.5, 1.5, PD, { flat: true, dz: 4 }); }
+    if (G.includes("handle") && G.includes("belt")) for (const k of ["R", "L"]) { const a = m3Pose(sp, 0)["ha" + k], b = m3Pose(sp, 1)["ha" + k], u = v3.nrm(v3.sub(b, a)), lo = a[1] < b[1] ? v3.add(a, v3.mul(u, -8)) : v3.add(b, v3.mul(u, 8)), hi = a[1] < b[1] ? v3.add(b, v3.mul(u, 8)) : v3.add(a, v3.mul(u, -8));
+      K.cap(lo, hi, 1.5, 1.5, PD, { flat: true, tag: "Griff" }); K.cap([lo[0], floorY, lo[2]], lo, 1.6, 1.6, FR, { flat: true, edge: true, tag: "Griffstütze" }); }
+    else if (G.includes("handle") && !(rig && rig.kind === "lever" && rig.fx === "hand")) for (const k of ["R", "L"]) { const h = J["ha" + k]; K.cap(v3.add(h, [0, 0, -3]), v3.add(h, [0, 0, 3]), 1.5, 1.5, PD, { flat: true, dz: 4 }); }
   } else {
     // Figur von vorn/hinten: Sitz mit Lehne, Gerät nach rig
     const rig = sp.rig, hipRig = rig === "abd" || rig === "add", plate = e.type === "plate";
-    if (!sp.stand) { K.box([2, -3.5, 0], [14, 0, 0], [0, 3.5, 0], [0, 0, 15], PD); post(2, 0, -7); K.box([2, floorY + 1.2, 0], [16, 0, 0], [0, 1.2, 0], [0, 0, 18], FR);
-      if (!sp.back) K.box([-11, 26, 0], [3.5, 0, 0], [0, 24, 0], [0, 0, 12], PD); else if (rig === "pec") K.box([12, 32, 0], [3, 0, 0], [0, 12, 0], [0, 0, 10], PD);
-      if (rig === "lat") K.cap([30, 7, -16], [30, 7, 16], 3.4, 3.4, PD, { edge: true }); }
-    if (rig === "pec") { post(-16, 0, 70); K.cap([-12, 70, -36], [-12, 70, 36], 2, 2, FR, { flat: true, edge: true }); stack(-24, -36);
-      for (const k of ["R", "L"]) { const h = J["ha" + k], s2 = k === "R" ? 1 : -1, top = v3.add(h, [0, 12, 0]), pv = [-12, 70, s2 * 34];
+    if (!sp.stand) { K.box([2, -10, 0], [14, 0, 0], [0, 3.5, 0], [0, 0, 15], PD, { tag: "Sitz" }); post(2, 0, -13.5); K.box([2, floorY + 1.2, 0], [16, 0, 0], [0, 1.2, 0], [0, 0, 18], FR);
+      if (!sp.back) { K.box([-11, 26, 0], [3.5, 0, 0], [0, 24, 0], [0, 0, 12], PD, { tag: "Rückenpolster" }); post(-16, 0, 48); } else if (rig === "pec") K.box([12, 32, 0], [3, 0, 0], [0, 12, 0], [0, 0, 10], PD, { tag: "Brustpolster" });
+      if (rig === "lat") { K.cap([30, 7, -16], [30, 7, 16], 3.4, 3.4, PD, { edge: true, tag: "Oberschenkelpolster" }); K.cap([30, 7, 0], [16, -6.5, 0], 1.5, 1.5, FR, { flat: true, edge: true, tag: "Polsterstütze" }); } }
+    if (rig === "pec") { const X = sp.back ? -1 : 1; post(-16 * X, 0, 70); K.cap([-12 * X, 70, -36], [-12 * X, 70, 36], 2, 2, FR, { flat: true, edge: true }); stack(-24 * X, -36);
+      for (const k of ["R", "L"]) { const h = J["ha" + k], s2 = k === "R" ? 1 : -1, top = v3.add(h, [0, 12, 0]), pv = [-12 * X, 70, s2 * 34];
         K.cap(pv, top, 1.8, 1.6, FR, { flat: true, edge: true }); K.cap(v3.add(h, [0, -6, 0]), top, 1.6, 1.6, PD, { flat: true, dz: 2 }); } }
-    if (rig === "pads") { post(-14, 0, plate ? 40 : 60); if (!plate) stack(-24, -34);
-      for (const k of ["R", "L"]) { const S = J["sh" + k], E = J["el" + k], s2 = k === "R" ? 1 : -1, pad = v3.add(v3.lerp(S, E, .85), v3.mul(v3.nrm(v3.cross(v3.sub(E, S), [1, 0, 0])), -s2 * 6)), pv = v3.add(S, [-3, 1, s2 * 3]);
-        K.cap(pv, pad, 1.6, 1.6, FR, { flat: true, edge: true }); K.cap(v3.add(pad, v3.mul(v3.nrm(v3.sub(E, S)), -4.5)), v3.add(pad, v3.mul(v3.nrm(v3.sub(E, S)), 4.5)), 3, 3, PD, { edge: true, dz: 2 });
-        if (plate) K.disc(v3.add(pad, [0, 0, s2 * 8]), [0, 0, 1], 7, PD); } }
-    if (rig === "lat") { post(-16, 0, 106); K.cap([-16, 106, 0], [8, 106, 0], 1.8, 1.8, FR, { flat: true, edge: true }); stack(-28, -20);
-      const by = J.haR[1], g = Math.abs(J.haR[2]); K.line([8, 106, 0], [7, by + (g < 12 ? 9 : 1), 0], 1, MGL);
-      K.cap([7, by, -(g + 8)], [7, by, g + 8], 1.4, 1.4, FR, { flat: true, edge: true, dz: 6 }); }
+    if (rig === "pads") { post(-17, 0, 45); K.cap([-17, 45, -18], [-17, 45, 18], 1.6, 1.6, FR, { flat: true, edge: true, tag: "Querstrebe" }); for (const s2 of [1, -1]) K.cap([-17, 45, s2 * 18], [-11, 45, s2 * 18], 1.6, 1.6, FR, { flat: true, tag: "Achse" }); if (!plate) stack(-24, -34);
+      for (const k of ["R", "L"]) { const S = J["sh" + k], E = J["el" + k], s2 = k === "R" ? 1 : -1, pad = v3.add(v3.lerp(S, E, .85), v3.mul(v3.nrm(v3.cross(v3.sub(E, S), [1, 0, 0])), s2 * 7.6)), pv = v3.add(S, [-11, 0, 0]), pb = v3.add(pad, [-7, 0, 0]);
+        K.cap(pv, pb, 1.6, 1.6, FR, { flat: true, edge: true, tag: "Hebel" }); K.cap(pb, pad, 1.2, 1.2, FR, { flat: true, tag: "Hebel" }); K.ball(pv, 2.6, FR, { flat: true, tag: "Drehpunkt" });
+        K.cap(v3.add(pad, v3.mul(v3.nrm(v3.sub(E, S)), -4.5)), v3.add(pad, v3.mul(v3.nrm(v3.sub(E, S)), 4.5)), 3, 3, PD, { edge: true, dz: 2, tag: "Armpolster" });
+        if (plate) K.disc(v3.add(v3.lerp(pv, pb, .45), [-3.5, 0, 0]), [1, 0, 0], 7, PD, { tag: "Scheibe" }); } }
+    if (rig === "lat") { post(-16, 0, 106); K.cap([-16, 106, 0], [M3_LATX, 106, 0], 1.8, 1.8, FR, { flat: true, edge: true }); stack(-28, -20);
+      const by = J.haR[1], g = Math.abs(J.haR[2]); K.line([M3_LATX, 106, 0], [M3_LATX, by + 1, 0], 1, MGL);
+      K.cap([M3_LATX, by, -(g + 5)], [M3_LATX, by, g + 5], 1.4, 1.4, FR, { flat: true, edge: true, dz: 6, tag: "Stange" }); }
     if (rig === "cable2") for (const s2 of [1, -1]) { post(4, s2 * 64, 70); K.ball([4, 48, s2 * 62], 3, FR, { flat: true }); K.line([4, 48, s2 * 62], J[s2 > 0 ? "haR" : "haL"], 1, MGL); }
     if (rig === "cable1") { post(4, -50, 70); K.ball([4, floorY + 8, -48], 3, FR, { flat: true }); K.line([4, floorY + 8, -48], J.haR, 1, MGL); }
-    if (hipRig) { stack(-26, -34); for (const k of ["R", "L"]) { const kn = J["kn" + k], s2 = k === "R" ? 1 : -1, pz = kn[2] + s2 * (rig === "abd" ? 7 : -7);
-      K.box([kn[0] - 2, kn[1], pz], [5, 0, 0], [0, 6, 0], [0, 0, 2.2], PD, { dz: 1 }); K.cap([4, -10, s2 * 3], [kn[0] - 2, kn[1] - 6, pz], 1.4, 1.4, FR, { flat: true, edge: true }); } }
-    if (hipRig || rig === "pads") for (const k of ["R", "L"]) { const h = J["ha" + k]; if (hipRig) K.cap(v3.add(h, [0, -3, 0]), v3.add(h, [0, 3, 0]), 1.5, 1.5, PD, { flat: true, dz: 3 }); }
+    // Abduktor/Adduktor: Polster längs am Oberschenkel kurz vor dem Knie, außen bzw. innen; Arm vom Drehpunkt unter dem Sitz
+    if (hipRig) { stack(-26, -34); for (const k of ["R", "L"]) { const kn = J["kn" + k], s2 = k === "R" ? 1 : -1, tu = v3.nrm(v3.sub(kn, J["hp" + k])), n0 = v3.nrm(v3.cross([0, 1, 0], tu)), n = v3.mul(n0, Math.sign(n0[2] * s2) * (rig === "abd" ? 1 : -1));
+      const c = v3.add(v3.add(kn, v3.mul(tu, -4)), v3.mul(n, 7.1)), pv = [4, -17, s2 * 3];
+      K.box(c, v3.mul(tu, 5), [0, 6, 0], v3.mul(n, 2.2), PD, { dz: 1, tag: "Beinpolster" }); K.ball(pv, 2.2, FR, { flat: true, tag: "Drehpunkt" });
+      K.cap(pv, v3.add(c, [0, -6, 0]), 1.4, 1.4, FR, { flat: true, edge: true, tag: "Hebel" }); } K.cap([4, -17, -3], [4, -17, 3], 1.6, 1.6, FR, { flat: true, tag: "Achse" }); }
+    // Haltegriffe seitlich am Sitz (Abduktor/Adduktor): Griff an der Hand, Bügel zur Sitzkante
+    if (hipRig) for (const k of ["R", "L"]) { const h = J["ha" + k], s2 = k === "R" ? 1 : -1; K.cap(v3.add(h, [0, -3, 0]), v3.add(h, [0, 3, 0]), 1.5, 1.5, PD, { flat: true, dz: 3, tag: "Griff" });
+      K.cap(v3.add(h, [0, -3, 0]), [h[0], -9, h[2]], 1.4, 1.4, FR, { flat: true, tag: "Griffbügel" }); K.cap([h[0], -9, h[2]], [h[0], -9, s2 * 15], 1.4, 1.4, FR, { flat: true, tag: "Griffbügel" }); }
   }
   // ---------- Körper ----------
+  if (K.phase) K.phase("body");
   const SK = MB, SK2 = MB2;
   const muscleOn = (A, B, s0, s1, n, rr, key, o = {}) => { const m = m3Mus(role(key), act), a = v3.lerp(A, B, s0), b = v3.lerp(A, B, s1), off = v3.mul(v3.nrm(n), rr * .42), dn = v3.nrm(n);
     if (v3.dot(dn, C.cam) < -.35) return;
@@ -3472,6 +3570,7 @@ function m3Draw(sp, s, e, yaw, pts, mk) {
   K.ball(v3.add(v3.add(Hd, v3.mul(hf, 4.6)), v3.mul(hu, -5.6)), 4.6, SK, { dz: .3 });
   K.ball(v3.add(v3.add(Hd, v3.mul(hf, 9.2)), v3.mul(hu, -1.2)), 1.5, SK, { dz: .5 });
   for (const s2 of [1, -1]) K.ball(v3.add(Hd, v3.mul(lat, s2 * 8.1)), 1.9, SK, { dz: .2 });
+  if (K.phase) K.phase("arrow");
   // Richtung: Pfeil an der arbeitenden Stelle (Hand, Fuß, Stange, Knie)
   { const dr = mDirOf(sp, s.st), w = s.st ? .05 : .4, q = dr.inc ? Math.min(1, p + w) : Math.max(0, p - w), J2 = m3Pose(sp, q === p ? (dr.inc ? Math.max(0, p - w) : Math.min(1, p + w)) : q), flip = q === p ? -1 : 1;
     const key = J.side ? ({ hand: "haR", ank: "anR", hip: "hpR", toe: "toR" })[sp._tip || "hand"] || "haR" : (sp.rig === "abd" || sp.rig === "add") ? "knR" : "haR";
@@ -3625,8 +3724,10 @@ function m3GLRender(el, sp, s, e, yaw) {
     el.style.visibility = "hidden"; el.dataset.gl = "1"; }
   // Größe wie das SVG
   const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return true;
-  if (st.w !== w || st.h !== h) { st.w = w; st.h = h; st.R.setSize(w, h, false); st.cv.style.cssText = `position:absolute;left:${el.offsetLeft}px;top:${el.offsetTop}px;width:${w}px;height:${h}px;touch-action:pan-y`; st.cam.aspect = w / h; st.cam.updateProjectionMatrix(); }
-  else if (st.cv.style.left !== el.offsetLeft + "px" || st.cv.style.top !== el.offsetTop + "px") { st.cv.style.left = el.offsetLeft + "px"; st.cv.style.top = el.offsetTop + "px"; }
+  // Lage über dem SVG aus den Bildschirmmaßen (SVG-Elemente haben kein offsetLeft/offsetTop)
+  const pr = el.parentElement.getBoundingClientRect(), er = el.getBoundingClientRect(), L0 = Math.round(er.left - pr.left) + "px", T0 = Math.round(er.top - pr.top) + "px";
+  if (st.w !== w || st.h !== h) { st.w = w; st.h = h; st.R.setSize(w, h, false); st.cv.style.cssText = `position:absolute;left:${L0};top:${T0};width:${w}px;height:${h}px;touch-action:pan-y`; st.cam.aspect = w / h; st.cam.updateProjectionMatrix(); }
+  else if (st.cv.style.left !== L0 || st.cv.style.top !== T0) { st.cv.style.left = L0; st.cv.style.top = T0; }
   // Farben neu lesen, wenn sich das Design (hell/dunkel) ändert
   const sig = getComputedStyle(el).getPropertyValue("--mbody") + getComputedStyle(el).getPropertyValue("--mframe"); if (st.sig !== sig) { st.sig = sig; st.colors = {}; st.mats = {}; }
   // Kamera: Mittelpunkt und Abstand aus den Gelenken über die ganze Bewegung (einmal je Gerät)
@@ -3649,6 +3750,86 @@ function m3Box(sp, e) {
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const q of pts) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); }
   const m = 8; x0 -= m; y0 -= m; x1 += m; y1 += m; let w = x1 - x0, h = y1 - y0; const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2; if (w / h < 4 / 3) w = h * 4 / 3; else h = w * 3 / 4;
   return (sp._b3 = `${mF(cx - w / 2)} ${mF(cy - h / 2)} ${mF(w)} ${mF(h)}`);
+}
+// ---------- 3D-Prüfung ----------
+// Sammelt statt zu zeichnen: jedes Teil von Gerät und Körper mit Lage und Größe (dieselben Aufrufe wie beim Zeichnen)
+function m3Rec(C) {
+  const R = { gear: [], body: [], ph: "gear" }, add = o => { if (m3Rec.dbg) { o.ln = new Error().stack.split("\n").slice(3, 6).map(s => (s.match(/:(\d+):\d+\)?$/) || [])[1]).filter(Boolean).join(","); }
+    if (R.ph === "gear") R.gear.push(o); else if (R.ph === "body") R.body.push(o); };
+  return { R, pr: q => C.P(q), out: [], phase(ph) { R.ph = ph; },
+    cap(A, B, rA, rB, fill, o = {}) { add({ t: "cap", A, B, rA, rB, fill, tag: o.tag }); }, ball(c, r, fill, o = {}) { add({ t: "ball", c, r, fill, tag: o.tag }); },
+    box(c, ax, ay, az, fill, o = {}) { add({ t: "box", c, ax, ay, az, fill, tag: o.tag }); }, disc(c, n, r, fill, o = {}) { add({ t: "disc", c, n: v3.nrm(n), r, fill, tag: o.tag }); },
+    line(A, B, w, c) { if (!/rgba\(0,0,0/.test(String(c))) add({ t: "cap", A, B, rA: .5, rB: .5, fill: c, tag: "line" }); },
+    hull() {}, patch() {}, floor(y) { R.floor = y; }, arrow() {},
+    limb(kind, A, B) { if (kind !== "sleeve") add({ t: "limb", kind, A, B }); }, torsoG(H0, S0, fw) { add({ t: "torso", H0, S0, fw }); },
+    torso(H0, S0, fw) { if (!R.torso) { R.torso = 1; add({ t: "torso", H0, S0, fw }); } }, done() { return ""; } };
+}
+// Punkte auf/in einem Geräteteil, je mit Radius (zum Prüfen gegen den Körper)
+function m3Samples(g) {
+  const out = [];
+  if (g.t === "cap") for (let i = 0; i <= 14; i++) { const f = i / 14; out.push([v3.lerp(g.A, g.B, f), g.rA + (g.rB - g.rA) * f]); }
+  else if (g.t === "ball") out.push([g.c, g.r]);
+  else if (g.t === "box") for (const i of [-1, -.5, 0, .5, 1]) for (const j of [-1, -.5, 0, .5, 1]) for (const k of [-1, -.5, 0, .5, 1]) out.push([v3.add(v3.add(v3.add(g.c, v3.mul(g.ax, i)), v3.mul(g.ay, j)), v3.mul(g.az, k)), 0]);
+  else if (g.t === "disc") { const a = v3.nrm(v3.cross(g.n, Math.abs(g.n[1]) < .9 ? [0, 1, 0] : [1, 0, 0])), b = v3.cross(g.n, a); out.push([g.c, 1.1]);
+    for (let i = 0; i < 12; i++) { const th = i / 12 * Math.PI * 2; for (const f of [.5, 1]) out.push([v3.add(g.c, v3.add(v3.mul(a, Math.cos(th) * g.r * f), v3.mul(b, Math.sin(th) * g.r * f))), 1.1]); } }
+  return out;
+}
+// Abstand eines Punkts zur Oberfläche eines Geräteteils (< 0 = innen)
+function m3Sdf(g, q) {
+  const seg = (A, B) => { const d = v3.sub(B, A), L2 = v3.dot(d, d) || 1e-9, f = Math.max(0, Math.min(1, v3.dot(v3.sub(q, A), d) / L2)); return [v3.len(v3.sub(q, v3.add(A, v3.mul(d, f)))), f]; };
+  const box3 = d => { const o = d.map(x => Math.max(x, 0)); return Math.hypot(...o) + Math.min(Math.max(...d), 0); };
+  if (g.t === "cap") { const [d, f] = seg(g.A, g.B); return d - (g.rA + (g.rB - g.rA) * f); }
+  if (g.t === "ball") return v3.len(v3.sub(q, g.c)) - g.r;
+  if (g.t === "box") { const w = v3.sub(q, g.c); return box3([g.ax, g.ay, g.az].map(a => Math.abs(v3.dot(w, v3.nrm(a))) - v3.len(a))); }
+  if (g.t === "disc") { const w = v3.sub(q, g.c), h = v3.dot(w, g.n); return box3([v3.len(v3.sub(w, v3.mul(g.n, h))) - g.r, Math.abs(h) - 1.1]); }
+  return Infinity;
+}
+// Kein Teil schwebt: jedes Geräteteil hängt über berührende Teile am Boden (Berührung bis 1,5 Abstand)
+function m3Float(gear, floorY) {
+  const S = gear.map(m3Samples), n = gear.length, touch = (a, b) => S[a].some(([q, r]) => m3Sdf(gear[b], q) - r < 1.5) || S[b].some(([q, r]) => m3Sdf(gear[a], q) - r < 1.5);
+  const on = new Array(n).fill(false), todo = [];
+  for (let i = 0; i < n; i++) if (S[i].some(([q, r]) => q[1] - r - floorY < 1.5)) { on[i] = true; todo.push(i); }
+  while (todo.length) { const i = todo.pop(); for (let k = 0; k < n; k++) if (!on[k] && touch(i, k)) { on[k] = true; todo.push(k); } }
+  return gear.filter((g, i) => !on[i]);
+}
+// Körper als Messkörper: Glieder (Kapseln mit Radius über die Länge), Rumpf (Querschnitte wie die Körperform), Kopf
+const M3_LR = { thigh: [6.6, 4.4], shin: [4.4, 2.7], ua: [4.6, 3.2], fa: [3.5, 2.2] };
+const M3_TR = [[-.18, 12.8, 7, 8.6], [.1, 12.2, 6.9, 7.4], [.25, 11.4, 6.8, 6.3], [.45, 11.8, 7.1, 6.6], [.66, 14.6, 8.6, 7.8], [.84, 16.6, 9.2, 8.6], [.97, 17, 6.8, 7.6], [1.04, 9, 5, 5.2]];
+// Wie tief steckt ein Punkt (mit Radius r) im Körperteil b? > 0 = steckt darin
+function m3Depth(b, q, r) {
+  const segD = (A, B) => { const d = v3.sub(B, A), L2 = v3.dot(d, d) || 1e-9, f = Math.max(0, Math.min(1, v3.dot(v3.sub(q, A), d) / L2)); return [v3.len(v3.sub(q, v3.add(A, v3.mul(d, f)))), f]; };
+  if (b.t === "limb") { const [d, f] = segD(b.A, b.B), [r0, r1] = M3_LR[b.kind]; return r0 + (r1 - r0) * f + r - d; }
+  if (b.t === "ball") return b.r + r - v3.len(v3.sub(q, b.c));
+  if (b.t === "cap") { const [d, f] = segD(b.A, b.B); return b.rA + (b.rB - b.rA) * f + r - d; }
+  if (b.t === "torso") { const ax = v3.sub(b.S0, b.H0), L = v3.len(ax), up = v3.mul(ax, 1 / L), fw = v3.nrm(v3.sub(b.fw, v3.mul(up, v3.dot(b.fw, up)))), lat = v3.cross(fw, up), w0 = v3.sub(q, b.H0), s = v3.dot(w0, up) / L;
+    if (s < M3_TR[0][0] || s > M3_TR[M3_TR.length - 1][0]) return -1;
+    let i = 1; while (M3_TR[i][0] < s) i++; const A = M3_TR[i - 1], B = M3_TR[i], f = (s - A[0]) / (B[0] - A[0]), w = A[1] + (B[1] - A[1]) * f, fr = A[2] + (B[2] - A[2]) * f, bk = A[3] + (B[3] - A[3]) * f;
+    const x = v3.dot(w0, fw), z = v3.dot(w0, lat), e = Math.hypot(x / ((x > 0 ? fr : bk) + r), z / (w + r));
+    // Tiefe nach innen (Querschnitt) oder bis zur Unterseite des Beckens, je nachdem was näher ist
+    return Math.min((1 - e) * Math.min(x > 0 ? fr : bk, w), (s - M3_TR[0][0]) * L + r); }
+  return -1;
+}
+// Geräte, an denen die Hände etwas halten (Griff, Stange, Seil, Hebel); sonst müssen sie frei sein oder an einem Haltegriff liegen
+function m3Hands(sp) {
+  if (sp.v) return ["pec", "lat", "cable2", "cable1", "abd", "add"].includes(sp.rig) ? "hold" : "";
+  const rig = mRig(sp), G = sp.gear || [];
+  return (rig && rig.fx === "hand") || ["smith", "topcable", "cable", "handle", "grip"].some(g => G.includes(g)) ? "hold" : "";
+}
+// Regeln für die 3D-Ansicht, in 11 Stellungen: 1) wo die Hand etwas hält, liegt ein Geräteteil in der Hand;
+// 2) kein Geräteteil steckt im Körper (Berührung bis 2,5 erlaubt: Polster liegen an); an der greifenden Hand ist Kontakt gewollt
+function m3Check(sp, e) {
+  const found = new Map(), hold = m3Hands(sp), note = (m, d, p) => { const f = found.get(m); if (!f) found.set(m, { d, ps: [p] }); else { f.d = Math.max(f.d, d); f.ps.push(p); } };
+  for (let i = 0; i <= 10; i++) { const p = i / 10, K = m3Rec(m3Cam(30)); m3Draw(sp, { p, act: 1 }, e, 30, null, () => K); const { gear, body } = K.R, J = m3Pose(sp, p);
+    const hands = (sp.one ? ["haR"] : ["haR", "haL"]).map(k => J[k]).filter(Boolean);
+    if (hold) for (const [n, H] of hands.map((h, k) => [k ? "links" : "rechts", h])) { let best = Infinity;
+      for (const g of gear) for (const [q, r] of m3Samples(g)) best = Math.min(best, v3.len(v3.sub(q, H)) - r);
+      if (best > 3.6) note(`Hand ${n} hält nichts`, best, p); }
+    for (const g of gear) { const S = m3Samples(g);
+      for (const b of body) { let worst = 0, at = null;
+        for (const [q, r] of S) { if (hold && hands.some(H => v3.len(v3.sub(q, H)) < 8)) continue; const d = m3Depth(b, q, r); if (d > worst) { worst = d; at = q; } }
+        if (worst > 2.5) note(`${g.tag || g.t}${g.ln ? "@" + g.ln : ""} im Körper (${b.kind || b.t}${b.ln ? "@" + b.ln : ""})`, worst, p); } }
+    if (i % 5 === 0) for (const g of m3Float(gear, K.R.floor ?? -44)) note(`${g.tag || g.t}${g.ln ? "@" + g.ln : ""} schwebt`, 0, p); }
+  return [...found].map(([m, f]) => `${m}: ${f.d.toFixed(1)} bei p=${f.ps[0]}${f.ps.length > 1 ? "–" + f.ps[f.ps.length - 1] : ""}`);
 }
 // Startblick: von schräg vorn (Seitenansicht-Geräte), bzw. schräg von vorn oder hinten (Figur-Geräte)
 // Muskeln auf der Rückseite (Trizeps, Beinbeuger, Wade, Gesäß, Rücken) sieht man von schräg hinten
@@ -7773,7 +7954,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { motCheck, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
