@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v79)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v79")));
+      ok("Service Worker aktiv (Cache trainingsplan-v80)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v80")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4237,6 +4237,10 @@ async function finishAllSets(page, kg, reps) {
       const gl = await page.evaluate(() => !!document.querySelector("#gMotion canvas.m3gl") && document.querySelector("#gMotion svg.motion").dataset.gl === "1");
       const f1 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML); await page.waitForTimeout(500); const f2 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML);
       ok("3D-Animation läuft (WebGL-Leinwand oder gezeichnet)", gl || f1 !== f2, String(gl));
+      // Leinwand liegt genau über dem SVG (Lage aus den Bildschirmmaßen, SVG hat kein offsetLeft)
+      const pos = await page.evaluate(() => { const c = document.querySelector("#gMotion canvas.m3gl"); if (!c) return null; const s = document.querySelector("#gMotion svg.motion").getBoundingClientRect(), q = c.getBoundingClientRect();
+        return { d: Math.max(Math.abs(s.x - q.x), Math.abs(s.y - q.y), Math.abs(s.width - q.width)), css: c.style.left + "/" + c.style.top }; });
+      ok("WebGL-Leinwand deckt das SVG genau ab", !pos || (pos.d < 1.5 && !/undefined/.test(pos.css)), JSON.stringify(pos));
       await page.click("#gMotion [data-a=mot3d]");
       ok("Umschalten auf 2D bleibt gespeichert", !(await page.$("#gMotion svg.motion[data-v3]")) && (await page.evaluate(() => localStorage.getItem("tp-3d"))) === "0"
         && await page.evaluate(() => { const c = document.querySelector("#gMotion canvas.m3gl"); return !c || c.style.display === "none"; }));
@@ -4267,7 +4271,40 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("80. Konsole");
+    section("80. 3D-Prüfung, Kontaktstellen, Herstellerwinkel");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]), Q = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1];
+        // 3D-Regeln für alle Geräte: Hand hält etwas, kein Geräteteil im Körper, kein Teil schwebt
+        const bad = []; for (const e of T.allEx()) { const sp = T.motSpec(e.id); if (!sp) continue; const f = T.m3Check(sp, e); if (f.length) bad.push(e.id + ": " + f[0]); }
+        // Prüfung erkennt Fehler: ein Teil ohne Verbindung schwebt, eines am Boden nicht
+        const fl = T.m3Float([{ t: "ball", c: [0, 30, 0], r: 2 }, { t: "cap", A: [0, -44, 0], B: [0, 10, 0], rA: 1.6, rB: 1.6 }], -44).length;
+        // Multipresse: Stange auf einer Geraden, 7° zur Senkrechten (Hersteller)
+        const sm = T.motSpec("hs-smith"), H = Q.map(q => T.mJoints(sm, T.mPose(sm, q)).hand), sDeg = Math.atan2(Math.abs(H[10][0] - H[0][0]), Math.abs(H[10][1] - H[0][1])) * 180 / Math.PI;
+        const sDev = Math.max(...H.map(h => Math.abs((H[10][0] - H[0][0]) * (H[0][1] - h[1]) - (H[0][0] - h[0]) * (H[10][1] - H[0][1])) / d(H[0], H[10])));
+        // Hackenschmidt: Schulterpolster auf 45°, parallel zum Rücken; Beinpresse: Fußplatte auf 45°
+        const hk = T.motSpec("hs-hack"), eff = (sp, fx, q) => { const P = T.mPose(sp, q); return T.mEff(fx, T.mJoints(sp, P), P); }, h0 = eff(hk, "sho", 0), h1 = eff(hk, "sho", 1), j0 = T.mJoints(hk, T.mPose(hk, 0));
+        const hDeg = Math.atan2(Math.abs(h1[1] - h0[1]), Math.abs(h1[0] - h0[0])) * 180 / Math.PI, back = Math.atan2(j0.hip[1] - j0.sho[1], j0.hip[0] - j0.sho[0]), path = Math.atan2(h1[1] - h0[1], h1[0] - h0[0]);
+        const lp = T.motSpec("hs-legpress"), l0 = eff(lp, "foot", 0), l1 = eff(lp, "foot", 1), lDeg = Math.atan2(Math.abs(l1[1] - l0[1]), Math.abs(l1[0] - l0[0])) * 180 / Math.PI;
+        // Hüftgurt-Kniebeuge: Hebel gleich lang, Kette höchstens 15° schräg, Scheiben vorn vor den Zehen, Drehpunkt hinten
+        const bs = T.motSpec("hs-beltsquat"); T.motBox(bs); const B = Q.map(q => { const j = T.mJoints(bs, T.mPose(bs, q)); return { j, b: T.mBelt(bs, j) }; });
+        const bL = B.map(x => d(x.b.P, x.b.A)), chain = Math.max(...B.map(x => Math.abs(Math.atan2(x.b.A[0] - x.b.B[0], x.b.A[1] - x.b.B[1])) * 180 / Math.PI));
+        // Kontaktstellen auf der Körperoberfläche (Mitte des Polsters: Dicke des Körperteils + Polsterradius quer zur Gliedachse)
+        const segD = (q, a, b) => { const ab = [b[0] - a[0], b[1] - a[1]], L2 = ab[0] ** 2 + ab[1] ** 2, f = Math.max(0, Math.min(1, ((q[0] - a[0]) * ab[0] + (q[1] - a[1]) * ab[1]) / L2)); return d(q, [a[0] + ab[0] * f, a[1] + ab[1] * f]); };
+        const pad = (id, fx, seg) => { const sp = T.motSpec(id), P = T.mPose(sp, .5), j = T.mJoints(sp, P); return segD(T.mEff(fx, j, P), j[seg[0]], j[seg[1]]); };
+        return { n: T.allEx().filter(e => T.motSpec(e.id)).length, bad, fl, sDeg, sDev, hDeg, par: Math.abs(back - path) * 180 / Math.PI, lDeg, bL: Math.max(...bL) - Math.min(...bL), chain,
+          front: B.every(x => x.b.H[0] > x.j.toe[0] && x.b.P[0] < x.j.hip[0]), pads: [pad("hs-legext", "shin", ["knee", "ank"]), pad("hs-seatcurl", "heel", ["knee", "ank"]), pad("hs-seatcalf", "knee", ["hip", "knee"])] }; });
+      ok("3D-Prüfung: bei allen 60 Geräten hält die Hand etwas, kein Geräteteil steckt im Körper, kein Teil schwebt", r.n === 60 && r.bad.length === 0, r.bad.slice(0, 3).join(" | "));
+      ok("3D-Prüfung erkennt schwebende Teile (Gegenprobe)", r.fl === 1, String(r.fl));
+      ok("Multipresse: Stange läuft gerade, 7° zur Senkrechten (Herstellerangabe)", Math.abs(r.sDeg - 7) < .5 && r.sDev < .3, r.sDeg.toFixed(1) + "° / " + r.sDev.toFixed(2));
+      ok("Hackenschmidt: Schulterpolster auf 45°, parallel zum Rückenpolster (Herstellerangabe)", Math.abs(r.hDeg - 45) < 1 && r.par < 1, r.hDeg.toFixed(1) + "° / " + r.par.toFixed(1));
+      ok("Beinpresse: Fußplatte auf 45° (Herstellerangabe)", Math.abs(r.lDeg - 45) < 1, r.lDeg.toFixed(1) + "°");
+      ok("Hüftgurt-Kniebeuge: Hebel gleich lang, Kette höchstens 15° schräg, Scheiben vorn, Drehpunkt hinten", r.bL < .3 && r.chain <= 15 && r.front, r.bL.toFixed(2) + " / " + r.chain.toFixed(1) + "° / " + r.front);
+      ok("Polster liegen auf der Körperoberfläche, nicht in der Gliedachse (Abstand 7–10)", r.pads.every(x => x > 7 && x < 10), r.pads.map(x => x.toFixed(1)).join());
+      await ctx.close();
+    }
+
+    section("81. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
