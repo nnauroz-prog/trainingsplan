@@ -2422,7 +2422,8 @@ const MOTION = {
   // Ziehen
   "hs-row": mPull({ ua: 2, fa: 0 }, { ua: 165, fa: 6 }),
   "hs-lowrow": mPull({ ua: 26, fa: 22 }, { ua: 140, fa: 32 }),
-  "hs-dyrow": mPull({ ua: 16, fa: 12 }, { ua: 150, fa: 18 }),
+  // D.Y. Row: laut Hersteller Drehpunkt oben über dem Nutzer, Bogen auf das Schultergelenk ausgerichtet
+  "hs-dyrow": Object.assign(mPull({ ua: 16, fa: 12 }, { ua: 150, fa: 18 }), { pvSho: [12, -32] }),
   "hs-highrow": mPull({ ua: -48, fa: -50 }, { ua: 124, fa: -38 }, { gear: ["seat", "thighpad", "handle"] }),
   "hs-pulldown": mPull({ ua: -97, fa: -92 }, { ua: 100, fa: -78 }, { base: { t: -94 }, gear: ["seat", "thighpad", "handle"] }),
   // Arme
@@ -2669,9 +2670,9 @@ function mRig(sp) {
   if (G.includes("plat") || (G.includes("shopad") && G.includes("floorplat"))) return (sp._rig = { kind: "rail", fx, a, b, u: mUnit(a, b) });
   // Drehpunkt: Mittelpunkt der Bahn (Gelenk wie Knie oder Ellbogen); passt der nicht, gleich weit von Start und Ende, auf der vom Kopf abgewandten Seite
   const j0 = mJoints(sp, mPose(sp, 0)), j1 = mJoints(sp, mPose(sp, 1)), dist = (q, r) => Math.hypot(q[0] - r[0], q[1] - r[1]);
-  let pv = sp.pvo ? mAdd(a, sp.pvo) : mCirc(a, m, b);
+  let pv = sp.pvSho ? mAdd(mJoints(sp, mPose(sp, .5)).sho, sp.pvSho) : sp.pvo ? mAdd(a, sp.pvo) : mCirc(a, m, b);
   const bad = q => !q || !(dist(q, a) > 10 && dist(q, a) < 110) || [j0, j1].some(jj => dist(q, jj.head) < 24 || dist(q, jj.sho) < 20);
-  if (!sp.pvo && (bad(pv) || (fx === "hand" && !G.includes("armpad")))) { const mid = mLerp(a, b, .5), u = mUnit(a, b), n = [-u[1], u[0]], d = Math.max(34, Math.min(60, dist(a, b) * .9)), c1 = mSh(mid, n, d), c2 = mSh(mid, n, -d);
+  if (!sp.pvo && !sp.pvSho && (bad(pv) || (fx === "hand" && !G.includes("armpad")))) { const mid = mLerp(a, b, .5), u = mUnit(a, b), n = [-u[1], u[0]], d = Math.max(34, Math.min(60, dist(a, b) * .9)), c1 = mSh(mid, n, d), c2 = mSh(mid, n, -d);
     pv = dist(c1, j0.head) > dist(c2, j0.head) ? c1 : c2; }
   const far = [0, 1].map(q => { const P = mPose(sp, q), jj = mJoints(sp, P), ef = mEff(fx, jj, P), o = mUnit(ef, pv), pl = mSh(pv, o, Math.max(12, Math.min(18, Math.hypot(ef[0] - pv[0], ef[1] - pv[1]) * .3)));
     return Math.min(Math.hypot(pl[0] - jj.head[0], pl[1] - jj.head[1]), Math.hypot(pl[0] - jj.sho[0], pl[1] - jj.sho[1])); });
