@@ -2462,7 +2462,8 @@ const MOTION = {
   "hs-kneelcurl": { at: [74, 58], A: { t: -58, hd: 10, th: 100, sh: 122, ft: 40, th2: 95, sh2: 178, ua: 78, fa: 40 }, B: { sh: 244, ft: 165 }, hl: ["th"], gear: ["chestpad", "kneepad", "heelpad"] },
   // Liegefläche knickt an der Hüfte ab (laut Hersteller): Oberkörper fällt zum Kopf hin leicht ab
   "lf-legcurl": { at: [80, 62], A: { t: 13, hd: -18, th: 166, sh: 176, ft: 90, ua: 62, fa: 2 }, B: { sh: 264, ft: 175 }, hl: ["th"], gear: ["bench", "heelpad"] },
-  "hs-hipthrust": { anchor: "ank", at: [122, 104], A: { t: -160, hd: 0, th: -45, sh: 95, ft: 0, ua: 140, fa: 120 }, B: { t: -180, th: -5 }, hl: ["hip"], gear: ["floor", "benchpad", "hippad"] },
+  // Glute Drive: laut Hersteller rundes Rückenpolster, Gurt mit zwei Schlaufen über der Hüfte, Fußplattform 15° geneigt
+  "hs-hipthrust": { anchor: "ank", at: [122, 104], A: { t: -160, hd: 0, th: -45, sh: 95, ft: -15, ua: 140, fa: 120 }, B: { t: -180, th: -5 }, hl: ["hip"], gear: ["floor", "backroll", "hippad", "strap", "footramp"] },
   "hs-calf": { anchor: "toe", at: [96, 100], A: { t: -90, th: 90, sh: 90, ft: -12, ua: 70, fa: -112 }, B: { ft: 40 }, hl: ["sh"], gear: ["step", "shopad"] },
   "hs-seatcalf": { anchor: "toe", at: [104, 100], A: { t: -92, th: 2, sh: 90, ft: -15, ua: 60, fa: 0 }, B: { th: -10, ft: 35 }, hl: ["sh"], gear: ["step", "kneetop"] },
   // Rumpf
@@ -2827,6 +2828,9 @@ function motDraw(sp, s, e) {
   if (G.includes("bench")) { g.push(mPad(sh(j.hip, [0, 1], 9.5), sh(j.sho, [0, 1], 9.5), 7, 7), mPad(sh(j.hip, [0, 1], 9.5), sh(along(j.hip, j.knee, .7), [0, 1], 9.5), 7, 7));
     g.push(post(sh(along(j.hip, j.sho, .5), [0, 1], 12), Math.max(4, floorY - j.hip[1] - 13))); }
   if (G.includes("benchpad")) g.push(`<rect x="${mF(at[0] - 96)}" y="${mF(at[1] - 36)}" width="26" height="36" rx="4" fill="${MPD}" stroke="${MGL}" stroke-width=".6"/>`);
+  if (G.includes("backroll")) { const s0 = mJoints(sp, mPose(sp, 0)).sho, c = sh(s0, [0, 1], 8.5); g.push(post([c[0], c[1] + 6], Math.max(4, floorY - c[1] - 7)), mPlateRoll(c, 7.5)); }
+  if (G.includes("footramp")) { const a = sh(sh(j.ank, [0, 1], 4.6), [1, 0], -7), b = mAdd(a, mDir(-15, 24)); g.push(mFrame(a, b, 3.6, 3.6)); }
+  if (G.includes("strap")) gf.push(`<path d="M${mF(sh(j.hip, fwd, -6)[0])} ${mF(sh(j.hip, fwd, -6)[1] - 5)}Q${mF(sh(j.hip, [0, -1], 10)[0])} ${mF(sh(j.hip, [0, -1], 10)[1])} ${mF(sh(j.hip, fwd, 7)[0])} ${mF(sh(j.hip, fwd, 7)[1] - 5)}" fill="none" stroke="${MPD}" stroke-width="2.6" stroke-linecap="round"/>`);
   if (G.includes("hippad")) gf.push(mPad(sh(sh(j.hip, [0, -1], 7), fwd, -6), sh(sh(j.hip, [0, -1], 7), fwd, 6), 6, 6));
   if (G.includes("floorplat")) g.push(mFrame(sh(sh(j.ank, [0, 1], 4.5), [1, 0], -4), sh(sh(j.toe, [0, 1], 4.5), [1, 0], 3), 4.4, 4.4));
   if (G.includes("step")) g.push(`<rect x="${mF(at[0] - 6)}" y="${mF(at[1] + 3)}" width="22" height="9" rx="2" fill="${MFR}" stroke="${MGL}" stroke-width=".6"/>`);
@@ -3257,6 +3261,9 @@ function m3Draw(sp, s, e, yaw, pts) {
     if (G.includes("bench")) { const a = W(mSh(j.knee, [0, 1], 9.5)), b = W(mSh(j.sho, [0, 1], 9.5)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], [0, 3.5, 0], [0, 0, 12], PD); post((a[0] + b[0]) / 2, 0, (a[1] + b[1]) / 2 - 3); }
     if (G.includes("benchpad")) { const at = sp.at || [64, 84], c = W([at[0] - 83, at[1] - 18]); K.box([c[0], c[1], 0], [13, 0, 0], [0, 18, 0], [0, 0, 16], PD); }
     if (G.includes("hippad")) roll(mSh(j.hip, [0, -1], 7), 4, 16);
+    if (G.includes("backroll")) { const s0 = mJoints(sp, mPose(sp, 0)).sho, c = W(mSh(s0, [0, 1], 8.5)); K.cap([c[0], c[1], -18], [c[0], c[1], 18], 7.5, 7.5, PD, { edge: true }); post(c[0], 0, c[1] - 6); }
+    if (G.includes("footramp")) { const a = W(mSh(mSh(j.ank, [0, 1], 4.6), [1, 0], -7)), d = mDir(-15, 12), c = [a[0] + d[0], a[1] - d[1], 0]; K.box(c, [d[0], -d[1], 0], v3.mul(v3.nrm([d[1], d[0], 0]), 1.8), [0, 0, 17], FR); }
+    if (G.includes("strap")) { const h = W(j.hip); K.cap([h[0], h[1] + 6, -10], [h[0], h[1] + 6, 10], 1.6, 1.6, PD, { flat: true, dz: 8 }); }
     if (G.includes("floorplat") || G.includes("step")) { const c = W(G.includes("step") ? [J.j2.toe[0] + 2, J.j2.toe[1] + 7] : mSh(mLerp(j.ank, j.toe, .4), [0, 1], 4.5)); K.box([c[0], c[1], 0], [12, 0, 0], [0, G.includes("step") ? 4.5 : 1.6, 0], [0, 0, 16], FR); }
     if (G.includes("plat")) { const a = W(mSh(j.ank, mDir(P2.ft || 0, 1), -7)), b = W(mSh(j.toe, mDir(P2.ft || 0, 1), 7)); K.box([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0], [(b[0] - a[0]) / 2, (b[1] - a[1]) / 2, 0], v3.mul(v3.nrm([-(b[1] - a[1]), b[0] - a[0], 0]), 1.6), [0, 0, 18], FR); }
     // Hebel: Arm vom Drehpunkt zum Kontakt, auf jeder Seite; Scheiben an der Verlängerung
