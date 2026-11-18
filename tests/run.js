@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v70)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v70")));
+      ok("Service Worker aktiv (Cache trainingsplan-v71)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v71")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2314,7 +2314,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Anleitung: „Tricks für dieses Gerät“, getrennte Seiten als Eigenschaft, Details eingeklappt", await page.isVisible("text=Tricks für dieses Gerät") && await page.isVisible("#isoNote") && !(await page.$(".sheet .gdet[open]")));
       ok("„Weitere Tipps“ ohne die bei vielen Geräten gleichen Texte", !g.includes("Beide Arme bewegen sich unabhängig voneinander") && !g.includes("Einarmig trainieren: Den freien Arm"));
       await page.click(".sheet .gdet summary >> text=Häufige Fehler");
-      ok("„Häufige Fehler“ aufklappen zeigt Fehler mit Korrektur", await page.isVisible("text=Den vollen Bewegungsumfang nutzen, solange er schmerzfrei ist."));
+      ok("„Häufige Fehler“ aufklappen zeigt Fehler mit Korrektur", await page.isVisible("text=Nutz den ganzen Weg, solange er schmerzfrei ist."));
       for (const light of [false, true]) { await page.emulateMedia({ colorScheme: light ? "light" : "dark" }); ok(`360 px ${light ? "hell" : "dunkel"}: Anleitung ohne seitliches Scrollen`, await noOverflow(page)); }
       await ctx.close();
     }
