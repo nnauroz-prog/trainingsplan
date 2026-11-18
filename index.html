@@ -2462,15 +2462,23 @@ const MOTION = {
   "lf-abductor": { v: "fig", rig: "abd", A: { l: 6 }, B: { l: 38 }, hl: ["hip"] },
   "hs-adductor": { v: "fig", rig: "add", A: { l: 40 }, B: { l: 6 }, hl: ["th"] },
   // Beine
-  "hs-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  // Linear Leg Press: laut Hersteller Schlitten auf einer Schiene im 45°-Winkel nach oben
+  "hs-legpress": { at: [50, 82], A: { t: -168, th: -78, sh: -8, ft: -98, ua: 14, fa: 34 }, B: { th: -44, sh: -38, ft: -128 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  // Life Fitness Leg Press: aufrecht sitzen, Fußplatte vorn, nach vorn wegdrücken
+  "lf-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  // Iso-Lateral Leg Press: getrennte Fußplatten an Hebelarmen (Bogen statt Schiene)
+  "hs-isolegpress": { arc: true, at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  // V-Squat: laut Hersteller gebogene Bahn; Lage des Drehpunkts nicht belegt, deshalb ohne Schiene und ohne Hebel gezeichnet
   "hs-vsquat": { down: true, norail: true, anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 87, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-beltsquat": { down: true, anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -102, th: 14, sh: 112, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
   "hs-smith": { down: true, anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 137, fa: -59 }, B: { t: -71, th: 10, sh: 108, ua: 162, fa: -34 }, hl: ["th"], gear: ["smith"] },
   "hs-hack": { down: true, anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
   "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
-  "hs-kneelcurl": { at: [74, 58], A: { t: -24, hd: 14, th: 100, sh: 122, ft: 40, th2: 95, sh2: 178, ua: 100, fa: 56 }, B: { sh: 244, ft: 165 }, hl: ["th"], gear: ["chestpad2", "kneepad", "heelpad"] },
-  "lf-legcurl": { at: [80, 62], A: { t: 2, hd: -10, th: 166, sh: 176, ft: 90, ua: 62, fa: 2 }, B: { sh: 264, ft: 175 }, hl: ["th"], gear: ["bench", "heelpad"] },
+  // Iso-Lateral Kneeling Leg Curl: laut Hersteller aufrecht kniend, Hüfte und Brust an zwei Polstern, Drehpunkt auf Kniehöhe
+  "hs-kneelcurl": { at: [74, 58], A: { t: -58, hd: 10, th: 100, sh: 122, ft: 40, th2: 95, sh2: 178, ua: 78, fa: 40 }, B: { sh: 244, ft: 165 }, hl: ["th"], gear: ["chestpad", "kneepad", "heelpad"] },
+  // Liegefläche knickt an der Hüfte ab (laut Hersteller): Oberkörper fällt zum Kopf hin leicht ab
+  "lf-legcurl": { at: [80, 62], A: { t: 13, hd: -18, th: 166, sh: 176, ft: 90, ua: 62, fa: 2 }, B: { sh: 264, ft: 175 }, hl: ["th"], gear: ["bench", "heelpad"] },
   "hs-hipthrust": { anchor: "ank", at: [122, 104], A: { t: -160, hd: 0, th: -45, sh: 95, ft: 0, ua: 140, fa: 120 }, B: { t: -180, th: -5 }, hl: ["hip"], gear: ["floor", "benchpad", "hippad"] },
   "hs-calf": { anchor: "toe", at: [96, 100], A: { t: -90, th: 90, sh: 90, ft: -12, ua: 70, fa: -112 }, B: { ft: 40 }, hl: ["sh"], gear: ["step", "shopad"] },
   "hs-seatcalf": { anchor: "toe", at: [104, 100], A: { t: -92, th: 2, sh: 90, ft: -15, ua: 60, fa: 0 }, B: { th: -10, ft: 35 }, hl: ["sh"], gear: ["step", "kneetop"] },
@@ -2482,9 +2490,9 @@ Object.assign(MOTION, { "hs-lat": Object.assign({}, MOTION["hs-pulldown"], { gea
 // Latzug von hinten: der Rücken ist zu sehen, und jede Variante zeigt ihre Griffbreite
 const mLat = (g, y1) => ({ v: "fig", back: true, rig: "lat", box: "-16 -26 192 144", pull: { g, y0: 1, y1 }, A: { b: 0 }, B: { b: 1 }, hl: ["t"] });
 Object.assign(MOTION, { "hs-lat": mLat(23, 37), "hs-lat-wide": mLat(31, 36), "hs-lat-close": mLat(4.5, 40), "hs-lat-under": mLat(15, 39) });
-Object.assign(MOTION, { "hs-isolegpress": MOTION["hs-legpress"], "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
+Object.assign(MOTION, { "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["hs-shoulder"],
   "lf-pulldown": MOTION["hs-pulldown"], "lf-row": MOTION["hs-row"], "lf-fly": MOTION["hs-fly"], "lf-reardelt": MOTION["hs-reardelt"], "lf-lateral": MOTION["hs-lateral"],
-  "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legpress": MOTION["hs-legpress"], "lf-legext": MOTION["hs-legext"],
+  "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legext": MOTION["hs-legext"],
   "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
   "lf-adductor": MOTION["hs-adductor"], "lf-smith": MOTION["hs-smith"] });
 // Eigene Geräte: Bewegung über das Bewegungsmuster
@@ -2684,7 +2692,7 @@ function mRig(sp) {
     : G.includes("hippad") ? "hip" : G.includes("kneetop") ? "knee" : G.includes("handle") || G.includes("armpad") ? "hand" : null);
   if (!fx) return (sp._rig = null);
   const E = q => { const P = mPose(sp, q); return mEff(fx, mJoints(sp, P), P); }, a = E(0), m = E(.5), b = E(1);
-  if (G.includes("plat") || (G.includes("shopad") && G.includes("floorplat"))) return (sp._rig = { kind: "rail", fx, a, b, u: mUnit(a, b) });
+  if (!sp.arc && (G.includes("plat") || (G.includes("shopad") && G.includes("floorplat")))) return (sp._rig = { kind: "rail", fx, a, b, u: mUnit(a, b) });
   // Drehpunkt: Mittelpunkt der Bahn (Gelenk wie Knie oder Ellbogen); passt der nicht, gleich weit von Start und Ende, auf der vom Kopf abgewandten Seite
   const j0 = mJoints(sp, mPose(sp, 0)), j1 = mJoints(sp, mPose(sp, 1)), dist = (q, r) => Math.hypot(q[0] - r[0], q[1] - r[1]);
   let pv = sp.pvSho ? mAdd(mJoints(sp, mPose(sp, .5)).sho, sp.pvSho) : sp.pvo ? mAdd(a, sp.pvo) : mCirc(a, m, b);
