@@ -13,7 +13,7 @@
     /* Farben (dunkel = Standard): Stahl und Signalgelb */
     --bg:#121212; --raise:#1C1C1C; --raise-2:#272727; --raise-3:#343434;
     --hair:rgba(255,255,255,.12); --text:#F2F2F0; --text-2:#BDBDB8; --text-3:#9A9A95;
-    --mbody:#A8A8A3; --mbody2:#6E6E6A; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
+    --mbody:#A8A8A3; --mbody2:#6E6E6A; --hero-hi:#2E2E2B; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
     --accent:#FFD21F; --accent-press:#E9BE00; --accent-stripe:#F2C200; --accent-tint:rgba(255,210,31,.12); --on-accent:#111111; --accent-ink:#FFD21F;
     --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#FF8A3D; --warn-tint:rgba(255,138,61,.13); --bad:#FF6A61;
     --fig:#262626; --muscle:#3A3A3A; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.62);
@@ -35,7 +35,7 @@
     --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
     --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
     --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858580; --mbody2:#AEAEA9; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
+    --mbody:#858580; --mbody2:#AEAEA9; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
     :root:not([data-theme="dark"]) .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}}
   :root[data-theme="light"] .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}
   :root[data-theme="light"]{
@@ -45,7 +45,7 @@
     --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
     --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
     --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
-    --mbody:#858580; --mbody2:#AEAEA9; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
+    --mbody:#858580; --mbody2:#AEAEA9; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -285,7 +285,7 @@
   .ghead{display:grid;grid-template-columns:minmax(0,1fr) clamp(96px, 30vw, 140px);gap:var(--s4);align-items:start}
   .motion{display:block;width:100%;height:auto}
   /* Hammer Strength: Rahmen, Polster und Scheiben schwarz wie im Studio (dunkles Design: aufgehellt, damit sie sichtbar bleiben) */
-  .motion.b-hs{--mframe:#383835;--mgear-line:#96968F;--mpad:#46463F}
+  .motion.b-hs{--mframe:#4A4A46;--mgear-line:#A6A69F;--mpad:#3A3A36}
   .gmot{display:grid;gap:var(--s2);background:var(--raise);border-radius:var(--r-lg);padding:var(--s3)}
   .gmot .motion{max-width:340px;margin:0 auto}
   .mcue{display:grid;gap:8px;width:100%;max-width:340px;margin:0 auto}
@@ -445,7 +445,25 @@
   .gdet>summary::after{content:"›";color:var(--text-3);font-size:20px;transition:transform .15s}
   .gdet[open]>summary::after{transform:rotate(90deg)}
   .gdet-in{display:grid;gap:var(--s3);padding-bottom:var(--s4)}
-  .tiplist{margin:0;padding-left:20px;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
+  .tiplist{margin:0;padding:0;list-style:none;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
+  .tiplist li{display:flex;gap:var(--s3);align-items:flex-start;background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4)}
+  .tipn{flex:0 0 28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;display:grid;place-items:center;font-size:15px;line-height:1}
+  /* Geräteseite: Zeichnung groß über die ganze Breite, sanftes Licht dahinter */
+  .exv{gap:var(--s5)}
+  .exhero{margin:calc(-1 * var(--s3)) calc(-1 * var(--gutter)) 0;padding:var(--s3) var(--gutter) var(--s2);display:grid;gap:var(--s2);
+    background:radial-gradient(110% 80% at 50% 40%, var(--hero-hi) 0%, var(--bg) 72%)}
+  .exhero .exback{justify-self:start}
+  .exhero .gmot{background:none;padding:0}
+  .exhero .gmot .motion{max-width:460px}
+  .exhead .title{font-size:clamp(32px, 10vw, 44px)}
+  .exfacts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
+  .exfacts span{padding:6px 12px;border-radius:999px;background:var(--raise);font-size:14px;color:var(--text-2)}
+  .exfacts span b{color:var(--text)}
+  .exfacts .hot{color:var(--text);display:inline-flex;align-items:center;gap:6px}
+  .exfacts .hot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--mhot)}
+  .exv .gmus{gap:var(--s2)}
+  .exv .gmus>div{background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4);display:grid;gap:var(--s2);align-content:start}
+  .exv .gmus>div:first-child{box-shadow:inset 3px 0 0 var(--mhot)}
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -3151,9 +3169,9 @@ function guideHtml(id, o = {}) {
   const srcs = (g.src || []).map(k => SOURCES[k]).filter(Boolean);
   const det = (title, inner) => `<details class="gdet"><summary>${title}</summary><div class="gdet-in">${inner}</div></details>`;
   return `${head}
-    ${TIPS[id] ? sec("So geht's", `<ol class="tiplist">${TIPS[id].map(x => `<li>${esc(x)}</li>`).join("")}</ol>`) : ""}
+    ${TIPS[id] ? sec("So geht's", `<ol class="tiplist">${TIPS[id].map((x, i) => `<li><span class="tipn" aria-hidden="true">${i + 1}</span><span>${esc(x)}</span></li>`).join("")}</ol>`) : ""}
     ${e.label && /Iso-Lateral/.test(e.label) ? `<p class="small muted" style="margin:0" id="isoNote">Getrennte Seiten: beidseitig, einseitig oder abwechselnd möglich – Kraftunterschiede zwischen links und rechts werden sichtbar.</p>` : ""}
-    ${sec("Tricks für dieses Gerät", tricksHtml(e, null))}
+    ${sec("Tricks für dieses Gerät", tricksHtml(e, null))}${o.mid || ""}
     <section class="gsec" id="gMore"><h2>Mehr zur Übung</h2><div class="gdets">
     ${det("Warum diese Übung", `<p>${esc(g.why)}</p>`)}
     ${det("Einstellen", ol(g.setup))}
@@ -3187,16 +3205,16 @@ function vLib() {
 }
 function vEx() {
   const id = exDetail, e = ex(id);
-  $app.innerHTML = `<div class="page guide">
-    <div class="head"><button class="link" data-a="exBack">‹ Zurück</button>
+  $app.innerHTML = `<div class="page guide exv">
+    <div class="exhero"><button class="link exback" data-a="exBack">‹ Zurück</button>${guideMot(id)}</div>
+    <div class="head exhead">
       <div class="cap">${MUSCLES[e.muscle]}${e.pattern ? " · " + PATTERNS[e.pattern].label : ""}</div>
-      <h1 class="title" style="font-size:clamp(30px, 9vw, 40px)">${esc(e.name)}</h1>
+      <h1 class="title">${esc(e.name)}</h1>
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
-      <p class="small muted">${loadTxt(e)} · Schritt ${stepTxt(e)}${state.notes[id] ? ` · Deine Einstellung: <b style="color:var(--text)">${esc(state.notes[id])}</b>` : ""}</p></div>
-    ${guideMot(id)}${gmusHtml(id)}
+      <div class="exfacts"><span class="hot">${MUSCLES[e.muscle]}</span><span>${loadTxt(e)}</span><span>Schritt ${stepTxt(e)}</span>${state.notes[id] ? `<span>Deine Einstellung: <b>${esc(state.notes[id])}</b></span>` : ""}</div></div>
+    ${guideHtml(id, { noMot: true, noMus: true, mid: `<section class="gsec" id="exMus"><h2>Muskeln</h2>${gmusHtml(id)}</section>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
-    <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>
-    ${guideHtml(id, { noMot: true, noMus: true })}
+    <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>` })}
     <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
 }
