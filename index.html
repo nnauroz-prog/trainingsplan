@@ -2754,7 +2754,7 @@ const M_HAIR = [[6.1, 4.8], [4.7, 7.5], [.1, 9.1], [-4.9, 7.6], [-7.6, 2.6], [-7
 function motDraw(sp, s, e) {
   e = e || { type: "plate", sec: [] }; if (typeof s === "number") s = { p: s, act: s ? 1 : .35 };
   const p = s.p, act = s.act ?? 1, P = mPose(sp, p), R = mRoles(e);
-  if (sp.v === "fig") return motFig(sp, P, R, act, p, s.st);
+  if (sp.v === "fig") return motFig(sp, P, R, act, p, s.st, e);
   const j = mJoints(sp, P), at = sp.at || [64, 84];
   const td = mDir(P.t, 1), back = [td[1], -td[0]], fwd = [-td[1], td[0]];
   const along = mLerp, sh = mSh;
@@ -2939,7 +2939,9 @@ function mHeadF(cx, back) {
   return ear(-1) + ear(1) + `<path d="${mSmooth(H)}" fill="var(--mbody)" stroke="#000" stroke-opacity=".28" stroke-width=".5"/>` + `<path d="${mSmooth(hair.map(([x, y]) => [cx + x, y]))}" fill="var(--mbody2)"/>`
     + (back ? "" : `<path d="M${cx} 15.6L${cx + .9} 19.4L${cx - .4} 19.8" fill="none" stroke="#000" stroke-opacity=".22" stroke-width=".55" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="${cx - 2.2}" cy="13.4" rx="3" ry="1.6" fill="#fff" fill-opacity=".12"/>`);
 }
-function motFig(sp, P, R, act, p, st) {
+function motFig(sp, P, R, act, p, st, e) {
+  // Scheibengerät (z. B. Seitheben von Hammer Strength, laut Hersteller vier Scheibenhörner an den Hebelarmen): kein Gewichtsblock, niedriger Rahmen
+  const plateRig = !!(e && e.type === "plate");
   const cx = 80, out = [], role = k => R[k] || 0, back = !!sp.back, stand = !!sp.stand, rig = sp.rig, Lu = 21, Lf = 18;
   const ol = ` stroke="#000" stroke-opacity=".28" stroke-width=".5" stroke-linejoin="round"`;
   const shape = (d, c) => `<path d="${d}" fill="${c}"${ol}/>`;
@@ -2953,7 +2955,8 @@ function motFig(sp, P, R, act, p, st) {
   const stack = (sx, y0, n) => { const lift = p * 7, g = [`<rect x="${sx}" y="${y0 - 14}" width="20" height="${n * 5.1 + 16}" rx="2" fill="${MFR}" fill-opacity=".55"${ol}/>`, mLine([sx + 6, y0 - 12], [sx + 6, y0 + n * 5.1], .8, MGL), mLine([sx + 14, y0 - 12], [sx + 14, y0 + n * 5.1], .8, MGL)];
     for (let i = 0; i < n; i++) { const up = i < 3; g.push(`<rect x="${sx + 2.5}" y="${mF(y0 + i * 5.1 - (up ? lift : 0))}" width="15" height="4.1" rx="1" fill="${up ? MH : MPD}" fill-opacity="${up ? mF((.6 + .4 * act) * 100) / 100 : .8}"/>`); }
     return g.join(""); };
-  if (rig === "pec" || rig === "pads") {
+  if (plateRig && rig === "pads") out.push(`<rect x="${cx - 3}" y="30" width="6" height="81" rx="1.5" fill="${MFR}"${ol}/>`, `<rect x="${cx - 26}" y="109.5" width="52" height="4" rx="2" fill="${MFR}"${ol}/>`);
+  else if (rig === "pec" || rig === "pads") {
     out.push(`<rect x="${cx - 3}" y="3" width="6" height="108" rx="1.5" fill="${MFR}"${ol}/>`, `<rect x="${cx - 26}" y="109.5" width="52" height="4" rx="2" fill="${MFR}"${ol}/>`);
     if (rig === "pec") out.push(`<rect x="${cx - 40}" y="3" width="80" height="4.6" rx="2" fill="${MFR}"${ol}/>`, mLine([32, 58 - p * 7], [32, 9], .9, MGL), mLine([32, 9], [cx - 24, 6], .9, MGL));
     out.push(stack(22, 58, 10));
@@ -3026,7 +3029,8 @@ function motFig(sp, P, R, act, p, st) {
     if (rig === "pec" && work) { const pv = [cx + dx * 34, 5.4], top = [ha[0] + dx * 1.2, ha[1] - 11 * k(dH)], mid = [pv[0] + dx * (2 + 6 * Math.cos(mRad(P.h))), top[1] - 6];
       g.push(bar(pv, mid, 2.6), bar(mid, top, 2.6), mDot(pv, 2.6, MGL), mLine(top, [top[0], top[1] + 20 * k(dH)], 3 * k(dH), MPD)); }
     if (rig === "pads" && work) { const pv = [sh[0] + dx * 3, sh[1] - 1], u = mUnit(sh, el), n = [dx * Math.abs(u[1]), -Math.abs(u[0]) - .001], pad = mSh(mLerp(sh, el, .86), n, 7.2);
-      g.push(bar(pv, pad, 2.4), mDot(pv, 2.4, MGL), mLimb(mSh(pad, u, -4.5), mSh(pad, u, 4.5), 5.4, 5.4, MPD)); }
+      g.push(bar(pv, pad, 2.4), mDot(pv, 2.4, MGL), mLimb(mSh(pad, u, -4.5), mSh(pad, u, 4.5), 5.4, 5.4, MPD));
+      if (plateRig) { const hp = mSh(mSh(pad, u, 3), n, 7.5); g.push(bar(mSh(pad, n, 2.6), hp, 2), mPlate(hp, 6.5), mPlate(mSh(hp, [dx * .9, -.6], 1.2), 6.5)); } }
     if (rig === "cable2" && work) { const pul = [cx + dx * 76, sp.pulley ?? 36]; g.push(mLine(pul, ha, 1.2, MGL), mDot(pul, 3.6, MGL)); }
     if (rig === "cable1" && work) { const pul = [cx - 76, 122]; g.push(mLine(pul, ha, 1.2, MGL), mDot(pul, 3.6, MGL)); }
     const no = mOut(sh, el, dx), kA = k(dE * .7);
