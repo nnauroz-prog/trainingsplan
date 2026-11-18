@@ -55,7 +55,7 @@ let browser;
 const canon = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);
 async function open(data, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme: opts.light ? "light" : "dark",
-    serviceWorkers: opts.sw ? "allow" : "block" });
+    serviceWorkers: opts.sw ? "allow" : "block", ...(opts.reducedMotion ? { reducedMotion: opts.reducedMotion } : {}) });
   if (data !== undefined) {
     await ctx.addInitScript(([k, v, extra]) => {
       if (!sessionStorage.getItem("seeded")) {
@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v68)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v68")));
+      ok("Service Worker aktiv (Cache trainingsplan-v70)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v70")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3153,8 +3153,8 @@ async function finishAllSets(page, kg, reps) {
       // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
-        return { glow: chest.includes('stroke="var(--mhot)" stroke-width="6"'), sec: /fill="var\(--mhot\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
-          lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
+        return { glow: chest.includes('stroke="var(--mhot)" stroke-width="6"'), sec: /fill="var\(--mhot\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mpad)"'),
+          lfPlate: lf.includes('r="9" fill="var(--mpad)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
           press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
           downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
       ok("Muskeln: Hauptmuskel leuchtet, mittrainierte Muskeln blass", m.glow && m.sec);
@@ -4146,7 +4146,75 @@ async function finishAllSets(page, kg, reps) {
       }
     }
 
-    section("76. Konsole");
+    section("76. Seitenansicht im neuen Stil, Abduktoren und Adduktoren von vorn");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(x => x.id).filter(id => T.motSpec(id));
+        const side = ids.filter(id => !T.motSpec(id).v), hip = ["hs-abductor", "lf-abductor", "hs-adductor", "lf-adductor"];
+        const S = id => T.motionSvg(id, { p: 1 });
+        return { n: ids.length, nSide: side.length, views: [...new Set(ids.map(id => T.motSpec(id).v || "side"))].sort().join(),
+          style: side.filter(id => { const s = S(id); return !s.includes("var(--mframe)") || !s.includes("var(--mpad)") || /fill="var\(--mgear\)"/.test(s); }),
+          edges: (S("hs-chest").match(/stroke-opacity="\.24" stroke-width="\.55"/g) || []).length,
+          stack: S("lf-chest").includes('fill="var(--mframe)" fill-opacity=".55"'),
+          towers: ["lf-pushdown", "lf-ohtri", "lf-cablecurl", "lf-facepull"].filter(id => !/r="3\.6" fill="var\(--mframe\)"/.test(S(id))),
+          hip: hip.map(id => { const sp = T.motSpec(id), a = T.motionSvg(id, { p: 0 }), b = S(id);
+            return { id, fig: sp.v === "fig", rig: sp.rig, A: sp.A.l, B: sp.B.l, box: /viewBox="0 0 160 120"/.test(b), diff: a !== b, hot: (b.match(/fill="var\(--mhot\)"/g) || []).length }; }) }; });
+      ok("Alle 60 Geräte gezeichnet: Seitenansicht oder Figur, keine Draufsicht mehr", r.n === 60 && r.views === "fig,side" && r.nSide === 44, `${r.n} ${r.views} ${r.nSide}`);
+      ok("Seitenansicht: heller Rahmen, dunkle Polster und Scheiben bei allen 44 Geräten", r.style.length === 0, r.style.join());
+      ok("Ruhende Muskeln mit feiner Kontur, damit man sie erkennt", r.edges >= 6, String(r.edges));
+      ok("Steckgewicht mit hellem Gehäuse wie in den Bildern von vorn", r.stack);
+      ok("Kabelzug im Stehen: Turm mit Rolle statt frei schwebender Rolle", r.towers.length === 0, r.towers.join());
+      const H = Object.fromEntries(r.hip.map(x => [x.id, x]));
+      ok("Abduktoren und Adduktoren: Figur von vorn, Start und Ende verschieden", r.hip.every(x => x.fig && x.box && x.diff), JSON.stringify(r.hip));
+      ok("Abduktoren öffnen die Knie (Polster außen), Adduktoren schließen sie (Polster innen)",
+        ["hs-abductor", "lf-abductor"].every(id => H[id].rig === "abd" && H[id].B > H[id].A) && ["hs-adductor", "lf-adductor"].every(id => H[id].rig === "add" && H[id].B < H[id].A));
+      ok("Arbeitender Muskel rot: seitliches Gesäß bzw. Innenseite der Oberschenkel, je Bein", r.hip.every(x => x.hot >= 2), r.hip.map(x => x.hot).join());
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-abductor]");
+      ok("Seite der Abduktoren: Zeichnung von vorn, bei 360 px ohne seitliches Scrollen", !!(await page.$("#gMotion svg.motion[viewBox='0 0 160 120']")) && await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("77. Realistische Figur und Ausführung: Muskel wird kürzer und länger, Richtung");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(x => x.id).filter(id => T.motSpec(id));
+        const S = (id, p) => T.motionSvg(id, { p });
+        // Breite des roten Muskelbauchs: größte Ausdehnung der Pfade mit voller Muskelfarbe
+        const hotW = s => { const d = document.createElementNS("http://www.w3.org/2000/svg", "svg"); d.style.cssText = "position:absolute;left:-9999px;width:400px;height:300px"; d.innerHTML = s.replace(/^<svg[^>]*>|<\/svg>$/g, ""); document.body.appendChild(d);
+          let a = 0; d.querySelectorAll('path[fill="var(--mhot)"]').forEach(x => { if (+x.getAttribute("fill-opacity") > .55) { const L = x.getTotalLength(), q = [];
+            for (let i = 0; i < 80; i++) { const pt = x.getPointAtLength(L * i / 80); q.push([pt.x, pt.y]); }
+            let s = 0; q.forEach((u, i) => { const v = q[(i + 1) % q.length]; s += u[0] * v[1] - v[0] * u[1]; }); a += Math.abs(s) / 2; } }); d.remove(); return a; };
+        const wrong = []; for (const id of ids) { const sp = T.motSpec(id); if (sp.v) continue; for (const k in sp.B) if (sp.A[k] != null && Math.abs(sp.B[k] - sp.A[k]) > 180 && k !== "ua") wrong.push(id + ":" + k); }
+        const st = { p: 1 }, side = ids.filter(id => !T.motSpec(id).v);
+        return { curves: side.every(id => (S(id, 1).match(/C[\d.-]/g) || []).length > 60), head: side.every(id => /fill="var\(--mbody2\)"/.test(S(id, 1))),
+          bic0: hotW(S("hs-curl", 0)), bic1: hotW(S("hs-curl", 1)), quad0: hotW(S("hs-legext", 0)), quad1: hotW(S("hs-legext", 1)),
+          arrows: ids.filter(id => !/class="marrow"/.test(S(id, 1))), wrong: [...new Set(wrong)],
+          cue: ["start", "con", "turn", "ecc"].map(s => T.musCue(T.motSpec("hs-chest"), T.ex("hs-chest"), s)),
+          cueDown: ["start", "ecc", "turn", "con"].map(s => T.musCue(T.motSpec("hs-vsquat"), T.ex("hs-vsquat"), s)) }; });
+      ok("Seitenansicht: Körper aus weichen Umrissen (Muskelwölbungen, Kopf im Profil mit Haaren) bei allen 44 Geräten", r.curves && r.head);
+      ok("Muskel wird beim Verkürzen dicker: Bizeps beim Armbeugen, vorderer Oberschenkel beim Beinstrecken", r.bic1 > r.bic0 * 1.05 && r.quad1 > r.quad0 * 1.05, [r.bic0, r.bic1, r.quad0, r.quad1].map(Math.round).join());
+      ok("Pfeil zeigt die Bewegungsrichtung bei allen 60 Geräten", r.arrows.length === 0, r.arrows.join());
+      ok("Kein Gelenk dreht falsch herum (Beinbeuger, Hüftheben, Trizeps über Kopf korrigiert)", r.wrong.length === 0, r.wrong.join());
+      ok("Muskel je Phase: gedehnt, wird kürzer, fest angespannt, wird langsam länger",
+        r.cue.join("|") === "Brustmuskel gedehnt|Brustmuskel wird kürzer und spannt an|Brustmuskel kurz und fest angespannt|Brustmuskel bleibt gespannt und wird langsam länger", r.cue.join("|"));
+      ok("Kniebeuge: oben kurz, runter länger, unten gedehnt, hoch kürzer",
+        r.cueDown.join("|") === "Oberschenkel vorn kurz|Oberschenkel vorn bleibt gespannt und wird langsam länger|Oberschenkel vorn gedehnt|Oberschenkel vorn wird kürzer und spannt an", r.cueDown.join("|"));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      const lines = new Set(), hs = new Set();
+      for (const v of [50, 250, 450, 750]) { await page.$eval("#gMotion .mscrub", (x, v) => { x.value = String(v); x.dispatchEvent(new Event("input", { bubbles: true })); }, v); await page.waitForTimeout(120);
+        lines.add(await page.textContent("#gMotion .mcue-m")); hs.add(Math.round((await page.$eval("#gMotion .mcue", e => e.getBoundingClientRect().height)))); }
+      ok("Geräteseite: Zeile zum Muskel wechselt mit der Phase, ohne dass die Seite springt", lines.size === 4 && hs.size === 1, [...lines].join(" | ") + " " + [...hs].join());
+      ok("Geräteseite mit Muskelzeile bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+      // Bewegung reduzieren: Start und Ende still, darunter der Ablauf in einem Satz
+      const o = await open({ plan: PLAN_SMALL }, { reducedMotion: "reduce" });
+      await o.page.click("[data-a=tab][data-v=lib]"); await o.page.click("[data-a=openEx][data-id=hs-curl]");
+      const still = await o.page.$eval("#gMotion", e => ({ anim: !!e.querySelector("svg[data-anim]"), line: (e.querySelector(".mcue-m.still") || {}).textContent || "" }));
+      ok("„Bewegung reduzieren“: Ablauf des Muskels als Satz unter dem Bild", !still.anim && still.line === "Bizeps: hin kürzer, zurück langsam länger", JSON.stringify(still));
+      await o.ctx.close();
+    }
+
+    section("78. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
