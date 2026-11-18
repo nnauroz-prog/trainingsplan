@@ -287,7 +287,8 @@
   .motion[data-v3]{touch-action:pan-y;cursor:grab}
   /* Hammer Strength: Rahmen, Polster und Scheiben schwarz wie im Studio (dunkles Design: aufgehellt, damit sie sichtbar bleiben) */
   .motion.b-hs{--mframe:#4A4A46;--mgear-line:#A6A69F;--mpad:#3A3A36}
-  .gmot{display:grid;gap:var(--s2);background:var(--raise);border-radius:var(--r-lg);padding:var(--s3)}
+  .gmot{display:grid;gap:var(--s2);background:var(--raise);border-radius:var(--r-lg);padding:var(--s3);position:relative}
+  .m3gl{pointer-events:auto;cursor:grab}
   .gmot .motion{max-width:340px;margin:0 auto}
   .mcue{display:grid;gap:8px;width:100%;max-width:340px;margin:0 auto}
   .mcue-t{font-size:15px;line-height:1.3;text-align:center;color:var(--text-2);min-height:1.3em}
@@ -3226,17 +3227,18 @@ function m3Kit(C, pts) {
 }
 // Muskelfarbe: arbeitet = kräftig rot, hilft = blassrot, sonst Hautton mit feiner Kontur
 const m3Mus = (role, act) => role === 2 ? [MHOT, mF((.65 + .35 * act) * 100) / 100] : role === 1 ? [MHOT, mF((.3 + .15 * act) * 100) / 100] : null;
-function m3Draw(sp, s, e, yaw, pts) {
+function m3Draw(sp, s, e, yaw, pts, mk) {
   e = e || { type: "plate", sec: [] }; if (typeof s === "number") s = { p: s, act: 1 };
   if (!sp.v && sp._tip == null) motDraw(sp, { p: 0, act: 1 }, e);
-  const p = s.p, act = s.act ?? 1, J = m3Pose(sp, p), R = mRoles(e), role = k => R[k] || 0, C = m3Cam(yaw), K = m3Kit(C, pts), G = sp.gear || [];
+  const p = s.p, act = s.act ?? 1, J = m3Pose(sp, p), R = mRoles(e), role = k => R[k] || 0, C = m3Cam(yaw), K = mk ? mk(C) : m3Kit(C, pts), G = sp.gear || [];
   const up = v3.nrm(J.up), fw = v3.nrm(J.fwd), lat = [0, 0, 1];
   // Kontaktpunkte des Geräts aus der 2D-Zeichnung übernehmen (Seitenansicht)
   let floorY = -44;
   if (J.side) { motBox(sp); floorY = -(sp._floor - J.o[1]); } else if (sp.stand) floorY = -82.5;
   const W = q => [q[0] - J.o[0], -(q[1] - J.o[1])];
   // Boden mit weichem Schatten
-  { const q = []; for (let i = 0; i < 24; i++) { const t = i / 24 * Math.PI * 2; q.push(K.pr([Math.cos(t) * 46 + (J.side ? 10 : 6), floorY, Math.sin(t) * 30])); }
+  if (K.floor) K.floor(floorY);
+  else { const q = []; for (let i = 0; i < 24; i++) { const t = i / 24 * Math.PI * 2; q.push(K.pr([Math.cos(t) * 46 + (J.side ? 10 : 6), floorY, Math.sin(t) * 30])); }
     K.out.push({ z: -999, d: `<path d="${mSmooth(q.map(r => [r[0], r[1]]))}" fill="#000" fill-opacity=".14"/>` }); }
   // ---------- Gerät ----------
   const FR = MFR, PD = MPD, post = (x, z, y1) => K.cap([x, floorY, z], [x, y1, z], 1.6, 1.6, FR, { flat: true, edge: true });
@@ -3319,6 +3321,25 @@ function m3Draw(sp, s, e, yaw, pts) {
     else K.cap(v3.add(a, v3.mul(off, .55)), v3.add(b, v3.mul(off, .55)), rr * .66, rr * .5, SK, { dz: .8 + (o.dz || 0) });
   };
   const perpTo = (u, ref) => { const q = v3.sub(ref, v3.mul(u, v3.dot(ref, u))); return v3.len(q) < 1e-6 ? [0, 1, 0] : v3.nrm(q); };
+  if (K.limb) {
+    // WebGL: durchgehende Körperteile mit Muskelwölbungen, arbeitende Muskeln weich rot
+    for (const k of ["R", "L"]) { const s2 = k === "R" ? 1 : -1, H = J["hp" + k], Kn = J["kn" + k], A = J["an" + k], T2 = J["to" + k], thU = v3.nrm(v3.sub(Kn, H)), shU = v3.nrm(v3.sub(A, Kn));
+      const qN = J.side ? (() => { const d = mRot(mUnit(J.j2.hip, k === "L" && J.j2.knee2 ? J.j2.knee2 : J.j2.knee), -1); return [d[0], -d[1], 0]; })() : perpTo(thU, sp.stand ? [1, 0, 0] : [0, 1, 0]);
+      const shF = J.side ? (() => { const d = mRot(mUnit(k === "L" && J.j2.knee2 ? J.j2.knee2 : J.j2.knee, k === "L" && J.j2.ank2 ? J.j2.ank2 : J.j2.ank), -1); return [d[0], -d[1], 0]; })() : perpTo(shU, [1, 0, 0]);
+      K.limb("thigh", H, Kn, qN, s2, { quad: role("quad"), ham: role("ham"), add: role("add") });
+      K.limb("sleeve", v3.lerp(H, Kn, -.06), v3.lerp(H, Kn, .4), qN, s2, {});
+      K.limb("shin", Kn, A, shF, s2, { calf: role("calf") });
+      K.cap(v3.add(A, v3.mul(v3.nrm(v3.sub(T2, A)), -2.6)), T2, 2.9, 2.2, SK2);
+      K.ball(v3.add(Kn, v3.mul(qN, 3.4)), 2.3, SK); }
+    for (const k of ["R", "L"]) { const s2 = k === "R" ? 1 : -1, S = J["sh" + k], E = J["el" + k], H = J["ha" + k], uu = v3.nrm(v3.sub(E, S));
+      const bN = J.side ? (() => { const d = mRot(mUnit(J.j2.sho, J.j2.elb), -1); return [d[0], -d[1], 0]; })() : perpTo(uu, v3.nrm(v3.sub(H, E)));
+      K.limb("ua", S, E, bN, s2, { bic: role("bic"), tri: role("tri") });
+      K.limb("fa", E, H, perpTo(v3.nrm(v3.sub(H, E)), bN), s2, {});
+      K.ball(v3.add(H, v3.mul(v3.nrm(v3.sub(H, E)), 1)), 3.1, SK);
+      const dm = m3Mus(role("delt"), act); K.ball(v3.add(S, v3.mul(uu, 2.2)), 5.4, dm ? dm[0] : SK, { op: dm ? Math.max(.75, dm[1]) : 1 }); }
+    const Hm2 = [(J.hpR[0] + J.hpL[0]) / 2, (J.hpR[1] + J.hpL[1]) / 2, 0];
+    K.torsoG(Hm2, J.sho, fw, { chest: role("chest"), abs: role("abs"), lats: role("lats"), trap: role("trap"), glute: role("glute") }, sp.rig === "abd");
+  } else {
   for (const k of ["R", "L"]) { const s2 = k === "R" ? 1 : -1, H = J["hp" + k], Kn = J["kn" + k], A = J["an" + k], T = J["to" + k];
     // Bein: Oberschenkel, Unterschenkel, Fuß; Muskeln vorn (Beinstrecker), hinten (Beinbeuger), Wade
     const thU = v3.nrm(v3.sub(Kn, H)), front = J.side ? perpTo(thU, v3.add(fw, [0, .0, 0])) : perpTo(thU, sp.stand ? [1, 0, 0] : [0, 1, 0]);
@@ -3340,10 +3361,10 @@ function m3Draw(sp, s, e, yaw, pts) {
   const Hm = [(J.hpR[0] + J.hpL[0]) / 2, (J.hpR[1] + J.hpL[1]) / 2, 0], Sm = J.sho, RING = [[-.12, 13.4, 7, 8.8], [.22, 11.4, 6.8, 6.2], [.45, 11.8, 7.2, 6.6], [.66, 14.6, 8.8, 7.8], [.84, 16.6, 9.6, 8.6], [.98, 17.2, 6.8, 7.4], [1.08, 6, 4, 4]], tp = [];
   for (const [s3, w, f, b] of RING) { const c = v3.lerp(Hm, Sm, s3); for (let i = 0; i < 16; i++) { const t = i / 16 * Math.PI * 2, cz = Math.cos(t), sz = Math.sin(t); tp.push(v3.add(v3.add(c, v3.mul(lat, cz * w)), v3.mul(fw, sz > 0 ? sz * f : sz * b))); } }
   const tz = C.P(v3.lerp(Hm, Sm, .5))[2] - 3;
-  K.hull(tp, SK, { z: tz });
+  if (K.torso) K.torso(Hm, Sm, fw, lat, RING, SK); else K.hull(tp, SK, { z: tz });
   // Shorts am Becken
   { const sp2 = []; for (const [s3, w, f, b] of [[-.14, 13.6, 7.6, 9], [.12, 12.8, 7.4, 7.6]]) { const c = v3.lerp(Hm, Sm, s3); for (let i = 0; i < 16; i++) { const t = i / 16 * Math.PI * 2, sz = Math.sin(t); sp2.push(v3.add(v3.add(c, v3.mul(lat, Math.cos(t) * w)), v3.mul(fw, sz > 0 ? sz * f : sz * b))); } }
-    K.hull(sp2, MSH, { z: tz + .05 }); }
+    if (K.torso) K.torso(Hm, Sm, fw, lat, [[-.14, 13.9, 7.9, 9.3], [.12, 13.1, 7.7, 7.9]], MSH); else K.hull(sp2, MSH, { z: tz + .05 }); }
   // Muskeln am Rumpf: Brust und Bauch vorn, breiter Rücken und Trapez hinten, Gesäß
   const onT = (s3, side, zoff, out) => v3.add(v3.add(v3.lerp(Hm, Sm, s3), v3.mul(lat, zoff)), v3.mul(fw, side * out));
   const tm = (key, c, n, a, ra, rb, extra = {}) => { const m = m3Mus(role(key), act); K.patch(c, n, a, ra, rb, m ? m[0] : SK, m ? m[1] : 1, { z: tz + .1 + (extra.dz || 0), edge: !m, min: extra.min }); };
@@ -3354,9 +3375,10 @@ function m3Draw(sp, s, e, yaw, pts) {
   tm("abs", onT(.38, 1, 0, 7.1), fw, up, 9, 5.5);
   if (v3.dot(fw, C.cam) > .1) for (const s3 of [.3, .4, .5]) K.line(onT(s3, 1, -4.6, 7.2), onT(s3, 1, 4.6, 7.2), .6, "rgba(0,0,0,.25)", { dz: .4 + tz - C.P(onT(s3, 1, 0, 7.2))[2] });
   tm("trap", onT(1.02, -1, 0, 5.5), v3.nrm(v3.add(v3.mul(fw, -1), v3.mul(up, .6))), lat, 12, 5);
+  }
   // Hals und Kopf: Haare hinten oben, Gesicht vorn, Nase, Ohren
   const hu = v3.nrm(J.hdUp), hf = v3.nrm(v3.cross(hu, lat)), Hd = J.head;
-  K.cap(v3.lerp(Sm, Hd, .1), v3.lerp(Sm, Hd, .62), 3.6, 3.2, SK, { edge: true, dz: -1 });
+  K.cap(v3.lerp(J.sho, Hd, .1), v3.lerp(J.sho, Hd, .62), 3.6, 3.2, SK, { edge: true, dz: -1 });
   K.ball(v3.add(v3.add(Hd, v3.mul(hf, -1.2)), v3.mul(hu, 1)), 7.3, MHR, { dz: -.5 });
   K.ball(v3.add(v3.add(Hd, v3.mul(hf, .9)), v3.mul(hu, -.4)), 7, SK);
   K.ball(v3.add(v3.add(Hd, v3.mul(hf, 7.4)), v3.mul(hu, -1)), 1.3, SK, { dz: .5 });
@@ -3364,10 +3386,169 @@ function m3Draw(sp, s, e, yaw, pts) {
   // Richtung: Pfeil an der arbeitenden Stelle (Hand, Fuß, Stange, Knie)
   { const dr = mDirOf(sp, s.st), w = s.st ? .05 : .4, q = dr.inc ? Math.min(1, p + w) : Math.max(0, p - w), J2 = m3Pose(sp, q === p ? (dr.inc ? Math.max(0, p - w) : Math.min(1, p + w)) : q), flip = q === p ? -1 : 1;
     const key = J.side ? ({ hand: "haR", ank: "anR", hip: "hpR", toe: "toR" })[sp._tip || "hand"] || "haR" : (sp.rig === "abd" || sp.rig === "add") ? "knR" : "haR";
-    const a = C.P(J[key]), b = C.P(J2[key]); let u = [b[0] - a[0], b[1] - a[1]]; const L = Math.hypot(u[0], u[1]);
+    if (K.arrow) K.arrow(J[key], J2[key], flip, dr.op);
+    const a = C.P(J[key]), b = C.P(J2[key]); let u = [b[0] - a[0], b[1] - a[1]]; const L = K.arrow ? 0 : Math.hypot(u[0], u[1]);
     if (L > .05) { u = [u[0] / L * flip, u[1] / L * flip]; K.out.push({ z: 999, d: mLine(mSh([a[0], a[1]], u, 6), mSh([a[0], a[1]], u, 10), 1.8, MH) + mArrow(mSh([a[0], a[1]], u, 15), u, 6, dr.op) }); } }
+  if (K.done) return K.done();
   K.out.sort((x, y) => x.z - y.z);
   return K.out.map(o => o.d).join("");
+}
+// ---------- Körperformen für WebGL: durchgehende Flächen mit Muskelwölbungen, arbeitende Muskeln weich rot eingefärbt ----------
+// Querschnitt: x = vorn (Muskelseite „front“), z = zur Seite; θ = 0 vorn, π/2 außen (z+), π hinten, −π/2 innen.
+const m3Win = (x, a, b, soft = .08) => { const s = v => Math.max(0, Math.min(1, v)); return s((x - a) / soft + .5) * s((b - x) / soft + .5); };
+const m3Bump = (t, c, w) => Math.exp(-((t - c) * (t - c)) / (2 * w * w));
+// Gliedformen: Grundradius über die Länge und Wölbungen je Richtung; Muskeln: Bereich (Länge, Richtung) und welche Rolle sie färbt
+const M3_LIMB = {
+  thigh: { r: [[0, 6.7], [.2, 7], [.5, 6.3], [.85, 4.8], [1, 4.3]], bumps: [[0, .45, .2, 1.4], [Math.PI, .5, .2, 1.1], [-Math.PI / 2, .8, .1, .9], [Math.PI / 2, .35, .2, .6]],
+    mus: [["quad", .08, .9, 0, 1.1], ["ham", .12, .88, Math.PI, 1.1], ["add", .05, .7, -Math.PI / 2, .9]] },
+  shin: { r: [[0, 4.3], [.15, 4.6], [.35, 4.5], [.7, 3], [1, 2.6]], bumps: [[Math.PI, .3, .12, 1.7], [Math.PI * .8, .26, .1, .6], [.25, .35, .2, .4]],
+    mus: [["calf", .03, .62, Math.PI, 1.2]] },
+  ua: { r: [[0, 4.7], [.3, 4.3], [.6, 4.2], [.9, 3.3], [1, 3.1]], bumps: [[0, .58, .16, 1.3], [Math.PI, .4, .2, 1.2], [Math.PI / 2, .12, .1, .9]],
+    mus: [["bic", .25, .92, 0, 1], ["tri", .1, .9, Math.PI, 1.1]] },
+  fa: { r: [[0, 3.4], [.2, 3.8], [.5, 3.1], [.9, 2.2], [1, 2.2]], bumps: [[Math.PI / 2, .22, .12, .8], [0, .25, .15, .4]], mus: [] },
+  sleeve: { r: [[0, 7.6], [.5, 7.7], [1, 7.4]], bumps: [], mus: [], open: true }
+};
+function m3LimbGeo(T, kind, L, roles, skin, hot, side) {
+  const D = M3_LIMB[kind], NA = 26, cap = D.open ? 0 : 3.2 / L, ts = [];
+  for (let i = 0; i <= 26; i++) ts.push(-cap + (1 + 2 * cap) * i / 26);
+  const base = t => { const r = D.r; if (t <= r[0][0]) return r[0][1]; for (let i = 1; i < r.length; i++) if (t <= r[i][0]) { const [a, ra] = r[i - 1], [b, rb] = r[i]; return ra + (rb - ra) * (t - a) / (b - a); } return r[r.length - 1][1]; };
+  const ang = (a, b) => { let d = Math.abs(a - b) % (Math.PI * 2); return d > Math.PI ? Math.PI * 2 - d : d; };
+  const pos = [], col = [], idx = [];
+  for (let i = 0; i < ts.length; i++) { const t = ts[i], tc = Math.max(0, Math.min(1, t)), endF = t < 0 ? Math.sqrt(Math.max(0, 1 - (t / cap) ** 2)) : t > 1 ? Math.sqrt(Math.max(0, 1 - ((t - 1) / cap) ** 2)) : 1;
+    for (let j = 0; j < NA; j++) { const th0 = j / NA * Math.PI * 2 - Math.PI, th = side < 0 ? -th0 : th0; let r = base(tc);
+      for (const [a, c, w, amp] of D.bumps) r += amp * m3Bump(tc, c, w) * Math.max(0, Math.cos(ang(th0, a))) ** 2;
+      r *= endF; pos.push(r * Math.cos(th0), t * L, r * Math.sin(th0) * (side < 0 ? -1 : 1));
+      let a2 = 0; for (const [k, t0, t1, a, w] of D.mus) { const rl = roles[k] || 0; if (!rl) continue; const m = m3Win(tc, t0, t1, .1) * Math.max(0, 1 - ang(th0, a) / w) ** .7; a2 = Math.max(a2, m * (rl === 2 ? 1 : .5)); }
+      col.push(skin.r + (hot.r - skin.r) * a2, skin.g + (hot.g - skin.g) * a2, skin.b + (hot.b - skin.b) * a2); } }
+  for (let i = 0; i < ts.length - 1; i++) for (let j = 0; j < NA; j++) { const a = i * NA + j, b = i * NA + (j + 1) % NA, c = (i + 1) * NA + j, d = (i + 1) * NA + (j + 1) % NA; idx.push(a, c, b, b, c, d); }
+  const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new T.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+// Rumpf mit Brustmuskeln, Bauchmuskeln, Schulterblättern und breitem Rücken; Becken als Shorts (Gesäß färbbar)
+function m3TorsoGeo(T, L, roles, skin, hot, shortsC, abd) {
+  const R = [[-.18, 12.8, 7, 8.6], [-.05, 13.4, 7.2, 9], [.1, 12.2, 6.9, 7.4], [.25, 11.4, 6.8, 6.3], [.45, 11.8, 7.1, 6.6], [.66, 14.6, 8.6, 7.8], [.84, 16.6, 9.2, 8.6], [.97, 17, 6.8, 7.6], [1.04, 9, 5, 5.2], [1.1, 5.6, 4, 4], [1.16, 3, 2.4, 2.4]];
+  const NA = 40, NS = 46, pos = [], col = [], idx = [];
+  const prof = s => { if (s <= R[0][0]) return R[0].slice(1); for (let i = 1; i < R.length; i++) if (s <= R[i][0]) { const a = R[i - 1], b = R[i], f = (s - a[0]) / (b[0] - a[0]); return [1, 2, 3].map(k => a[k] + (b[k] - a[k]) * f); } return R[R.length - 1].slice(1); };
+  for (let i = 0; i <= NS; i++) { const s = R[0][0] + (R[R.length - 1][0] - R[0][0]) * i / NS, [w, f, b] = prof(s);
+    for (let j = 0; j < NA; j++) { const th = j / NA * Math.PI * 2, cz = Math.cos(th), sz = Math.sin(th), az = Math.abs(cz * w);
+      let x = sz > 0 ? sz * f : sz * b, z = cz * w;
+      // Brust: zwei Platten vorn, Rinne in der Mitte
+      if (sz > 0) { x += 1.7 * m3Win(s, .64, .93, .06) * m3Win(az, 1.2, 14, 2) * sz - .5 * m3Win(s, .62, .95, .05) * Math.exp(-az * az / 2);
+        // Bauch: sechs Felder mit Rinnen
+        const ab = m3Win(s, .16, .6, .04) * Math.exp(-az * az / 30); x += ab * (.55 + .35 * Math.abs(Math.sin((s - .16) / .44 * Math.PI * 3)) - .45 * Math.exp(-az * az / .6)); }
+      // Schulterblätter und breiter Rücken
+      if (sz < 0) { x -= .8 * m3Win(s, .72, .96, .06) * m3Win(az, 3.5, 11, 2) * -sz; z *= 1 + .07 * m3Win(s, .4, .82, .1) * Math.abs(cz); }
+      pos.push(x, s * L, z);
+      const back = sz < 0, inPel = s < .12;
+      let a2 = 0, rl;
+      if ((rl = roles.chest)) a2 = Math.max(a2, (rl === 2 ? 1 : .5) * (sz > .15 ? m3Win(s, .64, .94, .05) * m3Win(az, .8, 15.5, 2) : 0));
+      if ((rl = roles.abs)) a2 = Math.max(a2, (rl === 2 ? 1 : .5) * (sz > .3 ? m3Win(s, .15, .6, .05) * m3Win(az, -1, 6, 1.5) : 0));
+      if ((rl = roles.lats)) a2 = Math.max(a2, (rl === 2 ? 1 : .5) * (back || Math.abs(cz) > .7 ? m3Win(s, .22, .82, .08) * m3Win(Math.abs(cz), .35, 1.1, .2) * (sz < .3 ? 1 : 0) : 0));
+      if ((rl = roles.trap)) a2 = Math.max(a2, (rl === 2 ? 1 : .5) * (back ? m3Win(s, .8, 1.12, .06) * m3Win(az, -1, 11, 2) : 0));
+      if ((rl = roles.glute) && inPel) a2 = Math.max(a2, (rl === 2 ? 1 : .5) * (abd ? m3Win(Math.abs(cz), .75, 1.1, .15) : back ? m3Win(az, 1, 13, 2) : 0) * m3Win(s, -.2, .08, .05));
+      const base = inPel ? shortsC : skin; col.push(base.r + (hot.r - base.r) * a2, base.g + (hot.g - base.g) * a2, base.b + (hot.b - base.b) * a2); } }
+  for (let i = 0; i < NS; i++) for (let j = 0; j < NA; j++) { const a = i * NA + j, b = i * NA + (j + 1) % NA, c = (i + 1) * NA + j, d = (i + 1) * NA + (j + 1) % NA; idx.push(a, b, c, b, d, c); }
+  const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("color", new T.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+// ---------- 3D mit WebGL (three.js): echtes Licht, weiche Schatten ----------
+// three.min.js wird erst geladen, wenn eine 3D-Ansicht offen ist. Klappt das nicht (offline, kein WebGL), bleibt die gezeichnete 3D-Ansicht.
+let m3T = null, m3TLoad = null;
+function m3LoadThree() {
+  if (m3T || m3TLoad) return m3TLoad;
+  m3TLoad = new Promise(res => { try { const c = document.createElement("canvas"); if (!(c.getContext("webgl2") || c.getContext("webgl"))) return res(null); } catch (e) { return res(null); }
+    const s = document.createElement("script"); s.src = "three.min.js"; s.async = true; s.onload = () => { m3T = window.THREE || null; res(m3T); }; s.onerror = () => res(null); document.head.appendChild(s); });
+  return m3TLoad;
+}
+// Baukasten für WebGL: dieselben Aufrufe wie beim Zeichnen (cap, ball, box, disc, line, patch, torso, floor, arrow), Meshes werden je Bild wiederverwendet
+function m3GLKit(st, C) {
+  const T = m3T, pool = st.pool, use = {}, V = a => new T.Vector3(a[0], a[1], a[2]), Y = new T.Vector3(0, 1, 0);
+  const col = fill => { const k = String(fill); if (st.colors[k]) return st.colors[k]; let v = k;
+    const m = /var\((--[\w-]+)\)/.exec(k); if (m) v = getComputedStyle(st.svg).getPropertyValue(m[1]).trim() || "#888";
+    const c = new T.Color(); let op = 1; const r = /rgba?\(([^)]+)\)/.exec(v); if (r) { const q = r[1].split(",").map(Number); c.setRGB(q[0] / 255, q[1] / 255, q[2] / 255); op = q[3] ?? 1; } else c.set(v);
+    return (st.colors[k] = { c, op }); };
+  const mat = (fill, op, kind) => { const cc = col(fill), o = Math.min(1, (op ?? 1) * cc.op), key = fill + "|" + o + "|" + kind; if (st.mats[key]) return st.mats[key];
+    const hotM = /mhot/.test(fill), metal = kind === "frame" ? .35 : 0, rough = kind === "frame" ? .45 : /mshorts/.test(fill) ? .9 : hotM ? .5 : .6;
+    return (st.mats[key] = new T.MeshStandardMaterial({ color: cc.c, roughness: rough, metalness: metal, transparent: o < 1, opacity: o, emissive: hotM ? new T.Color(0x3a0000) : new T.Color(0) })); };
+  const get = (type, geo) => { const i = use[type] = (use[type] || 0), list = pool[type] = pool[type] || []; use[type]++;
+    let m = list[i]; if (!m) { m = new T.Mesh(geo(), st.base); m.castShadow = true; m.receiveShadow = true; st.scene.add(m); list[i] = m; }
+    m.visible = true; return m; };
+  const geoCyl = st.geo.cyl || (st.geo.cyl = new T.CylinderGeometry(1, 1, 1, 22, 1, true)), geoSph = st.geo.sph || (st.geo.sph = new T.SphereGeometry(1, 26, 18)),
+    geoBox = st.geo.box || (st.geo.box = new T.BoxGeometry(2, 2, 2)), geoDisc = st.geo.disc || (st.geo.disc = new T.CylinderGeometry(1, 1, 1, 32)), geoCone = st.geo.cone || (st.geo.cone = new T.ConeGeometry(1, 1, 18));
+  const kindOf = (fill, o) => o && o.edge && /mframe/.test(fill) ? "frame" : /mframe|mgear/.test(fill) ? "frame" : "soft";
+  const orient = (m, A, B) => { const a = V(A), b = V(B), d = b.clone().sub(a), L = d.length() || 1e-6; m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(Y, d.multiplyScalar(1 / L)); return L; };
+  const K = {
+    pr: q => C.P(q),
+    cap(A, B, rA, rB, fill, o = {}) { const mt = mat(fill, o.op, kindOf(fill, o));
+      // Zylinder mit verjüngtem Querschnitt: Radius über Skalierung (Mittelwert), dazu zwei Kugeln an den Enden
+      const m = get("cyl", () => geoCyl); const L = orient(m, A, B); const r = (rA + rB) / 2; m.scale.set(r, L, r); m.material = mt;
+      for (const [P, rr] of [[A, rA], [B, rB]]) { const s = get("sph", () => geoSph); s.position.copy(V(P)); s.scale.set(rr, rr, rr); s.quaternion.identity(); s.material = mt; } },
+    ball(Cn, r, fill, o = {}) { const s = get("sph", () => geoSph); s.position.copy(V(Cn)); s.scale.set(r, r, r); s.quaternion.identity(); s.material = mat(fill, o.op, kindOf(fill, o)); },
+    box(c, ax, ay, az, fill) { const m = get("box", () => geoBox), a = V(ax), b = V(ay), d = V(az), la = a.length(), lb = b.length(), ld = d.length();
+      m.position.copy(V(c)); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(a.clone().normalize(), b.clone().normalize(), d.clone().normalize())); m.scale.set(la, lb, ld); m.material = mat(fill, 1, /mframe/.test(fill) ? "frame" : "soft"); },
+    disc(c, n, r, fill) { const m = get("disc", () => geoDisc); m.position.copy(V(c)); m.quaternion.setFromUnitVectors(Y, V(n).normalize()); m.scale.set(r, 2.2, r); m.material = mat(fill, 1, "frame"); },
+    line(A, B, w, c) { if (/rgba\(0,0,0/.test(c)) return; const m = get("cyl", () => geoCyl); const L = orient(m, A, B); const r = Math.max(.35, w * .4); m.scale.set(r, L, r); m.material = mat(c, 1, "frame"); },
+    // Muskelfläche: flaches Ellipsoid auf der Körperoberfläche
+    // Nur arbeitende/mithelfende Muskeln, flach auf der Haut (der Rumpf hat seine Form schon)
+    patch(c, n, a, ra, rb, fill, op) { if (!/mhot/.test(fill)) return; const s = get("sph", () => geoSph), nn = V(n).normalize(), aa = V(a).normalize(), bb = new T.Vector3().crossVectors(nn, aa).normalize(), a2 = new T.Vector3().crossVectors(bb, nn);
+      s.position.copy(V(c)).addScaledVector(nn, -1.1); s.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(a2, bb, nn)); s.scale.set(ra * 1.1, rb * 1.1, 1.5); s.material = mat(fill, op, "soft"); },
+    // Rumpf: aus Ringen (Stelle, Breite, vorn, hinten) als glatte Fläche
+    torso(H0, S0, fw, lat, rings, fill) { const key = "t" + rings.map(r => r.join(",")).join(";"), L = Math.hypot(S0[0] - H0[0], S0[1] - H0[1], S0[2] - H0[2]);
+      const geo = st.geo[key] || (st.geo[key] = (() => { const N = 28, pos = [], idx = [], rows = [];
+        const ext = [[rings[0][0] - .05, rings[0][1] * .55, rings[0][2] * .55, rings[0][3] * .55], ...rings, [rings[rings.length - 1][0] + .03, 1, 1, 1]];
+        ext.forEach(([s3, w, f, b]) => { const row = []; for (let i = 0; i < N; i++) { const t = i / N * Math.PI * 2, cz = Math.cos(t), sz = Math.sin(t); row.push(pos.length / 3); pos.push(sz > 0 ? sz * f : sz * b, s3, cz * w); } rows.push(row); });
+        for (let r = 0; r < rows.length - 1; r++) for (let i = 0; i < N; i++) { const a = rows[r][i], b = rows[r][(i + 1) % N], c2 = rows[r + 1][i], d = rows[r + 1][(i + 1) % N]; idx.push(a, c2, b, b, c2, d); }
+        const g = new T.BufferGeometry(); g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })());
+      const m = get("tor" + key, () => geo); m.geometry = geo; const up = V(S0).sub(V(H0)).normalize(), f = V(fw).normalize(), z = new T.Vector3().crossVectors(f, up);
+      m.position.copy(V(H0)); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(f, up, z)); m.scale.set(1, L, 1); m.material = mat(fill, 1, "soft"); },
+    floor(y) { st.floor.position.y = y; st.floorY = y; },
+    // Geformtes Körperteil (Oberschenkel, Unterschenkel, Oberarm, Unterarm, Shorts-Bein); Muskelfarbe in den Eckpunkten
+    limb(kind, A, B, front, side, roles) { const a = V(A), b = V(B), L = Math.max(1, Math.round(a.distanceTo(b))), rk = Object.entries(roles).filter(([, v]) => v).map(([k2, v]) => k2 + v).join(",");
+      const sk = col("var(--mbody)").c, hc = col("var(--mhot)").c, key = `l|${kind}|${L}|${rk}|${side}|${sk.getHexString()}|${hc.getHexString()}`;
+      const geo = st.geo[key] || (st.geo[key] = kind === "sleeve" ? m3LimbGeo(T, kind, L, {}, col("var(--mshorts)").c, hc, side) : m3LimbGeo(T, kind, L, roles, sk, hc, side));
+      const m = get("limb", () => geo); m.geometry = geo; m.material = st.bodyMat || (st.bodyMat = new T.MeshStandardMaterial({ vertexColors: true, roughness: .58, metalness: 0 }));
+      const y = b.clone().sub(a).normalize(), f0 = V(front), x = f0.sub(y.clone().multiplyScalar(f0.dot(y))).normalize(), z = new T.Vector3().crossVectors(x, y);
+      m.position.copy(a); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(x, y, z)); m.scale.set(1, 1, 1); },
+    torsoG(H0, S0, fw, roles, abd) { const L = Math.max(1, Math.round(Math.hypot(S0[0] - H0[0], S0[1] - H0[1], S0[2] - H0[2]))), rk = Object.entries(roles).filter(([, v]) => v).map(([k2, v]) => k2 + v).join(",");
+      const sk = col("var(--mbody)").c, hc = col("var(--mhot)").c, sh = col("var(--mshorts)").c, key = `t|${L}|${rk}|${abd ? 1 : 0}|${sk.getHexString()}|${sh.getHexString()}`;
+      const geo = st.geo[key] || (st.geo[key] = m3TorsoGeo(T, L, roles, sk, hc, sh, abd));
+      const m = get("torsoG", () => geo); m.geometry = geo; m.material = st.bodyMat || (st.bodyMat = new T.MeshStandardMaterial({ vertexColors: true, roughness: .58, metalness: 0 }));
+      const up = V(S0).sub(V(H0)).normalize(), f = V(fw), x = f.sub(up.clone().multiplyScalar(f.dot(up))).normalize(), z = new T.Vector3().crossVectors(x, up);
+      m.position.copy(V(H0)); m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(x, up, z)); m.scale.set(1, 1, 1); },
+    arrow(A, B, flip, op) { const a = V(A), d = V(B).sub(a); if (d.length() < .05) return; d.normalize().multiplyScalar(flip);
+      const sh = get("arr", () => geoCyl), cone = get("arc", () => geoCone), mt = mat("var(--accent)", op, "soft");
+      const p0 = a.clone().addScaledVector(d, 5), p1 = a.clone().addScaledVector(d, 10); orient(sh, p0.toArray(), p1.toArray()); sh.scale.set(.9, 5, .9); sh.material = mt;
+      cone.position.copy(a.clone().addScaledVector(d, 13)); cone.quaternion.setFromUnitVectors(Y, d); cone.scale.set(3, 6, 3); cone.material = mt; },
+    done() { for (const t in pool) pool[t].forEach((m, i) => { if (i >= (use[t] || 0)) m.visible = false; }); return ""; }
+  };
+  return K;
+}
+// Szene je Anzeige: Leinwand über dem SVG, Licht, Schatten; Kamera aus dem Blickwinkel (yaw)
+function m3GLRender(el, sp, s, e, yaw) {
+  const T = m3T; let st = el._gl;
+  if (!st) { const cv = document.createElement("canvas"); cv.className = "m3gl"; cv.setAttribute("aria-hidden", "true"); el.parentElement.insertBefore(cv, el.nextSibling);
+    let R; try { R = new T.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); } catch (err) { el._glFail = true; cv.remove(); return false; }
+    R.shadowMap.enabled = true; R.shadowMap.type = T.PCFSoftShadowMap; R.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    const scene = new T.Scene(); scene.add(new T.HemisphereLight(0xffffff, 0x8f887c, .8));
+    const D = new T.DirectionalLight(0xffffff, 1.05); D.position.set(-70, 170, 110); D.castShadow = true; D.shadow.mapSize.set(1024, 1024); D.shadow.radius = 5;
+    Object.assign(D.shadow.camera, { left: -130, right: 130, top: 130, bottom: -130, near: 1, far: 520 }); scene.add(D);
+    const F = new T.DirectionalLight(0xffffff, .35); F.position.set(90, 50, -80); scene.add(F);
+    const floor = new T.Mesh(new T.PlaneGeometry(700, 700), new T.ShadowMaterial({ opacity: .2 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+    st = el._gl = { R, cv, scene, floor, pool: {}, geo: {}, mats: {}, colors: {}, svg: el, base: new T.MeshStandardMaterial(), cam: new T.PerspectiveCamera(26, 4 / 3, 1, 3000) };
+    el.style.visibility = "hidden"; el.dataset.gl = "1"; }
+  // Größe wie das SVG
+  const w = el.clientWidth, h = el.clientHeight; if (!w || !h) return true;
+  if (st.w !== w || st.h !== h) { st.w = w; st.h = h; st.R.setSize(w, h, false); st.cv.style.cssText = `position:absolute;left:${el.offsetLeft}px;top:${el.offsetTop}px;width:${w}px;height:${h}px;touch-action:pan-y`; st.cam.aspect = w / h; st.cam.updateProjectionMatrix(); }
+  else if (st.cv.style.left !== el.offsetLeft + "px" || st.cv.style.top !== el.offsetTop + "px") { st.cv.style.left = el.offsetLeft + "px"; st.cv.style.top = el.offsetTop + "px"; }
+  // Farben neu lesen, wenn sich das Design (hell/dunkel) ändert
+  const sig = getComputedStyle(el).getPropertyValue("--mbody") + getComputedStyle(el).getPropertyValue("--mframe"); if (st.sig !== sig) { st.sig = sig; st.colors = {}; st.mats = {}; }
+  // Kamera: Mittelpunkt und Abstand aus den Gelenken über die ganze Bewegung (einmal je Gerät)
+  if (!sp._c3) { let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+    for (const q of [0, .5, 1]) { const J = m3Pose(sp, q); for (const k in J) { const v = J[k]; if (Array.isArray(v) && v.length === 3 && typeof v[0] === "number") { x0 = Math.min(x0, v[0]); x1 = Math.max(x1, v[0]); y0 = Math.min(y0, v[1]); y1 = Math.max(y1, v[1]); z0 = Math.min(z0, v[2]); z1 = Math.max(z1, v[2]); } } }
+    sp._c3 = { c: [(x0 + x1) / 2, (y0 + y1) / 2 - 6, (z0 + z1) / 2], r: Math.hypot(x1 - x0, y1 - y0, z1 - z0) / 2 + 26 }; }
+  const a = mRad(yaw), b = mRad(13), d = sp._c3.r / Math.sin(mRad(26) / 2) * .74, c = sp._c3.c;
+  st.cam.position.set(c[0] + Math.sin(a) * Math.cos(b) * d, c[1] + Math.sin(b) * d, c[2] + Math.cos(a) * Math.cos(b) * d); st.cam.lookAt(c[0], c[1], c[2]);
+  m3Draw(sp, s, e, yaw, null, C => m3GLKit(st, C));
+  st.R.render(st.scene, st.cam);
+  return true;
 }
 // Bildausschnitt für die 3D-Ansicht: über alle Stellungen und Blickwinkel, damit beim Drehen nichts springt
 function m3Box(sp, e) {
@@ -3415,7 +3596,7 @@ function motTick(ts) {
         if (el.dataset.m !== L[i]) { el.dataset.m = L[i]; el.classList.toggle("b-hs", ex(L[i]).brand === "hs"); const s2 = motSpec(L[i]); if (s2) el.setAttribute("viewBox", motBox(s2));
           const cap = el.parentElement && el.parentElement.querySelector(".mcap"); if (cap) cap.textContent = `${i + 1}/${L.length} · ${ex(L[i]).name}`; } }
       const sp = motSpec(el.dataset.m), g = el.querySelector(".mfig"); if (!sp || !g) return;
-      const e = ex(el.dataset.m), st = motState(loc, sp.down); g.innerHTML = el.dataset.v3 ? m3Draw(sp, st, e, +el.dataset.yaw) : motDraw(sp, st, e);
+      const e = ex(el.dataset.m), st = motState(loc, sp.down); if (el.dataset.v3) { if (!m3T) m3LoadThree(); if (!(m3T && !el._glFail && m3GLRender(el, sp, st, e, +el.dataset.yaw))) g.innerHTML = m3Draw(sp, st, e, +el.dataset.yaw); } else g.innerHTML = motDraw(sp, st, e);
       const cue = el.nextElementSibling;
       if (cue && cue.classList.contains("mcue")) { const t = motCue(sp, e, st.st); if (cue._t !== t) { cue._t = t; cue.firstElementChild.innerHTML = t; }
         const mm = cue.querySelector(".mcue-m"), t2 = musCue(sp, e, st.st); if (mm && mm._t !== t2) { mm._t = t2; mm.textContent = t2; }
@@ -7109,7 +7290,8 @@ const A = {
   // 3D-Ansicht ein/aus (bleibt gespeichert); drehen mit dem Finger
   mot3d: el => { const m = motOf(el); if (!m) return; m3Pref = !m3Pref; try { localStorage.setItem("tp-3d", m3Pref ? "1" : "0"); } catch (e) {}
     const sp = motSpec(m.dataset.m), e = ex(m.dataset.m);
-    if (m3Pref) { m.dataset.v3 = "1"; m.dataset.yaw = m.dataset.yaw || m3Yaw(sp, e); m.setAttribute("viewBox", m3Box(sp, e)); } else { delete m.dataset.v3; m.setAttribute("viewBox", motBox(sp)); }
+    if (m3Pref) { m.dataset.v3 = "1"; m.dataset.yaw = m.dataset.yaw || m3Yaw(sp, e); m.setAttribute("viewBox", m3Box(sp, e)); if (m._gl) { m._gl.cv.style.display = ""; m.style.visibility = "hidden"; } }
+    else { delete m.dataset.v3; m.setAttribute("viewBox", motBox(sp)); if (m._gl) { m._gl.cv.style.display = "none"; m.style.visibility = ""; } }
     el.textContent = m3Pref ? "2D" : "3D"; el.setAttribute("aria-pressed", String(m3Pref)); motStart(); },
   motSlow: el => { const m = motOf(el); if (!m) return; const now = performance.now(), loc = motLocal(m, now);
     m._speed = m._speed === .5 ? 1 : .5; m._off = loc; m._b = now; el.classList.toggle("on", m._speed === .5); el.setAttribute("aria-pressed", String(m._speed === .5)); motStart(); },
@@ -7444,7 +7626,9 @@ document.addEventListener("click", ev => {
 });
 // 3D-Ansicht drehen: waagerecht ziehen
 { let drag = null;
-  document.addEventListener("pointerdown", ev => { const s = ev.target.closest && ev.target.closest("svg.motion[data-v3]"); if (s) drag = { s, x: ev.clientX, yaw: +s.dataset.yaw || 0 }; });
+  document.addEventListener("pointerdown", ev => { let s = ev.target.closest && ev.target.closest("svg.motion[data-v3]");
+    if (!s && ev.target.classList && ev.target.classList.contains("m3gl")) s = ev.target.previousElementSibling;
+    if (s && s.dataset && s.dataset.v3) drag = { s, x: ev.clientX, yaw: +s.dataset.yaw || 0 }; });
   document.addEventListener("pointermove", ev => { if (!drag) return; drag.s.dataset.yaw = String(Math.round(drag.yaw + (ev.clientX - drag.x) * .8)); });
   for (const t of ["pointerup", "pointercancel"]) document.addEventListener(t, () => { drag = null; }); }
 document.addEventListener("input", ev => {
@@ -7497,7 +7681,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
