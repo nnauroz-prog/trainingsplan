@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v75)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v75")));
+      ok("Service Worker aktiv (Cache trainingsplan-v76)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v76")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4232,10 +4232,14 @@ async function finishAllSets(page, kg, reps) {
       await page.mouse.move(bb.x, bb.y); await page.mouse.down(); await page.mouse.move(bb.x + 60, bb.y, { steps: 4 }); await page.mouse.up();
       const y1 = await page.getAttribute("#gMotion svg.motion", "data-yaw");
       ok("Ziehen dreht die 3D-Ansicht", +y1 > +y0 + 30, y0 + " → " + y1);
+      // Mit WebGL zeichnet three.js auf eine Leinwand über dem SVG, sonst läuft die gezeichnete 3D-Ansicht
+      await page.waitForTimeout(1500);
+      const gl = await page.evaluate(() => !!document.querySelector("#gMotion canvas.m3gl") && document.querySelector("#gMotion svg.motion").dataset.gl === "1");
       const f1 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML); await page.waitForTimeout(500); const f2 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML);
-      ok("3D-Animation läuft", f1 !== f2);
+      ok("3D-Animation läuft (WebGL-Leinwand oder gezeichnet)", gl || f1 !== f2, String(gl));
       await page.click("#gMotion [data-a=mot3d]");
-      ok("Umschalten auf 2D bleibt gespeichert", !(await page.$("#gMotion svg.motion[data-v3]")) && (await page.evaluate(() => localStorage.getItem("tp-3d"))) === "0");
+      ok("Umschalten auf 2D bleibt gespeichert", !(await page.$("#gMotion svg.motion[data-v3]")) && (await page.evaluate(() => localStorage.getItem("tp-3d"))) === "0"
+        && await page.evaluate(() => { const c = document.querySelector("#gMotion canvas.m3gl"); return !c || c.style.display === "none"; }));
       await page.click("#gMotion [data-a=mot3d]");
       ok("Geräteseite mit 3D bei 360 px ohne seitliches Scrollen", await noOverflow(page));
       await ctx.close();
