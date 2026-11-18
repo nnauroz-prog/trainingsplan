@@ -65,6 +65,8 @@ async function open(data, opts = {}) {
       }
     }, [KEY, data === null ? null : JSON.stringify(data), opts.extra || null]);
   }
+  // Die meisten Prüfungen beziehen sich auf die 2D-Zeichnung; die 3D-Ansicht hat einen eigenen Abschnitt
+  await ctx.addInitScript(v3 => { try { if (localStorage.getItem("tp-3d") === null) localStorage.setItem("tp-3d", v3 ? "1" : "0"); } catch (e) {} }, !!opts.v3);
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
   // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
@@ -365,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v73)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v73")));
+      ok("Service Worker aktiv (Cache trainingsplan-v74)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v74")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4214,7 +4216,32 @@ async function finishAllSets(page, kg, reps) {
       await o.ctx.close();
     }
 
-    section("78. Konsole");
+    section("78. 3D-Ansicht: Figur und Gerät im Raum, drehbar");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { v3: true, light: true });
+      const r = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(x => x.id).filter(id => T.motSpec(id)), bad = [];
+        for (const id of ids) { const sp = T.motSpec(id), e = T.ex(id); try { const y = T.m3Yaw(sp, e), a = T.m3Draw(sp, { p: 0, act: 1 }, e, y), b = T.m3Draw(sp, { p: 1, act: 1 }, e, y), c = T.m3Draw(sp, { p: 1, act: 1 }, e, y + 90);
+          if (a.length < 2000 || a === b || b === c || /NaN|Infinity/.test(a + b + c) || !/var\(--mhot\)/.test(b) || !/class="marrow"/.test(b)) bad.push(id); } catch (err) { bad.push(id + ":" + err.message); } }
+        const box = T.m3Box(T.motSpec("hs-fly"), T.ex("hs-fly")).split(" ").map(Number);
+        return { n: ids.length, bad, box: box[2] / box[3] }; });
+      ok("Alle 60 Geräte in 3D: Start und Ende verschieden, Blickwinkel ändert das Bild, roter Muskel und Pfeil, keine Rechenfehler", r.n === 60 && r.bad.length === 0, r.bad.join());
+      ok("3D-Bildausschnitt im Seitenverhältnis 4:3 (bleibt beim Drehen gleich)", Math.abs(r.box - 4 / 3) < .01, String(r.box));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]"); await page.waitForTimeout(300);
+      ok("Geräteseite zeigt 3D (Standard), Knopf „2D“ zum Umschalten", !!(await page.$("#gMotion svg.motion[data-v3]")) && (await page.textContent("#gMotion [data-a=mot3d]")) === "2D");
+      const y0 = await page.getAttribute("#gMotion svg.motion", "data-yaw"), bb = await page.$eval("#gMotion svg.motion", s => { const r = s.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      await page.mouse.move(bb.x, bb.y); await page.mouse.down(); await page.mouse.move(bb.x + 60, bb.y, { steps: 4 }); await page.mouse.up();
+      const y1 = await page.getAttribute("#gMotion svg.motion", "data-yaw");
+      ok("Ziehen dreht die 3D-Ansicht", +y1 > +y0 + 30, y0 + " → " + y1);
+      const f1 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML); await page.waitForTimeout(500); const f2 = await page.$eval("#gMotion svg .mfig", g => g.innerHTML);
+      ok("3D-Animation läuft", f1 !== f2);
+      await page.click("#gMotion [data-a=mot3d]");
+      ok("Umschalten auf 2D bleibt gespeichert", !(await page.$("#gMotion svg.motion[data-v3]")) && (await page.evaluate(() => localStorage.getItem("tp-3d"))) === "0");
+      await page.click("#gMotion [data-a=mot3d]");
+      ok("Geräteseite mit 3D bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("79. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
