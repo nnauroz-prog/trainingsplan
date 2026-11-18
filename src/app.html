@@ -518,6 +518,11 @@ const LIB = [
   ["lf-tripress","Trizepsdrücken","trizeps",["brust","schultern"],"stack","Triceps Press","lf","hs-dip"],
   ["lf-triext","Armstrecker","trizeps",[],"stack","Triceps Extension","lf","hs-triext"],
   ["lf-pushdown","Trizepsdrücken am Kabel","trizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-ohtri","Trizepsstrecken über Kopf","trizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablecurl","Armbeuger am Kabel","bizeps",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-facepull","Zug zum Gesicht","schultern",["ruecken"],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablelat","Seitheben am Kabel","schultern",[],"stack","Dual Adjustable Pulley","lf"],
+  ["lf-cablefly","Butterfly am Kabel","brust",["schultern"],"stack","Dual Adjustable Pulley","lf"],
   ["lf-legpress","Beinpresse","beinev",["po"],"stack","Leg Press","lf","hs-legpress"],
   ["lf-legext","Beinstrecker","beinev",[],"stack","Leg Extension","lf","hs-legext"],
   ["lf-seatcurl","Beinbeuger sitzend","beineh",[],"stack","Seated Leg Curl","lf","hs-seatcurl"],
@@ -564,7 +569,7 @@ const LIB_PATTERN = {
   "hs-seatcurl": "knee_flex", "hs-calf": "calf", "hs-seatcalf": "calf", "hs-ab": "core",
   "hs-beltsquat": "squat", "hs-smith": "squat", "hs-legcurl": "knee_flex", "hs-abductor": "abd", "hs-adductor": "add",
   "lf-chest": "push_h", "lf-shoulder": "push_v", "lf-pulldown": "pull_v", "lf-row": "pull_h", "lf-fly": "fly", "lf-reardelt": "rear",
-  "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-legpress": "squat",
+  "lf-lateral": "lateral", "lf-curl": "bi", "lf-tripress": "dip", "lf-triext": "tri", "lf-pushdown": "tri", "lf-ohtri": "tri", "lf-cablecurl": "bi", "lf-facepull": "rear", "lf-cablelat": "lateral", "lf-cablefly": "fly", "lf-legpress": "squat",
   "lf-legext": "knee_ext", "lf-seatcurl": "knee_flex", "lf-legcurl": "knee_flex", "lf-abductor": "abd", "lf-ab": "core",
   "lf-adductor": "add", "lf-smith": "squat"
 };
@@ -1226,6 +1231,57 @@ const GUIDE = {
     tips: ["Mit Seil: unten die Enden leicht auseinanderziehen.", "Fortschritt: erst die Wiederholungen bis zum oberen Ziel steigern, dann das Gewicht."],
     src: ["tri2023"]
   },
+  "lf-ohtri": {
+    main: [M.tri], sup: [],
+    why: "Trizepsstrecken am Kabelzug mit den Oberarmen neben dem Kopf. In einer Studie (12 Wochen, 21 Untrainierte) wuchs der Trizeps so stärker als mit dem Arm am Körper: +20 % statt +14 %, der lange Kopf +29 % statt +20 %. Die Studie war klein.",
+    setup: ["Rolle etwa auf Kopfhöhe stellen und ein Seil einhängen.", "Mit dem Rücken zum Zug einen Schritt nach vorn gehen, ein Fuß vorn, Oberkörper leicht vorgeneigt."],
+    steps: ["Seil hinter dem Kopf halten, die Ellbogen zeigen nach vorn-oben.", "Unterarme nach vorn-oben strecken, bis die Arme fast gerade sind.", "Langsam zurück, bis die Hände wieder hinter dem Kopf sind."],
+    breath: BREATH_PUSH,
+    mistakes: [["Ellbogen klappen nach außen", "Ellbogen schulterbreit halten und nach vorn zeigen lassen."], ["Oberarme pendeln mit", "Die Oberarme bleiben neben dem Kopf, nur die Unterarme bewegen sich."], ["Hohlkreuz", "Bauch anspannen und den Oberkörper leicht vorneigen."]],
+    safety: ["Das Gewicht erst kontrolliert zurückführen, dann das Seil loslassen."],
+    tips: ["Den gebeugten Teil der Bewegung ganz mitnehmen – dort ist der lange Kopf des Trizeps gedehnt.", "Steht das Trizepsdrücken am Körper schon im Plan, nimm beide an verschiedenen Tagen."],
+    src: ["tri2023"]
+  },
+  "lf-cablecurl": {
+    main: [M.bic, M.brach], sup: [M.brachrad],
+    why: "Armbeugen im Stehen am Kabelzug, die Rolle steht ganz unten. Ohne Polster hältst du die Oberarme selbst ruhig – dafür passt die Übung an jeden Kabelzug.",
+    setup: ["Rolle ganz nach unten stellen und eine kurze Stange oder einen Einzelgriff einhängen.", "Aufrecht vor den Zug stellen, Stange im Untergriff fassen."],
+    steps: ["Arme lang, Ellbogen seitlich am Rumpf, Handflächen nach vorn.", "Unterarme nach oben beugen, bis die Hände auf Schulterhöhe sind.", "Langsam ablassen, bis die Arme wieder fast gestreckt sind."],
+    breath: "Beim Beugen ausatmen, beim Strecken einatmen.",
+    mistakes: [["Oberkörper schwingt mit", "Aufrecht stehen bleiben; hilft nur Schwung, ist das Gewicht zu hoch."], ["Ellbogen rutschen nach vorn", "Ellbogen an den Seiten lassen, nur der Unterarm bewegt sich."], ["Unten nicht gestreckt", "Jede Wiederholung mit fast gestreckten Armen beginnen."]],
+    safety: ["Den Griff am Satzende kontrolliert ablegen, nicht fallen lassen."],
+    tips: ["Mit dem Einzelgriff lässt sich jede Seite für sich trainieren.", "Handgelenke gerade halten, nicht einrollen."]
+  },
+  "lf-facepull": {
+    main: [M.dPost], sup: [M.trapM, M.rhomb, M.rotAuss],
+    why: "Mit dem Seil am Kabelzug zum Gesicht ziehen: trainiert die hintere Schulter und die Muskeln zwischen den Schulterblättern. Am Ende drehen die Oberarme nach außen, dabei arbeiten auch die Außenrotatoren der Schulter.",
+    setup: ["Rolle auf Kopfhöhe oder etwas darüber stellen, Seil einhängen.", "Seil mit beiden Händen fassen und zurückgehen, bis die Arme gestreckt sind und das Gewicht angehoben ist."],
+    steps: ["Aufrecht stehen, Arme nach vorn gestreckt.", "Seil Richtung Stirn ziehen: Die Ellbogen gehen hoch und nach außen, die Seil-Enden auseinander.", "Kurz halten, dann die Arme langsam wieder strecken."],
+    breath: BREATH_PULL,
+    mistakes: [["Zu viel Gewicht", "So leicht wählen, dass du das Ende eine Sekunde halten kannst."], ["Ellbogen hängen tief", "Ellbogen mindestens auf Schulterhöhe führen."], ["Oberkörper lehnt nach hinten", "Fest stehen und den Rumpf ruhig halten – nur die Arme ziehen."]],
+    safety: ["Erst sicher stehen, dann ziehen: Das Seil zieht dich sonst nach vorn."],
+    tips: ["Ein Fuß nach vorn gibt mehr Halt.", "Lieber sauber mit wenig Gewicht als mit Schwung."]
+  },
+  "lf-cablelat": {
+    main: [M.dLat], sup: [M.supra, M.trapU],
+    why: "Seitheben mit einem Arm am Kabelzug. Die Rolle steht unten, das Seil läuft vor dem Körper zur anderen Seite. Jede Seite arbeitet für sich.",
+    setup: ["Rolle ganz nach unten stellen, Einzelgriff einhängen.", "Seitlich zum Zug stellen und den Griff mit der Hand fassen, die weiter vom Zug entfernt ist."],
+    steps: ["Arm hängt vor dem Körper, Ellbogen leicht gebeugt.", "Arm seitlich anheben, bis die Hand etwa auf Schulterhöhe ist.", "Langsam ablassen; nach dem Satz die Seite wechseln."],
+    breath: "Beim Heben ausatmen, beim Absenken einatmen.",
+    mistakes: [["Schulter zieht zum Ohr", "Schulter tief lassen, lieber weniger Gewicht."], ["Rumpf neigt sich zur Seite", "Mit der freien Hand am Rahmen festhalten und aufrecht bleiben."], ["Arm schwingt hoch", "Ohne Schwung heben und oben kurz halten."]],
+    safety: ["Zwickt es in der Schulter, nur so hoch heben, wie es schmerzfrei geht."],
+    tips: ["Beide Seiten mit gleich vielen Wiederholungen trainieren, die schwächere zuerst.", "Oft reicht die kleinste Gewichtsstufe – der Hebel ist lang."]
+  },
+  "lf-cablefly": {
+    main: [M.pec], sup: [M.dAnt],
+    why: "Butterfly im Stehen zwischen zwei Rollen: Die Arme führen in einem Bogen vor der Brust zusammen. Die Höhe der Rollen wählst du selbst, der Rumpf hält die Haltung ohne Lehne.",
+    setup: ["Beide Rollen auf Schulterhöhe stellen und je einen Einzelgriff einhängen.", "In die Mitte stellen, beide Griffe fassen und einen Schritt nach vorn gehen, ein Fuß vorn."],
+    steps: ["Arme seitlich geöffnet, Ellbogen leicht gebeugt, Brust aufgerichtet.", "Hände in einem weiten Bogen vor der Brust zusammenführen.", "Langsam öffnen, bis du die Dehnung in der Brust spürst."],
+    breath: "Beim Schließen ausatmen, beim Öffnen einatmen.",
+    mistakes: [["Arme beugen und strecken sich", "Der Winkel im Ellbogen bleibt gleich – sonst wird daraus ein Drücken."], ["Schultern rollen nach vorn", "Brust raus, Schulterblätter hinten unten lassen."], ["Zu weit geöffnet", "Nur so weit öffnen, wie es in der Schulter schmerzfrei bleibt."]],
+    safety: ["Die Griffe nacheinander ablegen, nicht beide gleichzeitig loslassen."],
+    tips: ["Rollen höher gestellt führen die Hände nach unten, tiefer gestellt nach oben – nimm die Bahn, die du in der Brust am besten spürst.", "In der Schrittstellung das vordere Bein von Satz zu Satz wechseln."]
+  },
   "lf-legpress": {
     main: [M.quad, M.glut], sup: [M.add],
     why: "Beinpresse mit Steckgewicht. Rücken und Becken sind gestützt, der Rumpf muss nichts balancieren. Bei der neueren Arc Leg Press verläuft die Bahn in einem Bogen.",
@@ -1317,62 +1373,68 @@ const SAFE_PAIN = "Schmerz ist ein Stoppsignal: Brennen im Muskel gehört zu ans
 
 
 // Kurze Ausführungstipps (Einstellung · Bewegung · Fehler vermeiden)
+// „So geht's“: drei Schritte je Gerät in ganzen, einfachen Sätzen (einstellen, bewegen, zurück)
 const TIPS = {
-  "hs-chest":["Griffe auf Höhe der mittleren Brust","Schulterblätter nach hinten-unten, dann drücken","Ellbogen nicht durchstrecken, langsam zurück"],
-  "hs-incline":["Griffe auf Höhe der oberen Brust","Schulterblätter zurück, Brust aufgerichtet","Langsam zurück bis zur Dehnung"],
-  "hs-decline":["Griffe auf Höhe der unteren Brust","Nach vorn-unten drücken, Schultern bleiben unten","Langsam zurück, Rücken an der Lehne"],
-  "hs-widechest":["Griffe auf Brusthöhe, Hände weit","Nach vorn zusammendrücken, Ellbogen nicht durchstrecken","Langsam zurück, nur so weit wie schmerzfrei"],
-  "hs-fly":["Arme knapp unter Schulterhöhe, Ellbogen leicht gebeugt","Im Bogen zusammenführen, kurz halten","Nur so weit öffnen, wie die Dehnung angenehm ist"],
-  "hs-row":["Brust ans Polster, Arme vorn ganz gestreckt","Mit den Ellbogen nach hinten ziehen","Hinten Schulterblätter zusammen, nicht mit dem Oberkörper reißen"],
-  "hs-lowrow":["Brust ans Polster, Füße fest auf die Stütze","Zur Hüfte ziehen, Ellbogen eng","Langsam nach vorn, bis der Rücken gedehnt ist"],
-  "hs-highrow":["Griffe über Kopf gerade noch erreichbar","Diagonal nach unten-hinten ziehen","Schultern weg von den Ohren"],
-  "hs-pulldown":["Kniepolster fest auf die Oberschenkel","Griffe zur oberen Brust, Ellbogen nach unten","Oben ganz strecken, nicht nach hinten lehnen"],
-  "hs-dyrow":["Brust ans Polster, Untergriff, Arme lang","Ellbogen eng Richtung Hüfte ziehen","Langsam zurück, Brust bleibt am Polster"],
-  "hs-lat":["Oberschenkel unters Polster, Stange etwas breiter als schulterbreit","Stange vor dem Kopf zum Brustbein ziehen","Oben kontrolliert strecken"],
-  "hs-lat-wide":["Obergriff außen an den abgewinkelten Enden der Stange","Stange vor dem Gesicht zur oberen Brust","Arme oben wieder strecken"],
-  "hs-lat-close":["V-Griff einhängen, Handflächen zueinander","Griff zur oberen Brust, Ellbogen eng am Körper","Nachgeben, bis die Arme ganz gestreckt sind"],
-  "hs-lat-under":["Untergriff schulterbreit, Handflächen zu dir","Stange zur oberen Brust, Handgelenke gerade","Oben die Arme fast strecken"],
-  "hs-shoulder":["Griffe zu Beginn auf Kinnhöhe","Gerade nach oben drücken, Rücken an der Lehne","Kein Hohlkreuz, oben nicht einrasten"],
-  "hs-lateral":["Schulter auf Höhe der Drehachse, Polster an den Oberarmen","Arme seitlich bis Schulterhöhe heben","Langsam ablassen, nicht schwingen"],
-  "hs-reardelt":["Brust ans Polster, Arme auf Schulterhöhe","Arme im weiten Bogen nach hinten","Schultern unten, langsam nach vorn"],
-  "hs-curl":["Achseln an den Polsterrand, Ellbogen auf die Drehachse","Bis zur vollen Beugung","Unten fast ganz strecken, ohne Schwung"],
-  "hs-dip":["Griffe zu Beginn neben der unteren Brust","Nach unten drücken, bis die Arme fast gestreckt sind","Oberkörper aufrecht, Schultern unten"],
-  "hs-triext":["Oberarme aufs Polster, Ellbogen in Linie mit der Drehachse","Arme ganz strecken, kurz halten","Langsam beugen, Oberarme bleiben liegen"],
-  "hs-legpress":["Füße schulterbreit mittig auf der Platte","Knie zeigen in Richtung Zehen","Becken bleibt an der Lehne, Knie oben nicht durchstrecken"],
-  "hs-isolegpress":["Je ein Fuß mittig auf eine Platte","Kontrolliert tief, Knie über der zweiten Zehe","Oben Knie leicht gebeugt lassen"],
-  "hs-vsquat":["Schultern unter die Polster, Füße leicht vor dem Körper","Tief beugen, Rücken bleibt am Polster","Über die ganze Fußsohle hochdrücken"],
-  "hs-hack":["Rücken flach ans Polster, Füße schulterbreit","Tief gehen, Knie Richtung Zehen","Fersen bleiben auf der Plattform"],
-  "hs-beltsquat":["Gurt eng um die Hüfte, Füße schulterbreit","Hüfte nach hinten-unten sinken lassen","Oberkörper aufrecht, Griffe nur halten"],
-  "hs-smith":["Stange auf den oberen Rücken, Füße leicht vorn","Kontrolliert tief, Rücken gerade","Zum Ablegen Stange in die Haken drehen"],
-  "hs-legext":["Knie auf Höhe der Drehachse, Polster über dem Knöchel","Beine ganz strecken, oben kurz halten","Langsam ablassen, nicht fallen lassen"],
-  "hs-kneelcurl":["Stützknie aufs Polster, Rolle über der Ferse","Ferse zum Po ziehen","Hüfte bleibt am Polster, langsam zurück"],
-  "hs-legcurl":["Hüfte auf den höchsten Punkt der Polster","Fersen zum Gesäß, beide Seiten gleich schnell","Langsam strecken, Hüfte bleibt liegen"],
-  "hs-seatcurl":["Knie auf Drehachse, Oberschenkelpolster fest","Fersen nach unten-hinten ziehen","Langsam zurück, nicht abfedern"],
-  "hs-hipthrust":["Oberer Rücken am Polster, Füße hüftbreit","Hüfte hochdrücken, oben Gesäß fest anspannen","Kein Hohlkreuz, Kinn leicht zur Brust"],
-  "hs-abductor":["Start: Beine fast geschlossen","Knie nach außen, außen kurz halten","Rücken bleibt an der Lehne"],
-  "hs-adductor":["Polster innen an den Knien","Beine schließen, kurz halten","Langsam öffnen bis zur Dehnung"],
-  "hs-calf":["Fußballen auf die Kante, Schultern unter die Polster","Ganz hoch auf die Zehen, kurz halten","Unten voll dehnen"],
-  "hs-seatcalf":["Polster fest auf die Oberschenkel, Ballen auf die Kante","Fersen ganz hoch drücken","Langsam tief in die Dehnung"],
-  "hs-ab":["Füße einhaken, Griffe fassen","Oberkörper einrollen, Bauch fest","Nicht mit den Armen ziehen, langsam zurück"],
-  "lf-chest":["Griffe auf mittlerer Brusthöhe","Beide Arme im selben Tempo nach vorn","Zurück bis kurz vor dem Aufsetzen"],
-  "lf-shoulder":["Start knapp über Schulterhöhe","Nach oben drücken bis fast gestreckt","Unterer Rücken bleibt an der Lehne"],
-  "lf-pulldown":["Oberschenkel fest unter dem Polster","Griffe neben die Schultern ziehen","Oben die Arme lang werden lassen"],
-  "lf-row":["Brust ans Polster","Ellbogen hinter den Rumpf ziehen","Vorn ganz nachgeben"],
-  "lf-fly":["Startposition passend zur Dehnung","Griffe im Bogen zusammenführen","Ellbogenwinkel bleibt gleich"],
-  "lf-reardelt":["Brust am Polster","Arme im weiten Bogen nach hinten","Leicht beginnen"],
-  "lf-lateral":["Schultern auf Höhe der Drehpunkte","Bis etwa waagerecht anheben","Schultern bleiben tief"],
-  "lf-curl":["Ellbogen auf Höhe der Drehachse","Zur Schulter beugen, kurz halten","Unten fast ganz strecken"],
-  "lf-tripress":["Rücken an der schrägen Lehne","Bis fast gestreckt nach unten drücken","Hoch nur bis etwa rechtwinklig"],
-  "lf-triext":["Ellbogen in Linie mit der Drehachse","Unterarme nach vorn-unten strecken","Oberarme bleiben liegen"],
-  "lf-pushdown":["Rolle oben, Ellbogen am Körper","Nach unten strecken","Zurück bis Unterarme waagerecht"],
-  "lf-legpress":["Knie zu Beginn etwa rechtwinklig","Über die ganze Sohle drücken","Oben nicht durchstrecken"],
-  "lf-legext":["Polster knapp oberhalb des Sprunggelenks","Fast gerade strecken","Langsam zurück"],
-  "lf-seatcurl":["Kniegelenk neben dem Drehpunkt","Fersen unter den Sitz ziehen","Gleichmäßig strecken"],
-  "lf-legcurl":["Knie knapp über die Polsterkante hinaus","Fersen zum Gesäß","Becken bleibt unten"],
-  "lf-abductor":["Polster außen an den Knien","Knie nach außen drücken, kurz halten","Langsam schließen"],
-  "lf-adductor":["Raste: zuerst kleine Öffnung","Knie zusammenführen","Kontrolliert zurück"],
-  "lf-smith":["Stange knapp unter den Schultern einhängen","Gleichmäßig beugen, Knie zu den Zehen","Fersen bleiben unten"],
-  "lf-ab":["Drehpunkt auf Höhe der Bauchmitte","Brustkorb zum Becken einrollen","Langsam aufrichten"]
+  "hs-chest":["Stell den Sitz so ein, dass die Griffe auf Höhe der Brustmitte sind.","Zieh die Schultern nach hinten-unten und drück die Griffe nach vorn.","Lass die Arme leicht gebeugt und geh langsam zurück."],
+  "hs-incline":["Stell den Sitz so ein, dass die Griffe auf Höhe der oberen Brust sind.","Brust raus, Schultern nach hinten – dann drück schräg nach oben.","Geh langsam zurück, bis du die Dehnung in der Brust spürst."],
+  "hs-decline":["Stell den Sitz so ein, dass die Griffe auf Höhe der unteren Brust sind.","Drück nach vorn-unten, die Schultern bleiben tief.","Geh langsam zurück, der Rücken bleibt an der Lehne."],
+  "hs-widechest":["Die Griffe sind auf Brusthöhe, deine Hände greifen weit außen.","Drück die Griffe vor der Brust zusammen, die Arme bleiben leicht gebeugt.","Geh langsam zurück – nur so weit, wie es in der Schulter angenehm ist."],
+  "hs-fly":["Stell den Sitz so ein, dass die Arme knapp unter Schulterhöhe sind.","Führ die Arme mit leicht gebeugten Ellbogen im Bogen vor der Brust zusammen.","Öffne langsam – nur so weit, wie die Dehnung angenehm ist."],
+  "hs-row":["Lehn die Brust ans Polster, die Arme sind vorn ganz gestreckt.","Zieh die Ellbogen nach hinten und die Schulterblätter zusammen.","Lass die Arme langsam wieder lang werden, der Oberkörper bleibt ruhig."],
+  "hs-lowrow":["Lehn die Brust ans Polster und stell die Füße fest auf die Stütze.","Zieh die Griffe zur Hüfte, die Ellbogen bleiben eng am Körper.","Geh langsam nach vorn, bis der Rücken gedehnt ist."],
+  "hs-highrow":["Stell den Sitz so ein, dass du die Griffe über dem Kopf gerade noch erreichst.","Zieh die Griffe schräg nach unten zu dir.","Halt die Schultern tief, weg von den Ohren, und geh langsam zurück."],
+  "hs-pulldown":["Stell das Polster fest auf die Oberschenkel.","Zieh die Griffe zur oberen Brust, die Ellbogen zeigen nach unten.","Streck die Arme oben ganz, ohne dich nach hinten zu lehnen."],
+  "hs-dyrow":["Lehn die Brust ans Polster, die Handflächen zeigen nach oben, die Arme sind lang.","Zieh die Ellbogen eng am Körper Richtung Hüfte.","Geh langsam zurück, die Brust bleibt am Polster."],
+  "hs-lat":["Klemm die Oberschenkel unter das Polster und greif die Stange etwas breiter als die Schultern.","Zieh die Stange vor dem Gesicht zur oberen Brust.","Lass die Arme langsam wieder ganz lang werden."],
+  "hs-lat-wide":["Greif die Stange ganz außen, die Handrücken zeigen zu dir.","Zieh sie vor dem Gesicht zur oberen Brust, die Ellbogen gehen nach außen-unten.","Streck die Arme oben wieder ganz."],
+  "hs-lat-close":["Häng den V-Griff ein, die Handflächen zeigen zueinander.","Zieh den Griff zur oberen Brust, die Ellbogen bleiben eng am Körper.","Gib langsam nach, bis die Arme ganz gestreckt sind."],
+  "hs-lat-under":["Greif die Stange schulterbreit, die Handflächen zeigen zu dir.","Zieh die Stange zur oberen Brust und halt die Handgelenke gerade.","Streck die Arme oben fast ganz."],
+  "hs-shoulder":["Stell den Sitz so ein, dass die Griffe am Start auf Kinnhöhe sind.","Drück gerade nach oben, der Rücken bleibt an der Lehne.","Mach kein Hohlkreuz und streck die Arme oben nicht ganz durch."],
+  "hs-lateral":["Setz dich so, dass deine Schultern auf Höhe der Drehpunkte sind. Die Polster liegen an den Oberarmen.","Heb die Arme seitlich bis auf Schulterhöhe.","Lass sie langsam wieder sinken, ohne Schwung."],
+  "hs-reardelt":["Lehn die Brust ans Polster, die Arme sind auf Schulterhöhe vorn.","Führ die Arme in einem weiten Bogen nach hinten.","Lass die Schultern tief und geh langsam wieder nach vorn."],
+  "hs-curl":["Leg die Achseln an die Polsterkante und die Ellbogen neben den Drehpunkt.","Beug die Arme, so weit es geht.","Streck sie unten fast ganz – ohne Schwung."],
+  "hs-dip":["Am Start sind die Griffe neben der unteren Brust.","Drück nach unten, bis die Arme fast gestreckt sind.","Bleib aufrecht sitzen, die Schultern bleiben tief."],
+  "hs-triext":["Leg die Oberarme aufs Polster, die Ellbogen neben den Drehpunkt.","Streck die Arme ganz und halt kurz.","Beug sie langsam wieder, die Oberarme bleiben liegen."],
+  "hs-legpress":["Stell die Füße schulterbreit mittig auf die Platte.","Beug die Beine, die Knie zeigen in Richtung der Zehen.","Drück hoch, ohne die Knie durchzustrecken. Das Becken bleibt an der Lehne."],
+  "hs-isolegpress":["Stell je einen Fuß mittig auf eine Platte.","Geh kontrolliert tief, die Knie zeigen zur zweiten Zehe.","Lass die Knie oben leicht gebeugt."],
+  "hs-vsquat":["Schieb die Schultern unter die Polster und stell die Füße etwas vor den Körper.","Geh tief in die Knie, der Rücken bleibt am Polster.","Drück dich über die ganze Fußsohle wieder hoch."],
+  "hs-hack":["Leg den Rücken flach ans Polster, die Füße stehen schulterbreit.","Geh tief, die Knie zeigen Richtung Zehen.","Die Fersen bleiben die ganze Zeit auf der Platte."],
+  "hs-beltsquat":["Leg den Gurt eng um die Hüfte, die Füße stehen schulterbreit.","Lass die Hüfte nach hinten-unten sinken.","Bleib aufrecht – die Griffe sind nur zum Festhalten."],
+  "hs-smith":["Leg die Stange auf den oberen Rücken und stell die Füße etwas nach vorn.","Geh kontrolliert tief, der Rücken bleibt gerade.","Dreh die Stange zum Ablegen in die Haken."],
+  "hs-legext":["Setz dich so, dass die Knie auf Höhe des Drehpunkts sind. Das Polster liegt knapp über dem Knöchel.","Streck die Beine ganz und halt oben kurz.","Lass sie langsam sinken, nicht fallen."],
+  "hs-kneelcurl":["Stütz ein Knie aufs Polster, die Rolle liegt über der Ferse des anderen Beins.","Zieh die Ferse zum Po.","Geh langsam zurück, die Hüfte bleibt am Polster."],
+  "hs-legcurl":["Leg dich so hin, dass die Hüfte auf dem höchsten Punkt des Polsters liegt.","Zieh beide Fersen gleich schnell zum Po.","Streck die Beine langsam, die Hüfte bleibt liegen."],
+  "hs-seatcurl":["Setz dich so, dass die Knie auf Höhe des Drehpunkts sind, und stell das Polster fest auf die Oberschenkel.","Zieh die Fersen nach unten-hinten.","Geh langsam zurück, ohne zu federn."],
+  "hs-hipthrust":["Lehn den oberen Rücken ans Polster, die Füße stehen hüftbreit.","Drück die Hüfte hoch und spann oben den Po fest an.","Mach kein Hohlkreuz, das Kinn zeigt leicht zur Brust."],
+  "hs-abductor":["Am Start sind die Beine fast geschlossen.","Drück die Knie nach außen und halt außen kurz.","Der Rücken bleibt an der Lehne."],
+  "hs-adductor":["Die Polster liegen innen an den Knien.","Schließ die Beine und halt kurz.","Öffne langsam, bis du die Dehnung spürst."],
+  "hs-calf":["Stell die Fußballen auf die Kante und die Schultern unter die Polster.","Drück dich ganz hoch auf die Zehen und halt kurz.","Lass die Fersen unten tief sinken."],
+  "hs-seatcalf":["Stell das Polster fest auf die Oberschenkel und die Fußballen auf die Kante.","Drück die Fersen ganz nach oben.","Lass sie langsam tief sinken."],
+  "hs-ab":["Hak die Füße ein und fass die Griffe.","Roll den Oberkörper ein, der Bauch ist fest.","Zieh nicht mit den Armen und geh langsam zurück."],
+  "lf-chest":["Stell den Sitz so ein, dass die Griffe auf mittlerer Brusthöhe sind.","Drück beide Arme im gleichen Tempo nach vorn.","Geh zurück, bis das Gewicht fast aufsetzt."],
+  "lf-shoulder":["Am Start sind die Griffe knapp über Schulterhöhe.","Drück nach oben, bis die Arme fast gestreckt sind.","Der untere Rücken bleibt an der Lehne."],
+  "lf-pulldown":["Klemm die Oberschenkel fest unter das Polster.","Zieh die Griffe neben die Schultern.","Lass die Arme oben lang werden."],
+  "lf-row":["Lehn die Brust ans Polster.","Zieh die Ellbogen hinter den Körper.","Lass die Arme langsam wieder lang werden."],
+  "lf-fly":["Wähl die Startposition so, dass die Brust angenehm gedehnt ist.","Führ die Griffe im Bogen zusammen.","Der Winkel im Ellbogen bleibt dabei gleich."],
+  "lf-reardelt":["Setz dich mit der Brust ans Polster.","Öffne die Arme in einem weiten Bogen.","Fang mit wenig Gewicht an."],
+  "lf-lateral":["Setz dich so, dass die Schultern auf Höhe der Drehpunkte sind.","Heb die Arme bis etwa waagerecht.","Die Schultern bleiben dabei tief."],
+  "lf-curl":["Leg die Ellbogen auf Höhe des Drehpunkts ab.","Beug die Arme zur Schulter und halt kurz.","Streck sie unten fast ganz."],
+  "lf-tripress":["Lehn den Rücken an die schräge Lehne.","Drück die Griffe nach unten, bis die Arme fast gerade sind.","Komm nur so weit hoch, bis die Ellbogen etwa im rechten Winkel sind."],
+  "lf-triext":["Leg die Ellbogen in eine Linie mit dem Drehpunkt.","Streck die Unterarme nach vorn-unten.","Die Oberarme bleiben auf dem Polster."],
+  "lf-pushdown":["Stell die Rolle ganz nach oben und nimm die Ellbogen an den Körper.","Drück nach unten, bis die Arme gestreckt sind.","Komm zurück, bis die Unterarme waagerecht sind."],
+  "lf-ohtri":["Halt das Seil hinter dem Kopf, die Ellbogen zeigen nach vorn-oben.","Streck die Arme nach vorn-oben.","Geh langsam zurück hinter den Kopf."],
+  "lf-cablecurl":["Stell die Rolle ganz nach unten und nimm die Ellbogen seitlich an den Körper.","Beug die Unterarme hoch bis auf Schulterhöhe.","Lass sie sinken, bis die Arme fast gestreckt sind."],
+  "lf-facepull":["Stell die Rolle auf Kopfhöhe und fass das Seil mit beiden Händen.","Zieh das Seil zur Stirn, die Ellbogen gehen hoch und nach außen.","Halt kurz und streck die Arme langsam wieder."],
+  "lf-cablelat":["Stell die Rolle ganz nach unten, stell dich seitlich daneben und greif mit der äußeren Hand.","Heb den Arm seitlich bis auf Schulterhöhe.","Lass ihn ohne Schwung wieder sinken."],
+  "lf-cablefly":["Stell beide Rollen auf Schulterhöhe und geh einen Schritt nach vorn.","Führ die Hände im Bogen vor der Brust zusammen.","Öffne, bis du die Dehnung in der Brust spürst."],
+  "lf-legpress":["Stell den Sitz so ein, dass die Knie am Start etwa im rechten Winkel sind.","Drück über die ganze Fußsohle.","Streck die Knie oben nicht ganz durch."],
+  "lf-legext":["Das Polster liegt knapp über dem Fußgelenk.","Streck die Beine fast gerade.","Geh langsam zurück."],
+  "lf-seatcurl":["Setz dich so, dass das Knie neben dem Drehpunkt ist.","Zieh die Fersen unter den Sitz.","Streck die Beine gleichmäßig wieder."],
+  "lf-legcurl":["Leg dich so hin, dass die Knie knapp über die Polsterkante ragen.","Zieh die Fersen zum Po.","Das Becken bleibt auf dem Polster."],
+  "lf-abductor":["Die Polster liegen außen an den Knien.","Drück die Knie nach außen und halt kurz.","Schließ die Beine langsam."],
+  "lf-adductor":["Stell die Öffnung am Anfang klein ein.","Führ die Knie zusammen.","Geh kontrolliert zurück."],
+  "lf-smith":["Häng die Stange knapp unter Schulterhöhe ein.","Beug die Beine gleichmäßig, die Knie zeigen zu den Zehen.","Die Fersen bleiben am Boden."],
+  "lf-ab":["Stell den Sitz so ein, dass der Drehpunkt auf Höhe der Bauchmitte ist.","Roll den Brustkorb zum Becken ein.","Richte dich langsam wieder auf."]
 };
 
 const GOALS = {
@@ -1621,7 +1683,7 @@ function refreshPlates() { const s = S(), el = byId("platesTxt"); if (!s || !el)
 const UNIT_SHORT = { s: "pro Seite", t: "insgesamt", b: "am Block" };
 const unitTxt = e => UNIT[unitOf(e)];
 // Gewichtsart: Scheiben an den Seiten (pro Seite oder insgesamt eingetragen) oder ein eingestelltes Gewicht am Block (Steckgewicht, bei Seilzug über ein Seil)
-const CABLE = new Set(["lf-pushdown", "hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"]);
+const CABLE = new Set(["lf-pushdown", "lf-ohtri", "lf-cablecurl", "lf-facepull", "lf-cablelat", "lf-cablefly", "hs-lat", "hs-lat-wide", "hs-lat-close", "hs-lat-under"]);
 const loadShort = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug" : "Steckgewicht") : e.load === "side" ? "Scheiben je Seite" : "Scheiben";
 const loadTxt = e => e.type === "stack" ? (CABLE.has(e.id) ? "Seilzug, Steckgewicht" : "Steckgewicht") : e.load === "side" ? "Scheiben, pro Seite" : "Scheiben, insgesamt";
 const stepTxt = e => `${kgTxt(e.step)} kg${e.load === "side" && e.type !== "stack" ? " pro Seite" : ""}`;
@@ -2181,67 +2243,73 @@ function statsHtml(id) {
 /* ================= Tricks je Gerät ================= */
 // Zwei Feinheiten pro Gerät, die es nur dort gibt: Ausführung mit Begründung aus der Anatomie bzw. Mechanik der Maschine.
 // Studienergebnisse nur mit Quelle. Allgemeine Grundsätze (nah ans Limit, Dehnung, Pausen, Drop-Satz) stehen einmal unter GEN_TRICKS.
+// Tricks je Gerät: [Titel, was du tust, warum in ein bis zwei kurzen Sätzen, Quelle]. Einfache Wörter, keine Fachbegriffe.
 const TRICK_X = {
-  "hs-chest": [["Ellbogen unter Schulterhöhe", "Ellbogen leicht unter Schulterhöhe führen", "Ganz seitlich auf Schulterhöhe abgespreizte Ellbogen bringen das Schultergelenk hinten in der Dehnung in eine ungünstige Stellung. Etwas tiefer geführt ist es weniger belastet."],
-    ["Hinten kurz in der Dehnung", "Hinten eine Sekunde halten, dann drücken", "Hinten ist die Brust am stärksten gedehnt. Die kurze Pause verhindert, dass du aus dem Zurückfedern heraus drückst."]],
-  "hs-incline": [["Eigenes Startgewicht", "Nicht vom Gewicht der Brustpresse ausgehen", "Schräges Drücken ist ein anderer Hebel als flaches. Wähle beim ersten Mal ein Gewicht, mit dem du das obere Ende deines Wiederholungsbereichs sauber schaffst."]],
-  "hs-decline": [["Ergänzt die flache Presse", "Als zweite Brustübung, nicht statt der Brustpresse", "Die flache Brustpresse trainiert den unteren Brustanteil schon mit. Die Negativ-Presse betont ihn stärker – sinnvoll als Ergänzung oder zum Abwechseln."]],
-  "hs-widechest": [["Im Wechsel mit der Brustpresse", "Über die Wochen mit der Brustpresse abwechseln", "Breite und klassische Presse sind dasselbe Bewegungsmuster. Im Wechsel bleibt die Arbeit für die Brust ähnlich, nur die Stellung der Schulter ändert sich."]],
-  "hs-fly": [["Mit den Ellbogen führen", "Ellbogen zusammenführen, nicht die Hände", "Wer an die Ellbogen denkt, zieht weniger mit Händen und Unterarmen – die Brust führt die Bewegung."]],
-  "hs-row": [["Schulterblätter zuerst", "Erst die Schulterblätter zurück, dann die Arme", "Beginnt jede Wiederholung mit den Schulterblättern, arbeiten die Muskeln dazwischen von Anfang an mit – nicht nur die Arme."]],
-  "hs-lowrow": [["Ellbogen zur Hosentasche", "Ellbogen Richtung Hosentasche führen", "Das Bild hält die Ellbogen nah am Rumpf und lenkt den Zug nach hinten-unten – die Richtung, in die der breite Rückenmuskel den Arm zieht."]],
-  "hs-highrow": [["Abwechseln statt stapeln", "Mit Latziehen und Rudern im Plan: eher im Wechsel", "Die Zugrichtung liegt zwischen beiden und trainiert dieselben Muskeln. Stehen beide schon im Plan, nimm das hohe Rudern lieber im Wechsel über die Wochen als zusätzlich am selben Tag."]],
-  "hs-pulldown": [["Hände sind nur Haken", "Mit den Ellbogen ziehen, Griff locker", "Wer gedanklich mit den Ellbogen zieht und den Griff locker hält, spürt meist den Rücken deutlicher als die Arme."]],
-  "hs-dyrow": [["Bizeps hilft mit", "Armbeuger am selben Tag erst danach", "Der Bizeps arbeitet hier stark mit. Steht der Armbeuger am selben Tag an, mach ihn danach – sonst ermüdet der Bizeps, bevor der Rücken genug gearbeitet hat."],
-    ["Handgelenke im Untergriff", "Handgelenke nicht nach hinten abknicken", "Im Untergriff kippen die Handgelenke leicht nach hinten. Gerade gehalten sind sie entlastet."]],
-  "hs-lat": [["Zwischenschritte nutzen", "Kleines Zusatzgewicht für Zwischenschritte", "Am Steckgewicht sind die Sprünge oft grob. Hat das Gerät ein kleines Zusatzgewicht, nutze es, statt Wiederholungen zu verlieren."]],
-  "hs-lat-wide": [["Gleiche Stelle greifen", "Jedes Mal an derselben Stelle der Stange greifen", "Die Griffbreite verändert, wie viel Gewicht geht. Greifst du immer gleich, bleiben deine Werte von Training zu Training vergleichbar."]],
-  "hs-lat-close": [["Brust zum Griff", "Brust dem Griff entgegenheben", "Heb beim Ziehen die Brust leicht dem Griff entgegen. Der Oberkörper bleibt dabei aufrecht und du holst keinen Schwung."]],
-  "hs-lat-under": [["Bei einem Griff bleiben", "Über mehrere Wochen denselben Griff nehmen", "Ober- und Untergriff sind in der App getrennte Übungen mit eigenen Werten. Bleibst du einige Wochen bei einem Griff, siehst du deinen Fortschritt."]],
-  "hs-shoulder": [["Ellbogen leicht vorn", "Ellbogen leicht vor dem Körper, nicht ganz seitlich", "Leicht nach vorn geführte Ellbogen sind für die meisten Schultern angenehmer als ganz seitlich abgespreizte."],
-    ["Kopf ruhig", "Kopf an der Lehne, Blick geradeaus", "Schiebt sich der Kopf beim Drücken nach vorn, arbeitet der Nacken mit."]],
-  "hs-lateral": [["Über die Oberarme drücken", "Druck über die Oberarme ins Polster, Hände locker", "Lockere Hände halten Unterarme und Nacken aus der Bewegung; der seitliche Deltamuskel hebt den Oberarm."]],
-  "hs-reardelt": [["Schulterblätter ruhig", "Schulterblätter nicht kräftig zusammenziehen", "Kräftiges Zusammenziehen verlagert Arbeit auf die Muskeln zwischen den Schulterblättern. Für die hintere Schulter das Schulterblatt eher ruhig lassen."]],
-  "hs-curl": [["Handgelenk gerade", "Handgelenk gerade, nicht einrollen", "Rollst du das Handgelenk ein, arbeiten die Unterarmbeuger mit. Gerade gehalten macht der Bizeps die Arbeit."],
-    ["An den Bizeps denken", "Bewusst den Bizeps anspannen", "In einer kleinen Studie mit untrainierten Männern wuchs der Bizeps stärker, wenn sie sich auf das Anspannen des Muskels konzentrierten (+12,4 % statt +6,9 % in 8 Wochen).", ["schoenfeld2018"]]],
-  "hs-dip": [["Ellbogen eng", "Ellbogen nah am Körper nach hinten führen", "Spreizen die Ellbogen seitlich ab, drückt die Schulter mit. Eng geführt arbeitet der Trizeps."]],
-  "hs-triext": [["Schultern bleiben hinten", "Schultern beim Strecken nicht nach vorn rollen", "Rollen die Schultern nach vorn, helfen Brust und vordere Schulter mit. Schultern unten und hinten lassen."]],
-  "hs-legpress": [["Fußhöhe wählen", "Füße höher: mehr Gesäß, tiefer: mehr Oberschenkel", "Weiter oben auf der Platte beugt sich das Knie weniger und die Hüfte mehr – das verlagert Arbeit zum Gesäß. Weiter unten arbeitet die Oberschenkelvorderseite stärker."]],
-  "hs-isolegpress": [["Einbeinig testen", "Ab und zu einbeinig: schwächeres Bein erkennen", "Mit getrennten Seiten siehst du, ob ein Bein weniger schafft. Dann einbeinig trainieren: das schwächere Bein zuerst, das andere macht dieselbe Wiederholungszahl."]],
-  "hs-vsquat": [["Fußstellung steuert", "Füße weiter vorn: weniger Kniebeugung", "Weiter vorn aufgesetzte Füße verringern die Kniebeugung und geben dem Gesäß mehr Anteil; weiter hinten arbeitet die Oberschenkelvorderseite stärker."]],
-  "hs-hack": [["Gestützte Tiefe nutzen", "Tief gehen, solange es schmerzfrei ist", "Weil der Rücken gestützt ist, erlaubt die Maschine eine tiefe Beugung. Dort arbeitet die Oberschenkelvorderseite in der Dehnung."]],
-  "hs-beltsquat": [["Gleicher Einhängepunkt", "Den Gurt immer am selben Punkt einhängen", "Laut Hersteller gibt es vier Einhängepunkte mit unterschiedlicher Übersetzung. Wechselst du, sind deine Gewichte nicht mehr vergleichbar."]],
-  "hs-smith": [["Nur Scheiben zählen", "Das Stangengewicht nicht mitrechnen", "Wie schwer sich die leere Stange anfühlt, hängt vom Modell ab. Trägst du nur die Scheiben ein, bleiben deine Werte an derselben Multipresse vergleichbar."]],
-  "hs-legext": [["Nicht vorbeugen", "Rücken an der Lehne, nicht nach vorn beugen", "Der gerade Schenkelmuskel zieht auch über die Hüfte. Beugst du dich vor, ist er verkürzt; mit dem Rücken an der Lehne bleibt er stärker gedehnt."]],
-  "hs-kneelcurl": [["Unten fast strecken", "Unten das Knie fast ganz strecken", "Mit fast gestrecktem Knie ist der hintere Oberschenkel gedehnt. Wer unten früh umkehrt, verschenkt diesen Teil der Bewegung."]],
-  "hs-legcurl": [["Kleine Schritte", "Gewichtsschritt auf 1,25 kg pro Seite stellen", "Die Beinbeuger sind meist schwächer als die Beinstrecker. Mit kleinen Scheiben verlierst du beim Steigern weniger Wiederholungen. Den Schritt änderst du unter „Gerät bearbeiten“."]],
-  "hs-seatcurl": [["Gebeugte Hüfte nutzen", "Oberkörper aufrecht oder leicht vorgeneigt", "Lehnst du dich weit zurück, streckt sich die Hüfte und der hintere Oberschenkel verliert die Dehnung, die diese Maschine besonders macht."]],
-  "hs-hipthrust": [["Druck über die Fersen", "Über die Fersen hochdrücken, Zehen locker", "Drückst du über die Fersen, streckt vor allem das Gesäß die Hüfte. Über die Fußballen übernimmt die Oberschenkelvorderseite mehr."]],
-  "hs-abductor": [["Ganzer Weg", "Bis zur größten Öffnung drücken, die du kontrollierst", "Halbe Wiederholungen in der Mitte trainieren nur einen Teil des Bewegungswegs. Kannst du außen nicht kurz halten, ist das Gewicht zu hoch."]],
-  "hs-adductor": [["Nach den großen Übungen", "Adduktoren erst nach Beinpresse oder Kniebeuge", "Bei Beinpresse und Kniebeuge arbeiten die Adduktoren mit. Trainierst du sie vorher einzeln, sind sie bei den großen Übungen schon müde."]],
-  "hs-calf": [["Großzehenballen belasten", "Druck über den Großzehenballen, Fuß gerade", "Rollt der Fuß beim Hochdrücken auf die Außenkante, steht das Sprunggelenk schief. Druck über den Großzehenballen hält es gerade."]],
-  "hs-seatcalf": [["Unterschenkel senkrecht", "Knie direkt über den Fußballen ausrichten", "Stehen die Unterschenkel senkrecht unter dem Polster, geht die Last direkt in die Wade. Sitzt du zu weit vorn oder hinten, verschiebt sich der Hebel."]],
-  "hs-ab": [["Einrollen statt klappen", "Rippen zum Becken ziehen", "Der gerade Bauchmuskel rollt die Wirbelsäule ein. Klappst du nur in der Hüfte, arbeiten vor allem die Hüftbeuger."],
-    ["Ausatmen beim Einrollen", "Beim Einrollen kräftig ausatmen", "Kräftiges Ausatmen spannt die Bauchmuskeln zusätzlich an und erleichtert das volle Einrollen."]],
-  "lf-chest": [["Startposition statt Sitz", "Dehnung über die Startposition regeln, nicht über den Sitz", "Der Sitz bestimmt, wo die Griffe vor der Brust liegen. Wie weit die Arme hinten starten, stellst du getrennt ein – so passt beides."]],
-  "lf-shoulder": [["Griff bestimmt die Ellbogen", "Neutralgriff hält die Ellbogen weiter vorn", "Mit den Handflächen zueinander bleiben die Ellbogen eher vor dem Körper, im Obergriff gehen sie weiter zur Seite. Nimm den Griff, bei dem die Schulter ruhig bleibt."]],
-  "lf-pulldown": [["Bahn mitgehen lassen", "Die Griffe ihrer eigenen Bahn folgen lassen", "Jeder Arm läuft auf einer festen Bahn. Nur nach unten ziehen, die Hände weder zusammendrücken noch auseinanderziehen."]],
-  "lf-row": [["Polster vor dem Gewicht", "Erst das Brustpolster einstellen, dann das Gewicht", "Steht das Polster zu weit vorn, sind die Ellbogen schon am Start gebeugt und der Rücken wird nicht gedehnt; steht es zu weit hinten, musst du dich zum Fassen vorlehnen."]],
-  "lf-fly": [["Nicht die weiteste Position", "Die Dehnung soll deutlich sein, nicht maximal", "Die hinterste Startposition verlangt viel Beweglichkeit. Nur so weit öffnen, wie die Schulter vorn nicht zieht."]],
-  "lf-reardelt": [["Arme auf Schulterhöhe", "Die Arme auf Schulterhöhe nach hinten führen", "Sinken die Ellbogen ab, wird die Bewegung eher ein Rudern und der Rücken übernimmt. Auf Schulterhöhe bleibt die hintere Schulter die Hauptarbeiterin."]],
-  "lf-lateral": [["Ellbogen führen", "Mit den Oberarmen gegen die Polster nach oben drücken, nicht mit den Händen", "Die Kraft geht über die Oberarme ins Polster. Ziehen die Hände mit, spannen sich Unterarm und Nacken an."]],
-  "lf-curl": [["Handflächen nach oben", "Handflächen die ganze Zeit nach oben gedreht lassen", "Der Bizeps dreht den Unterarm auch nach außen. Mit nach oben gedrehten Handflächen arbeitet er voll mit; kippen die Hände nach innen, übernimmt der Oberarmspeichenmuskel mehr."]],
-  "lf-tripress": [["Griffart beibehalten", "Druck- oder Dip-Griff: einen wählen und dabei bleiben", "Beide trainieren vor allem den Trizeps. Wechselst du, sind die Gewichte nicht mehr vergleichbar – die App erkennt deinen Fortschritt dann schlechter."]],
-  "lf-triext": [["Handgelenke neutral", "Handgelenke gerade halten, nicht abknicken", "Knicken die Handgelenke ab, wird das Handgelenk belastet. Gerade gehalten geht die Kraft direkt in den Griff."]],
-  "lf-pushdown": [["Übersetzung beachten", "Die Zahl am Block ist oft nicht das Gewicht am Griff", "Viele Kabelzüge sind übersetzt, bei Life Fitness je nach Modell 2:1 oder 4:1. Am Griff kommt dann nur die Hälfte bzw. ein Viertel an. Gewichte deshalb nur am selben Zug vergleichen."]],
-  "lf-legpress": [["Im Sitzen einstellen", "Sitzschlitten im Sitzen verstellen und den Kniewinkel prüfen", "An der Arc Leg Press lässt sich der Sitzschlitten im Sitzen verstellen. So prüfst du den Kniewinkel in der Haltung, in der du gleich drückst."]],
-  "lf-legext": [["Gesäß an die Lehne", "Gesäß ganz nach hinten setzen", "Rutscht das Gesäß nach vorn, liegt das Knie nicht mehr am Drehpunkt. Dann rutscht das Polster am Schienbein entlang."]],
-  "lf-seatcurl": [["Griffe als Halt", "Mit den Griffen das Polster nach unten ziehen", "Hältst du dich an den Griffen auf dem Oberschenkelpolster fest, bleiben die Oberschenkel liegen und die Beuger arbeiten ohne Ausweichen."]],
-  "lf-legcurl": [["Oberkörper flach", "Oberkörper flach auf den abgewinkelten Brustteil legen", "Laut Hersteller entlastet der Knick an der Hüfte den unteren Rücken. Stützt du dich auf die Arme hoch, gerät der untere Rücken leichter ins Hohlkreuz."]],
-  "lf-abductor": [["Becken bleibt still", "Gesäß fest auf dem Sitz, nur die Beine bewegen sich", "Hebt sich eine Gesäßhälfte, drückst du aus dem Rumpf statt aus der Hüfte. Ruhig sitzend arbeiten die seitlichen Gesäßmuskeln."]],
-  "lf-adductor": [["Bei einer Fußposition bleiben", "Eine der zwei Fußpositionen wählen und beibehalten", "Laut Hersteller sollen Kniepolster und Fußpositionen das Knie entlasten. Bleibst du bei einer Position, sind deine Gewichte vergleichbar."]],
-  "lf-smith": [["Gegengewicht beachten", "Gewichte nicht mit anderen Multipressen vergleichen", "Laut Hersteller gleicht ein Gegengewicht im Rahmen die Stange aus. Dieselben Scheiben fühlen sich deshalb an einer anderen Multipresse oder mit freier Hantel anders an."]],
-  "lf-ab": [["Becken bleibt hinten", "Gesäß bleibt am Sitz, der Oberkörper rollt sich ein", "Kippt der Oberkörper aus der Hüfte nach vorn, statt sich einzurollen, arbeiten die Hüftbeuger stärker mit und der Bauch weniger."]]
+  "hs-chest": [["Ellbogen etwas tiefer", "Halt die Ellbogen knapp unter Schulterhöhe", "Stehen die Ellbogen weit außen auf Schulterhöhe, wird die Schulter hinten stark belastet. Etwas tiefer ist es für sie leichter."],
+    ["Hinten kurz warten", "Halt hinten eine Sekunde, dann drück", "Dort ist die Brust am stärksten gedehnt. Mit der kurzen Pause drückst du aus eigener Kraft und nicht aus dem Schwung."]],
+  "hs-incline": [["Eigenes Gewicht", "Übernimm nicht das Gewicht der Brustpresse", "Schräg nach oben schaffst du ein anderes Gewicht als gerade nach vorn. Such dir hier ein eigenes, mit dem auch die letzte Wiederholung sauber ist."]],
+  "hs-decline": [["Als Ergänzung", "Nimm sie zusätzlich zur Brustpresse, nicht stattdessen", "Die normale Brustpresse trainiert die untere Brust schon mit. Diese Presse betont sie stärker – gut als zweite Brustübung oder zum Abwechseln."]],
+  "hs-widechest": [["Abwechseln", "Wechsle über die Wochen mit der Brustpresse", "Beide Pressen sind fast dieselbe Bewegung. Für die Brust ist die Arbeit ähnlich, nur die Schulter steht anders."]],
+  "hs-fly": [["Ellbogen führen", "Denk an die Ellbogen, nicht an die Hände", "Führst du die Ellbogen zusammen, ziehen Hände und Unterarme weniger mit. Dann macht die Brust die Arbeit."]],
+  "hs-row": [["Erst die Schulterblätter", "Zieh zuerst die Schulterblätter zurück, dann die Arme", "So arbeiten die Muskeln zwischen den Schulterblättern von Anfang an mit – und nicht nur die Arme."]],
+  "hs-lowrow": [["Ellbogen zur Hosentasche", "Zieh die Ellbogen Richtung Hosentasche", "Das Bild hält die Ellbogen nah am Körper und den Zug nach hinten-unten. Genau in diese Richtung zieht der breite Rückenmuskel."]],
+  "hs-highrow": [["Abwechseln statt alles", "Stehen Latziehen und Rudern schon im Plan? Dann wechsle ab", "Diese Übung liegt zwischen beiden und trainiert dieselben Muskeln. Nimm sie lieber im Wechsel über die Wochen als zusätzlich am selben Tag."]],
+  "hs-pulldown": [["Hände als Haken", "Zieh mit den Ellbogen, der Griff bleibt locker", "Wer an die Ellbogen denkt und locker greift, spürt meist den Rücken stärker als die Arme."]],
+  "hs-dyrow": [["Bizeps danach", "Mach den Armbeuger am selben Tag erst nach dieser Übung", "Der Bizeps hilft hier kräftig mit. Ist er schon müde, gibt er auf, bevor der Rücken genug gearbeitet hat."],
+    ["Gerade Handgelenke", "Knick die Handgelenke nicht nach hinten ab", "Mit den Handflächen nach oben kippen sie leicht nach hinten. Gerade gehalten werden sie weniger belastet."]],
+  "hs-lat": [["Kleine Schritte", "Nutz das kleine Zusatzgewicht, wenn es eins gibt", "Am Steckgewicht ist der nächste Schritt oft groß. Mit dem Zusatzgewicht steigerst du dich in kleineren Stufen und verlierst weniger Wiederholungen."]],
+  "hs-lat-wide": [["Immer gleich greifen", "Greif die Stange jedes Mal an derselben Stelle", "Die Griffbreite ändert, wie viel Gewicht du schaffst. Greifst du immer gleich, kannst du deine Werte vergleichen."]],
+  "hs-lat-close": [["Brust zum Griff", "Heb die Brust dem Griff entgegen", "So bleibst du aufrecht und holst keinen Schwung aus dem Oberkörper."]],
+  "hs-lat-under": [["Bei einem Griff bleiben", "Nimm ein paar Wochen lang denselben Griff", "Die App führt jeden Griff als eigene Übung mit eigenen Werten. Bleibst du dabei, siehst du deinen Fortschritt."]],
+  "hs-shoulder": [["Ellbogen etwas vorn", "Halt die Ellbogen leicht vor dem Körper", "Das ist für die meisten Schultern angenehmer als ganz zur Seite gestreckte Ellbogen."],
+    ["Kopf bleibt hinten", "Leg den Kopf an die Lehne und schau geradeaus", "Schiebst du den Kopf beim Drücken vor, arbeitet der Nacken mit."]],
+  "hs-lateral": [["Hände locker", "Drück mit den Oberarmen ins Polster, die Hände bleiben locker", "So bleiben Unterarme und Nacken aus der Bewegung, und die Schulter hebt den Arm."]],
+  "hs-reardelt": [["Schulterblätter ruhig", "Zieh die Schulterblätter nicht kräftig zusammen", "Sonst übernehmen die Muskeln zwischen den Schulterblättern. Für die hintere Schulter bleiben sie eher ruhig."]],
+  "hs-curl": [["Handgelenk gerade", "Roll das Handgelenk nicht ein", "Mit eingerolltem Handgelenk helfen die Unterarme mit. Gerade gehalten macht der Bizeps die Arbeit."],
+    ["An den Bizeps denken", "Spann den Bizeps bewusst an", "In einer kleinen Studie mit untrainierten Männern wuchs der Bizeps stärker, wenn sie sich auf den Muskel konzentrierten: +12,4 % statt +6,9 % in 8 Wochen.", ["schoenfeld2018"]]],
+  "hs-dip": [["Ellbogen eng", "Führ die Ellbogen nah am Körper nach hinten", "Gehen sie zur Seite, drückt die Schulter mit. Eng am Körper arbeitet der Trizeps."]],
+  "hs-triext": [["Schultern hinten", "Roll die Schultern beim Strecken nicht nach vorn", "Sonst helfen Brust und vordere Schulter mit. Lass die Schultern unten und hinten."]],
+  "hs-legpress": [["Füße höher oder tiefer", "Füße höher: mehr Po. Füße tiefer: mehr Oberschenkel", "Weiter oben auf der Platte beugt sich die Hüfte mehr und das Knie weniger – dann arbeitet der Po stärker. Weiter unten ist es umgekehrt."]],
+  "hs-isolegpress": [["Einbeinig testen", "Probier ab und zu ein Bein allein", "So merkst du, ob ein Bein schwächer ist. Trainiere dann das schwächere zuerst, und das andere macht genauso viele Wiederholungen."]],
+  "hs-vsquat": [["Füße vor oder zurück", "Füße weiter vorn: mehr Po. Weiter hinten: mehr Oberschenkel", "Stehen die Füße weiter vorn, beugen sich die Knie weniger und der Po arbeitet mehr mit."]],
+  "hs-hack": [["Tief gehen", "Geh so tief, wie es ohne Schmerzen geht", "Der Rücken ist gestützt, darum kannst du hier tief beugen. Unten arbeitet die Oberschenkelvorderseite in gedehnter Stellung."]],
+  "hs-beltsquat": [["Gleicher Haken", "Häng den Gurt immer am selben Punkt ein", "Laut Hersteller gibt es vier Einhängepunkte, und an jedem wirkt dasselbe Gewicht unterschiedlich stark. Wechselst du, kannst du deine Werte nicht mehr vergleichen."]],
+  "hs-smith": [["Nur die Scheiben", "Trag nur die Scheiben ein, nicht die Stange", "Wie schwer die leere Stange ist, hängt vom Modell ab. Zählst du nur die Scheiben, bleiben deine Werte an derselben Multipresse vergleichbar."]],
+  "hs-legext": [["Rücken anlehnen", "Bleib mit dem Rücken an der Lehne", "Ein Teil des Oberschenkelmuskels läuft bis über die Hüfte. Angelehnt bleibt er stärker gedehnt als vorgebeugt."]],
+  "hs-kneelcurl": [["Unten fast strecken", "Streck das Knie unten fast ganz", "Dort ist der hintere Oberschenkel gedehnt. Wer früher umkehrt, lässt diesen Teil der Bewegung aus."]],
+  "hs-legcurl": [["Kleine Scheiben", "Stell den Gewichtsschritt auf 1,25 kg pro Seite", "Die Beinbeuger sind meist schwächer als die Beinstrecker. Mit kleinen Scheiben verlierst du beim Steigern weniger Wiederholungen. Den Schritt änderst du unter „Gerät bearbeiten“."]],
+  "hs-seatcurl": [["Aufrecht sitzen", "Sitz aufrecht oder leicht nach vorn geneigt", "Lehnst du dich weit zurück, verliert der hintere Oberschenkel die Dehnung – und genau die macht diese Maschine besonders."]],
+  "hs-hipthrust": [["Über die Fersen", "Drück über die Fersen hoch, die Zehen bleiben locker", "Über die Fersen streckt vor allem der Po die Hüfte. Über die Fußballen hilft die Oberschenkelvorderseite mehr mit."]],
+  "hs-abductor": [["Ganzer Weg", "Drück so weit nach außen, wie du es kontrollierst", "Halbe Wiederholungen trainieren nur einen Teil der Bewegung. Kannst du außen nicht kurz halten, ist das Gewicht zu schwer."]],
+  "hs-adductor": [["Erst die großen Übungen", "Mach die Adduktoren nach Beinpresse oder Kniebeuge", "Dort arbeiten sie schon mit. Trainierst du sie vorher einzeln, sind sie bei den großen Übungen müde."]],
+  "hs-calf": [["Druck auf den großen Zeh", "Drück über den Ballen der großen Zehe, der Fuß bleibt gerade", "Rollt der Fuß nach außen, steht das Fußgelenk schief. Mit Druck auf den Großzehenballen bleibt es gerade."]],
+  "hs-seatcalf": [["Unterschenkel senkrecht", "Stell die Knie genau über die Fußballen", "Dann geht die Last direkt in die Wade. Sitzt du weiter vorn oder hinten, fühlt sich dasselbe Gewicht anders an."]],
+  "hs-ab": [["Einrollen statt klappen", "Zieh die Rippen zum Becken", "Der Bauchmuskel rollt die Wirbelsäule ein. Klappst du nur in der Hüfte nach vorn, arbeiten vor allem die Hüftbeuger."],
+    ["Kräftig ausatmen", "Atme beim Einrollen kräftig aus", "Das spannt den Bauch zusätzlich an und hilft dir, dich ganz einzurollen."]],
+  "lf-chest": [["Start extra einstellen", "Stell die Dehnung über die Startposition ein, nicht über den Sitz", "Der Sitz bestimmt, auf welcher Höhe die Griffe sind. Wie weit hinten die Arme starten, stellst du getrennt ein."]],
+  "lf-shoulder": [["Griff wählen", "Handflächen zueinander halten die Ellbogen weiter vorn", "Mit den Handrücken nach hinten gehen die Ellbogen weiter zur Seite. Nimm den Griff, bei dem deine Schulter ruhig bleibt."]],
+  "lf-pulldown": [["Der Bahn folgen", "Lass die Griffe ihrer Bahn folgen", "Jeder Arm läuft auf einer festen Bahn. Zieh nur nach unten – drück die Hände nicht zusammen und zieh sie nicht auseinander."]],
+  "lf-row": [["Erst das Polster", "Stell zuerst das Brustpolster ein, dann das Gewicht", "Steht es zu weit vorn, sind die Arme am Start schon gebeugt. Steht es zu weit hinten, musst du dich zum Greifen vorbeugen."]],
+  "lf-fly": [["Nicht ganz hinten starten", "Die Dehnung soll deutlich sein, aber nicht maximal", "Die hinterste Startposition verlangt viel Beweglichkeit. Öffne nur so weit, wie es vorn in der Schulter nicht zieht."]],
+  "lf-reardelt": [["Arme auf Schulterhöhe", "Führ die Arme auf Schulterhöhe nach hinten", "Sinken die Ellbogen ab, wird daraus ein Rudern und der Rücken übernimmt."]],
+  "lf-lateral": [["Mit den Oberarmen drücken", "Drück mit den Oberarmen gegen die Polster, nicht mit den Händen", "Ziehen die Hände mit, spannen sich Unterarme und Nacken an."]],
+  "lf-curl": [["Handflächen nach oben", "Lass die Handflächen die ganze Zeit nach oben zeigen", "Der Bizeps dreht den Unterarm auch nach außen. Kippen die Hände nach innen, übernimmt der Oberarmspeichenmuskel am Unterarm mehr."]],
+  "lf-tripress": [["Ein Griff, nicht beide", "Such dir einen der beiden Griffe aus und bleib dabei", "Beide trainieren vor allem den Trizeps. Wechselst du, kann die App deine Gewichte nicht mehr vergleichen."]],
+  "lf-triext": [["Handgelenke neutral", "Halt die Handgelenke gerade", "Abgeknickt werden sie belastet. Gerade geht die Kraft direkt in den Griff."]],
+  "lf-ohtri": [["Leichter anfangen", "Fang leichter an als beim Trizepsdrücken am Körper", "Mit den Armen über dem Kopf stehst du wackeliger. Such dir für diese Übung ein eigenes Gewicht."]],
+  "lf-cablecurl": [["Einen Schritt zurück", "Stell dich so, dass das Seil unten gespannt bleibt", "Stehst du zu nah, setzt das Gewicht unten auf und der Zug ist weg."]],
+  "lf-facepull": [["Daumen nach hinten", "Zeig am Ende mit den Daumen hinter dich", "Dann drehen sich die Oberarme am Ende von selbst nach außen."]],
+  "lf-cablelat": [["Gleiches Gewicht", "Nimm links und rechts dasselbe Gewicht", "Die App speichert einen Wert pro Satz. Trag die Wiederholungen der schwächeren Seite ein."]],
+  "lf-cablefly": [["Baum umarmen", "Stell dir vor, du umarmst einen dicken Baum", "So bleiben die Ellbogen leicht gebeugt und die Hände laufen auf einem Bogen."]],
+  "lf-pushdown": [["Zahl am Block", "Die Zahl am Gewichtsblock ist oft nicht das, was du ziehst", "Viele Kabelzüge sind übersetzt, bei Life Fitness je nach Modell 2:1 oder 4:1. Dann kommt am Griff nur die Hälfte oder ein Viertel an. Vergleich Gewichte deshalb nur am selben Zug."]],
+  "lf-legpress": [["Im Sitzen einstellen", "Verstell den Sitz, während du darauf sitzt", "An der Arc Leg Press geht das. So siehst du gleich, ob der Winkel im Knie stimmt."]],
+  "lf-legext": [["Ganz nach hinten setzen", "Setz dich mit dem Po ganz nach hinten", "Rutschst du nach vorn, liegt das Knie nicht mehr am Drehpunkt. Dann wandert das Polster am Schienbein entlang."]],
+  "lf-seatcurl": [["Festhalten", "Zieh mit den Griffen das Polster auf die Oberschenkel", "So bleiben die Oberschenkel liegen und die Beinbeuger arbeiten, ohne dass du ausweichst."]],
+  "lf-legcurl": [["Flach liegen", "Leg den Oberkörper flach auf das abgewinkelte Polster", "Laut Hersteller entlastet der Knick an der Hüfte den unteren Rücken. Stützt du dich auf die Arme, gehst du leichter ins Hohlkreuz."]],
+  "lf-abductor": [["Sitzen bleiben", "Der Po bleibt fest auf dem Sitz", "Hebt sich eine Seite, drückst du aus dem Rumpf statt aus der Hüfte."]],
+  "lf-adductor": [["Eine Fußposition", "Wähl eine der zwei Fußpositionen und bleib dabei", "Laut Hersteller sollen Kniepolster und Fußpositionen das Knie entlasten. Bleibst du bei einer, kannst du deine Gewichte vergleichen."]],
+  "lf-smith": [["Nicht vergleichen", "Vergleich die Gewichte nicht mit anderen Multipressen", "Laut Hersteller gleicht ein Gegengewicht im Rahmen die Stange aus. Dieselben Scheiben fühlen sich woanders deshalb anders an."]],
+  "lf-ab": [["Po bleibt hinten", "Der Po bleibt am Sitz, nur der Oberkörper rollt sich ein", "Kippst du aus der Hüfte nach vorn, arbeiten die Hüftbeuger mehr und der Bauch weniger."]]
 };
 // Wofür das Gerät da ist – eine eigene Zeile je Gerät (aus der Anleitung „Warum diese Übung“)
 const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere Brust und vordere Schulter", "hs-decline": "Betont den unteren Brustanteil",
@@ -2259,7 +2327,9 @@ const ABOUT_X = { "hs-chest": "Grundübung für die Brust", "hs-incline": "Obere
   "lf-chest": "Arme laufen nach vorn zusammen", "lf-shoulder": "Drücken über Kopf, zwei Griffpaare", "lf-pulldown": "Zwei getrennte Zugarme statt Stange",
   "lf-row": "Verstellbares Brustpolster, getrennte Arme", "lf-fly": "Brust isoliert, fünf Startpositionen", "lf-reardelt": "Am Butterfly-Kombigerät, Brust zum Polster",
   "lf-lateral": "Seitliche Schulter, Arme getrennt", "lf-curl": "Bizeps am Armpolster, Griffe drehen mit", "lf-tripress": "Trizeps mit Dip- oder Druckgriffen",
-  "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
+  "lf-triext": "Trizeps isoliert auf schrägem Polster", "lf-pushdown": "Am Kabelzug, Oberarme bleiben am Körper", "lf-ohtri": "Am Kabelzug, Oberarme neben dem Kopf",
+  "lf-cablecurl": "Am Kabelzug von unten, im Stehen", "lf-facepull": "Seil zum Gesicht, hintere Schulter und oberer Rücken", "lf-cablelat": "Einarmig am Kabelzug, Rolle unten",
+  "lf-cablefly": "Im Stehen zwischen zwei Rollen", "lf-legpress": "Steckgewicht, Rücken und Becken gestützt",
   "lf-legext": "Quadrizeps isoliert, Startwinkel verstellbar", "lf-seatcurl": "Griffe am Oberschenkelpolster", "lf-legcurl": "Bank an der Hüfte abgewinkelt",
   "lf-abductor": "Seitliches Gesäß, Beine nach außen", "lf-ab": "Bauch einrollen im Sitzen",
   "lf-adductor": "Adduktoren, Startposition in 10°-Schritten", "lf-smith": "Multipresse mit ausgeglichener Stange" };
@@ -2267,7 +2337,9 @@ const aboutOf = e => brandPre(e) + (ABOUT_X[e.id] || (e.pattern ? PATTERNS[e.pat
 const labelOf = e => (e.brand === "lf" ? "Life Fitness " : "") + (e.label || "");
 // Suche findet deutschen Namen, Bezeichnung am Gerät, Marke und gängige Übungsnamen
 const ALIAS = { "hs-lat": "Latziehen, Lat Pulldown, Kabelzug", "hs-lat-wide": "Latziehen breit, Wide Grip, weiter Griff, Kabelzug", "hs-lat-close": "Latziehen eng, V-Griff, Parallelgriff, neutraler Griff, Close Grip, Kabelzug",
-  "hs-lat-under": "Latziehen Untergriff, Kammgriff, supiniert, Reverse Grip, Kabelzug", "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
+  "hs-lat-under": "Latziehen Untergriff, Kammgriff, supiniert, Reverse Grip, Kabelzug", "lf-pushdown": "Triceps Pushdown, Cable Crossover, Kabelzug", "lf-ohtri": "Overhead Triceps Extension, Überkopf, Trizeps über Kopf, Cable Crossover, Kabelzug",
+  "lf-cablecurl": "Cable Curl, Bizeps am Kabel, Bizepscurl, Cable Crossover, Kabelzug", "lf-facepull": "Face Pull, Face Pulls, Seil, Cable Crossover, Kabelzug",
+  "lf-cablelat": "Cable Lateral Raise, seitliches Heben, Cable Crossover, Kabelzug", "lf-cablefly": "Cable Fly, Cable Crossover, Fliegende, Kabelzug", "lf-tripress": "Seated Dip", "lf-legcurl": "Prone Leg Curl", "lf-abductor": "Hip Abduction",
   "hs-hipthrust": "Hip Thrust", "hs-beltsquat": "Hüftgurt, Gürtel", "hs-smith": "Multipresse, Kniebeuge", "lf-smith": "Multipresse, Smith Machine", "hs-legcurl": "Prone Leg Curl, Lying Leg Curl",
   "hs-abductor": "Hip Abductor, Abduktion", "hs-adductor": "Hip Adductor, Adduktion, Oberschenkel innen", "lf-adductor": "Hip Adductor, Adduktion, Oberschenkel innen" };
 const findEx = (e, q) => !q || [e.name, e.label || "", BRAND[e.brand] || "", ALIAS[e.id] || ""].some(s => s.toLowerCase().includes(q));
@@ -2332,9 +2404,15 @@ const MOTION = {
   "hs-curl": { A: Object.assign({}, SEATED, { t: -88, ua: 46, fa: 52 }), B: { fa: -112 }, hl: ["ua"], gear: ["seat", "armpad", "handle"] },
   "hs-triext": { A: Object.assign({}, SEATED, { t: -90, ua: 40, fa: -118 }), B: { fa: 42 }, hl: ["ua"], gear: ["seat", "back", "armpad", "handle"] },
   "lf-pushdown": { anchor: "ank", at: [74, 108], A: { t: -86, th: 92, sh: 88, ft: 0, ua: 97, fa: -14 }, B: { fa: 91 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [96, 6] },
+  // Kabelzug im Stehen: Rolle hinter dem Kopf (über Kopf strecken), unten vorn (Armbeugen), vorn auf Kopfhöhe (Zug zum Gesicht)
+  "lf-ohtri": { anchor: "ank", at: [78, 108], A: { t: -79, th: 95, sh: 86, ft: 0, ua: -68, fa: 150 }, B: { fa: -62 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [22, -34] },
+  "lf-cablecurl": { anchor: "ank", at: [64, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: 94, fa: 80 }, B: { fa: -64 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [118, 100] },
+  "lf-facepull": { anchor: "ank", at: [56, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: -6, fa: -4 }, B: { ua: 166, fa: -22 }, hl: ["sho"], gear: ["floor", "cable", "handle"], cable: [134, -28] },
   // Schultern: Vorder- und Draufsicht
   "hs-lateral": { v: "front", A: { ua: 98, fa: 94 }, B: { ua: 2, fa: 4 }, hl: ["sho"] },
   "hs-fly": { v: "top", A: { ua: 10, fa: -20 }, B: { ua: -95, fa: -125 }, hl: ["chest"] },
+  "lf-cablefly": { v: "top", cables: true, A: { ua: 14, fa: -4 }, B: { ua: -84, fa: -124 }, hl: ["chest"] },
+  "lf-cablelat": { v: "front", one: true, A: { ua: 100, fa: 112 }, B: { ua: 6, fa: 10 }, hl: ["sho"] },
   "hs-reardelt": { v: "top", A: { ua: -95, fa: -125 }, B: { ua: 8, fa: 2 }, hl: ["sho"], pad: true },
   "lf-abductor": { v: "top", legs: true, A: { th: -86 }, B: { th: -60 }, hl: ["hip"] },
   "hs-adductor": { v: "top", legs: true, inner: true, A: { th: -56 }, B: { th: -86 }, hl: ["th"] },
@@ -2672,7 +2750,8 @@ function mPlateRoll(c, r = 5) { return `<circle cx="${mF(c[0])}" cy="${mF(c[1])}
 // ---------- Draufsicht: Butterfly, hintere Schulter, Abduktoren, Adduktoren (vorn = oben) ----------
 function motTop(sp, P, R, act) {
   const c = [80, sp.legs ? 52 : 70], s = 15, out = [], mir = a => 180 - a, role = k => R[k] || 0;
-  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 8}" rx="40" ry="5" fill="${MGL}" fill-opacity=".15"/>`, mLimb([c[0] - 22, c[1] + 10], [c[0] + 22, c[1] + 10], 8, 8, MG));
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 8}" rx="40" ry="5" fill="${MGL}" fill-opacity=".15"/>`);
+  if (!sp.cables) out.push(mLimb([c[0] - 22, c[1] + 10], [c[0] + 22, c[1] + 10], 8, 8, MG));
   if (sp.pad) out.push(mLimb([c[0] - 12, c[1] - 17.5], [c[0] + 12, c[1] - 17.5], 7, 7, MG));
   if (sp.legs) {
     const hR = [c[0] + 8, c[1] + 2], hL = [c[0] - 8, c[1] + 2];
@@ -2689,7 +2768,9 @@ function motTop(sp, P, R, act) {
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]];
   for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 22));
-    out.push(mLimb(mSh(sp0, [0, 1], 4), h, 3.6, 3, MG), mLimb(sp0, e, 8, 6.2, MB), mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.6, MGL));
+    if (sp.cables) { const pul = [c[0] + (sp0 === sR ? 70 : -70), c[1] + 16]; out.push(mLine(pul, h, 1.4, MGL), mDot(pul, 4.2, MGL)); }
+    else out.push(mLimb(mSh(sp0, [0, 1], 4), h, 3.6, 3, MG));
+    out.push(mLimb(sp0, e, 8, 6.2, MB), mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.6, MGL));
   }
   out.push(mLimb(sL, sR, 13, 13, MB));
   for (const sx of [-1, 1]) {
@@ -2703,15 +2784,18 @@ function motTop(sp, P, R, act) {
 function motFront(sp, P, R, act) {
   const c = [80, 40], s = 14, out = [], mir = a => 180 - a, role = k => R[k] || 0;
   const sR = [c[0] + s, c[1]], sL = [c[0] - s, c[1]], hR = [c[0] + 8, c[1] + 42], hL = [c[0] - 8, c[1] + 42];
-  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 96}" rx="34" ry="3" fill="${MGL}" fill-opacity=".15"/>`, mLimb([c[0] - 18, c[1] + 50], [c[0] + 18, c[1] + 50], 8, 8, MG));
+  out.push(`<ellipse cx="${c[0]}" cy="${c[1] + 96}" rx="34" ry="3" fill="${MGL}" fill-opacity=".15"/>`);
+  if (!sp.one) out.push(mLimb([c[0] - 18, c[1] + 50], [c[0] + 18, c[1] + 50], 8, 8, MG));
   for (const [h, dx] of [[hR, 1], [hL, -1]]) out.push(mLimb(h, [h[0] + 3 * dx, h[1] + 16], 11, 9, MB2), mLimb([h[0] + 3 * dx, h[1] + 16], [h[0] + 4 * dx, h[1] + 50], 8, 5.5, MB2));
   out.push(`<path d="M${sL[0] - 2} ${sL[1]} Q${c[0]} ${c[1] - 5} ${sR[0] + 2} ${sR[1]} L${hR[0] + 1} ${hR[1]} Q${c[0]} ${hR[1] + 3} ${hL[0] - 1} ${hL[1]} Z" fill="${MB}" stroke="${MB}" stroke-width="5" stroke-linejoin="round"/>`,
     `<path d="M${c[0] + 1} ${c[1] + 2} Q${c[0] + 12} ${c[1] + 4} ${hR[0]} ${hR[1] - 2} L${c[0] + 1} ${hR[1]} Z" fill="#000" fill-opacity=".08"/>`);
   out.push(mLimb([c[0], c[1] - 2], [c[0], c[1] - 12], 5.5, 5, MB));
-  for (const [sp0, ua, fa] of [[sR, P.ua, P.fa], [sL, mir(P.ua), mir(P.fa)]]) {
+  for (const [sp0, ua, fa, work] of [[sR, P.ua, P.fa, true], sp.one ? [sL, 84, 88, false] : [sL, mir(P.ua), mir(P.fa), true]]) {
     const e = mAdd(sp0, mDir(ua, MSEG.ua)), h = mAdd(e, mDir(fa, 20)), u = mUnit(sp0, e);
-    out.push(mLimb(sp0, e, 8, 6.2, MB), mMus(mBellyD(mSh(sp0, u, -3), e, mRot(u, ua > 90 ? 1 : -1), 0, .45, 5, 4, 1.4 + 1.2 * act * (role("delt") === 2)), role("delt"), act, MB),
-      mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.2, MB), mPlateRoll(mSh(e, mRot(u, ua > 90 ? -1 : 1), 0), 4.8));
+    if (sp.one && work) { const pul = [c[0] - 58, c[1] + 70]; out.push(mLine(pul, h, 1.4, MGL), mDot(pul, 4.2, MGL)); }
+    out.push(mLimb(sp0, e, 8, 6.2, MB), mMus(mBellyD(mSh(sp0, u, -3), e, mRot(u, ua > 90 ? 1 : -1), 0, .45, 5, 4, 1.4 + 1.2 * act * (work && role("delt") === 2)), work ? role("delt") : 0, act, MB),
+      mLimb(e, h, 6.2, 4.6, MB), mDot(h, 3.2, MB));
+    if (!sp.one) out.push(mPlateRoll(mSh(e, mRot(u, ua > 90 ? -1 : 1), 0), 4.8));
   }
   out.push(mDot([c[0], c[1] - 14], 7.6, MB));
   return out.join("");
@@ -6815,7 +6899,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { motionSvg, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
