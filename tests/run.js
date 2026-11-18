@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v68)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v68")));
+      ok("Service Worker aktiv (Cache trainingsplan-v69)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v69")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3153,8 +3153,8 @@ async function finishAllSets(page, kg, reps) {
       // Level 3/4: Muskeln, Gerät, Tempo, Atmung, Steuerung
       const { ctx, page } = await open({ plan: PLAN_SMALL });
       const m = await tp(page, () => { const T = window.__tp, chest = T.motionSvg("hs-chest", { p: 1 }), lf = T.motionSvg("lf-chest", { p: 1 });
-        return { glow: chest.includes('stroke="var(--mhot)" stroke-width="6"'), sec: /fill="var\(--mhot\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mgear)"'),
-          lfPlate: lf.includes('r="9" fill="var(--mgear)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
+        return { glow: chest.includes('stroke="var(--mhot)" stroke-width="6"'), sec: /fill="var\(--mhot\)" fill-opacity="0\.4\d?"/.test(chest), plate: chest.includes('r="9" fill="var(--mpad)"'),
+          lfPlate: lf.includes('r="9" fill="var(--mpad)"'), lfStack: (lf.match(/<rect [^>]*height="4.8"/g) || []).length === 6,
           press: [0, 500, 1800, 2500].map(ms => T.motState(ms).st).join(), squat: [0, 1000, 2600, 3200].map(ms => T.motState(ms, true).st).join(),
           downSpecs: ["hs-vsquat", "hs-hack", "hs-beltsquat", "hs-smith", "lf-smith"].every(id => T.motSpec(id).down) && !T.motSpec("hs-legpress").down }; });
       ok("Muskeln: Hauptmuskel leuchtet, mittrainierte Muskeln blass", m.glow && m.sec);
@@ -4146,7 +4146,35 @@ async function finishAllSets(page, kg, reps) {
       }
     }
 
-    section("76. Konsole");
+    section("76. Seitenansicht im neuen Stil, Abduktoren und Adduktoren von vorn");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(x => x.id).filter(id => T.motSpec(id));
+        const side = ids.filter(id => !T.motSpec(id).v), hip = ["hs-abductor", "lf-abductor", "hs-adductor", "lf-adductor"];
+        const S = id => T.motionSvg(id, { p: 1 });
+        return { n: ids.length, nSide: side.length, views: [...new Set(ids.map(id => T.motSpec(id).v || "side"))].sort().join(),
+          style: side.filter(id => { const s = S(id); return !s.includes("var(--mframe)") || !s.includes("var(--mpad)") || /fill="var\(--mgear\)"/.test(s); }),
+          edges: (S("hs-chest").match(/stroke-opacity="\.24" stroke-width="\.55"/g) || []).length,
+          stack: S("lf-chest").includes('fill="var(--mframe)" fill-opacity=".55"'),
+          towers: ["lf-pushdown", "lf-ohtri", "lf-cablecurl", "lf-facepull"].filter(id => !/r="3\.6" fill="var\(--mframe\)"/.test(S(id))),
+          hip: hip.map(id => { const sp = T.motSpec(id), a = T.motionSvg(id, { p: 0 }), b = S(id);
+            return { id, fig: sp.v === "fig", rig: sp.rig, A: sp.A.l, B: sp.B.l, box: /viewBox="0 0 160 120"/.test(b), diff: a !== b, hot: (b.match(/fill="var\(--mhot\)"/g) || []).length }; }) }; });
+      ok("Alle 60 Geräte gezeichnet: Seitenansicht oder Figur, keine Draufsicht mehr", r.n === 60 && r.views === "fig,side" && r.nSide === 44, `${r.n} ${r.views} ${r.nSide}`);
+      ok("Seitenansicht: heller Rahmen, dunkle Polster und Scheiben bei allen 44 Geräten", r.style.length === 0, r.style.join());
+      ok("Ruhende Muskeln mit feiner Kontur, damit man sie erkennt", r.edges >= 6, String(r.edges));
+      ok("Steckgewicht mit hellem Gehäuse wie in den Bildern von vorn", r.stack);
+      ok("Kabelzug im Stehen: Turm mit Rolle statt frei schwebender Rolle", r.towers.length === 0, r.towers.join());
+      const H = Object.fromEntries(r.hip.map(x => [x.id, x]));
+      ok("Abduktoren und Adduktoren: Figur von vorn, Start und Ende verschieden", r.hip.every(x => x.fig && x.box && x.diff), JSON.stringify(r.hip));
+      ok("Abduktoren öffnen die Knie (Polster außen), Adduktoren schließen sie (Polster innen)",
+        ["hs-abductor", "lf-abductor"].every(id => H[id].rig === "abd" && H[id].B > H[id].A) && ["hs-adductor", "lf-adductor"].every(id => H[id].rig === "add" && H[id].B < H[id].A));
+      ok("Arbeitender Muskel rot: seitliches Gesäß bzw. Innenseite der Oberschenkel, je Bein", r.hip.every(x => x.hot >= 2), r.hip.map(x => x.hot).join());
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-abductor]");
+      ok("Seite der Abduktoren: Zeichnung von vorn, bei 360 px ohne seitliches Scrollen", !!(await page.$("#gMotion svg.motion[viewBox='0 0 160 120']")) && await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("77. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
