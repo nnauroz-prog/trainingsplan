@@ -2517,6 +2517,18 @@ function motBox(sp) {
   return (sp._box = `${mF(cx - w / 2)} ${mF(cy - h / 2)} ${mF(w)} ${mF(h)}`);
 }
 const MB2 = "var(--mbody2)";
+// Plastische Wirkung wie bei einem gerenderten Modell: weiche Kanten, Glanzlicht von oben links, Schatten unten rechts
+const M3D = `<defs><filter id="m3d" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">`
+  + `<feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b"/>`
+  + `<feSpecularLighting in="b" surfaceScale="3.2" specularConstant=".38" specularExponent="18" lighting-color="#fff" result="s"><feDistantLight azimuth="225" elevation="42"/></feSpecularLighting>`
+  + `<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/>`
+  + `<feDiffuseLighting in="b" surfaceScale="3.2" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="55"/></feDiffuseLighting>`
+  + `<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.05" k2="0" k3="0" k4="0" result="lit"/>`
+  + `<feComposite in="sp" in2="lit" operator="arithmetic" k1="0" k2=".7" k3="1" k4="0"/></filter>`
+  + `<filter id="m3dm" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".9" result="b"/>`
+  + `<feSpecularLighting in="b" surfaceScale="2" specularConstant=".5" specularExponent="16" lighting-color="#fff" result="s"><feDistantLight azimuth="225" elevation="40"/></feSpecularLighting>`
+  + `<feComposite in="s" in2="SourceAlpha" operator="in" result="sp"/><feDiffuseLighting in="b" surfaceScale="2" diffuseConstant="1" lighting-color="#fff" result="d"><feDistantLight azimuth="225" elevation="60"/></feDiffuseLighting>`
+  + `<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.04" k2="0" k3="0" k4="0" result="lit"/><feComposite in="sp" in2="lit" operator="arithmetic" k1="0" k2=".6" k3="1" k4="0"/></filter></defs>`;
 // Pfeilspitze bei q in Richtung u (Akzentfarbe mit dunklem Rand, auch auf hellem Grund sichtbar)
 function mArrow(q, u, sz, op) {
   const n = [-u[1], u[0]], b = mSh(q, u, -sz), w = sz * .42;
@@ -2836,7 +2848,7 @@ function motDraw(sp, s, e) {
   // Umrisse wie beim Menschen: Muskelwölbungen, schmalere Gelenke, Kopf im Profil. Jeder Muskel läuft vom Ursprung zum Ansatz
   // über das Gelenk (Sehne bis zum nächsten Körperteil). Wird er kürzer, wird er dicker – so sieht man, wie er arbeitet.
   const body = [], far = q => [q[0] - 2.5, q[1] - 1.6], role = k => R[k] || 0;
-  const mMusE = (d, r, ac, base, fib) => mMus(d, r, ac, base, fib) + (r ? "" : mEdge(d));
+  const mMusE = (d, r, ac, base, fib) => `<g filter="url(#m3dm)">${mMus(d, r, ac, base, fib)}</g>` + (r ? "" : mEdge(d));
   const ML = mMusLen(j), ML0 = sp._ml || (sp._ml = (() => { const a = mMusLen(mJoints(sp, mPose(sp, 0))), b = mMusLen(mJoints(sp, mPose(sp, 1))), o = {}; for (const k in a) o[k] = (a[k] + b[k]) / 2; return o; })());
   const vol = k => Math.max(.84, Math.min(1.4, 1 + .6 * (ML0[k] / ML[k] - 1))) + (role(k) === 2 ? .07 * act : 0);
   const tendon = (r, pts) => r ? `<path d="M${pts.map(q => `${mF(q[0])} ${mF(q[1])}`).join("L")}" fill="none" stroke="${MHOT}" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="${r === 2 ? .7 : .4}"/>` : "";
@@ -2912,7 +2924,7 @@ function motDraw(sp, s, e) {
     `<path d="${mSmooth([H(-4, 4.4), H(0, 6.4), H(3.6, 4.8), H(0, 3.6)])}" fill="#fff" fill-opacity=".1"/>`);
   body.push(legBody(true, j.hip, j.knee, j.ank, j.toe));
   body.push(armBody(true, j.sho, j.elb, j.hand));
-  return g.join("") + body.join("") + gf.join("");
+  return g.join("") + `<g filter="url(#m3d)">${body.join("")}</g>` + gf.join("");
 }
 // Rolle/Polster von der Seite
 function mPlateRoll(c, r = 5) { return `<circle cx="${mF(c[0])}" cy="${mF(c[1])}" r="${r}" fill="${MPD}" stroke="${MGL}" stroke-width=".6"/><circle cx="${mF(c[0] - r * .25)}" cy="${mF(c[1] - r * .3)}" r="${mF(r * .45)}" fill="#fff" fill-opacity=".12"/><circle cx="${mF(c[0])}" cy="${mF(c[1])}" r="1.4" fill="${MGL}"/>`; }
@@ -3083,7 +3095,8 @@ function motFig(sp, P, R, act, p, st, e) {
     else if (hipRig) for (const dx of [-1, 1]) { const kx = l => cx + dx * (7.5 + 32 * Math.sin(mRad(l))) + dx * (rig === "abd" ? 13 : -2); out.push(go([kx(P.l), 88], [kx(P2.l), 88], rig === "abd" ? 0 : -14)); }
     // Butterfly und hintere Schulter: Pfeil hinter der Hand (schiebt sie), damit sich die Pfeile vor der Brust nicht kreuzen
     else for (const dx of sp.one ? [1] : [-1, 1]) { const a = armPts(dx, false).ha, b = armPts(dx, false, P2).ha; out.push(P.h != null ? go(a, b, -15.5) : go(a, b, 6)); } }
-  const body = out.join("");
+  const arrowsAt = out.length;
+  const body = `<g filter="url(#m3d)">${out.slice(0, arrowsAt - (sp.pull || hipRig ? 2 : sp.one ? 1 : 2)).join("")}</g>${out.slice(arrowsAt - (sp.pull || hipRig ? 2 : sp.one ? 1 : 2)).join("")}`;
   // Stehend: die ganze Figur etwas kleiner, damit sie bis zu den Füßen ins Bild passt
   return stand ? `<g transform="translate(14 4) scale(.825)">${body}</g>` : body;
 }
@@ -3094,7 +3107,7 @@ function motionSvg(id, o = {}) {
   const still = !o.anim || motReduce(), e = ex(id);
   const inner = o.anim && still ? `<g opacity=".3">${motDraw(sp, { p: 0, act: .35 }, e)}</g>${motDraw(sp, { p: 1, act: 1 }, e)}`
     : motDraw(sp, o.anim ? motState(0, sp.down) : { p: o.p ?? sp.still ?? 1, act: (o.p ?? sp.still ?? 1) ? 1 : .35 }, e);
-  const svg = `<svg class="motion${e.brand === "hs" ? " b-hs" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(e.name)}"><g class="mfig">${inner}</g></svg>`;
+  const svg = `<svg class="motion${e.brand === "hs" ? " b-hs" : ""}${o.cls ? " " + o.cls : ""}" viewBox="${motBox(sp)}" ${still ? "" : `data-anim="1"`} data-m="${id}" role="img" aria-label="Bewegungsablauf: ${esc(e.name)}">${M3D}<g class="mfig">${inner}</g></svg>`;
   if (still && o.cue && musStill(sp, e)) return svg + `<p class="mcue-m still">${musStill(sp, e)}</p>`;
   if (still || !o.cue) return svg;
   return svg + `<div class="mcue" aria-hidden="true"><div class="mcue-t">${motCue(sp, e, "start")}</div><div class="mcue-bar" style="background:${motBar(sp.down)}"><i style="left:0%"></i></div><div class="mcue-m">${musCue(sp, e, "start")}</div></div>`
@@ -3115,7 +3128,7 @@ function motTick(ts) {
       if (el.dataset.cycle) { const L = el.dataset.cycle.split(","), i = Math.floor(loc / (2 * MOT_T)) % L.length;
         if (el.dataset.m !== L[i]) { el.dataset.m = L[i]; el.classList.toggle("b-hs", ex(L[i]).brand === "hs"); const s2 = motSpec(L[i]); if (s2) el.setAttribute("viewBox", motBox(s2));
           const cap = el.parentElement && el.parentElement.querySelector(".mcap"); if (cap) cap.textContent = `${i + 1}/${L.length} · ${ex(L[i]).name}`; } }
-      const sp = motSpec(el.dataset.m), g = el.firstElementChild; if (!sp || !g) return;
+      const sp = motSpec(el.dataset.m), g = el.querySelector(".mfig"); if (!sp || !g) return;
       const e = ex(el.dataset.m), st = motState(loc, sp.down); g.innerHTML = motDraw(sp, st, e);
       const cue = el.nextElementSibling;
       if (cue && cue.classList.contains("mcue")) { const t = motCue(sp, e, st.st); if (cue._t !== t) { cue._t = t; cue.firstElementChild.innerHTML = t; }
