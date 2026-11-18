@@ -3299,6 +3299,8 @@ function m3Draw(sp, s, e, yaw, pts) {
   const muscleOn = (A, B, s0, s1, n, rr, key, o = {}) => { const m = m3Mus(role(key), act), a = v3.lerp(A, B, s0), b = v3.lerp(A, B, s1), off = v3.mul(v3.nrm(n), rr * .42), dn = v3.nrm(n);
     if (v3.dot(dn, C.cam) < -.35) return;
     if (m) K.cap(v3.add(a, off), v3.add(b, off), rr * .62, rr * .5, m[0], { op: m[1], dz: 1.2 + (o.dz || 0), flat: true });
+    // ruhender Muskel: Wölbung in Hautfarbe mit feiner Kontur, damit man die Form sieht
+    else K.cap(v3.add(a, v3.mul(off, .55)), v3.add(b, v3.mul(off, .55)), rr * .66, rr * .5, SK, { dz: .8 + (o.dz || 0) });
   };
   const perpTo = (u, ref) => { const q = v3.sub(ref, v3.mul(u, v3.dot(ref, u))); return v3.len(q) < 1e-6 ? [0, 1, 0] : v3.nrm(q); };
   for (const k of ["R", "L"]) { const s2 = k === "R" ? 1 : -1, H = J["hp" + k], Kn = J["kn" + k], A = J["an" + k], T = J["to" + k];
@@ -3319,7 +3321,7 @@ function m3Draw(sp, s, e, yaw, pts) {
     // Schulter
     const dm = m3Mus(role("delt"), act); K.ball(v3.add(S, v3.mul(uu, 2.5)), 5.6, dm ? dm[0] : SK, { dz: .9 }); }
   // Rumpf: Ringe an Becken, Taille, Brust, Schultern; Umriss als Hülle
-  const Hm = [(J.hpR[0] + J.hpL[0]) / 2, (J.hpR[1] + J.hpL[1]) / 2, 0], Sm = J.sho, RING = [[-.12, 13, 7, 8.5], [.25, 12, 7, 6.5], [.5, 12.5, 7.5, 7], [.78, 15.5, 9, 8.5], [.98, 16.5, 6.5, 7], [1.08, 6, 4, 4]], tp = [];
+  const Hm = [(J.hpR[0] + J.hpL[0]) / 2, (J.hpR[1] + J.hpL[1]) / 2, 0], Sm = J.sho, RING = [[-.12, 13.4, 7, 8.8], [.22, 11.4, 6.8, 6.2], [.45, 11.8, 7.2, 6.6], [.66, 14.6, 8.8, 7.8], [.84, 16.6, 9.6, 8.6], [.98, 17.2, 6.8, 7.4], [1.08, 6, 4, 4]], tp = [];
   for (const [s3, w, f, b] of RING) { const c = v3.lerp(Hm, Sm, s3); for (let i = 0; i < 16; i++) { const t = i / 16 * Math.PI * 2, cz = Math.cos(t), sz = Math.sin(t); tp.push(v3.add(v3.add(c, v3.mul(lat, cz * w)), v3.mul(fw, sz > 0 ? sz * f : sz * b))); } }
   const tz = C.P(v3.lerp(Hm, Sm, .5))[2] - 3;
   K.hull(tp, SK, { z: tz });
@@ -3334,6 +3336,7 @@ function m3Draw(sp, s, e, yaw, pts) {
     if (sp.rig === "abd") tm("glute", onT(-.02, 1, s2 * 12.6, 0), v3.nrm(v3.add(v3.mul(lat, s2), v3.mul(fw, .15))), up, 6.5, 5, { dz: .2 });
     else tm("glute", onT(-.06, -1, s2 * 6, 8.2), v3.nrm(v3.add(v3.mul(fw, -1), v3.mul(lat, s2 * .3))), up, 6.5, 6, { dz: .2 }); }
   tm("abs", onT(.38, 1, 0, 7.1), fw, up, 9, 5.5);
+  if (v3.dot(fw, C.cam) > .1) for (const s3 of [.3, .4, .5]) K.line(onT(s3, 1, -4.6, 7.2), onT(s3, 1, 4.6, 7.2), .6, "rgba(0,0,0,.25)", { dz: .4 + tz - C.P(onT(s3, 1, 0, 7.2))[2] });
   tm("trap", onT(1.02, -1, 0, 5.5), v3.nrm(v3.add(v3.mul(fw, -1), v3.mul(up, .6))), lat, 12, 5);
   // Hals und Kopf: Haare hinten oben, Gesicht vorn, Nase, Ohren
   const hu = v3.nrm(J.hdUp), hf = v3.nrm(v3.cross(hu, lat)), Hd = J.head;
