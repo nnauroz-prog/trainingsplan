@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v77)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v77")));
+      ok("Service Worker aktiv (Cache trainingsplan-v79)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v79")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4245,7 +4245,29 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("79. Konsole");
+    section("79. Ausführung wie am Gerät, Körpermaße");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+        // Hebel bleibt gleich lang: Abstand Drehpunkt–Hand über die ganze Bewegung (Brustpresse, Rudern, Schulterpresse)
+        const lever = id => { const sp = T.motSpec(id), rig = T.mRig(sp), L = [0, .25, .5, .75, 1].map(q => d(rig.pv, T.mJoints(sp, T.mPose(sp, q)).hand)); return Math.max(...L) - Math.min(...L); };
+        // Beinpresse: Fußmitte läuft auf einer Geraden (Schiene)
+        const rail = id => { const sp = T.motSpec(id), P = [0, .25, .5, .75, 1].map(q => { const j = T.mJoints(sp, T.mPose(sp, q)); return [(j.ank[0] + j.toe[0]) / 2, (j.ank[1] + j.toe[1]) / 2]; });
+          const a = P[0], b = P[4], L = d(a, b); return Math.max(...P.map(q => Math.abs((b[0] - a[0]) * (a[1] - q[1]) - (a[0] - q[0]) * (b[1] - a[1])) / L)); };
+        // Glieder behalten ihre Länge
+        const seg = id => { const sp = T.motSpec(id), out = []; for (const q of [0, .5, 1]) { const j = T.mJoints(sp, T.mPose(sp, q)); out.push(d(j.sho, j.elb), d(j.elb, j.hand), d(j.hip, j.knee), d(j.knee, j.ank)); } return out; };
+        return { lev: ["hs-chest", "hs-row", "hs-shoulder", "lf-chest"].map(lever), rail: ["hs-legpress", "lf-legpress"].map(rail), seg: seg("hs-chest").concat(seg("hs-legpress")) }; });
+      ok("Griff läuft auf dem Kreisbogen um den Drehpunkt, der Hebel bleibt gleich lang", r.lev.every(x => x < .3), r.lev.map(x => x.toFixed(2)).join());
+      ok("Beinpresse: Fußplatte läuft gerade auf der Schiene", r.rail.every(x => x < .3), r.rail.map(x => x.toFixed(2)).join());
+      ok("Ober- und Unterschenkel behalten ihre Länge (39,5 / 39)", r.seg.filter((x, i) => i % 4 >= 2).every((x, i) => Math.abs(x - [39.5, 39][i % 2]) < .3), r.seg.map(x => x.toFixed(1)).join());
+      // Feste Regeln für jede Phase jeder Seitenansicht (Gliedlängen, Ellbogen und Knie im natürlichen Bereich, Füße nicht im Boden,
+      // Füße bleiben bei Sitzgeräten stehen, Hebel gleich lang, Drehpunkt nicht im Rumpf, Scheiben über dem Boden)
+      const chk = await tp(page, () => { const T = window.__tp, out = []; for (const e of T.allEx()) { const sp = T.motSpec(e.id); if (!sp || sp.v) continue; sp._stackOnly = e.type === "stack"; const f = T.motCheck(sp); if (f.length) out.push(e.id + ": " + f.join("; ")); } return out; });
+      ok("Bewegungsprüfung: alle Seitenansichten in 11 Stellungen ohne Befund", chk.length === 0, chk.slice(0, 4).join(" | "));
+      await ctx.close();
+    }
+
+    section("80. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
