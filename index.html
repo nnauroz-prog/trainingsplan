@@ -658,6 +658,8 @@ const SOURCES = {
   lally2010: { t: "Lally P, van Jaarsveld CHM, Potts HWW, Wardle J: How are habits formed: modelling habit formation in the real world", j: "Eur J Soc Psychol 2010;40(6):998–1009", url: "https://doi.org/10.1002/ejsp.674" },
   cioffi2018: { t: "Cioffi I, Evangelista A, Ponzo V et al.: Intermittent versus continuous energy restriction on weight loss and cardiometabolic outcomes: a systematic review and meta-analysis of randomized controlled trials", j: "J Transl Med 2018;16:371", url: "https://pubmed.ncbi.nlm.nih.gov/30583725/" },
   headland2016: { t: "Headland M, Clifton PM, Carter S, Keogh JB: Weight-loss outcomes: a systematic review and meta-analysis of intermittent energy restriction trials lasting a minimum of 6 months", j: "Nutrients 2016;8(6):354", url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC4924195/" },
+  zhang2025: { t: "Zhang X, Weakley J, Li H, Li Z, García-Ramos A: Superset versus traditional resistance training prescriptions: a systematic review and meta-analysis exploring acute and chronic effects on mechanical, metabolic, and perceptual variables", j: "Sports Med 2025;55:953–975", url: "https://doi.org/10.1007/s40279-025-02176-8" },
+  nunes2021: { t: "Nunes JP, Grgic J, Cunha PM, Ribeiro AS, Schoenfeld BJ, de Salles BF, Cyrino ES: What influence does resistance exercise order have on muscular strength gains and muscle hypertrophy? A systematic review and meta-analysis", j: "Eur J Sport Sci 2021;21(2):149–157", url: "https://doi.org/10.1080/17461391.2020.1733672" },
   gandy2016: { t: "Gandy J et al.: Recording of fluid, beverage and water intakes at the population level in Europe (Anteil von Wasser aus Lebensmitteln, wie von der EFSA angesetzt)", j: "Br J Nutr 2016;116(4):677–682", url: "https://doi.org/10.1017/S0007114516002336" }
 };
 
@@ -3982,10 +3984,35 @@ function vEx() {
       ${e.label && e.label !== e.name ? `<p class="small faint" id="exLabel">Am Gerät steht: ${esc(labelOf(e))}</p>` : ""}
       <div class="exfacts"><span class="hot">${MUSCLES[e.muscle]}</span><span>${loadTxt(e)}</span><span>Schritt ${stepTxt(e)}</span>${state.notes[id] ? `<span>Deine Einstellung: <b>${esc(state.notes[id])}</b></span>` : ""}</div></div>
     ${guideHtml(id, { noMot: true, noMus: true, mid: `<section class="gsec" id="exMus"><h2>Muskeln</h2>${gmusHtml(id)}</section>
+    <section class="gsec" id="exCombo"><h2>Gut kombinieren</h2>${comboHtml(id)}</section>
     <section class="gsec" id="exStats"><h2>Deine Werte</h2>${statsHtml(id)}</section>
     <section class="gsec" id="exPlan"><h2>In deinem Plan</h2>${exPlanHtml(id)}</section>` })}
     <section class="gsec" id="exAlt"><h2>Alternativen in deinem Studio</h2>${exAltHtml(id)}</section>
   </div>`;
+}
+// ---------- Gut kombinieren ----------
+// Gegenspieler je Bewegungsmuster (arbeiten am selben Gelenk entgegengesetzt): Drücken ↔ Ziehen, Beugen ↔ Strecken, Abspreizen ↔ Heranführen.
+// Ohne Eintrag (Hüftheben, Waden, Bauch): kein Gegenspieler-Gerät in der Liste
+const ANTAG = { push_h: ["pull_h"], push_i: ["pull_h", "pull_v"], push_v: ["pull_v"], fly: ["rear"], rear: ["fly"], lateral: ["pull_v"], pull_h: ["push_h"], pull_v: ["push_v"],
+  bi: ["tri", "dip"], tri: ["bi"], dip: ["bi"], knee_ext: ["knee_flex"], knee_flex: ["knee_ext"], squat: ["knee_flex"], abd: ["add"], add: ["abd"] };
+const ANTAG_NONE = { calf: "Schienbeinmuskel", hinge: "Hüftbeuger", core: "Rückenstrecker" };
+// Partner aus dem eigenen Studio: zuerst Geräte aus dem Plan, dann passendes Muster, gleiche Marke, bevorzugte Geräte
+function comboPartners(e, n = 2) {
+  const pats = ANTAG[e.pattern] || [], inPlan = new Set((state.plan ? state.plan.days : []).flatMap(d => d.items.map(i => i.exId)));
+  const score = x => (inPlan.has(x.id) ? 100 : 0) + (pats.length - pats.indexOf(x.pattern)) * 10 + (x.brand === e.brand ? 5 : 0) + (x.fav ? 2 : 0);
+  return allEx().filter(x => x.id !== e.id && !x.off && pats.includes(x.pattern)).sort((a, b) => score(b) - score(a)).slice(0, n);
+}
+function comboHtml(id) {
+  const e = ex(id), part = comboPartners(e), same = allEx().find(x => x.id !== id && !x.off && x.muscle === e.muscle && x.pattern !== e.pattern) || allEx().find(x => x.id !== id && !x.off && x.muscle === e.muscle);
+  const inPlan = new Set((state.plan ? state.plan.days : []).flatMap(d => d.items.map(i => i.exId)));
+  const btn = x => `<button class="li" data-a="openEx" data-id="${x.id}" data-ret="${exBack}"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${esc(aboutOf(x))} · ${BRAND[x.brand] || "Eigenes Gerät"}</div></div>${inPlan.has(x.id) ? `<span class="badge">Im Plan</span>` : ""}<span class="chev">›</span></button>`;
+  return `${part.length ? `<p style="margin:0">Als Supersatz mit dem Gegenspieler: ein Satz hier, sofort ein Satz am Partnergerät, dann die normale Pause.</p>
+    <div class="group" id="comboPart">${part.map(btn).join("")}</div>
+    <p class="small muted" style="margin:0">Spart Zeit. Kraft und Muskelaufbau unterschieden sich in Studien nicht deutlich von normalen Sätzen, es ist aber anstrengender.</p>`
+    : `<p class="muted" style="margin:0" id="comboNone">Für den Gegenspieler${ANTAG_NONE[e.pattern] ? ` (${ANTAG_NONE[e.pattern]})` : ""} gibt es hier kein Gerät.</p>`}
+    ${same ? `<p class="small" style="margin:0" id="comboSame"><b>Nicht als Supersatz</b> mit einer zweiten Übung für denselben Muskel (z. B. ${esc(same.name)}): Das senkte in Studien die Gesamtlast.</p>` : ""}
+    <p class="small" style="margin:0" id="comboOrder"><b>Reihenfolge:</b> Willst du hier vor allem stärker werden, mach die Übung früh. Für den Muskelaufbau spielte die Reihenfolge keine messbare Rolle.</p>
+    <details class="gdet"><summary>Quellen</summary><div class="gdet-in">${srcList(["zhang2025", "nunes2021"])}</div></details>`;
 }
 // Aus Plan und Geräteliste berechnet – keine zusätzlichen Behauptungen
 function exPlanHtml(id) {
@@ -7984,7 +8011,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
