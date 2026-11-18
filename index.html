@@ -2433,26 +2433,26 @@ const mPress = (A, B, o = {}) => ({ A: Object.assign({}, SEATED, o.base, A), B: 
 const mPull = (A, B, o = {}) => ({ A: Object.assign({}, SEATED, { t: -92 }, o.base, A), B: Object.assign({}, B), hl: ["t"], gear: o.gear || ["seat", "chestpad", "handle"] });
 const MOTION = {
   // Drücken (sitzend)
-  "hs-chest": mPress({ ua: 158, fa: -8 }, { ua: 8, fa: 2 }),
-  "hs-widechest": mPress({ ua: 162, fa: -2 }, { ua: 6, fa: 4 }),
-  "hs-decline": mPress({ ua: 152, fa: 12 }, { ua: 24, fa: 22 }),
-  "hs-incline": mPress({ ua: 150, fa: -40 }, { ua: -30, fa: -32 }, { base: { t: -104 } }),
-  "hs-shoulder": mPress({ ua: 104, fa: -82 }, { ua: -84, fa: -88 }, { hl: ["sho"], base: { t: -94 } }),
+  "hs-chest": mPress({ ua: 83, fa: 0 }, { ua: 8, fa: 2 }),
+  "hs-widechest": mPress({ ua: 96, fa: 4 }, { ua: 6, fa: 4 }),
+  "hs-decline": mPress({ ua: 93, fa: 5 }, { ua: 24, fa: 22 }),
+  "hs-incline": mPress({ ua: 73, fa: -37 }, { ua: -30, fa: -32 }, { base: { t: -104 } }),
+  "hs-shoulder": mPress({ ua: 130, fa: -50 }, { ua: -84, fa: -88 }, { hl: ["sho"], base: { t: -94 } }),
   "hs-dip": mPress({ ua: 136, fa: 52 }, { ua: 98, fa: 93 }, { hl: ["ua"], base: { t: -93 } }),
   // Ziehen
-  "hs-row": mPull({ ua: 2, fa: 0 }, { ua: 165, fa: 6 }),
-  "hs-lowrow": mPull({ ua: 26, fa: 22 }, { ua: 140, fa: 32 }),
+  "hs-row": mPull({ ua: 2, fa: 0 }, { ua: 128, fa: -2 }),
+  "hs-lowrow": mPull({ ua: 26, fa: 22 }, { ua: 127, fa: 10 }),
   // D.Y. Row: laut Hersteller Drehpunkt oben über dem Nutzer, Bogen auf das Schultergelenk ausgerichtet
   "hs-dyrow": Object.assign(mPull({ ua: 16, fa: 12 }, { ua: 150, fa: 18 }), { pvSho: [12, -32] }),
-  "hs-highrow": mPull({ ua: -48, fa: -50 }, { ua: 124, fa: -38 }, { gear: ["seat", "thighpad", "handle"] }),
+  "hs-highrow": mPull({ ua: -48, fa: -50 }, { ua: 115, fa: -18 }, { gear: ["seat", "thighpad", "handle"] }),
   "hs-pulldown": mPull({ ua: -97, fa: -92 }, { ua: 100, fa: -78 }, { base: { t: -94 }, gear: ["seat", "thighpad", "handle"] }),
   // Arme
-  "hs-curl": { A: Object.assign({}, SEATED, { t: -88, ua: 46, fa: 52 }), B: { fa: -112 }, hl: ["ua"], gear: ["seat", "armpad", "handle"] },
-  "hs-triext": { A: Object.assign({}, SEATED, { t: -90, ua: 40, fa: -118 }), B: { fa: 42 }, hl: ["ua"], gear: ["seat", "back", "armpad", "handle"] },
+  "hs-curl": { A: Object.assign({}, SEATED, { t: -88, ua: 46, fa: 52 }), B: { fa: -100 }, hl: ["ua"], gear: ["seat", "armpad", "handle"] },
+  "hs-triext": { A: Object.assign({}, SEATED, { t: -90, ua: 40, fa: -106 }), B: { fa: 42 }, hl: ["ua"], gear: ["seat", "back", "armpad", "handle"] },
   "lf-pushdown": { anchor: "ank", at: [74, 108], A: { t: -86, th: 92, sh: 88, ft: 0, ua: 97, fa: -14 }, B: { fa: 91 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [96, 6] },
   // Kabelzug im Stehen: Rolle hinter dem Kopf (über Kopf strecken), unten vorn (Armbeugen), vorn auf Kopfhöhe (Zug zum Gesicht)
-  "lf-ohtri": { anchor: "ank", at: [78, 108], A: { t: -79, th: 95, sh: 86, ft: 0, ua: -68, fa: 150 }, B: { fa: 298 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [22, -34] },
-  "lf-cablecurl": { anchor: "ank", at: [64, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: 94, fa: 80 }, B: { fa: -64 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [118, 100] },
+  "lf-ohtri": { anchor: "ank", at: [78, 108], A: { t: -79, th: 95, sh: 99, ft: 0, ua: -68, fa: 150 }, B: { fa: 298 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [22, -34] },
+  "lf-cablecurl": { anchor: "ank", at: [64, 108], A: { t: -88, th: 92, sh: 94, ft: 0, ua: 94, fa: 80 }, B: { fa: -54 }, hl: ["ua"], gear: ["floor", "cable", "handle"], cable: [118, 100] },
   "lf-facepull": { anchor: "ank", at: [56, 108], A: { t: -88, th: 92, sh: 88, ft: 0, ua: -6, fa: -4 }, B: { ua: 166, fa: -22 }, hl: ["sho"], gear: ["floor", "cable", "handle"], cable: [134, -28] },
   // Schultern: Figur von vorn oder hinten
   // Figur von vorn oder hinten (motFig): h = Arme in der Waagerechten (0° seitlich, 100° vor dem Körper), a = seitlich angehoben
@@ -2466,15 +2466,15 @@ const MOTION = {
   "hs-adductor": { v: "fig", rig: "add", A: { l: 40 }, B: { l: 6 }, hl: ["th"] },
   // Beine
   // Linear Leg Press: laut Hersteller Schlitten auf einer Schiene im 45°-Winkel nach oben
-  "hs-legpress": { at: [50, 82], A: { t: -168, th: -78, sh: -8, ft: -98, ua: 14, fa: 34 }, B: { th: -44, sh: -38, ft: -128 }, hl: ["th"], gear: ["back", "seat", "plat"] },
+  "hs-legpress": { at: [50, 82], A: { t: -168, th: -78, sh: -8, ft: -98, ua: 53, fa: -18 }, B: { th: -44, sh: -38, ft: -128 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // Life Fitness Leg Press: aufrecht sitzen, Fußplatte vorn, nach vorn wegdrücken
   "lf-legpress": { at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // Iso-Lateral Leg Press: getrennte Fußplatten an Hebelarmen (Bogen statt Schiene)
   "hs-isolegpress": { arc: true, at: [50, 82], A: { t: -140, th: -48, sh: 22, ft: -68, ua: 92, fa: 20 }, B: { th: -14, sh: -8, ft: -98 }, hl: ["th"], gear: ["back", "seat", "plat"] },
   // V-Squat: laut Hersteller gebogene Bahn; Lage des Drehpunkts nicht belegt, deshalb ohne Schiene und ohne Hebel gezeichnet
-  "hs-vsquat": { down: true, norail: true, anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 87, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
+  "hs-vsquat": { down: true, norail: true, anchor: "ank", at: [96, 106], A: { t: -100, th: 97, sh: 100, ft: 0, ua: 80, fa: -60 }, B: { t: -104, th: 16, sh: 114 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-beltsquat": { down: true, anchor: "ank", at: [96, 106], A: { t: -94, th: 92, sh: 88, ft: 0, ua: 66, fa: 26 }, B: { t: -102, th: 14, sh: 112, ua: 56, fa: 16 }, hl: ["th"], gear: ["floorplat", "belt", "handle"] },
-  "hs-smith": { down: true, anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 137, fa: -59 }, B: { t: -71, th: 10, sh: 108, ua: 162, fa: -34 }, hl: ["th"], gear: ["smith"] },
+  "hs-smith": { down: true, anchor: "ank", at: [104, 106], A: { t: -96, th: 84, sh: 84, ft: 0, ua: 104, fa: -76 }, B: { t: -71, th: 10, sh: 108, ua: 129, fa: -51 }, hl: ["th"], gear: ["smith"] },
   "hs-hack": { down: true, anchor: "ank", at: [104, 104], A: { t: -126, th: 66, sh: 76, ft: -14, ua: 70, fa: -70 }, B: { th: -6, sh: 104 }, hl: ["th"], gear: ["back", "shopad", "floorplat"] },
   "hs-legext": { A: Object.assign({}, SEATED, { t: -98, th: 0, sh: 95, ua: 100, fa: 30 }), B: { sh: -3 }, hl: ["th"], gear: ["seat", "back", "shinpad"] },
   "hs-seatcurl": { A: Object.assign({}, SEATED, { t: -100, th: -2, sh: 4, ft: -80, ua: 70, fa: 10 }), B: { sh: 100, ft: 10 }, hl: ["th"], gear: ["seat", "back", "thighpad", "heelpad"] },
@@ -2484,10 +2484,10 @@ const MOTION = {
   "lf-legcurl": { at: [80, 62], A: { t: 13, hd: -18, th: 166, sh: 176, ft: 90, ua: 62, fa: 2 }, B: { sh: 264, ft: 175 }, hl: ["th"], gear: ["bench", "heelpad"] },
   // Glute Drive: laut Hersteller rundes Rückenpolster, Gurt mit zwei Schlaufen über der Hüfte, Fußplattform 15° geneigt
   "hs-hipthrust": { anchor: "ank", at: [122, 104], A: { t: -160, hd: 0, th: -45, sh: 95, ft: -15, ua: 140, fa: 120 }, B: { t: -180, th: -5 }, hl: ["hip"], gear: ["floor", "backroll", "hippad", "strap", "footramp"] },
-  "hs-calf": { anchor: "toe", at: [96, 100], A: { t: -90, th: 90, sh: 90, ft: -12, ua: 70, fa: -112 }, B: { ft: 40 }, hl: ["sh"], gear: ["step", "shopad"] },
+  "hs-calf": { anchor: "toe", at: [96, 100], A: { t: -90, th: 90, sh: 92, ft: -12, ua: 85, fa: -51 }, B: { ft: 40 }, hl: ["sh"], gear: ["step", "shopad"] },
   "hs-seatcalf": { anchor: "toe", at: [104, 100], A: { t: -92, th: 2, sh: 90, ft: -15, ua: 60, fa: 0 }, B: { th: -10, ft: 35 }, hl: ["sh"], gear: ["step", "kneetop"] },
   // Rumpf
-  "hs-ab": { A: Object.assign({}, SEATED, { t: -96, ua: 70, fa: -100 }), B: { t: -55, ua: 111, fa: -59 }, hl: ["t"], gear: ["seat", "handle"] }
+  "hs-ab": { A: Object.assign({}, SEATED, { t: -96, ua: 81, fa: -51 }), B: { t: -55, ua: 122, fa: -10 }, hl: ["t"], gear: ["seat", "handle"] }
 };
 // Gleiche Bewegung an mehreren Geräten
 Object.assign(MOTION, { "hs-lat": Object.assign({}, MOTION["hs-pulldown"], { gear: ["seat", "thighpad", "topcable"], _box: null, _rig: undefined, _floor: undefined }) });
@@ -2499,6 +2499,12 @@ Object.assign(MOTION, { "lf-chest": MOTION["hs-chest"], "lf-shoulder": MOTION["h
   "lf-curl": MOTION["hs-curl"], "lf-tripress": MOTION["hs-dip"], "lf-triext": MOTION["hs-triext"], "lf-legext": MOTION["hs-legext"],
   "lf-seatcurl": MOTION["hs-seatcurl"], "lf-ab": MOTION["hs-ab"], "hs-legcurl": MOTION["lf-legcurl"], "hs-abductor": MOTION["lf-abductor"],
   "lf-adductor": MOTION["hs-adductor"], "lf-smith": MOTION["hs-smith"] });
+// Wie weit die Oberarme seitlich abgespreizt sind (Grad): Brust- und Schulterpressen, Latziehen und Rudern mit nach außen gehenden Ellbogen;
+// Armbeugen und -strecken mit eng am Körper liegenden Oberarmen
+Object.entries({ "hs-chest": [[70, 15], 10], "hs-widechest": [[75, 20], 14], "hs-decline": [[65, 15], 10], "hs-incline": [[65, 20], 10], "hs-shoulder": [75, 8], "hs-dip": [12, 4],
+  "hs-row": [25, 6], "hs-lowrow": [20, 6], "hs-dyrow": [15, 4], "hs-highrow": [45, 8], "hs-pulldown": [62, 10], "hs-smith": [70, 16], "hs-calf": [60, 8], "hs-ab": [45, 6],
+  "lf-facepull": [70, 6], "hs-curl": [10, 4], "hs-triext": [10, 4], "lf-pushdown": [10, 4], "lf-cablecurl": [8, 4], "lf-ohtri": [15, 4] })
+  .forEach(([id, [a, hw]]) => { if (MOTION[id]) { MOTION[id].abd = a; MOTION[id].hw = hw; } });
 // Eigene Geräte: Bewegung über das Bewegungsmuster
 const PAT_MOT = { push_h: "hs-chest", push_i: "hs-incline", push_v: "hs-shoulder", fly: "hs-fly", pull_h: "hs-row", pull_v: "hs-pulldown", lateral: "hs-lateral", rear: "hs-reardelt",
   bi: "hs-curl", tri: "hs-triext", dip: "hs-dip", squat: "hs-legpress", hinge: "hs-hipthrust", knee_ext: "hs-legext", knee_flex: "hs-seatcurl", calf: "hs-calf", core: "hs-ab", abd: "lf-abductor", add: "hs-adductor" };
@@ -2520,8 +2526,16 @@ function mIk2(S, H, L1, L2, near) {
   const m = Math.hypot(e1[0] - near[0], e1[1] - near[1]) < Math.hypot(e2[0] - near[0], e2[1] - near[1]) ? e1 : e2, u = [(H[0] - m[0]), (H[1] - m[1])], L = Math.hypot(u[0], u[1]) || 1;
   return [m, [m[0] + u[0] / L * L2, m[1] + u[1] / L * L2]];
 }
+// Oberarm seitlich abgespreizt (sp.abd in Grad): In der Seitenansicht erscheinen Ober- und Unterarm verkürzt. Die Hand liegt
+// knapp außerhalb der Schulter, der Ellbogen weiter außen; die echten Längen (im Raum) bleiben gleich.
+// abd als Zahl (gleich bleibend) oder [Start, Ende]: z. B. Brustpresse mit weit abgespreizten Ellbogen am Start, beim Strecken enger
+function mArm(sp, p = 0) {
+  // hw: Hand so weit außerhalb der Schulter (Griffbreite), Standard 4
+  const ab = Array.isArray(sp.abd) ? sp.abd[0] + (sp.abd[1] - sp.abd[0]) * p : sp.abd || 0, a = mRad(ab), lat = MSEG.ua * Math.sin(a), gi = Math.min(Math.max(0, lat - (sp.hw ?? 4)), MSEG.fa * .6);
+  return { Lp: MSEG.ua * Math.cos(a), Fp: Math.sqrt(MSEG.fa * MSEG.fa - gi * gi), lat, gi };
+}
 function mJoints(sp, P, raw) {
-  const j = { hip: [0, 0] }; j.sho = mAdd(j.hip, mDir(P.t, MSEG.t)); j.elb = mAdd(j.sho, mDir(P.ua, MSEG.ua)); j.hand = mAdd(j.elb, mDir(P.fa, MSEG.fa));
+  const A = mArm(sp, P._p || 0), j = { hip: [0, 0] }; j.sho = mAdd(j.hip, mDir(P.t, MSEG.t)); j.elb = mAdd(j.sho, mDir(P.ua, A.Lp)); j.hand = mAdd(j.elb, mDir(P.fa, A.Fp));
   j.knee = mAdd(j.hip, mDir(P.th, MSEG.th)); j.ank = mAdd(j.knee, mDir(P.sh, MSEG.sh)); j.toe = mAdd(j.ank, mDir(P.ft || 0, MSEG.ft));
   j.head = mAdd(j.sho, mDir(P.t + (P.hd || 0), 15.5));
   if (P.th2 != null) { j.knee2 = mAdd(j.hip, mDir(P.th2, MSEG.th)); j.ank2 = mAdd(j.knee2, mDir(P.sh2, MSEG.sh)); }
@@ -2532,13 +2546,47 @@ function mJoints(sp, P, raw) {
   if (!raw && P._p != null && !sp.v) { const rig = mRig(sp), G = sp.gear || [];
     if (rig && rig.kind === "lever" && rig.fx === "hand" && !G.includes("armpad") && !sp.pvSho0) { const pv = rig.pv, ra = Math.hypot(rig.a[0] - pv[0], rig.a[1] - pv[1]), rb = Math.hypot(rig.b[0] - pv[0], rig.b[1] - pv[1]);
       let a0 = Math.atan2(rig.a[1] - pv[1], rig.a[0] - pv[0]), a1 = Math.atan2(rig.b[1] - pv[1], rig.b[0] - pv[0]); if (a1 - a0 > Math.PI) a1 -= 2 * Math.PI; if (a0 - a1 > Math.PI) a1 += 2 * Math.PI;
-      const ang = a0 + (a1 - a0) * P._p, rr = ra + (rb - ra) * P._p, H = [pv[0] + Math.cos(ang) * rr, pv[1] + Math.sin(ang) * rr];
-      [j.elb, j.hand] = mIk2(j.sho, H, MSEG.ua, MSEG.fa, j.elb); }
+      const ang = a0 + (a1 - a0) * P._p, rr = (ra + rb) / 2, H = [pv[0] + Math.cos(ang) * rr, pv[1] + Math.sin(ang) * rr];
+      [j.elb, j.hand] = mIk2(j.sho, H, A.Lp, A.Fp, j.elb); }
     if (rig && rig.kind === "rail" && rig.fx === "foot") { const E = mLerp(rig.a, rig.b, P._p), cur = mLerp(j.ank, j.toe, .5), d = [E[0] - cur[0], E[1] - cur[1]], A = mAdd(j.ank, d), T = mAdd(j.toe, d);
       [j.knee, j.ank] = mIk2(j.hip, A, MSEG.th, MSEG.sh, j.knee); j.toe = mAdd(j.ank, [T[0] - A[0], T[1] - A[1]]); } }
   return j;
 }
 // Bildausschnitt: umfasst die ganze Bewegung mit Rand, Seitenverhältnis 4:3, Figur mittig
+// ---------- Bewegungsprüfung: feste Regeln für jede Phase jeder Seitenansicht ----------
+// Gibt eine Liste von Befunden zurück (leer = in Ordnung). Geprüft in 11 Stellungen (0 … 1).
+function motCheck(sp) {
+  if (!sp || sp.v) return [];
+  const out = [], d = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]), dot = (a, b) => a[0] * b[0] + a[1] * b[1], G = sp.gear || [];
+  const segD = (q, a, b) => { const ab = [b[0] - a[0], b[1] - a[1]], L2 = dot(ab, ab) || 1, t2 = Math.max(0, Math.min(1, dot([q[0] - a[0], q[1] - a[1]], ab) / L2)); return d(q, [a[0] + ab[0] * t2, a[1] + ab[1] * t2]); };
+  motBox(sp); const floor = sp._floor, rig = mRig(sp), add = (p, s) => out.push(`${s} (Stellung ${p})`);
+  const legFree = G.some(g => ["shinpad", "heelpad", "plat", "kneetop", "step", "bench", "kneepad", "floorplat", "benchpad"].includes(g));
+  let ankMin = Infinity, ankMax = -Infinity;
+  for (let i = 0; i <= 10; i++) { const p = i / 10, P = mPose(sp, p), j = mJoints(sp, P);
+    // Gliedlängen
+    const AR = mArm(sp, p);
+    [[j.sho, j.elb, AR.Lp, "Oberarm"], [j.elb, j.hand, AR.Fp, "Unterarm"], [j.hip, j.knee, MSEG.th, "Oberschenkel"], [j.knee, j.ank, MSEG.sh, "Unterschenkel"]]
+      .forEach(([a, b, L, n]) => { if (Math.abs(d(a, b) - L) > .5) add(p, `${n} ändert die Länge`); });
+    // Ellbogen: nicht überstreckt, nicht über 155° gebeugt
+    // Ellbogenwinkel im Raum: Oberarm mit seitlichem Anteil, Unterarm mit Anteil nach innen
+    const ua = mUnit(j.sho, j.elb), fa = mUnit(j.elb, j.hand), bic = mRot(ua, -1), u3 = [ua[0] * AR.Lp, ua[1] * AR.Lp, AR.lat], f3 = [fa[0] * AR.Fp, fa[1] * AR.Fp, -AR.gi];
+    const ef = Math.acos(Math.max(-1, Math.min(1, (u3[0] * f3[0] + u3[1] * f3[1] + u3[2] * f3[2]) / (MSEG.ua * MSEG.fa)))) * 180 / Math.PI;
+    if (dot(fa, bic) < -.14) add(p, "Ellbogen überstreckt"); if (ef > 155) add(p, "Ellbogen über 155° gebeugt");
+    // Knie: nicht überstreckt, nicht über 160° gebeugt (beide Beine)
+    for (const [kn, an] of [[j.knee, j.ank], ...(j.knee2 ? [[j.knee2, j.ank2]] : [])]) { const th = mUnit(j.hip, kn), sh = mUnit(kn, an), kf = Math.acos(Math.max(-1, Math.min(1, dot(th, sh)))) * 180 / Math.PI;
+      if (dot(sh, mRot(th, 1)) < -.14) add(p, "Knie überstreckt"); if (kf > 160) add(p, "Knie über 160° gebeugt"); }
+    // Füße nicht unter dem Boden
+    if (Math.max(j.ank[1], j.toe[1]) > floor - 2.5) add(p, "Fuß im Boden");
+    ankMin = Math.min(ankMin, j.ank[1]); ankMax = Math.max(ankMax, j.ank[1]);
+    // Hebel: gleich lang, Drehpunkt nicht im Körper, Kopf nicht im Hebel, Scheiben über dem Boden
+    if (rig && rig.kind === "lever") { const e2 = mEff(rig.fx, j, P);
+      if (segD(rig.pv, j.hip, j.sho) < 8) add(p, "Drehpunkt im Rumpf");
+      if (!sp._stackOnly) { const o = mUnit(e2, rig.pv), plt = rig.mid ? mLerp(rig.pv, e2, .42) : mSh(rig.pv, o, Math.max(12, Math.min(18, d(e2, rig.pv) * .3))); if (plt[1] + 9 > floor + .5) add(p, "Scheiben im Boden"); } } }
+  // Sitzgeräte ohne Bein-Polster: Füße bleiben am Boden stehen
+  if (G.includes("seat") && !legFree && ankMax - ankMin > 2.5) out.push("Füße heben vom Boden ab");
+  if (rig && rig.kind === "lever" && rig.fx === "hand" && !G.includes("armpad")) { const L = [0, .5, 1].map(q => d(rig.pv, mJoints(sp, mPose(sp, q)).hand)); if (Math.max(...L) - Math.min(...L) > .3) out.push("Hebel ändert die Länge"); }
+  return [...new Set(out.map(s => s.replace(/ \(Stellung [\d.]+\)$/, "")))].map(s => { const ps = out.filter(o => o.startsWith(s + " (")).map(o => o.match(/Stellung ([\d.]+)/)[1]); return ps.length ? `${s} bei ${ps.join(", ")}` : s; });
+}
 function motBox(sp) {
   if (sp._box) return sp._box;
   if (sp.v) return (sp._box = sp.box || "0 0 160 120");
@@ -3196,7 +3244,7 @@ function m3Pose(sp, p) {
     // 2D „vorn“ = [−td.y, td.x] (Bildschirm) → Welt [−td.y, −td.x]
     J.up = [td[0], -td[1], 0]; J.fwd = [-td[1], -td[0], 0];
     for (const s of [1, -1]) { const k = s > 0 ? "R" : "L", far = s < 0 && j.knee2;
-      J["sh" + k] = W(j.sho, s * M3S.sw); J["el" + k] = W(j.elb, s * (M3S.sw + 1.5)); J["ha" + k] = W(j.hand, s * (M3S.sw - .5));
+      const AR = mArm(sp, p); J["sh" + k] = W(j.sho, s * M3S.sw); J["el" + k] = W(j.elb, s * (M3S.sw + AR.lat)); J["ha" + k] = W(j.hand, s * (M3S.sw + AR.lat - AR.gi));
       J["hp" + k] = W(j.hip, s * M3S.hw); J["kn" + k] = W(far ? j.knee2 : j.knee, s * (M3S.hw + .8)); J["an" + k] = W(far ? j.ank2 : j.ank, s * (M3S.hw + 1));
       J["to" + k] = far ? W(mAdd(j.ank2, mDir(P.sh2 || 0, 10)), s * (M3S.hw + 1)) : W(j.toe, s * (M3S.hw + 2)); }
     J.sho = W(j.sho, 0); J.head = W(j.head, 0); J.hdUp = [mDir(P.t + (P.hd || 0), 1)[0], -mDir(P.t + (P.hd || 0), 1)[1], 0];
@@ -7725,7 +7773,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { motCheck, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();

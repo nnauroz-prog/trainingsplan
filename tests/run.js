@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v78)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v78")));
+      ok("Service Worker aktiv (Cache trainingsplan-v79)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v79")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4259,7 +4259,11 @@ async function finishAllSets(page, kg, reps) {
         return { lev: ["hs-chest", "hs-row", "hs-shoulder", "lf-chest"].map(lever), rail: ["hs-legpress", "lf-legpress"].map(rail), seg: seg("hs-chest").concat(seg("hs-legpress")) }; });
       ok("Griff läuft auf dem Kreisbogen um den Drehpunkt, der Hebel bleibt gleich lang", r.lev.every(x => x < .3), r.lev.map(x => x.toFixed(2)).join());
       ok("Beinpresse: Fußplatte läuft gerade auf der Schiene", r.rail.every(x => x < .3), r.rail.map(x => x.toFixed(2)).join());
-      ok("Ober- und Unterarm, Ober- und Unterschenkel behalten ihre Länge (29,5 / 23,5 / 39,5 / 39)", r.seg.every((x, i) => Math.abs(x - [29.5, 23.5, 39.5, 39][i % 4]) < .3), r.seg.map(x => x.toFixed(1)).join());
+      ok("Ober- und Unterschenkel behalten ihre Länge (39,5 / 39)", r.seg.filter((x, i) => i % 4 >= 2).every((x, i) => Math.abs(x - [39.5, 39][i % 2]) < .3), r.seg.map(x => x.toFixed(1)).join());
+      // Feste Regeln für jede Phase jeder Seitenansicht (Gliedlängen, Ellbogen und Knie im natürlichen Bereich, Füße nicht im Boden,
+      // Füße bleiben bei Sitzgeräten stehen, Hebel gleich lang, Drehpunkt nicht im Rumpf, Scheiben über dem Boden)
+      const chk = await tp(page, () => { const T = window.__tp, out = []; for (const e of T.allEx()) { const sp = T.motSpec(e.id); if (!sp || sp.v) continue; sp._stackOnly = e.type === "stack"; const f = T.motCheck(sp); if (f.length) out.push(e.id + ": " + f.join("; ")); } return out; });
+      ok("Bewegungsprüfung: alle Seitenansichten in 11 Stellungen ohne Befund", chk.length === 0, chk.slice(0, 4).join(" | "));
       await ctx.close();
     }
 
