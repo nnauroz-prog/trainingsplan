@@ -55,7 +55,7 @@ let browser;
 const canon = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);
 async function open(data, opts = {}) {
   const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme: opts.light ? "light" : "dark",
-    serviceWorkers: opts.sw ? "allow" : "block" });
+    serviceWorkers: opts.sw ? "allow" : "block", ...(opts.reducedMotion ? { reducedMotion: opts.reducedMotion } : {}) });
   if (data !== undefined) {
     await ctx.addInitScript(([k, v, extra]) => {
       if (!sessionStorage.getItem("seeded")) {
@@ -365,7 +365,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v69)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v69")));
+      ok("Service Worker aktiv (Cache trainingsplan-v70)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v70")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4174,7 +4174,47 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("77. Konsole");
+    section("77. Realistische Figur und Ausführung: Muskel wird kürzer und länger, Richtung");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(x => x.id).filter(id => T.motSpec(id));
+        const S = (id, p) => T.motionSvg(id, { p });
+        // Breite des roten Muskelbauchs: größte Ausdehnung der Pfade mit voller Muskelfarbe
+        const hotW = s => { const d = document.createElementNS("http://www.w3.org/2000/svg", "svg"); d.style.cssText = "position:absolute;left:-9999px;width:400px;height:300px"; d.innerHTML = s.replace(/^<svg[^>]*>|<\/svg>$/g, ""); document.body.appendChild(d);
+          let a = 0; d.querySelectorAll('path[fill="var(--mhot)"]').forEach(x => { if (+x.getAttribute("fill-opacity") > .55) { const L = x.getTotalLength(), q = [];
+            for (let i = 0; i < 80; i++) { const pt = x.getPointAtLength(L * i / 80); q.push([pt.x, pt.y]); }
+            let s = 0; q.forEach((u, i) => { const v = q[(i + 1) % q.length]; s += u[0] * v[1] - v[0] * u[1]; }); a += Math.abs(s) / 2; } }); d.remove(); return a; };
+        const wrong = []; for (const id of ids) { const sp = T.motSpec(id); if (sp.v) continue; for (const k in sp.B) if (sp.A[k] != null && Math.abs(sp.B[k] - sp.A[k]) > 180 && k !== "ua") wrong.push(id + ":" + k); }
+        const st = { p: 1 }, side = ids.filter(id => !T.motSpec(id).v);
+        return { curves: side.every(id => (S(id, 1).match(/C[\d.-]/g) || []).length > 60), head: side.every(id => /fill="var\(--mbody2\)"/.test(S(id, 1))),
+          bic0: hotW(S("hs-curl", 0)), bic1: hotW(S("hs-curl", 1)), quad0: hotW(S("hs-legext", 0)), quad1: hotW(S("hs-legext", 1)),
+          arrows: ids.filter(id => !/class="marrow"/.test(S(id, 1))), wrong: [...new Set(wrong)],
+          cue: ["start", "con", "turn", "ecc"].map(s => T.musCue(T.motSpec("hs-chest"), T.ex("hs-chest"), s)),
+          cueDown: ["start", "ecc", "turn", "con"].map(s => T.musCue(T.motSpec("hs-vsquat"), T.ex("hs-vsquat"), s)) }; });
+      ok("Seitenansicht: Körper aus weichen Umrissen (Muskelwölbungen, Kopf im Profil mit Haaren) bei allen 44 Geräten", r.curves && r.head);
+      ok("Muskel wird beim Verkürzen dicker: Bizeps beim Armbeugen, vorderer Oberschenkel beim Beinstrecken", r.bic1 > r.bic0 * 1.05 && r.quad1 > r.quad0 * 1.05, [r.bic0, r.bic1, r.quad0, r.quad1].map(Math.round).join());
+      ok("Pfeil zeigt die Bewegungsrichtung bei allen 60 Geräten", r.arrows.length === 0, r.arrows.join());
+      ok("Kein Gelenk dreht falsch herum (Beinbeuger, Hüftheben, Trizeps über Kopf korrigiert)", r.wrong.length === 0, r.wrong.join());
+      ok("Muskel je Phase: gedehnt, wird kürzer, fest angespannt, wird langsam länger",
+        r.cue.join("|") === "Brustmuskel gedehnt|Brustmuskel wird kürzer und spannt an|Brustmuskel kurz und fest angespannt|Brustmuskel bleibt gespannt und wird langsam länger", r.cue.join("|"));
+      ok("Kniebeuge: oben kurz, runter länger, unten gedehnt, hoch kürzer",
+        r.cueDown.join("|") === "Oberschenkel vorn kurz|Oberschenkel vorn bleibt gespannt und wird langsam länger|Oberschenkel vorn gedehnt|Oberschenkel vorn wird kürzer und spannt an", r.cueDown.join("|"));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]");
+      const lines = new Set(), hs = new Set();
+      for (const v of [50, 250, 450, 750]) { await page.$eval("#gMotion .mscrub", (x, v) => { x.value = String(v); x.dispatchEvent(new Event("input", { bubbles: true })); }, v); await page.waitForTimeout(120);
+        lines.add(await page.textContent("#gMotion .mcue-m")); hs.add(Math.round((await page.$eval("#gMotion .mcue", e => e.getBoundingClientRect().height)))); }
+      ok("Geräteseite: Zeile zum Muskel wechselt mit der Phase, ohne dass die Seite springt", lines.size === 4 && hs.size === 1, [...lines].join(" | ") + " " + [...hs].join());
+      ok("Geräteseite mit Muskelzeile bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+      // Bewegung reduzieren: Start und Ende still, darunter der Ablauf in einem Satz
+      const o = await open({ plan: PLAN_SMALL }, { reducedMotion: "reduce" });
+      await o.page.click("[data-a=tab][data-v=lib]"); await o.page.click("[data-a=openEx][data-id=hs-curl]");
+      const still = await o.page.$eval("#gMotion", e => ({ anim: !!e.querySelector("svg[data-anim]"), line: (e.querySelector(".mcue-m.still") || {}).textContent || "" }));
+      ok("„Bewegung reduzieren“: Ablauf des Muskels als Satz unter dem Bild", !still.anim && still.line === "Bizeps: hin kürzer, zurück langsam länger", JSON.stringify(still));
+      await o.ctx.close();
+    }
+
+    section("78. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
