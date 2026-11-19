@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v81)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v81")));
+      ok("Service Worker aktiv (Cache trainingsplan-v82)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v82")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4313,7 +4313,30 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("81. Konsole");
+    section("81. Wissen: gut kombinieren");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const r = await tp(page, () => { const T = window.__tp, bad = [];
+        // Partner: immer Gegenspieler-Muster, nie das Gerät selbst, nie „nicht im Studio“
+        for (const e of T.allEx()) { const pats = T.ANTAG[e.pattern] || []; for (const x of T.comboPartners(e)) if (x.id === e.id || x.off || !pats.includes(x.pattern)) bad.push(e.id + "→" + x.id); }
+        const pat = id => T.comboPartners(T.ex(id)).map(x => x.pattern);
+        return { bad, chest: pat("hs-chest"), sho: pat("hs-shoulder"), curl: pat("hs-curl"), ext: pat("hs-legext"), abd: pat("hs-abductor"), calf: pat("hs-calf").length }; });
+      ok("Supersatz-Partner sind immer Gegenspieler aus dem eigenen Studio", r.bad.length === 0, r.bad.slice(0, 4).join());
+      ok("Gegenspieler-Paare: Brustpresse–Rudern, Schulterpresse–Latziehen, Bizeps–Trizeps, Beinstrecker–Beinbeuger, Abduktor–Adduktor",
+        r.chest[0] === "pull_h" && r.sho[0] === "pull_v" && ["tri", "dip"].includes(r.curl[0]) && r.ext[0] === "knee_flex" && r.abd[0] === "add" && r.calf === 0, JSON.stringify(r));
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]"); await page.waitForTimeout(200);
+      const s = await page.evaluate(() => { const c = document.getElementById("exCombo"); return c ? { part: c.querySelectorAll("#comboPart [data-a=openEx]").length, same: !!c.querySelector("#comboSame"), order: !!c.querySelector("#comboOrder"), src: c.querySelectorAll(".srcs li").length, txt: c.innerText } : null; });
+      ok("Geräteseite: Abschnitt „Gut kombinieren“ mit Partnergeräten, Hinweis zu gleichem Muskel und Reihenfolge, zwei Quellen", !!s && s.part > 0 && s.same && s.order && s.src === 2, JSON.stringify(s && { ...s, txt: undefined }));
+      ok("Keine unbelegten Erfolgsversprechen im Abschnitt", !!s && !/garantiert|maximal|beste[sn]? Ergebnis|doppelt/i.test(s.txt));
+      await page.click("#comboPart [data-a=openEx]"); await page.waitForTimeout(200);
+      ok("Tippen auf ein Partnergerät öffnet dessen Seite", /Rudern/.test(await page.textContent(".exhead h1")));
+      await page.click("[data-a=exBack]"); await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-calf]"); await page.waitForTimeout(200);
+      ok("Ohne Gegenspieler-Gerät: ehrlicher Hinweis mit Namen des Gegenspielers", /Schienbeinmuskel/.test(await page.textContent("#comboNone")));
+      ok("Geräteseite mit „Gut kombinieren“ bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+
+    section("82. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
