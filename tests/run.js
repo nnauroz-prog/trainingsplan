@@ -372,7 +372,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v87)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v87")));
+      ok("Service Worker aktiv (Cache trainingsplan-v88)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v88")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3018,7 +3018,7 @@ async function finishAllSets(page, kg, reps) {
       const close = () => page.evaluate(() => { document.querySelector("#sheet-root").innerHTML = ""; });
       const bad = [];
       await page.click("[data-a=tab][data-v=plan]");
-      ok("Trainingstage: Übungsnamen dürfen zwei Zeilen nutzen", await page.$$eval(".day-row .s", e => e.every(x => x.classList.contains("clamp2"))));
+      ok("Trainingstage zeigen Gerätebilder statt einer Namensliste (Namen als Vorlesetext)", await page.$$eval(".day-row", r => r.length > 0 && r.every(x => x.querySelector(".tstrip .tb svg") && x.querySelector(".sr-only").textContent.length > 3)));
       await page.click("[data-a=openSched]"); if (!(await fits())) bad.push("Termine"); await close();
       await page.click("[data-a=editDay]"); await page.click("[data-a=editItem]"); if (!(await fits())) bad.push("Übung bearbeiten");
       const it = (await page.textContent(".sheet")).replace(/\s+/g, " ");
@@ -4580,7 +4580,75 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("85. Konsole");
+    section("85. Zeigen statt schreiben: Symbole, Ringe, Bilder");
+    {
+      const D = n => new Date(Date.now() - n * 864e5).toISOString(), S3 = (kg, r) => [{ kg, reps: r }, { kg, reps: r }, { kg, reps: r - 1 }];
+      const Hh = (dayId, day, n, exs) => ({ id: "h" + n, dayId, day, date: D(n), durationSec: 2900, exercises: exs.map(([exId, kg, r]) => ({ exId, name: exId, u: "s", planned: 3, rmin: 8, rmax: 12, sets: S3(kg, r) })) });
+      const dkN = n => { const d = new Date(Date.now() - n * 864e5); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const st = { plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+          { id: "a", name: "Oberkörper", items: ["hs-chest", "hs-row", "hs-shoulder", "hs-pulldown", "hs-fly", "hs-incline", "hs-dip"].map((exId, i) => ({ id: "a" + i, exId, sets: 3, rmin: 8, rmax: 12, rest: 90 })) },
+          { id: "b", name: "Beine", items: [{ id: "b1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 120 }] }, { id: "c", name: "Leer", items: [] }] },
+        history: [Hh("a", "Oberkörper", 23, [["hs-chest", 37.5, 10]]), Hh("b", "Beine", 20, [["hs-legpress", 115, 10]]), Hh("a", "Oberkörper", 16, [["hs-chest", 40, 10]]), Hh("b", "Beine", 13, [["hs-legpress", 120, 10]]),
+          Hh("a", "Oberkörper", 9, [["hs-chest", 40, 10]]), Hh("b", "Beine", 6, [["hs-legpress", 120, 10]]), Hh("a", "Oberkörper", 3, [["hs-chest", 42.5, 10]]), Hh("b", "Beine", 1, [["hs-legpress", 125, 10]])],
+        weights: [{ d: dkN(2), kg: 81.6 }], sched: { days: [0, 2, 4], time: "18:00", planB: "next" }, nutr: { sex: "m", age: 34, cm: 181, kg: 81.6, pal: "mid", goal: "hold" },
+        food: { [dkN(0)]: [{ id: "f1", m: "fr", n: "Haferflocken", g: 80, src: "x", per: { k: 372, p: 13.5, c: 58.7, f: 7, fib: 10 } }, { id: "f2", m: "mi", n: "Hähnchenbrust", g: 200, src: "x", per: { k: 110, p: 23, c: 0, f: 1.5, fib: 0 } }] } };
+      const { ctx, page } = await open(st, { light: true });
+      const num = s => +String(s).replace(/\./g, "").replace(",", ".").replace(/[^0-9.]/g, "");
+      // Heute: Ringe statt Textzeilen
+      const h = await tp(page, () => { const T = window.__tp, c = document.getElementById("homeTag"), q = s => c.querySelector(s), tt = T.dayTotals(T.dkey());
+        const vis = [...c.querySelectorAll(".rb")].map(x => x.textContent).join(" "), srT = c.querySelector(".sr-only"), cs = getComputedStyle(srT);
+        return { card: c.classList.contains("rings"), kp: +q("[data-r=kcal] .rg").dataset.p, kb: q("[data-r=kcal] b").textContent, kc: q("[data-r=kcal] small").textContent,
+          pp: +q("[data-r=prot] .rg").dataset.p, pc: q("[data-r=prot] small").textContent, pb: q("[data-r=prot] b").textContent, k: tt.k, p: tt.p,
+          sr: srT.textContent, hidden: parseFloat(cs.width) <= 1 && cs.position === "absolute", visLen: vis.length }; });
+      const rest = num(h.kb), goalP = num(h.pc);
+      ok("Heute: Karte mit Ringen für Kalorien und Eiweiß statt zwei Textzeilen", h.card && h.kc === "kcal übrig" && /von \d+ g Eiweiß/.test(h.pc) && num(h.pb) === Math.round(h.p), JSON.stringify(h));
+      ok("Ringe zeigen den richtigen Anteil (gegessen ÷ Tagesziel, Eiweiß ÷ Ziel)", Math.abs(h.kp - Math.round(h.k / (h.k + rest) * 100)) <= 1 && h.pp === Math.round(Math.min(1, h.p / goalP) * 100), `${h.kp} / ${h.pp}`);
+      ok("Der frühere Satz bleibt als Vorlesetext, ist aber nicht sichtbar", /Noch ≈ [\d.]+ kcal bis zum Tagesziel/.test(h.sr) && h.hidden, h.sr);
+      const b = await tp(page, () => { const w = document.getElementById("homeWeekSec"), m = w.textContent.match(/(\d+) von (\d+)/);
+        return { ring: +w.querySelector(".rg").dataset.p, exp: Math.round(Math.min(1, m[1] / m[2]) * 100), on: document.querySelectorAll("#buddySched .mw i.on").length, sched: document.getElementById("buddySched").textContent,
+          chips: [...document.querySelectorAll("#buddy .fchip")].every(c => c.querySelector("svg, .mw")), streak: !!document.querySelector("#streak .sym"), food: !!document.querySelector("#homeFood .ico") }; });
+      ok("Wochenziel als Ring; Termine als sieben Punkte (3 gefüllt) mit Uhrzeit", b.ring === b.exp && b.on === 3 && b.sched.includes("Termine: Mo, Mi, Fr · 18:00"), JSON.stringify(b));
+      ok("Fakten als Chips mit Symbol, Zeilen mit Symbolkachel", b.chips && b.food, JSON.stringify(b));
+      // Hinweis auf „Heute“: Erklärtext eingeklappt, Titel antippen klappt auf; auf der Hinweise-Seite offen
+      const c0 = await page.$eval("#coach .insd", d => d.open); await page.click("#coach .insd summary"); const c1 = await page.$eval("#coach .insd", d => d.open);
+      await page.click("#coach [data-a=openCoach]").catch(() => {});
+      const c2 = await page.$$eval("#coachTips .insd, #coachGood .insd", d => d.length > 0 && d.every(x => x.open));
+      ok("Hinweis auf „Heute“ zeigt nur den Titel, Antippen klappt die Erklärung auf; Hinweise-Seite zeigt sie offen", c0 === false && c1 === true && c2, [c0, c1, c2].join());
+      // Training: Gerätebilder, Mini-Woche, Muskelbalken
+      await page.click("nav.tabs [data-v=plan]");
+      const pl = await tp(page, () => { const T = window.__tp, rows = [...document.querySelectorAll(".day-row")], c = T.planCheck(), ms = T.muscleSets(T.state.plan, c.per);
+        const f = v => String(Math.round(v * 2) / 2).replace(".", ",");
+        return { tb: rows.map(r => r.querySelectorAll(".tstrip .tb svg").length), more: rows.map(r => (r.querySelector(".tmore") || {}).textContent || ""), names: rows[0].querySelector(".sr-only").textContent,
+          empty: rows[2].textContent.includes("Noch keine Übungen"), on: document.querySelectorAll("#schedRow .mw i.on").length, sched: document.getElementById("schedRow").textContent,
+          bars: [...document.querySelectorAll("#planBars .mrow")].map(r => r.dataset.m + "=" + r.querySelector(".num").textContent).join(), exp: T.MAJOR.map(m => m + "=" + f(ms[m] || 0)).join(),
+          low: document.getElementById("lowNote") ? document.getElementById("lowNote").open : null }; });
+      ok("Trainingstage: bis zu 5 Gerätebilder, der Rest als „+2“; Namen als Vorlesetext; leerer Tag mit Hinweis", pl.tb.join() === "5,1,0" && pl.more[0] === "+2" && pl.names.startsWith("Brustpresse · Rudern") && pl.empty, JSON.stringify(pl));
+      ok("Termine-Zeile: sieben Punkte, 3 gefüllt; Tage, Uhrzeit und Plan B als Vorlesetext", pl.on === 3 && pl.sched.includes("Mo, Mi, Fr · 18:00 · Plan B: nächster Tag"), pl.sched);
+      ok("Planprüfung: Balken je großer Muskelgruppe mit den Werten aus dem Plan; Begründung eingeklappt", pl.bars === pl.exp && pl.low === false, pl.bars + " ≠ " + pl.exp);
+      ok("Training bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); if (!r) console.log("    " + await overflowers(page)); return r; })());
+      // Einstellungen: Symbolkacheln, Werte rechts
+      await page.click("[data-a=openSettings]");
+      const se = await tp(page, () => ({ rows: document.querySelectorAll("#app .group > .li").length, ico: document.querySelectorAll("#app .group > .li > .ico").length,
+        undef: [...document.querySelectorAll(".sym")].filter(x => !x.children.length).length, img: document.querySelectorAll("#app img, #app use").length }));
+      ok("Einstellungen: jede Zeile mit eigenem Symbol (inline gezeichnet, keine fremden Bilder)", se.rows >= 10 && se.ico === se.rows && se.undef === 0 && se.img === 0, JSON.stringify(se));
+      ok("Einstellungen bei 320 px ohne seitliches Scrollen", await noOverflow(page), await overflowers(page));
+      await page.setViewportSize({ width: 360, height: 780 });
+      // Essen: Kalorienring und 7-Tage-Diagramm
+      await page.click("nav.tabs [data-v=food]");
+      const fo = await tp(page, () => { const T = window.__tp, t = T.dayTotals(T.dkey()), s = document.getElementById("foodSum"), stats = [...s.querySelectorAll(".kr-side .num")].map(x => x.textContent);
+        return { p: +s.querySelector(".kr-ring .rg").dataset.p, k: t.k, stats, bars: document.querySelectorAll("#food7 .d7-b").length, zero: document.querySelectorAll("#food7 .d7-b.zero").length, cur: document.querySelectorAll("#food7 .d7-b.cur:not(.zero)").length,
+          goal: !!document.querySelector("#food7 .d7-goal"), label: document.getElementById("food7").getAttribute("aria-label"), all: document.getElementById("app").textContent }; });
+      const goalK = num(fo.stats[1]);
+      ok("Essen: Kalorienring mit Anteil gegessen ÷ Ziel, daneben „Gegessen“ und „Ziel“", num(fo.stats[0]) === Math.round(fo.k) && fo.p === Math.round(Math.min(1, fo.k / goalK) * 100), JSON.stringify([fo.p, fo.stats]));
+      ok("Letzte 7 Tage als Balken mit Ziellinie (6 Tage ohne Eintrag, heute gefüllt); Durchschnitt bleibt als Vorlesetext", fo.bars === 7 && fo.zero === 6 && fo.cur === 1 && fo.goal && /Ziel [\d.]+ kcal/.test(fo.label) && fo.all.includes("an 1 Tag mit Einträgen"), JSON.stringify([fo.bars, fo.zero, fo.cur, fo.label]));
+      ok("Essen bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); if (!r) console.log("    " + await overflowers(page)); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
+      // Wochenrückblick: Statussymbole
+      await page.click("nav.tabs [data-v=history]"); await page.click("#histWeek");
+      ok("Wochenrückblick „Auf einen Blick“: jede Zeile mit Statussymbol", await page.$$eval("#weekHints .symlist li", li => li.length > 0 && li.every(x => x.querySelector("svg.sym") && x.querySelector("span").textContent.length > 5)));
+      await ctx.close();
+    }
+
+    section("86. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
