@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v82)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v82")));
+      ok("Service Worker aktiv (Cache trainingsplan-v83)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v83")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4336,7 +4336,69 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("82. Konsole");
+    section("82. Supersatz im Plan und im Training");
+    {
+      const SS = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Test", items: [
+        { id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 60, ss: "i2" },
+        { id: "i2", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 75 },
+        { id: "i3", exId: "hs-legext", sets: 1, rmin: 8, rmax: 12, rest: 0, ss: "i9" }] }] };
+      const { ctx, page } = await open({ plan: SS });
+      const r = await tp(page, () => { const T = window.__tp, d = T.state.plan.days[0];
+        const a = d.items.map(i => Object.assign({}, i)), b = a.map(i => { const c = Object.assign({}, i); delete c.ss; return c; });
+        return { ss: d.items.map(i => i.ss || ""), withSS: T.estimateSec(a), without: T.estimateSec(b) }; });
+      ok("Ungültige Verbindung (Partner nicht direkt dahinter) wird beim Laden entfernt", r.ss.join() === "i2,,", r.ss.join());
+      // Zeitmodell: Satz 15 + 3,5 × 10 = 50 s; ohne Supersatz 120 + (2×50+60) + 120 + (2×50+75) + 120 + 50 = 745;
+      // mit: 120 + 2×(50+20+50) + 75 + 120 + 50 = 605
+      ok("Zeitschätzung: Supersatz als ein Block (Wechsel 20 s, Pause erst nach beiden)", r.without === 745 && r.withSS === 605, r.without + " / " + r.withSS);
+      await page.click("[data-a=start]"); await page.waitForTimeout(100);
+      ok("Training: Hinweis „Supersatz 1/2 – danach sofort Rudern“", /Supersatz 1\/2/.test(await page.textContent("#ssNote")) && /Rudern/.test(await page.textContent("#ssNote")));
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); await page.waitForTimeout(100);
+      const sw = await tp(page, () => { const s = window.__tp.state.session; return { total: s.restTotal, sw: s.ssSwitch, ex: s.list[s.idx].exId }; });
+      ok("Nach Satz 1: kurzer Wechsel (20 s) zum Partnergerät, nicht die volle Pause", sw.total === 20 && sw.sw === true && sw.ex === "hs-row" && /Wechsel/.test(await page.textContent(".rest")) && (await page.textContent("[data-a=skipRest]")) === "Bin am Gerät", JSON.stringify(sw));
+      ok("Wechsel: „Wie war Satz 1?“ bleibt erhalten", !!(await page.$(".feel-q")));
+      await page.click("[data-a=skipRest]"); await page.waitForTimeout(100);
+      ok("Partnergerät: „Supersatz 2/2 – danach Pause“", /Supersatz 2\/2/.test(await page.textContent("#ssNote")) && /Pause/.test(await page.textContent("#ssNote")));
+      await page.fill("#kgIn", "50"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); await page.waitForTimeout(100);
+      const ps = await tp(page, () => { const s = window.__tp.state.session; return { total: s.restTotal, sw: !!s.ssSwitch, ex: s.list[s.idx].exId }; });
+      ok("Nach dem Partner: normale Pause (75 s), danach zurück zur Brustpresse", ps.total === 75 && !ps.sw && ps.ex === "hs-chest" && /Supersatz: zurück zu/.test(await page.textContent(".next")), JSON.stringify(ps));
+      await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); await page.click("[data-a=skipRest]");
+      await page.fill("#kgIn", "50"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]"); await page.waitForTimeout(100);
+      const nx = await tp(page, () => { const s = window.__tp.state.session; return { total: s.restTotal, ex: s.list[s.idx].exId }; });
+      ok("Beide fertig: weiter zur nächsten Übung (Beinstrecker)", nx.ex === "hs-legext" && nx.total === 75, JSON.stringify(nx));
+      ok("Training mit Supersatz bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      await ctx.close();
+    }
+    {
+      const SS2 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [
+        { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-legext", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i3", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: SS2 });
+      // Wissen → Gut kombinieren: Partner im selben Tag verbinden
+      await page.click("[data-a=tab][data-v=lib]"); await page.click("[data-a=openEx][data-id=hs-chest]"); await page.waitForTimeout(150);
+      ok("Wissen: Knopf „In „Tag A“ mit Rudern verbinden“", /Tag A/.test(await page.textContent("#ssLinkBtn")));
+      await page.click("#ssLinkBtn"); await page.waitForTimeout(150);
+      const st = await stored(page), it = st.plan.days[0].items;
+      ok("Verbinden stellt Rudern direkt hinter die Brustpresse und verbindet beide", it.map(i => i.exId).join() === "hs-chest,hs-row,hs-legext" && it[0].ss === it[1].id, it.map(i => i.exId + (i.ss ? "→" + i.ss : "")).join());
+      ok("Danach steht dort „verbunden“", /verbunden/.test(await page.textContent("#ssLinked")));
+      // Tagesansicht: Kennzeichnung, Geräte-Sheet: Schalter, Verschieben löst
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]"); await page.waitForTimeout(150);
+      const day = await tp(page, () => ({ b: [...document.querySelectorAll("#dayItems .badge.ssb")].map(x => x.textContent), note: !!document.getElementById("ssDayNote") }));
+      ok("Tagesansicht: „Supersatz 1/2“ und „2/2“ mit Hinweis", day.b.join() === "Supersatz 1/2,Supersatz 2/2" && day.note, JSON.stringify(day));
+      await page.click("#dayItems [data-a=moveItem][data-i2='2']"); await page.waitForTimeout(100);
+      const mv = (await stored(page)).plan.days[0].items;
+      ok("Verschieben löst die Verbindung (keine ungewollten Paare)", mv.every(i => !i.ss), mv.map(i => i.exId + (i.ss ? "→" : "")).join());
+      await page.click("#dayItems [data-a=editItem][data-i2='0']"); await page.waitForTimeout(100);
+      ok("Geräte-Sheet: Schalter „Mit … als Supersatz“, Hinweis bei gleichem Muskel nur wenn nötig", !!(await page.$("#ssField [data-a=ssToggle]")));
+      await page.click("#ssField [data-a=ssToggle]"); await page.click("[data-a=saveItem]"); await page.waitForTimeout(100);
+      const tg = (await stored(page)).plan.days[0].items;
+      ok("Schalter verbindet mit der nächsten Übung", tg[0].ss === tg[1].id, tg.map(i => i.ss || "").join());
+      // Tag kopieren: Verbindung zeigt auf die neuen Kopien
+      const cp = await tp(page, () => { const T = window.__tp; T.dayCopyDoFn("new"); const d = T.state.plan.days.at(-1); return { ok: d.items[0].ss === d.items[1].id, ids: d.items.map(i => i.id + ">" + (i.ss || "")) }; });
+      ok("Tag kopieren: Supersatz zeigt auf die neuen Geräte-Einträge", cp.ok, JSON.stringify(cp.ids));
+      await ctx.close();
+    }
+
+    section("83. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
