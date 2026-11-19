@@ -372,7 +372,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v85)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v85")));
+      ok("Service Worker aktiv (Cache trainingsplan-v86)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v86")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4481,6 +4481,31 @@ async function finishAllSets(page, kg, reps) {
       ok("Tag löschen: Aktionsblatt (Frage, rote Option, darunter Abbrechen)", !!as && as.q === "Tag löschen?" && as.d === "Tag löschen" && as.c === "Abbrechen", JSON.stringify(as));
       await page.click(".sheet.as .as-cancel");
       ok("Abbrechen lässt den Tag stehen", !(await page.$(".sheet")) && (await stored(page)).plan.days.length === 1);
+      await ctx.close();
+    }
+    {
+      // Wischen nach links zum Löschen, Formular-Sheets mit Abbrechen/Speichern oben, gefülltes Tab-Symbol
+      const P = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Oberkörper", items: [
+        { id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a3", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: P });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=a]");
+      const cdp = await ctx.newCDPSession(page), T = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+      const row = async i => page.$eval(`#dayItems .li[data-i2='${i}']`, e => { const b = e.getBoundingClientRect(); return { x: b.x + b.width * .7, y: b.y + b.height / 2 }; });
+      let r = await row(1); await T("touchStart", r.x, r.y); for (let d = 10; d <= 100; d += 15) { await T("touchMove", r.x - d, r.y); await sleep(20); } await T("touchEnd"); await sleep(350);
+      const sw = await tp(page, () => { const b = document.querySelector(".swipe-del"); return b && { t: b.textContent, a: b.dataset.a, l: b.getAttribute("aria-label") }; });
+      ok("Nach links wischen zeigt „Löschen“ hinter der Zeile", !!sw && sw.t === "Löschen" && sw.a === "delItemAt" && sw.l === "Rudern löschen", JSON.stringify(sw));
+      ok("Wischen öffnet nicht das Geräte-Sheet", !(await page.$(".sheet")));
+      await page.click(".swipe-del"); await sleep(100);
+      ok("„Löschen“ entfernt genau diese Zeile", (await stored(page)).plan.days[0].items.map(i => i.id).join() === "a1,a3");
+      r = await row(0); await T("touchStart", r.x, r.y); for (let d = 10; d <= 70; d += 15) { await T("touchMove", r.x - d, r.y); await sleep(20); } await T("touchEnd"); await sleep(350);
+      const o = await row(1); await T("touchStart", o.x, o.y); await T("touchEnd"); await sleep(350);
+      ok("Tippen auf eine andere Zeile schließt nur das Wischmenü", !(await page.$(".swipe-del")) && !(await page.$(".sheet")) && (await stored(page)).plan.days[0].items.length === 2);
+      // Formular-Sheet: Speichern oben rechts, Abbrechen oben links
+      await page.click("nav.tabs [data-v=plan]"); await page.click("[data-a=openSched]");
+      const fh = await tp(page, () => { const h = document.querySelector(".sheet > .sh-head"); return h && { l: (h.querySelector(".sh-l") || {}).textContent, r: (h.querySelector("[data-a=schedSave]") || {}).textContent, bottom: [...document.querySelectorAll(".sheet .btn.primary")].length }; });
+      ok("Formular-Sheet (Termine): „Abbrechen“ links und „Speichern“ rechts im Kopf, kein Knopf mehr unten", !!fh && fh.l === "Abbrechen" && fh.r === "Speichern" && fh.bottom === 0, JSON.stringify(fh));
+      await page.click(".sheet .sh-l");
+      ok("Gefülltes Symbol für den aktiven Tab „Fortschritt“", await (async () => { await page.click("nav.tabs [data-v=history]"); return page.$eval("nav.tabs button.on svg .fill", e => getComputedStyle(e).fill !== "none"); })());
       await ctx.close();
     }
 
