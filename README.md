@@ -38,13 +38,16 @@ Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bring
 
 ## Aufbau
 
-Ein Zweck: Krafttraining an Hammer-Strength- und Life-Fitness-Geräten **planen, durchführen, dranbleiben**. Jede Sache steht an genau einem Ort, die App widerspricht sich nicht selbst:
+Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt durchs Training.** Alles andere hängt daran.
 
-- **Heute:** das nächste Training mit Start-Knopf und einer kurzen Nachricht; darunter höchstens eine Karte (die Frage nach einem ausgefallenen Termin oder der wichtigste Hinweis); die Woche mit dem Trainingstag je Termin. Die Übungen mit Gewichten liegen hinter „N Übungen ›“, die Dauer hinter „≈ N Min. ›“. Essen nur, wenn heute etwas eingetragen ist
-- **Training:** Termine, Geräte in deinem Studio, Trainingstage, Erholung nur wenn ein Muskel noch nicht erholt ist, Planprüfung (nur echte Probleme: fehlende Muskelgruppe, Tag über dem Zeitbudget, zu viel); Zahnrad → Einstellungen
-- **Wissen:** Übungsbibliothek, Artikel und „So entscheidet die App“ (alle Hinweise und Regeln an einem Ort)
-- **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
-- **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
+- **Einstieg (erster Start):** drei Schritte („Plan bauen → Start tippen → Dranbleiben“) und zwei Wege: „Plan selbst bauen“ (Hauptweg: ein leerer Tag, Geräte wählen) oder „Plan vorschlagen lassen“ (erst dann die Fragen zu Ziel, Tagen und Zeit). Tests, die direkt bei den Fragen beginnen, schalten den Einstieg mit `tp-intro=0` ab; Abschnitt 86 prüft ihn eigens
+- **Der Stamm – zwei Bereiche:**
+  - **Heute** (machen): das nächste Training mit Start-Knopf und einer kurzen Nachricht; danach in fester Reihenfolge höchstens ein Hinweis (nur Titel und Aktion, Erklärung nach Antippen), „Diese Woche ›“ (die Überschrift führt zum Wochenrückblick) und „Mein Tag“ (Ringe für Kalorien, Eiweiß, Schritte → Tagesplan)
+  - **Plan** (bauen): „Mein Plan“ in fester Reihenfolge – Trainingstage (Gerätebilder, Dauer, ▶ startet den Tag direkt; Antippen öffnet den Tag mit Gerätebildern in Reihenfolge), „Rund um den Plan“ (Termine, Geräte im Studio, Erholung als Zeilen einer Liste) und die Planprüfung als eine Karte mit Status (aufgeklappt nur bei echten Punkten); Zahnrad → Einstellungen
+- **Die Äste:**
+  - **Wissen:** Übungsbibliothek, Artikel und „So entscheidet die App“ (alle Hinweise und Regeln an einem Ort)
+  - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
+  - **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
 
 ## Funktionen
 

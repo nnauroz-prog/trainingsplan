@@ -589,6 +589,25 @@
   .rings>.chev{position:absolute;right:var(--s3);top:50%;transform:translateY(-50%)}
   button.card:active{opacity:.7}
   .wkr{display:inline-flex;align-items:center;gap:8px}
+  .hlink{font:inherit;letter-spacing:inherit;color:inherit;display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-10px 0}
+  .hlink:active{opacity:.5}
+  .dthumb{position:relative;overflow:visible}
+  .dthumb i{position:absolute;left:-6px;top:-6px;width:20px;height:20px;border-radius:50%;background:var(--raise-3);color:var(--text);font-style:normal;font-family:var(--rounded);font-size:12px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--raise)}
+  .day-row{padding-top:0;padding-bottom:0;padding-left:0}
+  .day-row .dmain{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s3);text-align:left;padding:11px 0 11px var(--s4);min-height:56px}
+  .day-row .dmain:active{opacity:.6}
+  .day-row .dmain .grow,.day-row .dmain .s,.day-row .dmain .row{display:block}
+  .day-row .dmain .row{display:flex}
+  .icon-btn.dplay{background:var(--accent);color:var(--on-accent);width:38px;height:38px;margin:3px 0}
+  .icon-btn.dplay svg{width:16px;height:16px;margin-left:2px}
+  details.disc .group{background:transparent;border-radius:0;margin:0 calc(-1 * var(--s4))}
+  .steps3{list-style:none;margin:0;padding:var(--s2) var(--s4);gap:0}
+  .steps3 li{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0;position:relative}
+  .steps3 li+li{border-top:.5px solid var(--hair)}
+  .steps3 .stn{flex:0 0 32px;width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--rounded);font-weight:700;font-size:17px}
+  .steps3 .t{font-weight:600;font-size:17px}
+  .steps3 .s{font-size:15px;color:var(--text-2)}
+  .steps3 .sti{font-size:24px;color:var(--text-3);display:grid}
   .card.empty{justify-items:center;text-align:center;padding:var(--s5) var(--s4)}
   .card.empty>.sym{font-size:34px;color:var(--text-3)}
   .glist.symlist{list-style:none;padding-left:var(--s4)}
@@ -624,12 +643,12 @@
     .sheet,.scrim{animation:none}.bar>div,.fig .m,details.disc>summary .chev{transition:none}.btn{transition:none}}
 </style>
 
-<p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Training → Einstellungen eine Sicherung erstellen.</p>
+<p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Plan → Einstellungen eine Sicherung erstellen.</p>
 <header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="fill" d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
-  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Training</button>
+  <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Plan</button>
   <button data-a="tab" data-v="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="fill" d="M2.5 5.5C5 4.2 8.5 4.2 12 6.2c3.5-2 7-2 9.5-.7V19c-2.5-1.3-6-1.3-9.5.7-3.5-2-7-2-9.5-.7z"/><path d="M12 6.2v13.5" stroke="var(--bar-solid, #fff)" class="spine"/></svg>Wissen</button>
   <button data-a="tab" data-v="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 0-3.5 2.6-3.5 6.5S15 14 17 14"/></svg>Essen</button>
   <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect class="fill" x="3" y="11" width="4.5" height="9" rx="1.2"/><rect class="fill" x="9.75" y="4" width="4.5" height="16" rx="1.2"/><rect class="fill" x="16.5" y="8" width="4.5" height="12" rx="1.2"/></svg>Fortschritt</button>
@@ -2456,6 +2475,8 @@ const SYM = {
   info: `<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.01"/>`,
   timer: `<circle cx="12" cy="13" r="7.5"/><path d="M12 9v4M10 3h4"/>`,
   x: `<path d="M6 6l12 12M18 6 6 18"/>`,
+  play: `<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>`,
+  list: `<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>`,
   bulb: `<path d="M9 17h6M10 20h4M12 3a6 6 0 0 0-3.5 10.900c.6.5 1 1.300 1 2.100h5c0-.8.4-1.600 1-2.100A6 6 0 0 0 12 3z"/>`
 };
 const sym = (n, col) => `<svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${col ? ` style="color:${col}"` : ""}>${SYM[n]}</svg>`;
@@ -4270,7 +4291,7 @@ function comboHtml(id) {
 // Aus Plan und Geräteliste berechnet – keine zusätzlichen Behauptungen
 function exPlanHtml(id) {
   const uses = (state.plan ? state.plan.days : []).flatMap(d => d.items.filter(i => i.exId === id).map(i => ({ d, i })));
-  if (!uses.length) return `<p class="card muted">In keinem Trainingstag. Du kannst sie unter „Training“ zu einem Tag hinzufügen.</p>`;
+  if (!uses.length) return `<p class="card muted">In keinem Trainingstag. Du kannst sie unter „Plan“ zu einem Tag hinzufügen.</p>`;
   return `<ul class="glist card">${uses.map(({ d, i }) => `<li><b>${esc(d.name)}</b>: ${i.sets} × ${i.rmin}–${i.rmax} Wdh., ${i.rest ? i.rest + " s Pause" : "ohne Pause"}</li>`).join("")}</ul>`;
 }
 const ALT_TAG = { same: "gleiche Bewegung", rel: "verwandte Bewegung", other: "andere Bewegung" };
@@ -4646,7 +4667,7 @@ function vTag() {
     <section class="section" id="tagTrain"><h2>Training</h2><div class="card">
       ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt · ${tr.min} Min.` : `geplant · ≈ ${tr.min} Min.${tr.ovr ? " · geändert" : ""}`}</div></div>
           ${E ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
-        : `<p class="small muted" style="margin:0">${state.sched ? (trainOvr(dk) === "rest" ? "Ruhetag – von dir geplant." : "Kein Training geplant – Ruhetag.") : "Ohne feste Termine. Unter Training → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
+        : `<p class="small muted" style="margin:0">${state.sched ? (trainOvr(dk) === "rest" ? "Ruhetag – von dir geplant." : "Kein Training geplant – Ruhetag.") : "Ohne feste Termine. Unter Plan → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
       ${(() => { const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
         if (!state.sched || !days.length || dk < today || (tr && tr.done)) return "";
         const cur = tr ? tr.dayId : "rest", chip = (v, l) => `<button class="chip ${cur === v ? "on" : ""}" data-a="tagTrain" data-v="${v}" aria-pressed="${cur === v}">${esc(l)}</button>`;
@@ -4699,13 +4720,33 @@ function render() {
 
 /* ================= Einrichtung ================= */
 let setup = { goal: "aufbau", days: 3, level: "einsteiger", minutes: 60, wd: [0, 2, 4], time: "18:00" };
+// Erster Start: Die App sagt in drei Schritten, wofür sie da ist, und bietet zwei Wege an –
+// den Plan selbst bauen (der eigentliche Zweck) oder einen Vorschlag erstellen lassen (Fragen erst danach).
+// Automatisierte Tests, die direkt mit den Fragen beginnen, schalten den Einstieg mit tp-intro=0 ab; Abschnitt 86 prüft ihn eigens.
+let setupStep = "intro";
+function introOn() { try { return localStorage.getItem("tp-intro") !== "0"; } catch (e) { return true; } }
+function vIntro() {
+  const st = (n, ic, t, d) => `<li><span class="stn" aria-hidden="true">${n}</span><div class="grow"><div class="t">${t}</div><div class="s">${d}</div></div><span class="sti" aria-hidden="true">${sym(ic)}</span></li>`;
+  $app.innerHTML = `<div class="page" id="intro">
+    <div class="head"><h1 class="title">Dein Trainingsplan</h1><p class="sub">Für Hammer-Strength- und Life-Fitness-Geräte.</p></div>
+    <ol class="card steps3" aria-label="So funktioniert die App">
+      ${st(1, "list", "Plan bauen", "Trainingstage anlegen und Geräte aus deinem Studio wählen.")}
+      ${st(2, "play", "Start tippen", "Die App läuft mit: Gewicht, Sätze und Pausen.")}
+      ${st(3, "chart", "Dranbleiben", "Du siehst, was sich verbessert.")}
+    </ol>
+    <div class="actionbar"><div class="in">
+      <button class="btn primary xl block" data-a="emptyPlan">Plan selbst bauen</button>
+      <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
+  </div>`;
+}
 function vSetup() {
+  if (!state.plan && setupStep === "intro" && introOn()) return vIntro();
   const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
     `<button data-a="setup" data-k="${key}" data-val="${v}" class="${String(setup[key]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
   const all = allEx(), av = all.filter(e => !e.off).length, fav = all.filter(e => e.fav).length;
   $app.innerHTML = `<div class="page">
-    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Training</button>` : `<div class="cap">Neuer Plan</div>`}
-      <h1 class="title">Dein Training</h1>
+    <div class="head">${state.plan ? `<button class="link" data-a="tab" data-v="plan">‹ Plan</button>` : introOn() ? `<button class="link" data-a="setupIntro">‹ Zurück</button>` : `<div class="cap">Neuer Plan</div>`}
+      <h1 class="title">Plan vorschlagen</h1>
       <p class="sub">Ein paar Angaben, dann steht dein Plan – mit festen Tagen. Alles bleibt später änderbar.</p></div>
     <div class="section"><h3>Ziel</h3>${seg("goal", Object.entries(GOALS).map(([k, g]) => [k, g.label.replace(" & Straffung", "")]))}
       <p class="small foot" id="setupRange">Startwerte der App: ${GOALS[setup.goal].rmin}–${GOALS[setup.goal].rmax} Wiederholungen · ${GOALS[setup.goal].rest} s Pause${setup.goal === "kraft" ? `. Übungen mit nur einem Gelenk (z. B. Seitheben, Beinbeuger): ${KRAFT_ISO.rmin}–${KRAFT_ISO.rmax} · ${KRAFT_ISO.rest} s` : ""}</p></div>
@@ -4719,7 +4760,7 @@ function vSetup() {
       <div class="grow"><div class="t">Geräte in deinem Studio</div><div class="s">${av} von ${all.length} vorhanden${fav ? ` · ${fav} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="createPlan">Plan erstellen</button>
-      <button class="btn quiet block sm" data-a="emptyPlan">Lieber selbst zusammenstellen</button></div></div>
+      ${introOn() && !state.plan ? "" : `<button class="btn quiet block sm" data-a="emptyPlan">Lieber selbst zusammenstellen</button>`}</div></div>
   </div>`;
 }
 
@@ -4790,17 +4831,17 @@ function vHome() {
       const L = insights().filter(x => !coachHidden(x)); if (!L.length) return "";
       return `<section class="section" id="coach">${insightCard(L[0], "home")}${L.length > 1 ? `<div class="group"><button class="li" data-a="openCoach" data-ret="home">${ico("bulb", "orange")}<div class="grow"><div class="t n">Alle ${L.length} Hinweise</div></div><span class="chev">›</span></button></div>` : ""}</section>`; })() : ""}
     <section class="section">
-      <div class="section-head"><h2>Diese Woche</h2><span class="small muted wkr" id="homeWeekSec">${ringSvg(thisWeek / goal, thisWeek >= goal ? "var(--ok)" : "var(--accent)", 26, 5)}<span><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? sr(" · Ziel erreicht") : ""}</span></span></div>
+      <div class="section-head"><h2>${state.history.length ? `<button class="hlink" data-a="openWeek" data-ret="home" id="homeWeek" aria-label="Diese Woche: Wochenrückblick ansehen">Diese Woche<span class="chev" aria-hidden="true">›</span></button>` : "Diese Woche"}</h2><span class="small muted wkr" id="homeWeekSec">${ringSvg(thisWeek / goal, thisWeek >= goal ? "var(--ok)" : "var(--accent)", 26, 5)}<span><b style="color:var(--text)">${thisWeek}</b> von ${goal}${thisWeek >= goal ? sr(" · Ziel erreicht") : ""}</span></span></div>
       <div class="card"><div class="week">${week}</div>
       ${(() => { const L = weekLeft(monday, thisWeek, goal); return L.length ? `<p class="small muted" id="weekLeft">Noch diese Woche: ${L.map(esc).join(", ")}${state.sched ? "" : " – ohne feste Termine, sobald du Zeit hast"}.</p>` : ""; })()}
       ${streak ? `<div class="fchips"><span class="fchip" id="streak" style="--c:${IOS.orange}">${sym("flame")}<span>${streak} ${streak === 1 ? "Woche" : "Wochen"} in Folge${sr(" das Wochenziel geschafft.")}</span></span></div>` : ""}</div>
-      ${state.history.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="home" id="homeWeek">${ico("chart", "indigo")}<div class="grow"><div class="t n">Wochenrückblick</div></div><span class="chev">›</span></button></div>` : ""}
     </section>
     ${state.hints.unitsOld && !state.hints.units && state.history.some(h => h.exercises.some(x => x.u === "s")) ? `<div class="note">
         <div class="cap">Neu: Gewicht pro Seite</div>
         <p class="small">Geräte mit getrennten Seiten (am Gerät „Iso-Lateral“) zählen jetzt „kg pro Seite“. Hast du dort das Gesamtgewicht notiert, stell das Gerät auf „Insgesamt“ und die früheren Einträge mit um.</p>
         <div class="row wrap" style="gap:8px"><button class="btn sm primary" data-a="hintUnitsOpen">Geräte prüfen</button><button class="btn sm" data-a="hintUnitsDone">Passt so</button></div>
       </div>` : ""}
+    <section class="section" id="homeDay"><div class="section-head"><h2>Mein Tag</h2></div>
     ${(() => { const E = dayEnergy(dkey()), ac = actOn(dkey()), st = stepsOn(dkey()), G = nutrGoals(), tt = dayTotals(dkey()), has = (state.food[dkey()] || []).length;
       // Vorlesetext = der frühere Satz; sichtbar: Ringe mit je einer Zahl
       const Z = E ? E.total + E.goalDiff : 0, rest = Z - (E ? E.intake : 0);
@@ -4814,6 +4855,7 @@ function vHome() {
         : `<div class="group"><button class="li" data-a="openTag" data-d="${dkey()}" id="homeTag">${ico("cal", "red")}<div class="grow"><div class="t n">Tagesplan</div>${sr(txt)}</div><span class="chev">›</span></button></div>`; })()}
     ${(() => { const G = nutrGoals(), tt = dayTotals(dkey()); if (!tt.k) return "";
       return `<div class="group"><button class="li" data-a="tab" data-v="food" id="homeFood">${ico("fork", "green")}<div class="grow"><div class="t n">Essen</div></div><span class="val" aria-hidden="true">${fmtK(tt.k)} kcal</span>${sr(`Essen heute: ${fmtK(tt.k)}${G ? ` von ${fmtK(G.kcal)}` : ""} kcal · ${fmtK(tt.p)}${G ? ` von ${G.prot}` : ""} g Eiweiß`)}<span class="chev">›</span></button></div>`; })()}
+    </section>
   </div>`;
 }
 /* Zeit anpassen */
@@ -4932,29 +4974,33 @@ function fmtWhenDay(iso) {
 /* ================= Plan ================= */
 function vPlan() {
   if (!state.plan) return go("setup");
-  const p = state.plan;
+  const p = state.plan, ses = state.session;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
-      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
+      <div class="row between"><h1 class="title">Mein Plan</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
-    <div class="group"><button class="li" data-a="openSched" id="schedRow">${ico("cal", "red")}<div class="grow"><div class="row between"><span class="t n">Termine</span>${state.sched ? `<span class="val" aria-hidden="true">${state.sched.time}</span>` : ""}</div>
+    ${planNote ? `<p class="note small" id="planNote" role="status" style="margin:0">${esc(planNote)}${planUndo ? ` <button class="link small" data-a="dayCopyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
+    <section class="section" id="planDays"><div class="section-head"><h2>Trainingstage</h2></div>
+    <div class="group">${p.days.map((d, i) => `
+      <div class="li day-row">
+        <button class="dmain" data-a="editDay" data-id="${d.id}"><span class="idx">${i + 1}</span>
+          <span class="grow"><span class="row between" style="gap:var(--s2)"><span class="t">${esc(d.name)}</span><span class="min">${d.items.length ? `${estMinutes(d)} Min.` : ""}</span></span>
+          ${d.items.length ? thumbStrip(d.items.map(it => it.exId), 5) + sr(d.items.map(it => esc(ex(it.exId).name)).join(" · ")) : `<span class="s">Noch keine Übungen – antippen und Geräte wählen</span>`}</span></button>
+        ${d.items.length && !ses ? `<button class="icon-btn dplay" data-a="startDayId" data-id="${d.id}" aria-label="${esc(d.name)} starten">${ICON.play}</button>` : `<span class="chev" aria-hidden="true">›</span>`}
+      </div>`).join("")}
+      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
+    </div>
+    <p class="small foot">Tag antippen zum Bearbeiten, ▶ startet das Training.</p></section>
+    <section class="section" id="planMore"><div class="section-head"><h2>Rund um den Plan</h2></div><div class="group">
+      <button class="li" data-a="openSched" id="schedRow">${ico("cal", "red")}<div class="grow"><div class="row between"><span class="t n">Termine</span>${state.sched ? `<span class="val" aria-hidden="true">${state.sched.time}</span>` : ""}</div>
       ${state.sched ? `<div style="margin-top:6px">${miniWeek(state.sched.days)}</div>` + sr(`${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time} · Plan B: ${state.sched.planB === "short" ? "Kurzversion" : "nächster Tag"}`) : `<div class="s">Noch keine festen Termine</div>`}</div>
       <span class="chev">›</span></button>
       <button class="li" data-a="openDevs" id="devsRow">${ico("dumbbell", "gray")}<div class="grow"><div class="t n">Geräte${sr(" in deinem Studio")}</div></div>
-        <span class="val">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? sr(` · ${allEx().filter(e => e.fav).length} bevorzugt`) : ""}</span><span class="chev">›</span></button></div>
-    ${planNote ? `<p class="note small" id="planNote" role="status" style="margin:0">${esc(planNote)}${planUndo ? ` <button class="link small" data-a="dayCopyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
-    <div class="group">${p.days.map((d, i) => `
-      <button class="li day-row" data-a="editDay" data-id="${d.id}">
-        <span class="idx">${i + 1}</span>
-        <div class="grow"><div class="row between" style="gap:var(--s2)"><span class="t">${esc(d.name)}</span><span class="min">${d.items.length ? `${estMinutes(d)} Min.` : ""}</span></div>
-          ${d.items.length ? thumbStrip(d.items.map(it => it.exId), 5) + sr(d.items.map(it => esc(ex(it.exId).name)).join(" · ")) : `<div class="s">Noch keine Übungen</div>`}</div>
-        <span class="chev">›</span>
-      </button>`).join("")}
-      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
-    </div>
-    ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
-      return `<div class="group"><button class="li" data-a="showRec">${ico("moon", "indigo")}<div class="grow"><div class="t n">Erholung</div><div class="s">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button></div>`; })()}
+        <span class="val">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? sr(` · ${allEx().filter(e => e.fav).length} bevorzugt`) : ""}</span><span class="chev">›</span></button>
+      ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
+      return `<button class="li" data-a="showRec">${ico("moon", "indigo")}<div class="grow"><div class="t n">Erholung</div><div class="s">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button>`; })()}
+    </div></section>
     ${planCheckHtml()}
   </div>`;
 }
@@ -4962,7 +5008,7 @@ function vPlan() {
 function vSettings() {
   const seg = (k, on, label) => `<button class="switch" role="switch" aria-checked="${!!on}" data-a="nOpt" data-k="${k}" data-v="${on ? 0 : 1}" aria-label="${label}"></button>`;
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Training</button><h1 class="title">Einstellungen</h1></div>
+    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><h1 class="title">Einstellungen</h1></div>
     <section class="section"><h2>Training</h2><div class="group">
       <button class="li" data-a="openSched">${ico("cal", "red")}<div class="grow"><div class="row between"><span class="t n">Trainingstermine</span>${state.sched ? `<span class="val" aria-hidden="true">${state.sched.time}</span>` : ""}</div>
         ${state.sched ? `<div style="margin-top:6px">${miniWeek(state.sched.days)}</div>` + sr(`${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}`) : `<div class="s">Noch keine festen Termine</div>`}</div>
@@ -5037,7 +5083,7 @@ function vDay() {
   const ses = state.session, mine = ses && ses.dayId === d.id;
   $app.innerHTML = `<div class="page">
     <div class="head">
-      <button class="link" data-a="tab" data-v="plan">‹ Training</button>
+      <button class="link" data-a="tab" data-v="plan">‹ Plan</button>
       <label for="dayName" class="sr-only">Name des Trainingstags</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${d.items.length === 1 ? "Gerät" : "Geräte"} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
@@ -5047,7 +5093,7 @@ function vDay() {
     ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2></div>
       <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it), ssA = it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss, ssB = i > 0 && d.items[i - 1].ss === it.id; return `
       <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}" data-swipe="delItemAt" data-i2="${i}" data-label="${esc(e.name)}">
-        <span class="idx">${i + 1}</span>
+        ${motSpec(it.exId) ? `<span class="thumbbox dthumb" aria-hidden="true">${motionSvg(it.exId, { cls: "thumb" })}<i>${i + 1}</i></span>` : `<span class="idx">${i + 1}</span>`}
         <div class="grow" data-a="editItem" data-i2="${i}" style="cursor:pointer">
           <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}${ssA || ssB ? `<span class="badge ssb">Supersatz ${ssA ? "1/2" : "2/2"}</span>` : ""}</div>
           <div class="s">${en.recKg !== null ? entryLine(en) : `${it.sets} × ${repsTxt(it)} Wdh. · Gewicht beim ersten Mal wählen`} · Pause ${fmtTime(it.rest)}</div>
@@ -7009,7 +7055,7 @@ function buddySays(day, thisWeek, goal, streak) {
     act.push(["schedLearned", "Als Termine übernehmen"]);
   } else if (!s) {
     title = "Noch keine festen Trainingstage";
-    text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um. Wähle Tage, Uhrzeit und einen Plan B – auf Wunsch mit Erinnerung im Kalender.";
+    text = "Wer vorher festlegt, wann er trainiert, setzt es im Schnitt häufiger um.";
     act.push(["openSched", "Termine festlegen"]);
   } else { title = "Heute ist trainingsfrei"; text = nx ? `Nächstes Training: ${whenTxt(nx)} – ${dn}.` : ""; }
   // Kurze Fakten in einer eigenen Zeile (höchstens drei): Ziel oder Bestwert, Warum, Wochenziel, Serie, letzter Ausfall
@@ -7084,16 +7130,18 @@ function planCheckHtml() {
     more: "Ein paar Sätze mehr bringen dich in den Bereich." };
   const groups = Object.keys(R).map(r => [r, low.filter(x => reason(x) === r).map(x => MUSCLES[x.m])]).filter(([, a]) => a.length);
   const why = groups.length === 1 ? R[groups[0][0]] : groups.map(([r, a]) => `${joinDe(a)}: ${R[r].charAt(0).toLowerCase() + R[r].slice(1)}`).join(" ");
-  return `<section class="section" id="planCheck"><h2>Planprüfung</h2>
+  const status = rows.length ? `${rows.length} ${rows.length === 1 ? "Punkt" : "Punkte"} zu prüfen` : low.length ? `Alle Muskelgruppen dabei · ${low.length} unter dem Richtwert` : "Alles im Richtwert";
+  return `<section class="section" id="planCheck"><details class="disc" id="planCheckBox"${rows.length || add.length ? " open" : ""}>
+    <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
-    <div class="card">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
+    <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
     ${(() => { const ms = muscleSets(p, c.per), scale = c.tmax * 1.3;
       return `<div class="mlist" id="planBars" role="img" aria-label="Sätze pro Woche je Muskel: ${MAJOR.map(m => `${MUSCLES[m]} ${f(ms[m] || 0)}`).join(", ")}">${MAJOR.map(m => { const v = ms[m] || 0, col = v >= c.tmin && v <= c.tmax ? "var(--ok)" : v > c.tmax ? "var(--warn)" : "var(--accent)";
         return `<div class="mrow" data-m="${m}"><span class="small">${MUSCLES[m]}</span><div class="mtrack"><div class="mband" style="left:${c.tmin / scale * 100}%;width:${(c.tmax - c.tmin) / scale * 100}%"></div><div class="mfill" style="width:${Math.min(100, v / scale * 100)}%;background:${col}"></div></div><span class="small num" style="font-size:15px;text-align:right">${f(v)}</span></div>`; }).join("")}</div>`; })()}
     ${low.length ? `<details class="gdet" id="lowNote"><summary><span>Warum unter dem Richtwert?${sr(` Noch unter ${c.tmin} Sätzen pro Woche: ${low.map(x => `${MUSCLES[x.m]} ${f(x.v)}`).join(", ")}. `)}</span></summary><p class="small muted" style="margin:0 0 var(--s3)">${why}</p></details>
       ${add.length ? `<div class="row wrap" style="gap:var(--s2)">${add.map(x => `<button class="btn sm" data-a="checkFix" data-m="${x.m}">+ Übung für ${MUSCLES[x.m]}</button>`).join("")}</div>` : ""}` : ""}</div>
-    <p class="small foot">Sätze pro Woche: Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}. Heller Bereich: Richtwert der App für ${(GOALS[p.goal] || GOALS.aufbau).label}, ${c.tmin}–${c.tmax} Sätze.</p>
-    <div class="group"><button class="li" data-a="openArt" data-id="volumen" data-ret="plan"><div class="grow"><div class="t n">Wie viele Sätze pro Woche?</div></div><span class="chev">›</span></button></div></section>`;
+    <p class="small faint" style="margin:0">Sätze pro Woche: Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${state.sched.days.length} Termine pro Woche` : "jeder Tag einmal pro Woche"}. Heller Bereich: Richtwert der App für ${(GOALS[p.goal] || GOALS.aufbau).label}, ${c.tmin}–${c.tmax} Sätze.</p>
+    <button class="link small" data-a="openArt" data-id="volumen" data-ret="plan" style="justify-self:start">Wie viele Sätze pro Woche?</button></div></details></section>`;
 }
 // Sprachbegleitung im Training (läuft im Gerät, ohne Internet, solange die App offen ist)
 function say(t) {
@@ -7304,10 +7352,11 @@ function insights() {
 const coachHidden = x => { const t = (state.coachOff || {})[x.id]; return !!t && Date.now() - new Date(t) < 21 * DAY; };
 function insightCard(x, ret) {
   const attrs = d => Object.entries(d).map(([k, v]) => ` data-${k}="${esc(v)}"`).join("");
+  const links = `<div class="row wrap" style="gap:var(--s4)">${x.art ? `<button class="link small" data-a="openArt" data-id="${x.art}" data-ret="${ret}">Hintergrund</button>` : ""}<button class="link small faint" data-a="coachHide" data-id="${esc(x.id)}">Ausblenden</button></div>`;
   return `<div class="ins ${x.kind}" data-ins="${esc(x.id)}"><details class="insd"${ret === "home" ? "" : " open"}><summary class="t"><span class="grow">${esc(x.title)}</span><span class="chev" aria-hidden="true">›</span></summary>
-    <p class="small" style="margin:var(--s2) 0 0">${esc(x.text)}</p></details>
+    <p class="small" style="margin:var(--s2) 0 0">${esc(x.text)}</p>${ret === "home" ? links : ""}</details>
     ${x.act.length ? `<div class="row wrap" style="gap:var(--s2)">${x.act.map(a => `<button class="btn sm" data-a="${a.a}"${attrs(a.d)}>${esc(a.l)}</button>`).join("")}</div>` : ""}
-    <div class="row wrap" style="gap:var(--s4)">${x.art ? `<button class="link small" data-a="openArt" data-id="${x.art}" data-ret="${ret}">Hintergrund</button>` : ""}<button class="link small faint" data-a="coachHide" data-id="${esc(x.id)}">Ausblenden</button></div></div>`;
+    ${ret === "home" ? "" : links}</div>`;
 }
 let coachBack = "home", coachDraft = null;
 const COACH_RULES = [
@@ -7349,7 +7398,7 @@ function coachPlanSheet(n) {
     <p class="small" style="margin:0">Gleiches Ziel, gleiche Erfahrung, gleiches Zeitbudget – nur ${n} statt ${P} Trainingstage. Gewichte und Verlauf bleiben erhalten.</p>
     <div class="group">${d.days.map(x => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${x.items.map(i => esc(ex(i.exId).name)).join(" · ")}</div></div></div>`).join("")}</div>
     ${d.gaps && d.gaps.length ? `<p class="small" style="color:var(--warn);margin:0">Nicht in deinem Studio: ${d.gaps.map(g => esc(g.name)).join(", ")}</p>` : ""}
-    ${state.sched && state.sched.days.length !== n ? `<p class="small muted" style="margin:0">Du hast ${state.sched.days.length} Termine pro Woche. Passe sie danach unter Training → Termine an.</p>` : ""}
+    ${state.sched && state.sched.days.length !== n ? `<p class="small muted" style="margin:0">Du hast ${state.sched.days.length} Termine pro Woche. Passe sie danach unter Plan → Termine an.</p>` : ""}
     <button class="btn primary block" data-a="coachPlanApply">Übernehmen</button>
     <p class="small faint" style="margin:0">Dein jetziger Plan lässt sich danach unter „Hinweise“ wiederherstellen.</p>`;
 }
@@ -7751,6 +7800,8 @@ const A = {
     state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
     save(); bwOpen = true; vHistory(); bwOpen = false;
   },
+  setupForm: () => { setupStep = "form"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
+  setupIntro: () => { setupStep = "intro"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
   emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
@@ -8145,6 +8196,7 @@ const A = {
   start: () => { const d = nextDay(); if (d) startTraining(d); },
   editDay: el => { state.editDay = el.dataset.id; go("day"); },
   // Genau diesen Tag trainieren (nicht nur den nächsten aus „Heute“)
+  startDayId: el => { const d = state.plan && state.plan.days.find(x => x.id === el.dataset.id); if (d && d.items.length && !state.session) startTraining(d); },
   startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
   toTrain: () => { if (state.session) go("train"); },
   addDay: () => { const d = { id: uid(), name: "Tag " + (state.plan.days.length + 1), items: [] }; state.plan.days.push(d); save(); state.editDay = d.id; go("day"); },

@@ -69,6 +69,8 @@ async function open(data, opts = {}) {
   await ctx.addInitScript(v3 => { try { if (localStorage.getItem("tp-3d") === null) localStorage.setItem("tp-3d", v3 ? "1" : "0"); } catch (e) {} }, !!opts.v3);
   // Die Tests springen über die Tab-Leiste zur Startseite eines Bereichs; den iOS-Tab-Verlauf prüft Abschnitt „iOS-Navigation“ eigens
   await ctx.addInitScript(on => { try { if (localStorage.getItem("tp-tabmem") === null) localStorage.setItem("tp-tabmem", on ? "1" : "0"); } catch (e) {} }, !!opts.tabmem);
+  // Erster Start: Die meisten Tests beginnen direkt bei den Fragen („Plan vorschlagen“); den Einstieg mit den zwei Wegen prüft der Abschnitt „Grundstruktur“ eigens
+  await ctx.addInitScript(on => { try { if (localStorage.getItem("tp-intro") === null) localStorage.setItem("tp-intro", on ? "1" : "0"); } catch (e) {} }, !!opts.intro);
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
   // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
@@ -372,7 +374,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v88)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v88")));
+      ok("Service Worker aktiv (Cache trainingsplan-v89)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v89")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1761,7 +1763,7 @@ async function finishAllSets(page, kg, reps) {
       const pr = [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 2, "s")];
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: pr, hints: { units: true } });
       const tabs = await page.$$eval("#tabs button", b => b.map(x => [x.dataset.v, x.textContent.trim()]));
-      ok("Fünf Bereiche: Heute, Training, Wissen, Essen, Fortschritt", JSON.stringify(tabs) === JSON.stringify([["home", "Heute"], ["plan", "Training"], ["lib", "Wissen"], ["food", "Essen"], ["history", "Fortschritt"]]), JSON.stringify(tabs));
+      ok("Fünf Bereiche: Heute, Plan, Wissen, Essen, Fortschritt", JSON.stringify(tabs) === JSON.stringify([["home", "Heute"], ["plan", "Plan"], ["lib", "Wissen"], ["food", "Essen"], ["history", "Fortschritt"]]), JSON.stringify(tabs));
       const home = await page.textContent("#app");
       ok("„Heute“ ohne Ballast: keine Erholung, kein Bestwert, kein Artikel, keine Übungsliste", !(await page.$("#app [data-a=showRec]")) && !(await page.$("#homeBest")) && !(await page.$("#homeArt")) && !(await page.$("#todayPlan")) && home.length > 0);
       await page.click("#exBtn");
@@ -1770,7 +1772,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Wochenrückblick über „Diese Woche“ erreichbar", await page.isVisible("#homeWeek"));
       await page.click("[data-a=tab][data-v=plan]");
       const plan = await page.textContent("#app");
-      ok("„Training“: Plan, Geräte im Studio und Erholung, keine Datensicherung oder Bibliothek dazwischen", (await page.textContent(".head")).includes("Training") && !!(await page.$("#app [data-a=showRec]"))
+      ok("„Plan“: Trainingstage, Geräte im Studio und Erholung, keine Datensicherung oder Bibliothek dazwischen", (await page.textContent(".head")).includes("Mein Plan") && !!(await page.$("#app [data-a=showRec]"))
         && !!(await page.$("#app #devsRow")) && !(await page.$("#app [data-a=exportData]")) && !plan.includes("Übungen & Wissen"));
       await page.click("[data-a=openSettings]");
       const set = await page.textContent("#app");
@@ -2188,7 +2190,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=tab][data-v=home]");
       ok("Heute: ein Hinweis, Link zu allen", (await page.$$("#coach .ins")).length === 1 && (await page.textContent("#coach")).includes("Alle"));
       const first = await page.getAttribute("#coach .ins", "data-ins");
-      await page.click("#coach .ins [data-a=coachHide]");
+      await page.click("#coach .insd summary"); await page.click("#coach .ins [data-a=coachHide]"); // „Ausblenden“ steht in der aufgeklappten Erklärung
       ok("Ausblenden: Hinweis weg und gespeichert", !(await page.$(`#coach [data-ins='${first}']`)) && !!(await stored(page)).coachOff[first]);
       await page.click("#coach [data-a=openCoach]");
       ok("Analyse: „1 ausgeblendet – wieder zeigen“", (await page.textContent("#app")).includes("1 ausgeblendet – wieder zeigen") && !!(await page.$("#coachGood")));
@@ -3823,7 +3825,7 @@ async function finishAllSets(page, kg, reps) {
       const ids = st.plan.days.flatMap(d => d.items.map(i => i.id));
       ok("Als neuer Tag: am Ende angelegt, Geräte 1:1 (Reihenfolge, Sätze, Wdh., Pausen), eigene IDs, Quelle unverändert",
         st.plan.days.length === 4 && nd.name === "Drücken (Kopie)" && sig(nd.items) === A && strip(nd.items) === strip(st.plan.days[0].items) && sig(st.plan.days[0].items) === A && new Set(ids).size === ids.length
-        && (await page.textContent("main h1")) === "Training" && (await page.textContent("#planNote")).includes("als neuer Tag „Drücken (Kopie)“ angelegt"), JSON.stringify(nd));
+        && (await page.textContent("main h1")) === "Mein Plan" && (await page.textContent("#planNote")).includes("als neuer Tag „Drücken (Kopie)“ angelegt"), JSON.stringify(nd));
       await page.click("[data-a=dayCopyUndo]");
       st = await stored(page);
       ok("Rückgängig entfernt den neuen Tag", st.plan.days.length === 3 && (await page.textContent("#planNote")).includes("rückgängig gemacht"));
@@ -4413,9 +4415,9 @@ async function finishAllSets(page, kg, reps) {
         sc: n.classList.contains("scrolled"), r: n.querySelectorAll(".nb-r [data-a]").length, headBack: !!document.querySelector("#app .head button.link:not(.nb-back)") }; });
       await page.click("[data-a=tab][data-v=plan]");
       let n = await nav();
-      ok("Startseite eines Tabs: Leiste ohne Zurück, Einstellungen rechts oben, großer Titel im Inhalt", !n.hidden && !n.back && n.r === 1 && n.t === "Training" && !n.sc, JSON.stringify(n));
+      ok("Startseite eines Tabs: Leiste ohne Zurück, Einstellungen rechts oben, großer Titel im Inhalt", !n.hidden && !n.back && n.r === 1 && n.t === "Mein Plan" && !n.sc, JSON.stringify(n));
       await page.click("[data-a=editDay][data-id=a]"); n = await nav();
-      ok("Unterseite: „‹ Training“ links in der Leiste, kein zweiter Zurück-Link im Inhalt", n.back.trim() === "Training" && !n.headBack && n.t === "Oberkörper", JSON.stringify(n));
+      ok("Unterseite: „‹ Plan“ links in der Leiste, kein zweiter Zurück-Link im Inhalt", n.back.trim() === "Plan" && !n.headBack && n.t === "Oberkörper", JSON.stringify(n));
       ok("Löschen steht als rote Zeile unten, nicht oben in der Leiste", await page.isVisible("#app .group [data-a=delDay].danger") && !(await page.$("#navbar [data-a=delDay]")));
       ok("Trainingstag bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
       // Tab-Verlauf: anderer Tab und zurück → wieder auf der Unterseite; Tippen auf den aktiven Tab → Startseite
@@ -4648,7 +4650,72 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("86. Konsole");
+    section("86. Grundstruktur: Plan bauen → Start tippen → die App führt durch");
+    {
+      // Erster Start: Die App sagt, wofür sie da ist, und bietet zwei Wege an
+      const { ctx, page } = await open(null, { intro: true });
+      const i0 = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, steps: [...document.querySelectorAll("#intro .steps3 li .t")].map(x => x.textContent).join(" → "),
+        btns: [...document.querySelectorAll("#intro .actionbar .btn")].map(b => b.textContent.trim() + (b.classList.contains("primary") ? "*" : "")).join(" | "), tabs: document.getElementById("tabs").hidden }));
+      ok("Erster Start: drei Schritte „Plan bauen → Start tippen → Dranbleiben“, noch keine Tab-Leiste", i0.title === "Dein Trainingsplan" && i0.steps === "Plan bauen → Start tippen → Dranbleiben" && i0.tabs, JSON.stringify(i0));
+      ok("Zwei Wege: „Plan selbst bauen“ (Hauptweg) und „Plan vorschlagen lassen“", i0.btns === "Plan selbst bauen* | Plan vorschlagen lassen", i0.btns);
+      ok("Einstieg bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 568 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
+      await page.click("[data-a=setupForm]");
+      ok("„Plan vorschlagen lassen“ zeigt erst jetzt die Fragen; „‹ Zurück“ führt zum Einstieg", await page.isVisible("[data-a=createPlan]") && (await page.textContent("#navbar .nb-back")).trim() === "Zurück" && !(await page.$("[data-a=emptyPlan]")));
+      await page.click("#navbar .nb-back");
+      ok("Zurück: wieder der Einstieg", await page.isVisible("#intro [data-a=emptyPlan]"));
+      // Weg 1: selbst bauen – Tag, Geräte wählen, Start
+      await page.click("[data-a=emptyPlan]");
+      const d0 = await tp(page, () => ({ tab: document.querySelector("#tabs button.on").textContent.trim(), title: document.getElementById("dayName").value, add: !!document.querySelector("#app [data-a=openPicker]"), tabsOn: !document.getElementById("tabs").hidden }));
+      ok("Selbst bauen: „Tag 1“ im Bereich „Plan“, bereit für Geräte", d0.tab === "Plan" && d0.title === "Tag 1" && d0.add && d0.tabsOn, JSON.stringify(d0));
+      await page.click("#app [data-a=openPicker]"); await page.click(".sheet [data-a=pick][data-id=hs-chest]"); await page.click(".sheet [data-a=pick][data-id=hs-row]"); await page.click(".sheet .sh-head [data-a=closeSheet]");
+      const d1 = await tp(page, () => ({ n: document.querySelectorAll("#dayItems .li").length, thumbs: document.querySelectorAll("#dayItems .dthumb svg").length, nums: [...document.querySelectorAll("#dayItems .dthumb i")].map(x => x.textContent).join(), start: document.getElementById("dayStart").textContent.trim() }));
+      ok("Tag zeigt die gewählten Geräte mit Bild und Reihenfolge, darüber „Tag 1 starten“", d1.n === 2 && d1.thumbs === 2 && d1.nums === "1,2" && d1.start === "Tag 1 starten", JSON.stringify(d1));
+      await page.click("#navbar .nb-back");
+      const pl = await tp(page, () => { const ids = [...document.querySelectorAll("#app .page > section")].map(s => s.id), row = document.querySelector(".day-row");
+        return { title: document.querySelector("#app h1").textContent, ids: ids.join(), play: row.querySelector("[data-a=startDayId]").getAttribute("aria-label"), more: [...document.querySelectorAll("#planMore .li")].map(l => l.id || l.dataset.a).join(),
+          open: document.getElementById("planCheckBox").open, status: document.getElementById("planStatus").textContent }; });
+      ok("„Mein Plan“ in fester Reihenfolge: Trainingstage → Rund um den Plan → Planprüfung", pl.title === "Mein Plan" && pl.ids === "planDays,planMore,planCheck", pl.ids);
+      ok("„Rund um den Plan“: Termine und Geräte als Zeilen in einer Liste", pl.more.startsWith("schedRow,devsRow"), pl.more);
+      ok("Planprüfung als eine Karte mit Status; bei fehlenden Muskelgruppen aufgeklappt", pl.open === true && /Punkte? zu prüfen/.test(pl.status), JSON.stringify([pl.open, pl.status]));
+      ok("Jeder Trainingstag hat ▶ zum direkten Start", pl.play === "Tag 1 starten");
+      await page.click(".day-row [data-a=startDayId]");
+      const s1 = await tp(page, () => { const s = window.__tp.state.session; return { on: !!s, day: s && s.dayName, ex: s && s.list.map(l => l.exId).join(), train: document.body.classList.contains("training"), done: !!document.querySelector("[data-a=doneSet]") }; });
+      ok("▶ startet das Training dieses Tages: die App führt durch die gewählten Geräte", s1.on && s1.day === "Tag 1" && s1.ex === "hs-chest,hs-row" && s1.train && s1.done, JSON.stringify(s1));
+      await page.click("[data-a=askStop]"); await page.click(".sheet [data-a=pauseT]");
+      await page.click("nav.tabs [data-v=plan]");
+      ok("Läuft schon ein Training, steht in der Tagesliste kein zweites ▶", !(await page.$(".day-row [data-a=startDayId]")) && !!(await page.$(".day-row .chev")));
+      await ctx.close();
+    }
+    {
+      // Weg 2: vorschlagen lassen; Planprüfung ohne echte Punkte ist zugeklappt
+      const { ctx, page } = await open(null, { intro: true });
+      await page.click("[data-a=setupForm]"); await page.click("[data-a=createPlan]"); await page.keyboard.press("Escape");
+      const st = await stored(page);
+      ok("Vorschlag: Plan mit 3 Trainingstagen und Terminen", !!st.plan && st.plan.days.length === 3 && !!st.sched);
+      await page.click("nav.tabs [data-v=plan]");
+      const pc = await tp(page, () => ({ open: document.getElementById("planCheckBox").open, status: document.getElementById("planStatus").textContent, rows: document.querySelectorAll(".day-row [data-a=startDayId]").length }));
+      ok("Planprüfung ohne echte Punkte: zugeklappt, Status in einer Zeile; 3 Tage mit ▶", pc.open === false && pc.status.length > 5 && pc.rows === 3, JSON.stringify(pc));
+      ok("„Mein Plan“ bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); if (!r) console.log("    " + await overflowers(page)); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
+      await ctx.close();
+    }
+    {
+      // Heute: feste Reihenfolge, Wochenkopf führt zum Rückblick, Hinweis kompakt
+      const hi = [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 2, "s")];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: hi, hints: { units: true } });
+      const h = await tp(page, () => { const kids = [...document.querySelectorAll("#app .page > *")].map(e => e.id || e.className.split(" ")[0]);
+        const ins = document.querySelector("#coach .insd"); return { kids: kids.join(), week: document.getElementById("homeWeek").tagName + ":" + document.getElementById("homeWeek").textContent.trim(), day: document.querySelector("#homeDay h2").textContent,
+          insOpen: ins ? ins.open : null, hideVisible: ins ? !!(ins.querySelector("[data-a=coachHide]") && ins.querySelector("[data-a=coachHide]").getClientRects().length) : null }; });
+      const order = h.kids.split(",").filter(k => ["hero", "coach", "section", "homeDay"].includes(k)).join();
+      ok("„Heute“ in fester Reihenfolge: Training → Hinweis → Diese Woche → Mein Tag", /^hero,(coach,)?section,homeDay$/.test(order), h.kids);
+      ok("Die Überschrift „Diese Woche ›“ führt zum Wochenrückblick (keine eigene Zeile mehr)", h.week === "BUTTON:Diese Woche›" && !(await page.$("#app .group #homeWeek")), h.week);
+      const hideVis = await page.isVisible("#coach .insd [data-a=coachHide]").catch(() => false);
+      ok("Hinweis kompakt: Erklärung und „Ausblenden“ erst nach Antippen", h.insOpen === null || (h.insOpen === false && hideVis === false), JSON.stringify([h.insOpen, hideVis]));
+      await page.click("#homeWeek");
+      ok("Antippen öffnet den Wochenrückblick", (await page.textContent("#app h1")) === "Diese Woche" && await page.isVisible("#weekHints"));
+      await ctx.close();
+    }
+
+    section("87. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
