@@ -372,7 +372,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v86)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v86")));
+      ok("Service Worker aktiv (Cache trainingsplan-v87)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v87")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -1924,7 +1924,7 @@ async function finishAllSets(page, kg, reps) {
       said = await tp(page, () => window.__tp.said);
       ok("Ende: „Training geschafft. Mit neuem Bestwert.“", said[said.length - 1] === "Training geschafft. Mit neuem Bestwert.");
       await page.click(".actionbar [data-a=tab][data-v=home]"); await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
-      ok("Einstellungen: Termine und Sprachbegleitung", (await page.textContent("#app")).includes("Trainingstermine") && await page.isVisible("#optVoice [data-a=voiceSet][data-v='1'].on"));
+      ok("Einstellungen: Termine und Sprachbegleitung", (await page.textContent("#app")).includes("Trainingstermine") && await page.isVisible("#optVoice .switch[data-a=voiceSet][aria-checked=true]"));
       await ctx.close();
     }
     {
@@ -4509,7 +4509,78 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("84. Konsole");
+    section("84. Inhalt liegt auf Karten (wie in iOS-Apps)");
+    {
+      // Regel: Auf dem grauen Seitengrund steht kein Text frei – außer Titel, Abschnittsüberschrift, Beitext (.foot) und Bedienelementen.
+      // Ausgenommen sind nur Training und Zusammenfassung (Vollbild-Aufgabe ohne Navigationsleiste, wie die Trainings-App).
+      const freeText = page => page.evaluate(() => {
+        const pg = document.querySelector("#app .page"); if (!pg) return ["(keine Seite)"];
+        const bg = getComputedStyle(document.body).backgroundColor, clear = c => !c || c === "rgba(0, 0, 0, 0)" || c === "transparent" || c === bg;
+        const onCard = el => { for (let e = el; e && e !== pg; e = e.parentElement) { const cs = getComputedStyle(e); if (!clear(cs.backgroundColor) || cs.backgroundImage !== "none") return true; } return false; };
+        const exempt = el => el.closest(".head,.section-head,.foot,.cap,.label,button,a,label,summary,.exhero,.actionbar,h1,h2,h3");
+        const out = [], seen = new Set(), w = document.createTreeWalker(pg, NodeFilter.SHOW_TEXT);
+        for (let n = w.nextNode(); n; n = w.nextNode()) { if (n.textContent.trim().length < 2) continue; const el = n.parentElement; if (!el || !el.getClientRects().length) continue;
+          if (exempt(el) || onCard(el)) continue; const blk = el.closest("p,li,div,section") || el; if (seen.has(blk)) continue; seen.add(blk);
+          out.push(`${blk.tagName.toLowerCase()}${blk.id ? "#" + blk.id : ""}.${String(blk.className).split(" ")[0]} „${blk.textContent.trim().replace(/\s+/g, " ").slice(0, 40)}“`); }
+        return out; });
+      const D = n => new Date(Date.now() - n * 864e5).toISOString(), S3 = (kg, r) => [{ kg, reps: r }, { kg, reps: r }, { kg, reps: r - 1 }];
+      const Hh = (dayId, day, n, exs) => ({ id: "h" + n, dayId, day, date: D(n), durationSec: 2900, exercises: exs.map(([exId, kg, r]) => ({ exId, name: exId, u: "s", planned: 3, rmin: 8, rmax: 12, sets: S3(kg, r) })) });
+      const dkN = n => { const d = new Date(Date.now() - n * 864e5); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+      const st = { plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+          { id: "a", name: "Oberkörper", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+          { id: "b", name: "Beine", items: [{ id: "b1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 120 }, { id: "b2", exId: "hs-calf", sets: 3, rmin: 10, rmax: 15, rest: 60 }] }] },
+        history: [Hh("a", "Oberkörper", 23, [["hs-chest", 37.5, 10]]), Hh("b", "Beine", 20, [["hs-legpress", 115, 10]]), Hh("a", "Oberkörper", 16, [["hs-chest", 40, 10]]), Hh("b", "Beine", 13, [["hs-legpress", 120, 10]]),
+          Hh("a", "Oberkörper", 9, [["hs-chest", 40, 10]]), Hh("b", "Beine", 6, [["hs-legpress", 120, 10]]), Hh("a", "Oberkörper", 3, [["hs-chest", 42.5, 10], ["hs-row", 52.5, 10]]), Hh("b", "Beine", 1, [["hs-legpress", 125, 10]])],
+        weights: [{ d: dkN(30), kg: 82.4 }, { d: dkN(14), kg: 81.9 }, { d: dkN(2), kg: 81.6 }], sched: { days: [0, 2, 4], time: "18:00", planB: "next" },
+        nutr: { sex: "m", age: 34, cm: 181, kg: 81.6, pal: "mid", goal: "hold" }, nutrOpt: { water: true, fast: true }, why: "Fit bleiben",
+        food: { [dkN(0)]: [{ id: "f1", m: "fr", n: "Haferflocken", g: 80, src: "x", per: { k: 372, p: 13.5, c: 58.7, f: 7, fib: 10 } }, { id: "f2", m: "fr", n: "Milch", g: 200, src: "x", per: { k: 64, p: 3.3, c: 4.8, f: 3.5, fib: 0 } }] } };
+      for (const light of [true, false]) {
+        const { ctx, page } = await open(st, { light });
+        const res = {}, visit = async (name, steps) => { for (const sel of steps) await page.click(sel); await page.$$eval("#app details", d => d.forEach(x => x.open = true)); await sleep(60); res[name] = await freeText(page); };
+        await visit("Heute", ["nav.tabs [data-v=home]"]);
+        await visit("Tagesplan", [".week [data-a=openTag]"]);
+        await visit("Tagesplan Woche", ["#tagSeg [data-v=woche]"]);
+        await visit("Training", ["nav.tabs [data-v=plan]"]);
+        await visit("Trainingstag", ["[data-a=editDay][data-id=a]"]);
+        await visit("Einstellungen", ["nav.tabs [data-v=plan]", "[data-a=openSettings]"]);
+        await visit("Übungen", ["nav.tabs [data-v=lib]"]);
+        await visit("Geräteseite", ["[data-a=openEx][data-id=hs-chest]"]);
+        await visit("Geräteseite ohne Gegenspieler", ["nav.tabs [data-v=lib]", "[data-a=openEx][data-id=hs-calf]"]);
+        await visit("Artikel-Liste", ["nav.tabs [data-v=lib]", "#wissenSeg [data-v=wissen]"]);
+        await visit("Artikel", ["[data-a=openArt]"]);
+        await visit("Essen", ["nav.tabs [data-v=food]"]);
+        await visit("Fortschritt", ["nav.tabs [data-v=history]"]);
+        await visit("Wochenrückblick", ["#histWeek"]);
+        await visit("Hinweise", ["nav.tabs [data-v=home]", "[data-a=openCoach]"]);
+        const bad = Object.entries(res).filter(([, l]) => l.length).map(([v, l]) => `${v}: ${l.slice(0, 3).join(" | ")}`);
+        ok(`${light ? "Hell" : "Dunkel"}: in ${Object.keys(res).length} Ansichten steht kein Text frei auf dem Seitengrund`, Object.keys(res).length === 15 && !bad.length, bad.slice(0, 4).join(" · "));
+        if (light) { // Gegenprobe: Die Prüfung findet frei stehenden Text wirklich
+          await page.evaluate(() => { const p = document.createElement("p"); p.id = "probe"; p.textContent = "Frei stehender Probetext"; document.querySelector("#app .page").appendChild(p); });
+          const pr = await freeText(page);
+          ok("Gegenprobe: ein frei eingefügter Absatz wird gemeldet", pr.length === 1 && pr[0].includes("Probetext"), pr.join());
+          ok("Ansichten mit Karten bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const bad2 = [];
+            for (const sel of ["nav.tabs [data-v=home]", "nav.tabs [data-v=history]", "nav.tabs [data-v=food]"]) { await page.click(sel); await page.$$eval("#app details", d => d.forEach(x => x.open = true)); if (!(await noOverflow(page))) bad2.push(sel + " " + await overflowers(page)); }
+            if (bad2.length) console.log("    " + bad2.join(" · ")); return !bad2.length; })());
+        }
+        await ctx.close();
+      }
+    }
+    {
+      // Natives Gefühl: Bedienelemente nicht markierbar, Eingaben ab 16 px (sonst zoomt iOS beim Antippen), Statusleiste passend zum Design
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const n = await tp(page, () => { const us = e => { const c = getComputedStyle(e); return c.userSelect || c.webkitUserSelect; };
+        return { tab: us(document.querySelector("nav.tabs button")), btn: us(document.querySelector("#app .btn")), title: us(document.querySelector("#app .title")),
+          ta: getComputedStyle(document.documentElement).touchAction, meta: (document.querySelector("meta[name=apple-mobile-web-app-status-bar-style]") || {}).content,
+          theme: [...document.querySelectorAll("meta[name=theme-color]")].map(m => m.media + "=" + m.content).join(";") }; });
+      ok("Knöpfe, Tabs und Titel lassen sich nicht markieren; kein Doppeltipp-Zoom", n.tab === "none" && n.btn === "none" && n.title === "none" && n.ta === "manipulation", JSON.stringify(n));
+      ok("Statusleiste folgt dem Design (hell: dunkle Schrift auf hellem Grund, dunkel: helle Schrift auf Schwarz)", n.meta === "default" && /light\)=#F2F2F7/.test(n.theme) && /dark\)=#000000/.test(n.theme), JSON.stringify(n));
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=importOpen]");
+      const small = await page.$$eval("input, textarea, select", els => els.filter(e => e.getClientRects().length && parseFloat(getComputedStyle(e).fontSize) < 16).map(e => e.id || e.tagName));
+      ok("Eingabefelder mindestens 16 px (kein Zoom beim Antippen)", small.length === 0, small.join());
+      await ctx.close();
+    }
+
+    section("85. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
