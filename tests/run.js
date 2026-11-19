@@ -67,6 +67,8 @@ async function open(data, opts = {}) {
   }
   // Die meisten Prüfungen beziehen sich auf die 2D-Zeichnung; die 3D-Ansicht hat einen eigenen Abschnitt
   await ctx.addInitScript(v3 => { try { if (localStorage.getItem("tp-3d") === null) localStorage.setItem("tp-3d", v3 ? "1" : "0"); } catch (e) {} }, !!opts.v3);
+  // Die Tests springen über die Tab-Leiste zur Startseite eines Bereichs; den iOS-Tab-Verlauf prüft Abschnitt „iOS-Navigation“ eigens
+  await ctx.addInitScript(on => { try { if (localStorage.getItem("tp-tabmem") === null) localStorage.setItem("tp-tabmem", on ? "1" : "0"); } catch (e) {} }, !!opts.tabmem);
   const page = await ctx.newPage();
   page.on("pageerror", e => allErrors.push(e.message));
   // Netzwerkmeldungen für absichtlich simulierte Fehlantworten von Open Food Facts sind keine JavaScript-Fehler
@@ -78,6 +80,9 @@ async function open(data, opts = {}) {
 const stored = page => page.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
 const tp = (page, fn, arg) => page.evaluate(fn, arg);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+// Welche Elemente ragen rechts hinaus? (für Fehlermeldungen)
+const overflowers = page => page.evaluate(() => [...document.querySelectorAll("body *")].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > innerWidth + .5; })
+  .slice(0, 5).map(e => `${e.tagName.toLowerCase()}.${String(e.className).split(" ")[0]}:${Math.round(e.getBoundingClientRect().right)} „${(e.textContent || "").trim().slice(0, 24)}“`).join(" | "));
 async function finishAllSets(page, kg, reps) {
   for (let g = 0; g < 40 && await page.$("[data-a=doneSet]"); g++) {
     await page.fill("#kgIn", String(kg)); await page.fill("#repsIn", String(reps));
@@ -367,7 +372,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v84)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v84")));
+      ok("Service Worker aktiv (Cache trainingsplan-v86)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v86")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3485,7 +3490,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Wochenleiste: Tage außerhalb des Planbereichs gesperrt", dis === (wd ? wd : 6), String(dis));
       await page.setViewportSize({ width: 320, height: 640 });
       await page.click(`.tagweek [data-d="${wd ? dk(-7) : dk(14)}"]`).catch(() => {});
-      ok("Tagesplan mit Wochenleiste bei 320 px ohne seitliches Scrollen", await noOverflow(page));
+      ok("Tagesplan mit Wochenleiste bei 320 px ohne seitliches Scrollen", await noOverflow(page), await overflowers(page));
       await ctx.close();
     }
 
@@ -4398,36 +4403,109 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("83. Zu lang für das Zeitbudget: Supersatz-Vorschlag");
+    section("83. iOS-Navigation und Bedienung");
     {
-      // Satz 50 s; ohne Supersatz 120 + (4×50+3×120) + 120 + (3×50+2×90) + 120 + 560 + 120 + 330 = 2260 s (≈ 40 Min.)
-      // Brustpresse+Rudern: 4×(50+20+50)+3×120 = 840 statt 560+120+560 → spart 400 s; Beinstrecker+Beinbeuger: 540 statt 780 → 240 s
-      const TB = { goal: "aufbau", level: "einsteiger", minutes: 25, days: [{ id: "d1", name: "Tag A", items: [
-        { id: "c", exId: "hs-chest", sets: 4, rmin: 8, rmax: 12, rest: 120 }, { id: "e", exId: "hs-legext", sets: 3, rmin: 8, rmax: 12, rest: 90 },
-        { id: "r", exId: "hs-row", sets: 4, rmin: 8, rmax: 12, rest: 120 }, { id: "l", exId: "hs-seatcurl", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
-      const { ctx, page } = await open({ plan: TB });
-      const sg = await tp(page, () => window.__tp.ssSuggest(window.__tp.state.plan.days[0]).map(x => x.a.exId + "+" + x.b.exId + ":" + x.save));
-      ok("Vorschläge: nur Gegenspieler-Paare, größte Ersparnis zuerst", sg.join() === "hs-chest+hs-row:400,hs-legext+hs-seatcurl:240", sg.join());
-      await page.click("[data-a=tab][data-v=plan]"); await page.waitForTimeout(100);
-      ok("Planprüfung: zu langer Tag nennt die Ersparnis durch Supersatz", /Supersatz spart ≈ 11 Min\./.test(await page.textContent("#app")));
-      await page.click("[data-a=editDay][data-id=d1]"); await page.waitForTimeout(150);
-      const card = await tp(page, () => { const c = document.getElementById("ssSuggest"); return c && { t: c.querySelector(".t").textContent, s: [...c.querySelectorAll(".li .s")].map(x => x.textContent), n: c.querySelectorAll("[data-a=ssLink]").length }; });
-      ok("Tagesansicht: „≈ 15 Min. über deinem Zeitbudget“ mit zwei Paaren und Ersparnis", !!card && /15 Min\. über/.test(card.t) && card.s.join() === "spart ≈ 7 Min.,spart ≈ 4 Min." && card.n === 2, JSON.stringify(card));
-      ok("Vorschlag bei 360 px ohne seitliches Scrollen", await noOverflow(page));
-      const before = await tp(page, () => window.__tp.estimateSec(window.__tp.state.plan.days[0].items));
-      await page.click("#ssSuggest [data-a=ssLink]"); await page.waitForTimeout(150);
-      const a1 = await tp(page, () => { const d = window.__tp.state.plan.days[0]; return { o: d.items.map(i => i.id + (i.ss ? ">" + i.ss : "")).join(), sec: window.__tp.estimateSec(d.items) }; });
-      ok("Verbinden: Rudern rückt hinter die Brustpresse, die Dauer sinkt genau um die genannte Ersparnis", a1.o === "c>r,r,e,l" && before - a1.sec === 400, JSON.stringify(a1));
-      await page.click("#ssSuggest [data-a=ssLink]"); await page.waitForTimeout(150);
-      const a2 = await tp(page, () => ({ o: window.__tp.state.plan.days[0].items.map(i => i.id + (i.ss ? ">" + i.ss : "")).join(), card: !!document.getElementById("ssSuggest"), head: document.querySelector(".head .small").textContent }));
-      ok("Beide verbunden: Tag passt (≈ 25 Min.), der Hinweis verschwindet", a2.o === "c>r,r,e>l,l" && !a2.card && /≈ 25 Min\./.test(a2.head), JSON.stringify(a2));
+      const P = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Oberkörper", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Beine", items: [{ id: "b1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: P }, { tabmem: true });
+      const nav = () => tp(page, () => { const n = document.getElementById("navbar"); return { hidden: n.hidden, back: (n.querySelector(".nb-back") || {}).textContent || "", t: n.querySelector(".nb-t").textContent,
+        sc: n.classList.contains("scrolled"), r: n.querySelectorAll(".nb-r [data-a]").length, headBack: !!document.querySelector("#app .head button.link:not(.nb-back)") }; });
+      await page.click("[data-a=tab][data-v=plan]");
+      let n = await nav();
+      ok("Startseite eines Tabs: Leiste ohne Zurück, Einstellungen rechts oben, großer Titel im Inhalt", !n.hidden && !n.back && n.r === 1 && n.t === "Training" && !n.sc, JSON.stringify(n));
+      await page.click("[data-a=editDay][data-id=a]"); n = await nav();
+      ok("Unterseite: „‹ Training“ links in der Leiste, kein zweiter Zurück-Link im Inhalt", n.back.trim() === "Training" && !n.headBack && n.t === "Oberkörper", JSON.stringify(n));
+      ok("Löschen steht als rote Zeile unten, nicht oben in der Leiste", await page.isVisible("#app .group [data-a=delDay].danger") && !(await page.$("#navbar [data-a=delDay]")));
+      ok("Trainingstag bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
+      // Tab-Verlauf: anderer Tab und zurück → wieder auf der Unterseite; Tippen auf den aktiven Tab → Startseite
+      await page.click("nav.tabs [data-v=lib]"); await page.click("nav.tabs [data-v=plan]");
+      ok("Tab-Verlauf: zurück im Tab „Training“ steht wieder der Trainingstag", await tp(page, () => window.__tp.state && !!document.getElementById("dayStart")));
+      await page.click("nav.tabs [data-v=plan]");
+      ok("Aktiven Tab nochmals antippen: zurück zur Startseite des Tabs", !(await page.$("#dayStart")) && !!(await page.$("[data-a=editDay][data-id=a]")));
+      // Großer Titel → kleiner Titel in der Leiste beim Scrollen; Zurück stellt die Scrollposition wieder her
+      await page.click("nav.tabs [data-v=lib]"); await page.evaluate(() => window.scrollTo(0, 900)); await sleep(80);
+      n = await nav();
+      ok("Beim Scrollen erscheint der kleine Titel „Übungen“ in der Leiste (mit Hintergrund)", n.sc && n.t === "Übungen", JSON.stringify(n));
+      const y0 = await page.evaluate(() => window.scrollY);
+      const id = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-a=openEx]")].find(x => { const r = x.getBoundingClientRect(); return r.top > 120 && r.bottom < innerHeight - 100; }); return b && b.dataset.id; });
+      await page.click(`[data-a=openEx][data-id="${id}"]`); await sleep(50);
+      ok("Geräteseite öffnet oben", (await page.evaluate(() => window.scrollY)) === 0);
+      await page.click("#navbar .nb-back"); await sleep(50);
+      const y1 = await page.evaluate(() => window.scrollY);
+      ok("Zurück: Liste wieder an derselben Stelle", Math.abs(y1 - y0) < 2, y0 + " → " + y1);
+      // Tippen auf den aktiven Tab an der Startseite: nach oben
+      await page.click("nav.tabs [data-v=lib]"); await sleep(50);
+      ok("Aktiver Tab an der Startseite: nach oben", (await page.evaluate(() => window.scrollY)) === 0);
       await ctx.close();
     }
     {
-      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [
-        { id: "c", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "r", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] } });
-      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]"); await page.waitForTimeout(150);
-      ok("Tag im Zeitbudget: kein Supersatz-Vorschlag", !(await page.$("#ssSuggest")));
+      // Übergang und Wischgeste (Bewegung für diesen Test eingeschaltet)
+      const P = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Oberkörper", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: P }, { extra: { "tp-anim": "1" } });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=a]");
+      const mid = await tp(page, () => ({ layers: document.querySelectorAll(".navlayer").length, anim: document.body.classList.contains("nav-anim") }));
+      await sleep(600);
+      const after = await tp(page, () => ({ layers: document.querySelectorAll(".navlayer").length, anim: document.body.classList.contains("nav-anim") }));
+      ok("Neue Seite schiebt sich herein (alte und neue Seite als Ebenen), danach ist alles wieder normal", mid.layers === 2 && mid.anim && after.layers === 0 && !after.anim, JSON.stringify([mid, after]));
+      const cdp = await ctx.newCDPSession(page), T = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+      await T("touchStart", 6, 400); for (let x = 20; x <= 260; x += 30) { await T("touchMove", x, 402); await sleep(16); }
+      const sw = await tp(page, () => ({ layers: document.querySelectorAll(".navlayer").length }));
+      await T("touchEnd"); await sleep(500);
+      ok("Wischen vom linken Rand: vorige Seite liegt darunter, Loslassen führt zurück", sw.layers === 2 && !!(await page.$("[data-a=editDay][data-id=a]")) && !(await page.$("#dayStart")), JSON.stringify(sw));
+      await page.click("[data-a=editDay][data-id=a]"); await sleep(600);
+      await T("touchStart", 6, 400); await sleep(120); await T("touchMove", 40, 401); await sleep(150); await T("touchMove", 70, 402); await sleep(150); await T("touchEnd"); await sleep(500);
+      ok("Kurzes, langsames Wischen: bleibt auf der Seite", !!(await page.$("#dayStart")) && (await tp(page, () => document.querySelectorAll(".navlayer").length)) === 0);
+      // Sheet: Abbrechen | Titel | Fertig, Stepper, Schalter, Herunterziehen schließt
+      await page.click("#dayItems [data-a=editItem][data-i2='0']");
+      const hd = await tp(page, () => { const h = document.querySelector(".sheet .sh-head"); return { l: h.querySelector(".sh-l").textContent, la: h.querySelector(".sh-l").dataset.a, t: h.querySelector("h2").textContent, r: h.querySelector("[data-a=saveItem]").textContent }; });
+      ok("Geräte-Sheet: „Abbrechen“ links, Name in der Mitte, „Fertig“ rechts", hd.l === "Abbrechen" && hd.la === "closeSheet" && hd.t === "Brustpresse" && hd.r === "Fertig", JSON.stringify(hd));
+      await page.click(".sheet .ustep [data-k=sets][data-d='1']");
+      ok("Stepper − | + ändert den Wert in der Zeile", (await page.textContent(".sheet .step-row .sv")) === "4");
+      await page.click(".sheet .sh-l"); await sleep(50);
+      ok("Abbrechen verwirft die Änderung", (await stored(page)).plan.days[0].items[0].sets === 3);
+      await page.click("#dayItems [data-a=editItem][data-i2='0']");
+      const g = await page.$eval(".sheet .grab", e => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+      await T("touchStart", g.x, g.y); for (let d = 20; d <= 260; d += 40) { await T("touchMove", g.x, g.y + d); await sleep(16); } await T("touchEnd"); await sleep(400);
+      ok("Sheet am Griff herunterziehen schließt es", !(await page.$(".sheet")));
+      // Gerät bearbeiten: iOS-Schalter
+      await page.click("#dayItems [data-a=editItem][data-i2='0']"); await page.click(".sheet [data-a=editDev]");
+      const swi = await page.$$eval(".sheet .switch", b => b.map(x => x.getAttribute("role") + ":" + x.getAttribute("aria-checked")));
+      await page.click(".sheet .switch[data-k=fav]");
+      const sw2 = await page.$eval(".sheet .switch[data-k=fav]", b => b.getAttribute("aria-checked"));
+      ok("Gerät: „Bevorzugt“ und „In meinem Studio“ als Schalter, Tippen schaltet um", swi.join() === "switch:false,switch:true" && sw2 === "true", swi.join() + " / " + sw2);
+      await page.click(".sheet [data-a=devCancel]");
+      // Löschen: Aktionsblatt mit roter Option und getrenntem Abbrechen
+      await page.click("#app [data-a=delDay]");
+      const as = await tp(page, () => { const s = document.querySelector(".sheet.as"); return s && { q: s.querySelector(".as-t").textContent, d: s.querySelector(".as-btn.danger").textContent, c: s.querySelector(".as-cancel").textContent }; });
+      ok("Tag löschen: Aktionsblatt (Frage, rote Option, darunter Abbrechen)", !!as && as.q === "Tag löschen?" && as.d === "Tag löschen" && as.c === "Abbrechen", JSON.stringify(as));
+      await page.click(".sheet.as .as-cancel");
+      ok("Abbrechen lässt den Tag stehen", !(await page.$(".sheet")) && (await stored(page)).plan.days.length === 1);
+      await ctx.close();
+    }
+    {
+      // Wischen nach links zum Löschen, Formular-Sheets mit Abbrechen/Speichern oben, gefülltes Tab-Symbol
+      const P = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Oberkörper", items: [
+        { id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a3", exId: "hs-shoulder", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: P });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=a]");
+      const cdp = await ctx.newCDPSession(page), T = (type, x, y) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+      const row = async i => page.$eval(`#dayItems .li[data-i2='${i}']`, e => { const b = e.getBoundingClientRect(); return { x: b.x + b.width * .7, y: b.y + b.height / 2 }; });
+      let r = await row(1); await T("touchStart", r.x, r.y); for (let d = 10; d <= 100; d += 15) { await T("touchMove", r.x - d, r.y); await sleep(20); } await T("touchEnd"); await sleep(350);
+      const sw = await tp(page, () => { const b = document.querySelector(".swipe-del"); return b && { t: b.textContent, a: b.dataset.a, l: b.getAttribute("aria-label") }; });
+      ok("Nach links wischen zeigt „Löschen“ hinter der Zeile", !!sw && sw.t === "Löschen" && sw.a === "delItemAt" && sw.l === "Rudern löschen", JSON.stringify(sw));
+      ok("Wischen öffnet nicht das Geräte-Sheet", !(await page.$(".sheet")));
+      await page.click(".swipe-del"); await sleep(100);
+      ok("„Löschen“ entfernt genau diese Zeile", (await stored(page)).plan.days[0].items.map(i => i.id).join() === "a1,a3");
+      r = await row(0); await T("touchStart", r.x, r.y); for (let d = 10; d <= 70; d += 15) { await T("touchMove", r.x - d, r.y); await sleep(20); } await T("touchEnd"); await sleep(350);
+      const o = await row(1); await T("touchStart", o.x, o.y); await T("touchEnd"); await sleep(350);
+      ok("Tippen auf eine andere Zeile schließt nur das Wischmenü", !(await page.$(".swipe-del")) && !(await page.$(".sheet")) && (await stored(page)).plan.days[0].items.length === 2);
+      // Formular-Sheet: Speichern oben rechts, Abbrechen oben links
+      await page.click("nav.tabs [data-v=plan]"); await page.click("[data-a=openSched]");
+      const fh = await tp(page, () => { const h = document.querySelector(".sheet > .sh-head"); return h && { l: (h.querySelector(".sh-l") || {}).textContent, r: (h.querySelector("[data-a=schedSave]") || {}).textContent, bottom: [...document.querySelectorAll(".sheet .btn.primary")].length }; });
+      ok("Formular-Sheet (Termine): „Abbrechen“ links und „Speichern“ rechts im Kopf, kein Knopf mehr unten", !!fh && fh.l === "Abbrechen" && fh.r === "Speichern" && fh.bottom === 0, JSON.stringify(fh));
+      await page.click(".sheet .sh-l");
+      ok("Gefülltes Symbol für den aktiven Tab „Fortschritt“", await (async () => { await page.click("nav.tabs [data-v=history]"); return page.$eval("nav.tabs button.on svg .fill", e => getComputedStyle(e).fill !== "none"); })());
       await ctx.close();
     }
 

@@ -1,56 +1,58 @@
 <title>Trainingsplan</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
   /* =====================================================================
-     Designsystem „Werkbank“
-     Wie die Geräte selbst: Stahl und Signalgelb, kantige Flächen, Schablonenschrift
-     für Überschriften, Monoschrift wie auf Geräteplaketten. Eine gelbe Hauptaktion je
-     Ansicht (mit Warnstreifen), im Training fest im Daumenbereich (über der Tastatur).
+     Designsystem im Stil von iOS
+     Systemschrift (SF Pro auf Apple-Geräten), gruppierte Listen mit runden Ecken auf grauem
+     Grund, Systemblau für Aktionen, durchscheinende Leisten. Eine blaue Hauptaktion je Ansicht,
+     im Training fest im Daumenbereich (über der Tastatur). Alle Textfarben ≥ 4,5:1 (WCAG AA).
      ===================================================================== */
   :root{
-    /* Farben (dunkel = Standard): Stahl und Signalgelb */
-    --bg:#121212; --raise:#1C1C1C; --raise-2:#272727; --raise-3:#343434;
-    --hair:rgba(255,255,255,.12); --text:#F2F2F0; --text-2:#BDBDB8; --text-3:#9A9A95;
-    --mbody:#D9A585; --mbody2:#AE7C5F; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#2E2E2B; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
-    --accent:#FFD21F; --accent-press:#E9BE00; --accent-stripe:#F2C200; --accent-tint:rgba(255,210,31,.12); --on-accent:#111111; --accent-ink:#FFD21F;
-    --ok:#3CCB7F; --ok-tint:rgba(60,203,127,.14); --warn:#FF8A3D; --warn-tint:rgba(255,138,61,.13); --bad:#FF6A61;
-    --fig:#262626; --muscle:#3A3A3A; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.62);
-    --bar-bg:rgba(18,18,18,.9); --accent-soft:rgba(255,210,31,.42); --sheet:#1C1C1C; --seg-on:#3A3A3A;
-    /* Schrift */
-    --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-    --body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-    /* Raster (4er-Schritte), kantige Formen */
+    /* Farben (dunkel = Standard): wie die Systemfarben von iOS, für Text kontraststärker */
+    --bg:#000000; --raise:#1C1C1E; --raise-2:#2C2C2E; --raise-3:#3A3A3C;
+    --hair:rgba(84,84,88,.65); --text:#FFFFFF; --text-2:#AEAEB2; --text-3:#98989F; --chev:#5A5A5F;
+    --fill:rgba(118,118,128,.24); --fill-2:rgba(118,118,128,.36); --sheet-cell:#2C2C2E;
+    --mbody:#D9A585; --mbody2:#AE7C5F; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#1C1C1E; --mgear-line:#7A7A74; --mhot:#F0483A; --mframe:#CFCFCA; --mpad:#0C0C0C;
+    --accent:#0071E3; --accent-press:#0064CC; --accent-stripe:#0071E3; --accent-tint:rgba(10,132,255,.2); --on-accent:#FFFFFF; --accent-ink:#4DA2FF;
+    --ok:#30D158; --ok-tint:rgba(48,209,88,.16); --warn:#FF9F0A; --warn-tint:rgba(255,159,10,.16); --bad:#FF6961;
+    --fig:#2C2C2E; --muscle:#3A3A3C; --band:rgba(255,255,255,.10); --scrim:rgba(0,0,0,.5);
+    --bar-bg:rgba(22,22,24,.84); --accent-soft:rgba(10,132,255,.4); --sheet:#1C1C1E; --seg-on:#636366;
+    /* Schrift: Systemschrift, Zahlen gerundet (SF Pro Rounded, wo vorhanden) */
+    --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
+    --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,"Segoe UI",Roboto,sans-serif;
+    --rounded:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,system-ui,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    /* Raster (4er-Schritte), runde Ecken wie bei iOS */
     --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
-    --r-sm:2px; --r:3px; --r-lg:4px; --r-xl:6px;
-    --gutter:20px; --tap:48px;
+    --r-sm:6px; --r:10px; --r-lg:12px; --r-xl:14px;
+    --gutter:16px; --tap:48px;
     color-scheme:dark;
   }
   @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
-    --bg:#ECEBE7; --raise:#F7F6F3; --raise-2:#E0DFDA; --raise-3:#D1D0CA;
-    --hair:rgba(17,17,17,.13); --text:#111111; --text-2:#3E3E3A; --text-3:#5A5A55;
-    --accent:#FFC800; --accent-press:#E6B400; --accent-stripe:#F0BA00; --accent-tint:rgba(255,200,0,.2); --on-accent:#111111; --accent-ink:#6B5000;
-    --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
-    --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
-    --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
+    --bg:#F2F2F7; --raise:#FFFFFF; --raise-2:#E9E9EE; --raise-3:#D1D1D6;
+    --hair:rgba(60,60,67,.22); --text:#000000; --text-2:#48484D; --text-3:#636368; --chev:#C4C4C7;
+    --fill:rgba(118,118,128,.12); --fill-2:rgba(118,118,128,.2); --sheet-cell:#FFFFFF;
+    --accent:#0071E3; --accent-press:#0064CC; --accent-stripe:#0071E3; --accent-tint:rgba(0,113,227,.1); --on-accent:#FFFFFF; --accent-ink:#0062CC;
+    --ok:#187530; --ok-tint:rgba(52,199,89,.16); --warn:#B04700; --warn-tint:rgba(255,149,0,.14); --bad:#C4001A;
+    --fig:#E5E5EA; --muscle:#D1D1D6; --band:rgba(0,0,0,.08); --scrim:rgba(0,0,0,.3);
+    --bar-bg:rgba(249,249,249,.86); --accent-soft:rgba(0,113,227,.3); --sheet:#F2F2F7; --seg-on:#FFFFFF; color-scheme:light;
     --mbody:#D6A080; --mbody2:#C08B6C; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
     :root:not([data-theme="dark"]) .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}}
   :root[data-theme="light"] .motion.b-hs{--mframe:#262624;--mgear-line:#0C0C0C;--mpad:#4B4B47}
   :root[data-theme="light"]{
-    --bg:#ECEBE7; --raise:#F7F6F3; --raise-2:#E0DFDA; --raise-3:#D1D0CA;
-    --hair:rgba(17,17,17,.13); --text:#111111; --text-2:#3E3E3A; --text-3:#5A5A55;
-    --accent:#FFC800; --accent-press:#E6B400; --accent-stripe:#F0BA00; --accent-tint:rgba(255,200,0,.2); --on-accent:#111111; --accent-ink:#6B5000;
-    --ok:#0E6A34; --ok-tint:rgba(14,106,52,.12); --warn:#9C3C08; --warn-tint:rgba(156,60,8,.12); --bad:#AE2421;
-    --fig:#DCDBD5; --muscle:#C4C3BC; --band:rgba(17,17,17,.10); --scrim:rgba(17,17,17,.38);
-    --bar-bg:rgba(236,235,231,.92); --accent-soft:rgba(255,200,0,.5); --sheet:#F7F6F3; --seg-on:#FFFFFF; color-scheme:light;
+    --bg:#F2F2F7; --raise:#FFFFFF; --raise-2:#E9E9EE; --raise-3:#D1D1D6;
+    --hair:rgba(60,60,67,.22); --text:#000000; --text-2:#48484D; --text-3:#636368; --chev:#C4C4C7;
+    --fill:rgba(118,118,128,.12); --fill-2:rgba(118,118,128,.2); --sheet-cell:#FFFFFF;
+    --accent:#0071E3; --accent-press:#0064CC; --accent-stripe:#0071E3; --accent-tint:rgba(0,113,227,.1); --on-accent:#FFFFFF; --accent-ink:#0062CC;
+    --ok:#187530; --ok-tint:rgba(52,199,89,.16); --warn:#B04700; --warn-tint:rgba(255,149,0,.14); --bad:#C4001A;
+    --fig:#E5E5EA; --muscle:#D1D1D6; --band:rgba(0,0,0,.08); --scrim:rgba(0,0,0,.3);
+    --bar-bg:rgba(249,249,249,.86); --accent-soft:rgba(0,113,227,.3); --sheet:#F2F2F7; --seg-on:#FFFFFF; color-scheme:light;
     --mbody:#D6A080; --mbody2:#C08B6C; --mhair:#2B211B; --mshorts:#5B5F64; --hero-hi:#FFFFFF; --mgear-line:#8C8C86; --mhot:#D8382B; --mframe:#FFFFFF; --mpad:#2A2A28}
 
   /* ---------- Grundlage ---------- */
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html{-webkit-text-size-adjust:100%}
-  body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.45;
+  body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:17px;line-height:1.41;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;
     padding-left:max(var(--gutter), env(safe-area-inset-left, 0px));padding-right:max(var(--gutter), env(safe-area-inset-right, 0px));
     padding-block:var(--s4) 120px;max-width:600px;margin:0 auto;font-variant-numeric:tabular-nums}
   body.training{padding-bottom:132px}
@@ -62,26 +64,22 @@
   [hidden]{display:none!important}
   svg{flex:0 0 auto}
 
-  /* ---------- Werkbank: Schablone, Plakette, Warnstreifen ---------- */
-  .title,.hero-name,h1,h2{text-transform:uppercase;letter-spacing:.025em}
-  h2.h3{text-transform:none;letter-spacing:0}
-  .head .cap::before{content:"// ";color:var(--accent-ink)}
 
   /* ---------- Typografie ---------- */
-  .cap{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
-  h1.cap{font-family:var(--mono);line-height:inherit}
-  .label{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3)}
-  .title{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;letter-spacing:.005em;margin:var(--s1) 0 0;text-wrap:balance}
-  .hero-name{font-family:var(--display);font-weight:800;font-size:clamp(34px, 11vw, 48px);line-height:.95;margin:0;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
-  h1{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.02;margin:0;text-wrap:balance}
-  h2{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.1;margin:0;text-wrap:balance}
+  .cap{font-family:var(--body);font-size:13px;font-weight:400;letter-spacing:0;text-transform:uppercase;color:var(--text-3)}
+  h1.cap{font-family:var(--body);line-height:inherit}
+  .label{font-family:var(--body);font-size:13px;font-weight:400;letter-spacing:0;text-transform:uppercase;color:var(--text-3)}
+  .title{font-family:var(--display);font-weight:700;font-size:34px;line-height:1.12;letter-spacing:.01em;margin:var(--s1) 0 0;text-wrap:balance}
+  .hero-name{font-family:var(--display);font-weight:700;font-size:clamp(30px, 9vw, 40px);line-height:1.08;letter-spacing:.005em;margin:0;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}
+  h1{font-family:var(--display);font-weight:700;font-size:34px;line-height:1.1;letter-spacing:.01em;margin:0;text-wrap:balance}
+  h2{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.2;letter-spacing:.01em;margin:0;text-wrap:balance}
   h3{font-size:17px;font-weight:600;margin:0;line-height:1.3}
   h2.h3{font-family:var(--body);font-size:17px;font-weight:600;line-height:1.3}
   .sub{font-size:15px;color:var(--text-2)}
-  .small{font-size:14px}
+  .small{font-size:15px}
   .muted{color:var(--text-2)}
   .faint{color:var(--text-3)}
-  .num{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .num{font-family:var(--rounded);font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums;line-height:1}
   .ellipsis{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .error{color:var(--bad);font-size:14px;font-weight:500}
 
@@ -94,31 +92,36 @@
   .between{justify-content:space-between}
   .wrap{flex-wrap:wrap}
   .head{display:grid;gap:var(--s1)}
-  .head.home .title{font-size:28px}
+  .head .row>div:first-child{min-width:0}
+  .title{hyphens:auto;overflow-wrap:break-word}
+  .head.home .title{font-size:34px}
   .section{display:grid;gap:var(--s3)}
   .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3)}
   .section-head h2{font-size:22px}
 
   /* ---------- Buttons ---------- */
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);min-height:var(--tap);padding:0 var(--s5);
-    border-radius:var(--r);font-weight:600;font-size:16px;background:var(--raise-2);color:var(--text);transition:transform .08s,background .15s}
-  .btn:active:not(:disabled){transform:scale(.98)}
-  .btn.primary{background:repeating-linear-gradient(-45deg,var(--accent) 0 18px,var(--accent-stripe) 18px 36px);color:var(--on-accent);
-    text-transform:uppercase;letter-spacing:.06em;font-weight:700;box-shadow:inset 0 -3px 0 rgba(0,0,0,.22)}
-  .btn.primary:active:not(:disabled){background:var(--accent-press);box-shadow:none}
+    border-radius:var(--r-lg);font-weight:600;font-size:17px;background:var(--fill);color:var(--accent-ink);transition:opacity .12s,background .15s}
+  .btn:active:not(:disabled){opacity:.6}
+  .btn.primary{background:var(--accent);color:var(--on-accent)}
+  .btn.primary:active:not(:disabled){background:var(--accent-press);opacity:1}
   .btn.block{width:100%}
-  .btn.xl{min-height:58px;font-size:18px;border-radius:var(--r-lg)}
-  .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:var(--r)}
+  .btn.xl{min-height:54px;font-size:17px;border-radius:var(--r-xl)}
+  .btn.sm{min-height:44px;padding:0 var(--s4);font-size:15px;border-radius:999px}
   .btn.danger{color:var(--bad)}
-  .btn.quiet{background:transparent;color:var(--text-2)}
-  .link{color:var(--accent-ink);font-weight:600;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+  .btn.quiet{background:transparent;color:var(--accent-ink);font-weight:400}
+  .btn.quiet.danger{color:var(--bad)}
+  .link{color:var(--accent-ink);font-weight:400;font-size:inherit;min-height:44px;min-width:44px;display:inline-flex;align-items:center}
+  .link:active{opacity:.5}
+  .link.small{font-size:15px}
   p .link{min-height:0;min-width:0}
-  .icon-btn{width:44px;height:44px;border-radius:var(--r);background:var(--raise-2);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--text)}
+  .icon-btn{width:44px;height:44px;border-radius:50%;background:var(--fill);display:inline-grid;place-items:center;flex:0 0 auto;color:var(--accent-ink)}
+  .icon-btn:active:not(:disabled){opacity:.6}
   .icon-btn.plain{background:transparent}
 
   /* Feste Aktionsleiste im Daumenbereich (folgt der Tastatur) */
-  .actionbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;background:var(--bar-bg);
-    -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+  .actionbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;background:var(--bar-bg);border-top:.5px solid var(--hair);
+    -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
     padding:var(--s3) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(var(--s3) + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px))}
   .actionbar .in{max-width:calc(600px - 2 * var(--gutter));margin:0 auto;display:grid;gap:var(--s2)}
 
@@ -126,24 +129,26 @@
   .chips{display:flex;gap:var(--s2);overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter)}
   .chips::-webkit-scrollbar{display:none}
   .chips.wrap{flex-wrap:wrap;margin:0;padding:0}
-  .chip{min-height:40px;padding:0 var(--s4);border-radius:var(--r);background:var(--raise-2);font-size:15px;font-weight:600;white-space:nowrap;color:var(--text-2)}
-  .chip.on{background:var(--text);color:var(--bg)}
-  .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 9px;border-radius:var(--r-sm);background:var(--raise-2);color:var(--text-2);white-space:nowrap}
+  .chip{min-height:40px;padding:0 var(--s4);border-radius:999px;background:var(--fill);font-size:15px;font-weight:500;white-space:nowrap;color:var(--text)}
+  .chip.on{background:var(--accent);color:var(--on-accent)}
+  .badge{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--fill);color:var(--text-2);white-space:nowrap}
   .badge.fav{background:var(--accent);color:var(--on-accent)}
   .badge.up{background:var(--ok-tint);color:var(--ok)}
   .badge.pr{background:var(--accent-tint);color:var(--accent-ink)}
-  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--raise-2);padding:3px;border-radius:var(--r)}
-  .seg button{min-height:44px;border-radius:var(--r-sm);font-weight:600;font-size:15px;color:var(--text-2);text-align:center}
-  .seg button.on{background:var(--seg-on);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.18)}
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--fill);padding:2px;border-radius:9px}
+  .seg button{min-height:44px;border-radius:7px;font-weight:500;font-size:15px;color:var(--text);text-align:center}
+  .seg button.on{background:var(--seg-on);color:var(--text);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
 
   /* ---------- Gruppierte Listen ---------- */
-  .group{background:var(--raise);border-radius:var(--r-lg);overflow:hidden;box-shadow:inset 0 0 0 1px var(--hair)}
-  .li{display:flex;align-items:center;gap:var(--s3);min-height:56px;padding:var(--s3) var(--s4);width:100%;text-align:left;position:relative;min-width:0}
+  .group{background:var(--raise);border-radius:var(--r-lg);overflow:hidden}
+  .li{display:flex;align-items:center;gap:var(--s3);min-height:56px;padding:11px var(--s4);width:100%;text-align:left;position:relative;min-width:0}
+  button.li:active{background:var(--fill)}
   .group>.li+.li::before,.group>*+.li::before{content:"";position:absolute;top:0;left:var(--s4);right:0;height:1px;background:var(--hair)}
+  @media (min-resolution:2dppx){.group>.li+.li::before,.group>*+.li::before,.plain-list>.li+.li::before{height:.5px}}
   .li .grow{flex:1;min-width:0}
-  .li .t{font-weight:600;font-size:16px}
-  .li .s{font-size:14px;color:var(--text-2);margin-top:1px}
-  .chev{color:var(--text-3);font-size:20px;line-height:1}
+  .li .t{font-weight:600;font-size:17px}
+  .li .s{font-size:15px;color:var(--text-2);margin-top:1px}
+  .chev{color:var(--chev);font-size:22px;font-weight:600;line-height:1}
   .plain-list>.li{padding-left:0;padding-right:0}
   .hopen{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;min-height:44px}
   .hopen .t,.hopen .s{display:block}.hopen .row{display:flex}
@@ -152,38 +157,40 @@
   .plain-list>.li+.li::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:var(--hair)}
 
   /* ---------- Formular ---------- */
-  input,select{font:inherit;width:100%;min-height:var(--tap);padding:0 var(--s4);border-radius:var(--r);border:1px solid transparent;background:var(--raise-2);color:var(--text)}
+  input,select{font:inherit;width:100%;min-height:var(--tap);padding:0 var(--s4);border-radius:var(--r);border:1px solid transparent;background:var(--fill);color:var(--text)}
   input:focus,select:focus{outline:none;border-color:var(--accent)}
-  label{display:block;font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:var(--s2)}
-  textarea{font:inherit;font-size:12px;width:100%;min-height:96px;padding:var(--s3);border-radius:var(--r);border:1px solid transparent;background:var(--raise-2);color:var(--text);font-family:ui-monospace,Menlo,monospace;word-break:break-all}
+  label{display:block;font-size:15px;font-weight:500;color:var(--text-2);margin-bottom:var(--s2)}
+  textarea{font:inherit;font-size:12px;width:100%;min-height:96px;padding:var(--s3);border-radius:var(--r);border:1px solid transparent;background:var(--fill);color:var(--text);font-family:ui-monospace,Menlo,monospace;word-break:break-all}
   .field{display:grid;gap:var(--s2)}
   .field>label{margin:0}
   .toggle-row{display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
-  .title-input{font-family:var(--display);font-weight:800;font-size:34px;min-height:52px;padding:0;background:transparent;border:0;border-bottom:1px solid var(--hair);border-radius:0}
+  .title-input{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.01em;min-height:52px;padding:0;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0}
   .title-input:focus{border-color:var(--accent)}
 
   /* ---------- Hinweise ---------- */
-  .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair)}
+  .note{display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .note.warn{background:var(--warn-tint)}
-  .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair)}
+  .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .ins.warn{--sig:var(--warn)} .ins.good{--sig:var(--ok)} .ins.ask{--sig:var(--text-3)}
-  .ins>.t{font-weight:700;display:flex;align-items:baseline;gap:10px}
-  .ins>.t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:1px;background:var(--sig);transform:translateY(-1px)}
+  .ins>.t{font-weight:600;display:flex;align-items:baseline;gap:10px}
+  .ins>.t::before{content:"";flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:var(--sig);transform:translateY(-1px)}
   .note .cap{color:var(--text-2)}
   .reason{font-size:14px;line-height:1.4;color:var(--text-2)}
 
   /* ---------- Tab-Leiste ---------- */
-  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
-    border-top:1px solid var(--hair);display:flex;justify-content:center;
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--bar-bg);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+    border-top:.5px solid var(--hair);display:flex;justify-content:center;
     padding:6px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px))}
   nav.tabs .in{display:flex;width:100%;max-width:600px}
-  nav.tabs button{flex:1;display:grid;justify-items:center;gap:3px;min-height:50px;padding-top:4px;font-size:11px;font-weight:600;color:var(--text-3);text-align:center}
+  nav.tabs button{flex:1;display:grid;justify-items:center;gap:2px;min-height:50px;padding-top:4px;font-size:10px;font-weight:500;letter-spacing:.01em;color:var(--text-3);text-align:center}
   nav.tabs button.on{color:var(--accent-ink)}
   nav.tabs svg{width:25px;height:25px}
+  nav.tabs svg .spine{stroke:currentColor}
+  nav.tabs button.on svg .spine{stroke:var(--bg)}
   @media (min-width:1024px){
     nav.tabs{top:0;right:auto;width:96px;flex-direction:column;justify-content:flex-start;border-top:0;border-right:1px solid var(--hair);padding:var(--s6) 8px}
     nav.tabs .in{flex-direction:column;gap:var(--s2)}
-    nav.tabs button{flex:0 0 auto;min-height:64px;border-radius:var(--r);font-size:12px}
+    nav.tabs button{flex:0 0 auto;min-height:64px;border-radius:var(--r-lg);font-size:12px}
     nav.tabs button.on{background:var(--accent-tint)}
     nav.tabs button:hover:not(.on){color:var(--text-2)}
     body{padding-bottom:var(--s7);padding-top:var(--s6)}
@@ -202,9 +209,9 @@
   .metaline{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:15px;color:var(--text-2)}
   .metaline b{color:var(--text);font-weight:600}
   .week{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s2);text-align:center}
-  .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600;text-align:center;min-height:44px;border-radius:var(--r-sm)}
+  .week .d{display:grid;gap:6px;justify-items:center;font-size:12px;color:var(--text-3);font-weight:500;text-align:center;min-height:44px;border-radius:var(--r-sm)}
   .week .d:active .dot{transform:scale(.94)}
-  .week .dot{width:34px;height:34px;border-radius:var(--r);display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
+  .week .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--text-2);background:var(--raise)}
   .week .dot.done{background:var(--accent);color:var(--on-accent)}
   .week .wp{font-size:10px;font-weight:600;color:var(--text-3);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:12px}
   .week .wp.done{color:var(--text-2)}
@@ -225,19 +232,19 @@
   .t-bar .grow{display:grid}
   .t-bar .day{font-weight:600;font-size:15px}
   .t-bar .cnt{font-size:13px;color:var(--text-3)}
-  .t-clock{font-family:var(--display);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right;display:grid;justify-items:end;line-height:1;gap:2px}
-  .t-clock small{font-family:var(--mono);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
+  .t-clock{font-family:var(--rounded);font-weight:700;font-size:22px;color:var(--text-2);min-width:52px;text-align:right;display:grid;justify-items:end;line-height:1;gap:2px}
+  .t-clock small{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-3);white-space:nowrap}
   @media (max-width:359px){ .t-bar{gap:var(--s2)} .t-bar .icon-btn{width:42px;height:42px} .t-clock{min-width:44px;font-size:20px} }
   .bar{height:3px;background:var(--raise-2);border-radius:var(--r-sm);overflow:hidden}
   .bar>div{height:100%;background:var(--accent);transition:width .35s}
-  .bar.ticks{height:6px;border-radius:0;-webkit-mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)));
+  .bar.ticks{height:6px;border-radius:3px;-webkit-mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)));
     mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--n) - 2px),transparent calc(100% / var(--n) - 2px) calc(100% / var(--n)))}
   .ex-head{display:grid;gap:var(--s2)}
   .setting{justify-self:start;font-size:15px;color:var(--text-2);min-height:28px}
   .setting b{color:var(--text);font-weight:600}
   .sets{display:flex;gap:6px}
-  .set-pill{flex:1;min-width:0;height:40px;border-radius:var(--r);display:grid;place-items:center;background:var(--raise);font-weight:700;font-size:14px;color:var(--text-3)}
-  .set-pill.cur{background:var(--raise-2);color:var(--text);box-shadow:inset 0 0 0 2px var(--accent)}
+  .set-pill{flex:1;min-width:0;height:40px;border-radius:var(--r);display:grid;place-items:center;background:var(--raise);font-weight:600;font-size:14px;color:var(--text-3)}
+  .set-pill.cur{background:var(--raise);color:var(--text);box-shadow:inset 0 0 0 2px var(--accent)}
   .set-pill.done{background:var(--ok-tint);color:var(--ok)}
   .prog{display:flex;align-items:center;gap:var(--s2);font-size:15px;color:var(--text-2);min-height:44px;text-align:left}
   .prog .arr{font-weight:700}
@@ -246,15 +253,16 @@
   .stepper{display:grid;gap:var(--s1)}
   .stepper .cap{display:flex;justify-content:space-between}
   .stepper .ctl{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:var(--s2)}
-  .stepper .ctl button{width:64px;height:64px;border-radius:var(--r);background:var(--raise-2);font-size:30px;font-weight:500;display:grid;place-items:center;color:var(--text)}
-  .stepper .ctl button:active{background:var(--raise-3)}
-  .stepper input{text-align:center;font-family:var(--display);font-weight:800;font-size:68px;line-height:1;min-height:76px;padding:0;border:0;background:transparent;border-radius:var(--r);font-variant-numeric:tabular-nums}
+  .stepper .ctl button{width:64px;height:64px;border-radius:50%;background:var(--fill);font-size:32px;font-weight:400;display:grid;place-items:center;color:var(--accent-ink)}
+  .stepper .ctl button:active{background:var(--fill-2)}
+  .stepper input{text-align:center;font-family:var(--rounded);font-weight:700;font-size:68px;line-height:1;min-height:76px;padding:0;border:0;background:transparent;border-radius:var(--r);font-variant-numeric:tabular-nums}
   .stepper input:focus{background:var(--raise)}
   @media (max-height:700px){
     .training .page{gap:var(--s3) !important}
-    .stepper .ctl{grid-template-columns:56px 1fr 56px}
-    .stepper .ctl button{width:56px;height:56px;font-size:26px}
-    .stepper input{font-size:54px;min-height:56px}
+    .stepper .ctl{grid-template-columns:50px 1fr 50px}
+    .stepper .ctl button{width:50px;height:50px;font-size:26px}
+    .stepper input{font-size:48px;min-height:48px}
+    .training .small,.training .setting,.training .lastline{font-size:14px}
     .warm{padding:var(--s2) var(--s3)} .warm .btn.sm{min-height:40px}
     #findKg{padding:var(--s3);gap:6px} .seg.find button{min-height:40px}
     .training .stepper{gap:2px} .training .plates{min-height:18px;font-size:12px} .training .plates .pl{height:calc(12px + var(--p) * .2px);min-height:14px;font-size:11px}
@@ -265,11 +273,12 @@
   .unit b{font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0}
   .plates{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 6px;min-height:22px;font-size:13px;color:var(--text-2)}
   .plates .pl-l{margin-right:2px}
-  .plates .pl{display:inline-grid;place-items:center;min-width:30px;height:calc(14px + var(--p) * .3px);min-height:16px;padding:0 5px;border-radius:5px;background:var(--raise-2);color:var(--text);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+  .plates .pl{display:inline-grid;place-items:center;min-width:30px;height:calc(14px + var(--p) * .3px);min-height:16px;padding:0 5px;border-radius:5px;background:var(--fill-2);color:var(--text);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
   .plates .pl-r{color:var(--warn)}
   .actions3{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:var(--s2)}
-  .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair);font-size:13px;font-weight:600;color:var(--text-2);text-align:center}
-  .tool svg{width:22px;height:22px;color:var(--text)}
+  .tool{display:grid;justify-items:center;gap:6px;min-height:68px;padding:var(--s2) var(--s1);border-radius:var(--r-lg);background:var(--raise);font-size:13px;font-weight:500;color:var(--text-2);text-align:center}
+  .tool:active{opacity:.6}
+  .tool svg{width:22px;height:22px;color:var(--accent-ink)}
   .lastline{font-size:14px;color:var(--text-3)}
   /* Übungsseite und Wissen */
   .guide{gap:var(--s6)}
@@ -278,7 +287,7 @@
   .glist{margin:0;padding-left:22px;display:grid;gap:var(--s2);max-width:65ch}
   .glist li::marker{color:var(--text-3)}
   .glist.mist{list-style:none;padding-left:0;gap:var(--s3)}
-  .glist.mist li{display:grid;gap:2px;padding-left:var(--s3);border-left:2px solid var(--accent)}
+  .glist.mist li{display:grid;gap:2px;padding-left:var(--s3);border-left:3px solid var(--accent)}
   .glist.mist span{color:var(--text-2);font-size:15px}
   .glist.srcs{font-size:14px;gap:var(--s2)}
   .glist.srcs a{color:var(--text)}
@@ -301,12 +310,12 @@
   .mctl .btn{flex:0 0 auto}
   .mctl .btn.on{background:var(--accent-soft);color:var(--text)}
   .mctl .mscrub{flex:1;min-width:0;accent-color:var(--accent);height:28px}
-  .sheet .gmot{background:var(--raise-2)}
+  .sheet .gmot{background:var(--sheet-cell)}
   .next-mot{margin:var(--s2) 0;padding:var(--s2)}
   .next-mot .motion{max-width:220px}
-  .thumbbox{width:52px;flex:0 0 52px;background:var(--raise-2);border-radius:var(--r);padding:2px}
+  .thumbbox{width:52px;flex:0 0 52px;background:var(--fill);border-radius:var(--r);padding:2px}
   .ex-top{display:flex;align-items:flex-start;gap:var(--s3)}
-  .mot-btn{flex:0 0 88px;width:88px;background:var(--raise);border-radius:var(--r-lg);padding:4px;box-shadow:inset 0 0 0 1px var(--hair)}
+  .mot-btn{flex:0 0 88px;width:88px;background:var(--raise);border-radius:var(--r-lg);padding:4px}
   @media (max-height:700px){ .mot-btn{flex-basis:60px;width:60px;padding:2px;border-radius:var(--r)} }
   .hero-mot{display:grid;gap:4px;justify-items:center;width:clamp(110px, 34vw, 150px)}
   .hero-mot .mcap{text-align:center;line-height:1.2}
@@ -314,61 +323,60 @@
   .gmus .glist{font-size:15px}
   .gnote{border-top:1px solid var(--hair);padding-top:var(--s4)}
   .lead{font-size:18px;line-height:1.45;color:var(--text);max-width:65ch}
-  .infobtn{font-family:var(--display);font-weight:700;font-size:18px;color:var(--text-2);box-shadow:inset 0 0 0 1.5px var(--hair)}
-  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--text-2);font-size:15px;border-bottom:1px dashed var(--text-3)}
-  .timebtn b{color:var(--text);font-weight:600}
+  .infobtn{font-family:var(--body);font-weight:600;font-size:18px;color:var(--accent-ink)}
+  .timebtn{display:inline-flex;align-items:center;gap:4px;min-height:44px;color:var(--accent-ink);font-size:15px}
+  .timebtn b{color:var(--accent-ink);font-weight:600}
   .timebtn .chev{font-size:16px;margin-left:2px}
   .facts{margin:0;padding-left:18px;display:grid;gap:4px;font-size:15px}
-  .facts b{font-family:var(--display);font-size:18px}
+  .facts b{font-family:var(--rounded);font-size:18px}
 
   /* Pause */
   .rest{display:grid;justify-items:center;gap:var(--s4);padding-top:var(--s2)}
   .ring{position:relative;width:min(240px,66vw);aspect-ratio:1}
   .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
   .ring .t{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:var(--s1)}
-  .ring .t .num{font-size:84px;font-weight:800}
+  .ring .t .num{font-size:84px;font-weight:600}
   .pm{display:flex;gap:var(--s3)}
   .pm .btn{min-width:96px}
   .feel-q{display:grid;gap:var(--s3);width:100%}
   .next{display:grid;gap:var(--s1);width:100%}
 
   /* ---------- Plan ---------- */
-  .day-row .t{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.1}
+  .day-row .t{font-family:var(--display);font-size:20px;font-weight:600;line-height:1.2}
   .day-row .min{font-size:14px;color:var(--text-3);white-space:nowrap}
   .pick-row{padding:0 var(--s2) 0 0;min-height:60px}
   .pick-main,.dev-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0;text-align:left;padding:var(--s3) 0 var(--s3) var(--s4);min-height:60px}
   .pick-main .t,.pick-main .s,.dev-main .t,.dev-main .s{display:block}
   .dev-main .grow{display:block;min-width:0}
   .dev-main .grow>.t,.dev-main .grow>.s{max-width:100%}
-  .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:var(--r-sm);box-shadow:inset 0 0 0 2px var(--hair);display:grid;place-items:center;color:#fff}
-  .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--ok);box-shadow:none}
+  .pick-box{flex:0 0 28px;width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--chev);display:grid;place-items:center;color:#fff}
+  .pick-row.on .pick-box,.dev-check.on .pick-box{background:var(--accent);box-shadow:none}
   .pick-box svg{width:16px;height:16px}
   /* Geräteauswahl: Bild der Bewegung je Gerät, Häkchen als Marke am Bild */
   .pick-thumb{position:relative;overflow:visible;width:60px;flex:0 0 60px}
   .pick-thumb .pick-box{position:absolute;right:-7px;bottom:-7px;flex:none;width:22px;height:22px;background:var(--raise);box-shadow:inset 0 0 0 2px var(--hair)}
   .pick-thumb .pick-box svg{width:13px;height:13px}
   .pick-row.on .pick-thumb .pick-box{box-shadow:0 0 0 2px var(--raise)}
-  .pick-row.on{box-shadow:inset 3px 0 0 var(--ok)}
   .pick-main .s3{display:block;font-size:12px;color:var(--text-3);margin-top:2px}
-  .chip .n{margin-left:6px;font-family:var(--mono);font-size:12px;font-weight:500}
+  .chip .n{margin-left:6px;font-size:13px;font-weight:400;opacity:.75}
   .swap-row{align-items:flex-start;gap:var(--s3)}
   .dev-row{padding:0 var(--s2) 0 0}
   .dev-check{flex:0 0 48px;height:48px;display:grid;place-items:center}
   .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .idx{width:28px;height:28px;border-radius:var(--r-sm);font-family:var(--mono);display:grid;place-items:center;background:var(--raise-2);font-size:13px;font-weight:700;color:var(--text-2);flex:0 0 auto}
+  .idx{width:28px;height:28px;border-radius:50%;font-family:var(--rounded);display:grid;place-items:center;background:var(--fill);font-size:14px;font-weight:600;color:var(--text-2);flex:0 0 auto}
   .mini-step{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:center}
-  .mini-step button{height:44px;border-radius:var(--r);background:var(--raise-2);font-size:22px;display:grid;place-items:center}
-  .mini-step output{text-align:center;font-family:var(--display);font-size:28px;font-weight:700}
+  .mini-step button{height:44px;border-radius:var(--r);background:var(--fill);color:var(--accent-ink);font-size:24px;display:grid;place-items:center}
+  .mini-step output{text-align:center;font-family:var(--rounded);font-size:28px;font-weight:700}
   .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
   .grid3 .mini-step{grid-template-columns:1fr 1fr;row-gap:6px}
   .grid3 .mini-step output{grid-column:1/-1;grid-row:1}
 
   /* ---------- Verlauf ---------- */
   .kpi{display:flex;align-items:baseline;gap:var(--s2)}
-  .kpi .num{font-size:56px;font-weight:800}
+  .kpi .num{font-size:56px;font-weight:700}
   .bars{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;align-items:end;height:96px;padding-top:18px}
-  .bars .b{position:relative;background:var(--text-3);border-radius:var(--r-sm);min-height:4px}
-  .bars .b.zero{background:var(--raise-2)}
+  .bars .b{position:relative;background:var(--raise-3);border-radius:4px;min-height:4px}
+  .bars .b.zero{background:var(--fill)}
   .bars .b.cur{background:var(--accent)}
   .bars .b.cur.zero{background:var(--raise-3)}
   .bars .b[data-n]:not(.zero)::before{content:attr(data-n);position:absolute;bottom:100%;left:0;right:0;margin-bottom:3px;text-align:center;font-size:12px;font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums}
@@ -392,7 +400,7 @@
   .mfill{position:absolute;left:0;top:0;bottom:0;border-radius:var(--r-sm)}
   .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
   .cal .d{display:grid;justify-items:center;font-size:12px;color:var(--text-3);font-weight:600}
-  .cal .dot{width:34px;height:34px;border-radius:var(--r);display:grid;place-items:center;font-size:13px;color:var(--text-2)}
+  .cal .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;color:var(--text-2)}
   .cal .dot.done{background:var(--accent);color:var(--on-accent);font-weight:700}
   .cal .dot.today{box-shadow:inset 0 0 0 2px var(--text)}
   .stat{display:grid;gap:var(--s1)}
@@ -407,7 +415,7 @@
   .scanbox{position:relative;border-radius:var(--r-lg);overflow:hidden;background:#000;aspect-ratio:4/3}
   .scanbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .scanframe{position:absolute;left:8%;right:8%;top:33%;bottom:33%;border:2px solid var(--accent);border-radius:12px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
-  .check{width:22px;height:22px;flex:0 0 22px;border-radius:var(--r-sm);border:2px solid var(--text-3);margin-top:2px}
+  .check{width:22px;height:22px;flex:0 0 22px;border-radius:50%;border:1.5px solid var(--chev);margin-top:2px}
   .check.on{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 4px var(--raise)}
 
   /* ---------- Bottom-Sheet ---------- */
@@ -415,27 +423,56 @@
   .sheet{background:var(--sheet);width:100%;max-width:600px;border-radius:var(--r-xl) var(--r-xl) 0 0;max-height:90vh;overflow:auto;overscroll-behavior:contain;display:grid;gap:var(--s4);align-content:start;
     padding:var(--s2) max(var(--gutter), env(safe-area-inset-right, 0px)) calc(var(--s5) + env(safe-area-inset-bottom, 0px)) max(var(--gutter), env(safe-area-inset-left, 0px));
     animation:up .24s cubic-bezier(.2,.8,.2,1)}
-  .sheet .group,.sheet .note{background:var(--raise-2)}
-  .sheet input,.sheet select,.sheet textarea{background:var(--raise-2)}
-  .sheet .seg{background:var(--raise-2)}
-  .sheet .chip{background:var(--raise-2)}
-  .sheet .chip.on{background:var(--text);color:var(--bg)}
-  .grab{width:38px;height:5px;border-radius:5px;background:var(--raise-3);margin:0 auto var(--s1)}
-  .sh-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
-  .sh-head h2{font-size:26px}
-  .sh-head .btn{flex:0 0 auto}
-  .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);box-shadow:inset 3px 0 0 var(--accent)}
+  .sheet .group,.sheet .note,.sheet .ins,.sheet .tool,.sheet .trk{background:var(--sheet-cell)}
+  .sheet input,.sheet select,.sheet textarea{background:var(--sheet-cell)}
+  .sheet .seg{background:var(--fill)}
+  .sheet .chip{background:var(--fill)}
+  .sheet .chip.on{background:var(--accent);color:var(--on-accent)}
+  .grab{width:36px;height:5px;border-radius:5px;background:var(--fill-2);margin:0 auto var(--s1)}
+  .sh-head{display:grid;grid-template-columns:minmax(76px,1fr) minmax(0,auto) minmax(76px,1fr);align-items:center;min-height:44px;margin:0 calc(-1 * var(--s2))}
+  .sh-head h2{grid-column:2;grid-row:1;font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.25;text-align:center}
+  .sh-head .btn{grid-row:1;background:none;min-height:44px;padding:0 var(--s2);border-radius:var(--r);font-size:17px;color:var(--accent-ink)}
+  .sh-head .btn:not(.sh-l){grid-column:3;justify-self:end;font-weight:600}
+  .sh-head .sh-l{grid-column:1;justify-self:start;font-weight:400}
+  .sh-sub{text-align:center;margin-top:calc(-1 * var(--s3))}
+  .sheet>.sh-head{position:sticky;top:calc(-1 * var(--s2));z-index:3;background:var(--sheet);padding-top:var(--s1)}
+  .sheet .foot,.foot{font-size:13px;color:var(--text-3);padding:0 var(--s4)}
+  .li .t.n{font-weight:400}
+  .step-row{min-height:48px;padding-top:6px;padding-bottom:6px}
+  .step-row .sv{font-family:var(--rounded);font-weight:600;font-size:17px;min-width:28px;text-align:right;color:var(--text-2)}
+  .ustep{display:inline-flex;flex:none;height:32px;border-radius:9px;background:var(--fill);align-items:center;overflow:visible}
+  .ustep button{width:47px;height:44px;margin:-6px 0;display:grid;place-items:center;font-size:24px;font-weight:400;color:var(--text);position:relative}
+  .ustep button+button::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:1px;background:var(--hair)}
+  .ustep button:active{opacity:.4}
+  .switch{position:relative;flex:0 0 51px;width:51px;height:44px}
+  .switch::before{content:"";position:absolute;left:0;top:6.5px;width:51px;height:31px;border-radius:16px;background:var(--fill-2);transition:background-color .2s}
+  .switch::after{content:"";position:absolute;left:2px;top:8.5px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .2s}
+  .switch[aria-checked="true"]::before{background:#34C759}
+  .switch[aria-checked="true"]::after{transform:translateX(20px)}
+  .cell-in,.sheet .cell-in{background:transparent;border:0;border-radius:0;min-height:48px}
+  .scrim.action{align-items:flex-end}
+  .sheet.as{background:transparent;box-shadow:none;gap:var(--s2);padding:0 var(--s2) calc(var(--s2) + env(safe-area-inset-bottom, 0px));max-width:600px}
+  .sheet.as .as-group,.sheet.as .as-cancel{background:var(--sheet-cell);border-radius:14px;overflow:hidden}
+  .as-head{display:grid;gap:var(--s1);padding:14px var(--s4);text-align:center}
+  .as-t{font-family:var(--body);font-size:13px;font-weight:600;color:var(--text-3);letter-spacing:0}
+  .as-m{font-size:13px;color:var(--text-3)}
+  .sheet.as .as-btn{display:flex;width:100%;min-height:57px;align-items:center;justify-content:center;padding:0 var(--s4);border-radius:0;background:transparent;
+    border-top:.5px solid var(--hair);font-size:20px;font-weight:400;color:var(--accent-ink);text-align:center}
+  .sheet.as .as-btn.danger{color:var(--bad)}
+  .sheet.as .as-btn.bold,.sheet.as .as-cancel{font-weight:600}
+  .sheet.as .as-cancel{border-top:0;border-radius:14px;background:var(--sheet-cell)}
+  .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .warm .t{font-weight:700;font-size:15px}
   .seg.find button{display:grid;align-content:center;gap:0;line-height:1.2;padding:4px 2px}
   .seg.find small{font-size:12px;font-weight:500;color:var(--text-2)}
   .warm .s{font-size:13px;color:var(--text-2)}
-  .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r);background:var(--raise);color:var(--text);font-size:15px;text-align:left}
-  .trick .tk{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);flex:none}
+  .trick{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:48px;padding:var(--s3) var(--s4);border-radius:var(--r-lg);background:var(--raise);color:var(--text);font-size:15px;text-align:left}
+  .trick .tk{font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--accent-ink);flex:none}
   .trick .tt{flex:1;min-width:0}
   .trick .chev{color:var(--text-3);flex:none}
   .ask .chip{min-height:34px;font-size:14px}
   .trks{display:grid;gap:var(--s2)}
-  .trk{border-radius:var(--r);background:var(--raise-2);padding:var(--s3) var(--s4)}
+  .trk{border-radius:var(--r-lg);background:var(--raise);padding:var(--s3) var(--s4)}
   .trk>summary{list-style:none;cursor:pointer;display:grid;gap:2px}
   .trk>summary::-webkit-details-marker,.gdet>summary::-webkit-details-marker{display:none}
   .trk>summary span{font-size:14px;color:var(--text-2)}
@@ -468,6 +505,41 @@
   .exv .gmus{gap:var(--s2)}
   .exv .gmus>div{background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4);display:grid;gap:var(--s2);align-content:start}
   .exv .gmus>div:first-child{box-shadow:inset 3px 0 0 var(--mhot)}
+
+  /* ---------- iOS: Navigationsleiste, Übergänge, Sheets, Steuerelemente ---------- */
+  .navbar{position:fixed;top:0;left:0;right:0;z-index:22;padding-top:env(safe-area-inset-top, 0px);border-bottom:.5px solid transparent;transition:background-color .2s,border-color .2s}
+  .navbar.scrolled{background:var(--bar-bg);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom-color:var(--hair)}
+  .navbar .in{position:relative;max-width:600px;margin:0 auto;height:44px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px))}
+  .nb-l,.nb-r{display:flex;align-items:center;gap:2px;min-width:0;position:relative;z-index:1}
+  .nb-r{margin-left:auto}
+  .nb-t{position:absolute;left:104px;right:104px;text-align:center;font-weight:600;font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .18s;pointer-events:none}
+  .navbar.scrolled .nb-t{opacity:1}
+  .nb-back{display:inline-flex;align-items:center;gap:5px;color:var(--accent-ink);font-size:17px;font-weight:400;min-height:44px;padding:0 8px 0 0;max-width:46vw}
+  .nb-back span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nb-chev{width:12px;height:21px;flex:none}
+  .nb-r .icon-btn{background:transparent}
+  .nb-r .icon-btn svg{width:24px;height:24px}
+  .nb-r .link{padding:0 8px;font-size:17px}
+  body.has-nav{padding-top:44px}
+  .head .navsub{font-size:15px;text-transform:none;color:var(--text-2);margin-top:2px}
+  @media (min-width:1024px){ .navbar{left:96px} body.has-nav{padding-top:60px} }
+  /* Übergänge: neue Seite schiebt sich von rechts herein, die alte rückt ein Stück nach links (Abbild beider Seiten) */
+  .navlayer{position:fixed;inset:0;z-index:15;overflow:hidden;background:var(--bg);pointer-events:none;will-change:transform}
+  .navlayer.top{box-shadow:-10px 0 28px rgba(0,0,0,.22)}
+  .navlayer .nl-in{box-sizing:border-box;max-width:600px;margin:0 auto}
+  .navlayer .dim{position:absolute;inset:0;background:#000;opacity:0}
+  body.nav-anim #app{visibility:hidden}
+  .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .li.act{color:var(--accent-ink);font-size:17px;min-height:48px}
+  .group:has([data-swipe]){position:relative}
+  [data-swipe]{background:var(--raise);position:relative;z-index:1;touch-action:pan-y}
+  .swipe-del{position:absolute;right:0;z-index:0;width:88px;background:#FF3B30;color:#fff;font-size:17px;font-weight:400;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;white-space:nowrap}
+  nav.tabs button.on svg .fill{fill:currentColor}
+  input[type=search]{padding-left:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='2.4' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='m20 20-4.6-4.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-size:17px;background-position:12px 50%}
+  .li.act.danger{color:var(--bad)}
+  .li.act.center{justify-content:center;text-align:center}
+  .group+p.small,.group+p.faint,.section>.group+p{font-size:13px;color:var(--text-3);padding:0 var(--s4);margin-top:calc(-1 * var(--s1))}
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -476,13 +548,14 @@
 </style>
 
 <p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Training → Einstellungen eine Sicherung erstellen.</p>
+<header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
 <nav class="tabs" id="tabs"><div class="in">
-  <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
+  <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="fill" d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
   <button data-a="tab" data-v="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Training</button>
-  <button data-a="tab" data-v="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5C5 4.2 8.5 4.2 12 6.2c3.5-2 7-2 9.5-.7V19c-2.5-1.3-6-1.3-9.5.7-3.5-2-7-2-9.5-.7z"/><path d="M12 6.2v13.5"/></svg>Wissen</button>
+  <button data-a="tab" data-v="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path class="fill" d="M2.5 5.5C5 4.2 8.5 4.2 12 6.2c3.5-2 7-2 9.5-.7V19c-2.5-1.3-6-1.3-9.5.7-3.5-2-7-2-9.5-.7z"/><path d="M12 6.2v13.5" stroke="var(--bar-solid, #fff)" class="spine"/></svg>Wissen</button>
   <button data-a="tab" data-v="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v18M4 3v5a3 3 0 0 0 6 0V3M17 21V3c-2.2 0-3.5 2.6-3.5 6.5S15 14 17 14"/></svg>Essen</button>
-  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Fortschritt</button>
+  <button data-a="tab" data-v="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect class="fill" x="3" y="11" width="4.5" height="9" rx="1.2"/><rect class="fill" x="9.75" y="4" width="4.5" height="16" rx="1.2"/><rect class="fill" x="16.5" y="8" width="4.5" height="12" rx="1.2"/></svg>Fortschritt</button>
 </div></nav>
 <div id="sheet-root"></div>
 
@@ -1920,20 +1993,6 @@ function estimateSec(items, opts = {}) {
 }
 const roundMin = sec => Math.max(5, Math.round(sec / 300) * 5);
 function estMinutes(day) { return roundMin(estimateSec(day.items)); }
-// Supersatz-Vorschläge für einen Tag: freie Gegenspieler-Paare (ANTAG), Ersparnis nach der Zeitschätzung der App
-// Der Partner rückt direkt hinter die erste Übung (wie ssLink); bestes Paar zuerst, jedes Gerät nur einmal
-function ssSuggest(d, n = 2) {
-  const linked = new Set(); d.items.forEach((it, i) => { if (it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss) { linked.add(it.id); linked.add(it.ss); } });
-  const used = new Set(), out = [], base = () => estimateSec(d.items);
-  const pairs = [];
-  d.items.forEach((a, i) => d.items.forEach((b, j) => { if (i >= j || linked.has(a.id) || linked.has(b.id) || !a.sets || !b.sets) return;
-    if (!(ANTAG[ex(a.exId).pattern] || []).includes(ex(b.exId).pattern)) return;
-    const sim = d.items.map(x => Object.assign({}, x)), [pb] = sim.splice(j, 1); sim.splice(i + 1, 0, pb); sim[i].ss = pb.id;
-    pairs.push({ a, b, save: base() - estimateSec(sim) }); }));
-  pairs.sort((x, y) => y.save - x.save);
-  for (const p of pairs) { if (out.length >= n) break; if (used.has(p.a.id) || used.has(p.b.id) || p.save < 60) continue; used.add(p.a.id); used.add(p.b.id); out.push(Object.assign(p, { min: Math.round(p.save / 60) })); }
-  return out;
-}
 
 // Restdauer einer laufenden Einheit (aktuelle Übung zuerst, dann offene Übungen in Listenreihenfolge)
 function remainingSec(s, list = s.list, idx = s.idx) {
@@ -2234,8 +2293,64 @@ function openSheet(html) {
   sheetName($sheet.querySelector(".sheet"));
 }
 function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
-const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
-  `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
+// Kopf wie bei iOS-Sheets: links „Abbrechen“ (optional), Mitte Titel, rechts die bestätigende Aktion fett
+const sheetHead = (title, close = "Fertig", action = "closeSheet", cancel) =>
+  `<div class="sh-head">${cancel ? `<button class="btn sm sh-l" data-a="closeSheet">${cancel === true ? "Abbrechen" : cancel}</button>` : ""}<h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
+// Listenzeilen mit data-swipe: nach links wischen zeigt rotes „Löschen“, weit wischen löscht sofort; Tippen woanders schließt
+const SW_W = 88;
+let swOpen = null, swEat = false, swEatT = 0;
+const eat = () => { swEat = true; clearTimeout(swEatT); swEatT = setTimeout(() => { swEat = false; }, 450); };
+function swClose(anim = true) { if (!swOpen) return; const { row, btn } = swOpen; swOpen = null; row.style.transition = anim ? "transform .25s" : ""; row.style.transform = ""; setTimeout(() => btn.remove(), anim ? 260 : 0); }
+{ let g = null;
+  const mkBtn = row => { const b = document.createElement("button"); b.className = "swipe-del"; b.textContent = "Löschen"; b.dataset.a = row.dataset.swipe;
+    for (const [k, v] of Object.entries(row.dataset)) if (k !== "a" && k !== "swipe") b.dataset[k] = v;
+    b.setAttribute("aria-label", `${row.dataset.label || "Eintrag"} löschen`);
+    b.style.top = row.offsetTop + "px"; b.style.height = row.offsetHeight + "px"; row.parentElement.appendChild(b); return b; };
+  document.addEventListener("touchstart", ev => { const row = ev.target.closest && ev.target.closest("[data-swipe]");
+    if (swOpen && (!row || row !== swOpen.row) && !ev.target.closest(".swipe-del")) { swClose(); eat(); }
+    if (!row || ev.touches.length !== 1 || ev.target.closest(".ustep,.icon-btn")) return;
+    const t = ev.touches[0]; g = { row, x0: t.clientX, y0: t.clientY, base: swOpen && swOpen.row === row ? -SW_W : 0, on: false, dx: 0 }; }, { passive: true });
+  document.addEventListener("touchmove", ev => { if (!g) return; const t = ev.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+    if (!g.on) { if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) { g = null; return; } if (Math.abs(dx) < 10) return;
+      g.on = true; if (!swOpen || swOpen.row !== g.row) { swClose(false); swOpen = { row: g.row, btn: mkBtn(g.row) }; } }
+    if (ev.cancelable) ev.preventDefault();
+    g.dx = Math.min(0, g.base + dx); g.row.style.transition = ""; g.row.style.transform = `translateX(${g.dx}px)`;
+    swOpen.btn.style.width = Math.max(SW_W, -g.dx) + "px"; }, { passive: false });
+  document.addEventListener("touchend", () => { if (!g) return; const { row, dx, on } = g; g = null; if (!on || !swOpen) return; eat();
+    const W = row.offsetWidth;
+    if (dx < -W * .6) { const b = swOpen.btn; row.style.transition = "transform .2s"; row.style.transform = `translateX(${-W}px)`; setTimeout(() => b.click(), 180); return; }
+    if (dx < -SW_W / 2) { row.style.transition = "transform .25s"; row.style.transform = `translateX(${-SW_W}px)`; swOpen.btn.style.width = SW_W + "px"; }
+    else swClose(); });
+  // Der Klick nach einer Wischbewegung öffnet die Zeile nicht
+  document.addEventListener("click", ev => { if (swEat) { swEat = false; if (!ev.target.closest(".swipe-del")) { ev.stopPropagation(); ev.preventDefault(); } } }, true);
+ }
+new MutationObserver(() => { if (swOpen && !swOpen.row.isConnected) { swOpen.btn.remove(); swOpen = null; } }).observe(document.getElementById("app"), { childList: true });
+// Formular-Sheets wie bei iOS: die bestätigende Aktion („Speichern“, „Hinzufügen“, „Übernehmen“) steht oben rechts,
+// „Abbrechen“ oben links; der Kopf bleibt beim Scrollen stehen. Gilt für jedes Sheet mit genau einer solchen Aktion.
+const SHEET_OK = /^(Speichern|Hinzufügen|Übernehmen)$/;
+function iosSheet() {
+  const sh = $sheet.querySelector(".sheet:not(.as)"); if (!sh || sh.querySelector(".sh-head.ios")) return;
+  const oks = [...sh.querySelectorAll(".btn.primary[data-a]")].filter(b => SHEET_OK.test(b.textContent.trim()) && !b.closest(".sh-head"));
+  if (oks.length !== 1) return; const ok = oks[0];
+  let head = sh.querySelector(":scope > .sh-head");
+  if (!head) { const h = sh.querySelector(":scope > h2, :scope > h3"); if (!h) return;
+    head = document.createElement("div"); head.className = "sh-head"; h.before(head); const t = document.createElement("h2"); t.className = "grow"; t.id = h.id || ""; t.innerHTML = h.innerHTML; h.remove(); head.appendChild(t); sheetName(sh); }
+  const right = head.querySelector(".btn:not(.sh-l)"); if (right && right.dataset.a === "closeSheet") right.remove(); else if (right) return;
+  if (!head.querySelector(".sh-l")) { const c = document.createElement("button"); c.className = "btn sm sh-l"; c.dataset.a = "closeSheet"; c.textContent = "Abbrechen"; head.prepend(c); }
+  ok.classList.remove("primary", "block", "xl"); ok.classList.add("sm"); head.appendChild(ok); head.classList.add("ios");
+  sh.querySelectorAll(".btn[data-a=closeSheet]").forEach(b => { if (!b.closest(".sh-head") && /^Abbrechen$/.test(b.textContent.trim())) b.remove(); });
+  sh.querySelectorAll(".stack-sm").forEach(x => { if (!x.children.length) x.remove(); });
+}
+new MutationObserver(iosSheet).observe($sheet, { childList: true, subtree: true });
+// Aktionsblatt wie bei iOS: Frage und Optionen in einer Karte, darunter getrennt „Abbrechen“
+function actionSheet(title, msg, acts, cancel = "Abbrechen", cancelA = "closeSheet") {
+  stopScan();
+  $sheet.innerHTML = `<div class="scrim action" data-a="closeSheet"><div class="sheet as" role="dialog" aria-modal="true">
+    <div class="as-group"><div class="as-head"><h2 class="as-t">${title}</h2>${msg ? `<p class="as-m">${msg}</p>` : ""}</div>
+    ${acts.map(x => `<button class="btn as-btn${x.danger ? " danger" : ""}${x.bold ? " bold" : ""}" data-a="${x.a}">${x.l}</button>`).join("")}</div>
+    <button class="btn as-btn as-cancel" data-a="${cancelA}">${cancel}</button></div></div>`;
+  sheetName($sheet.querySelector(".sheet"));
+}
 const ICON = {
   voiceOn: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voiceOff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`,
@@ -2526,7 +2641,7 @@ const mF = n => Math.round(n * 10) / 10;
 const mLine = (a, b, w, c) => `<line x1="${mF(a[0])}" y1="${mF(a[1])}" x2="${mF(b[0])}" y2="${mF(b[1])}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
 const mDot = (a, r, c) => `<circle cx="${mF(a[0])}" cy="${mF(a[1])}" r="${r}" fill="${c}"/>`;
 const MB = "var(--mbody)", MH = "var(--accent)", MGL = "var(--mgear-line)";
-// Arbeitende Muskeln rot (wie in Anatomie-Darstellungen üblich); Akzentgelb bleibt für Gewichtsplatten und Bewegungsbahn
+// Arbeitende Muskeln rot (wie in Anatomie-Darstellungen üblich); die Akzentfarbe bleibt für Gewichtsplatten und Bewegungsbahn
 const MHOT = "var(--mhot)", MFR = "var(--mframe)", MPD = "var(--mpad)";
 // Seitenansicht: Gelenke aus der Hüfte, dann so verschoben, dass der Ankerpunkt (Hüfte, Knöchel oder Fußballen) ruht
 // Zwei Glieder (Längen L1, L2) vom festen Gelenk S zum Ziel H; von zwei möglichen Mittelgelenken das nähere an „near“
@@ -3970,7 +4085,7 @@ function vLib() {
   // Geräte im Studio zuerst
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m).sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0))]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><h1 class="title">Übungen</h1>
+    <div class="head"><h1 class="title">Übungen</h1>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
     ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
@@ -4046,7 +4161,7 @@ function exAltHtml(id) {
 const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><h1 class="title">Artikel</h1>
+    <div class="head"><h1 class="title">Artikel</h1>
       <p class="sub">Grundlagen zu Training und Ernährung, mit Quellen.</p></div>
     ${wissenSeg("wissen")}
     <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen</div></div><span class="chev">›</span></button></div>
@@ -4083,14 +4198,123 @@ function tabOf(v) {
   return v;
 }
 let homeNote = "";
-function go(v) {
+// Navigation wie bei iOS: Jeder Tab hat einen eigenen Stapel. Unterseiten werden „hineingeschoben“ (push), Zurück
+// holt die vorige Seite mit ihrer Scrollposition. Ein anderer Tab öffnet dort, wo man ihn verlassen hat;
+// Tippen auf den aktiven Tab führt zurück zum Anfang bzw. nach oben.
+const ROOTV = new Set(["home", "plan", "lib", "wissen", "food", "history"]);
+const backOf = v => ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: "plan", tag: "home", setup: "plan" })[v];
+function depthOf(v, n = 0) { if (ROOTV.has(v) || n > 6) return 0; const b = backOf(v); return 1 + (b && !ROOTV.has(b) ? depthOf(b, n + 1) : 0); }
+let navStack = [], tabMem = {}, navNoAnim = false;
+const NAV_MODAL = new Set(["train", "summary", "setup"]);
+function go(v, opt = {}) {
+  const from = view, fromY = window.scrollY, fromTab = tabOf(from), toTab = tabOf(v);
+  const oldHtml = $app.innerHTML;
+  let kind = null;
+  if (from !== v && fromTab === toTab && !NAV_MODAL.has(v) && !NAV_MODAL.has(from)) { const a = depthOf(from), b = depthOf(v); kind = b > a ? "push" : b < a ? "pop" : null; }
+  if (fromTab !== toTab && !NAV_MODAL.has(from)) tabMem[fromTab] = { v: from, y: fromY };
+  if (kind === "push") { navStack.push({ v: from, y: fromY, tab: fromTab, html: oldHtml }); if (navStack.length > 12) navStack.shift(); }
+  let y = opt.y || 0;
+  if (kind === "pop") { const hit = navStack.slice().reverse().find(e => e.v === v && e.tab === toTab); if (hit && opt.y == null) y = hit.y;
+    navStack = navStack.filter(e => e.tab !== toTab || depthOf(e.v) < depthOf(v)); }
+  if (fromTab !== toTab) navStack = navStack.filter(e => e.tab !== toTab || depthOf(e.v) < depthOf(v));
   view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = ""; if (v !== "food") { foodNote = ""; copyUndo = null; } if (v !== "plan") { planNote = ""; planUndo = null; } if (v !== "tag") { tagNote = ""; tagCopyUndo = null; }
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === tabOf(v)));
-  render(); window.scrollTo(0, 0);
+  render(); iosChrome(); window.scrollTo(0, y); navScroll();
+  if (kind && !opt.noAnim && !navNoAnim) navAnim(kind, oldHtml, fromY, y);
 }
+// Bewegung nur, wenn erwünscht; automatisierte Tests schalten sie mit tp-anim=1 gezielt ein
+function animOK() { if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false; let f = null; try { f = localStorage.getItem("tp-anim"); } catch (e) {}
+  return f === "1" || (f !== "0" && !navigator.webdriver); }
+// Tab-Verlauf merken (wie iOS); automatisierte Tests, die über die Tabs zur Startseite springen, schalten ihn mit tp-tabmem=0 ab
+function tabMemOn() { try { return localStorage.getItem("tp-tabmem") !== "0"; } catch (e) { return true; } }
+const navReset = () => { navStack = []; tabMem = {}; };
+const NAV_EASE = "cubic-bezier(.32,.72,0,1)";
+function navLayer(html, y, top) {
+  const L = document.createElement("div"); L.className = "navlayer" + (top ? " top" : ""); L.setAttribute("aria-hidden", "true"); L.inert = true;
+  const cs = getComputedStyle(document.body), padTop = document.body.getBoundingClientRect().top + window.scrollY + parseFloat(cs.paddingTop);
+  const i = document.createElement("div"); i.className = "nl-in"; i.innerHTML = html;
+  i.style.padding = `${padTop}px ${cs.paddingRight} 0 ${cs.paddingLeft}`; i.style.transform = `translateY(${-y}px)`;
+  L.appendChild(i); if (!top) { const d = document.createElement("div"); d.className = "dim"; L.appendChild(d); }
+  L.style.zIndex = top ? 16 : 15; document.body.appendChild(L); return L;
+}
+let navBusy = null;
+function navAnim(kind, oldHtml, oldY, newY) {
+  if (!animOK() || $app.querySelector(".actionbar")) return;
+  if (navBusy) navBusy();
+  const push = kind === "push", newHtml = $app.innerHTML, W = innerWidth;
+  const under = navLayer(push ? oldHtml : newHtml, push ? oldY : newY, false), top = navLayer(push ? newHtml : oldHtml, push ? newY : oldY, true);
+  document.body.classList.add("nav-anim");
+  const o = { duration: push ? 380 : 320, easing: NAV_EASE, fill: "forwards" };
+  const a1 = top.animate(push ? [{ transform: `translateX(${W}px)` }, { transform: "none" }] : [{ transform: "none" }, { transform: `translateX(${W}px)` }], o);
+  under.animate(push ? [{ transform: "none" }, { transform: `translateX(${-W * .3}px)` }] : [{ transform: `translateX(${-W * .3}px)` }, { transform: "none" }], o);
+  under.querySelector(".dim").animate(push ? [{ opacity: 0 }, { opacity: .12 }] : [{ opacity: .12 }, { opacity: 0 }], o);
+  const done = () => { navBusy = null; under.remove(); top.remove(); document.body.classList.remove("nav-anim"); };
+  navBusy = done; a1.onfinish = done;
+}
+// Navigationsleiste aus dem Kopf der Ansicht: Zurück links (mit Pfeil), kleiner Titel in der Mitte (erscheint beim
+// Scrollen, wenn der große Titel verschwindet), Aktionen rechts (.nav-r)
+const $nav = document.getElementById("navbar");
+const NB_CHEV = `<svg class="nb-chev" viewBox="0 0 12 21" aria-hidden="true"><path d="M10 2 2 10.5 10 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function iosChrome() {
+  const page = $app.querySelector(".page"), on = !!page && view !== "train" && view !== "summary";
+  $nav.hidden = !on; document.body.classList.toggle("has-nav", on); if (!on || page.dataset.nb) return; page.dataset.nb = "1";
+  const L = $nav.querySelector(".nb-l"), T = $nav.querySelector(".nb-t"), R = $nav.querySelector(".nb-r");
+  L.replaceChildren(); R.replaceChildren();
+  const back = [...page.querySelectorAll("button.link")].find(b => /^‹/.test(b.textContent.trim()));
+  if (back) { const lab = back.textContent.trim().replace(/^‹\s*/, ""); back.innerHTML = `${NB_CHEV}<span>${esc(lab)}</span>`; back.classList.add("nb-back"); L.appendChild(back); }
+  page.querySelectorAll(".nav-r").forEach(b => R.appendChild(b));
+  const h = page.querySelector(".title, .title-input"); T.textContent = h ? (h.tagName === "INPUT" ? h.value : h.textContent).trim() : "";
+  // Beschriftung über dem großen Titel wird Untertitel darunter (nur „Heute“ behält das Datum darüber wie Apple-Apps)
+  const head = h && h.closest(".head"), cap = head && head.querySelector(":scope > .cap, :scope > .row > div > .cap");
+  if (cap && view !== "home" && cap.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) {
+    cap.classList.add("navsub"); const box = h.parentElement.classList.contains("row") ? h.parentElement : h; box.after(cap); }
+}
+function navScroll() {
+  if ($nav.hidden) return; const h = $app.querySelector(".page .title, .page .title-input");
+  $nav.classList.toggle("scrolled", h ? h.getBoundingClientRect().bottom < $nav.getBoundingClientRect().bottom : window.scrollY > 2);
+}
+window.addEventListener("scroll", navScroll, { passive: true });
+new MutationObserver(() => iosChrome()).observe($app, { childList: true });
+// Wischen vom linken Rand: zurück wie bei iOS (die vorige Seite liegt sichtbar darunter)
+{ let sw = null;
+  const end = commit => { if (!sw) return; const { top, under, back } = sw, W = innerWidth, o = { duration: 260, easing: NAV_EASE, fill: "forwards" };
+    sw = null; $nav.style.opacity = "";
+    if (!top) return;
+    const a = top.animate([{ transform: top.style.transform || "none" }, { transform: commit ? `translateX(${W}px)` : "none" }], o);
+    under.animate([{ transform: under.style.transform || "none" }, { transform: commit ? "none" : `translateX(${-W * .3}px)` }], o);
+    a.onfinish = () => { if (commit) { navNoAnim = true; back.click(); navNoAnim = false; } top.remove(); under.remove(); document.body.classList.remove("nav-anim"); }; };
+  document.addEventListener("touchstart", ev => {
+    if (ev.touches.length !== 1 || $sheet.firstElementChild || $nav.hidden) return; const t = ev.touches[0], back = $nav.querySelector(".nb-back");
+    if (!back || t.clientX > 24) return; sw = { x0: t.clientX, y0: t.clientY, t0: performance.now(), back, top: null, under: null, p: 0 }; }, { passive: true });
+  document.addEventListener("touchmove", ev => {
+    if (!sw) return; const t = ev.touches[0], dx = t.clientX - sw.x0, dy = t.clientY - sw.y0, W = innerWidth;
+    if (!sw.top) { if (Math.abs(dy) > 10 && Math.abs(dy) > dx) { sw = null; return; } if (dx < 8) return;
+      const prev = navStack.slice().reverse().find(e => e.tab === tabOf(view));
+      sw.under = navLayer(prev ? prev.html : "", prev ? prev.y : 0, false); sw.top = navLayer($app.innerHTML, window.scrollY, true); document.body.classList.add("nav-anim"); }
+    if (ev.cancelable) ev.preventDefault();
+    sw.p = Math.max(0, Math.min(1, dx / W)); sw.v = dx / Math.max(1, performance.now() - sw.t0);
+    sw.top.style.transform = `translateX(${sw.p * W}px)`; sw.under.style.transform = `translateX(${-W * .3 * (1 - sw.p)}px)`; $nav.style.opacity = String(1 - sw.p * .8); }, { passive: false });
+  document.addEventListener("touchend", () => { if (sw) end(sw.p > .35 || (sw.p > .1 && sw.v > .5)); });
+  document.addEventListener("touchcancel", () => end(false)); }
+{ let dr = null;
+  document.addEventListener("touchstart", ev => {
+    const sh = ev.target.closest && ev.target.closest(".sheet:not(.as)"); if (!sh || ev.touches.length !== 1) return;
+    if (ev.target.closest("input,textarea,select,.seg,.chips,svg.motion,.m3gl,.mctl,.ustep,.switch")) return;
+    const zone = !!ev.target.closest(".grab, .sh-head"); if (!zone && sh.scrollTop > 0) return;
+    dr = { sh, y0: ev.touches[0].clientY, t0: performance.now(), dy: 0, on: false }; }, { passive: true });
+  document.addEventListener("touchmove", ev => {
+    if (!dr) return; const dy = ev.touches[0].clientY - dr.y0;
+    if (!dr.on) { if (dy < -6 || dr.sh.scrollTop > 0) { dr = null; return; } if (dy < 8) return; dr.on = true; }
+    if (ev.cancelable) ev.preventDefault();
+    dr.dy = Math.max(0, dy); dr.v = dy / Math.max(1, performance.now() - dr.t0); dr.sh.style.transform = `translateY(${dr.dy}px)`;
+    const sc = dr.sh.parentElement; if (sc) sc.style.backgroundColor = `rgba(0,0,0,${Math.max(0, .35 * (1 - dr.dy / 400))})`; }, { passive: false });
+  document.addEventListener("touchend", () => { if (!dr) return; const { sh, dy, v, on } = dr; dr = null; if (!on) return;
+    const close = dy > 120 || (dy > 30 && v > .6), o = { duration: 220, easing: NAV_EASE, fill: "forwards" };
+    const a = sh.animate([{ transform: `translateY(${dy}px)` }, { transform: close ? `translateY(${sh.offsetHeight}px)` : "none" }], o);
+    a.onfinish = () => { if (close) closeSheet(); else { sh.style.transform = ""; a.cancel(); if (sh.parentElement) sh.parentElement.style.backgroundColor = ""; } }; }); }
 /* ================= Tagesplan: Training, Schritte, Essen, Kalorienbilanz ================= */
 let tagDay = null, tagMode = "tag"; // tagMode: "tag" oder "woche"
 // Änderung im Tagesplan: "rest" = Ruhetag, sonst ID eines Trainingstags; wirkt nur mit festen Terminen
@@ -4582,7 +4806,7 @@ function vPlan() {
   const p = state.plan;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
-      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
+      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
@@ -4660,7 +4884,7 @@ function tryRestore(raw, bad) {
 }
 function restoreBackup(data) {
   pendingRestore = null;
-  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet();
+  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet(); navReset();
   homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.`;
   go("home");
 }
@@ -4675,16 +4899,16 @@ function vDay() {
   const ses = state.session, mine = ses && ses.dayId === d.id;
   $app.innerHTML = `<div class="page">
     <div class="head">
-      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Training</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
-      <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
+      <button class="link" data-a="tab" data-v="plan">‹ Training</button>
+      <label for="dayName" class="sr-only">Name des Trainingstags</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${d.items.length === 1 ? "Gerät" : "Geräte"} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
     </div>
     ${d.items.length ? (ses ? `<button class="btn primary block xl" data-a="${ses.paused ? "resumeT" : "toTrain"}" id="dayStart">${mine ? "Training fortsetzen" : "Laufendes Training fortsetzen"}</button>`
       : `<button class="btn primary block xl" data-a="startDay" id="dayStart">${ICON.play} ${esc(d.name)} starten</button>`) : ""}
-    ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2><span class="small muted">Antippen zum Ändern</span></div>
+    ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2></div>
       <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it), ssA = it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss, ssB = i > 0 && d.items[i - 1].ss === it.id; return `
-      <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}">
+      <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}" data-swipe="delItemAt" data-i2="${i}" data-label="${esc(e.name)}">
         <span class="idx">${i + 1}</span>
         <div class="grow" data-a="editItem" data-i2="${i}" style="cursor:pointer">
           <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}${ssA || ssB ? `<span class="badge ssb">Supersatz ${ssA ? "1/2" : "2/2"}</span>` : ""}</div>
@@ -4695,15 +4919,9 @@ function vDay() {
       <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p>
       ${d.items.some((it, i) => it.ss && d.items[i + 1]) ? `<p class="small faint" style="margin:0" id="ssDayNote">Supersatz: Satz am ersten Gerät, sofort ein Satz am zweiten, Pause erst danach. Verschieben löst die Verbindung.</p>` : ""}</section>`
       : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
-    ${(() => { const b = state.plan && state.plan.minutes, est = estMinutes(d); if (!b || est <= b) return "";
-      const sg = ssSuggest(d); if (!sg.length) return "";
-      return `<div class="ins warn" id="ssSuggest"><div class="t">≈ ${est - b} Min. über deinem Zeitbudget</div>
-        <p class="small" style="margin:0">Als Supersatz kürzer, ohne Sätze zu streichen: Gegenspieler direkt nacheinander, Pause erst danach.</p>
-        <div class="group">${sg.map(x => `<div class="li"><div class="grow"><div class="t">${esc(ex(x.a.exId).name)} + ${esc(ex(x.b.exId).name)}</div><div class="s">spart ≈ ${x.min} Min.</div></div>
-          <button class="btn sm" data-a="ssLink" data-id="${x.a.exId}" data-p="${x.b.exId}" data-day="${d.id}">Verbinden</button></div>`).join("")}</div>
-        <p class="small faint" style="margin:0">Ersparnis nach der Zeitschätzung der App. Hintergrund unter Wissen → Gerät → Gut kombinieren.</p></div>`; })()}
-    <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
-    ${d.items.length ? `<button class="btn block" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}
+    <div class="group"><button class="li act" data-a="openPicker">Geräte hinzufügen</button>
+      ${d.items.length ? `<button class="li act" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}</div>
+    <div class="group"><button class="li act danger" data-a="delDay">Tag löschen</button></div>
   </div>`;
 }
 /* Trainingstag 1:1 kopieren: Geräte, Reihenfolge, Sätze, Wiederholungen und Pausen */
@@ -4758,12 +4976,13 @@ function devSheetHtml() {
   const d = devDraft, isCustom = d.id.startsWith("c-");
   const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) =>
     `<button data-a="devSet" data-k="${k}" data-v="${v}" class="${String(d[k]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
-  return `${sheetHead(d._new ? "Eigenes Gerät" : "Gerät", "")}
+  return `<div class="sh-head"><button class="btn sm sh-l" data-a="devCancel">Abbrechen</button><h2 class="grow">${d._new ? "Eigenes Gerät" : "Gerät"}</h2><button class="btn sm" data-a="devSave">Fertig</button></div>
     <div class="field"><label for="devName">Name</label><input id="devName" data-i="devName" value="${esc(d.name)}" placeholder="z. B. Brustpresse am Fenster" autocomplete="off" enterkeyhint="done"></div>
-    <div class="toggle-row"><div><h3>Bevorzugt</h3><div class="small muted">${d.off ? "Gilt erst wieder, wenn das Gerät im Studio ist." : "Wird bei Plan und Tausch vorgezogen, wenn die Bewegung passt."}</div></div>
-      <div style="flex:0 0 132px">${seg("fav", [["true", "Ja"], ["false", "Nein"]])}</div></div>
-    <div class="toggle-row"><div><h3>In meinem Studio</h3><div class="small muted">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
-      <div style="flex:0 0 132px">${seg("off", [["false", "Ja"], ["true", "Nein"]])}</div></div>
+    <div class="group">
+      <div class="li"><div class="grow"><div class="t n">Bevorzugt</div><div class="s">${d.off ? "Gilt erst wieder, wenn das Gerät im Studio ist." : "Wird bei Plan und Tausch vorgezogen, wenn die Bewegung passt."}</div></div>
+        <button class="switch" role="switch" aria-checked="${!!d.fav}" data-a="devSet" data-k="fav" data-v="${!d.fav}" aria-label="Bevorzugt"></button></div>
+      <div class="li"><div class="grow"><div class="t n">In meinem Studio</div><div class="s">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
+        <button class="switch" role="switch" aria-checked="${!d.off}" data-a="devSet" data-k="off" data-v="${!d.off}" aria-label="In meinem Studio"></button></div></div>
     <div class="field"><label for="devNote">Deine Einstellung</label><input id="devNote" data-i="devNote" value="${esc(d.note || "")}" placeholder="z. B. Sitz 4, Griff weit" autocomplete="off" enterkeyhint="done"></div>
     ${unitLocked(d.id) ? `<p class="note warn small">Gerätetyp und Gewichtsangabe sind gesperrt, solange im laufenden Training schon Sätze an diesem Gerät erledigt sind.</p>` : ""}
     <div class="field"><label>Gerätetyp</label>${seg("type", [["plate", "Scheiben"], ["stack", "Steckgewicht"]])}</div>
@@ -4786,12 +5005,8 @@ function devSheetHtml() {
          <p class="small faint">Bestimmt, welche Geräte als direkte Alternative gelten. Ohne Zuordnung nur als „andere Übung“.</p>`
       : `<p>${d.pattern ? PATTERNS[d.pattern].label : "–"}</p>`}</div>
     <p class="error" id="devErr" hidden></p>
-    <div class="stack-sm">
-      <button class="btn primary block xl" data-a="devSave">Speichern</button>
-      ${!d._new && !isCustom && state.dev[d.id] ? `<button class="btn block" data-a="devReset">Auf Standard zurücksetzen</button>` : ""}
-      ${!d._new && isCustom ? `<button class="btn block danger" data-a="devDelete">Gerät löschen</button>` : ""}
-      <button class="btn quiet block" data-a="devCancel">Abbrechen</button>
-    </div>`;
+    ${!d._new && (isCustom || state.dev[d.id]) ? `<div class="group">${!isCustom ? `<button class="li act center" data-a="devReset">Auf Standard zurücksetzen</button>` : ""}
+      ${isCustom ? `<button class="li act danger center" data-a="devDelete">Gerät löschen</button>` : ""}</div>` : ""}`;
 }
 function unitLocked(id) { const s = state.session; return !!(s && s.list.some(x => x.exId === id && x.sets.some(t => t.done))); }
 const draftUnit = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
@@ -4868,26 +5083,24 @@ function sheetKeep(html) {
 let draft = null;
 function itemSheet() {
   const e = ex(draft.exId);
-  const ms = (k, l, step) => `<div class="field"><label>${l}</label><div class="mini-step">
-    <button data-a="draft" data-k="${k}" data-d="${-step}" aria-label="${l} weniger">−</button><output>${draft[k]}</output>
-    <button data-a="draft" data-k="${k}" data-d="${step}" aria-label="${l} mehr">+</button></div></div>`;
-  return `${sheetHead(esc(e.name), "")}
-    <p class="small muted" style="margin-top:-8px">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
-    <div class="grid3">${ms("sets", "Sätze", 1)}${ms("rmin", "Wdh. von", 1)}${ms("rmax", "Wdh. bis", 1)}</div>
-    <div class="field"><label>Pause</label><div class="seg">${[45, 60, 90, 120, 180].map(s =>
+  // Stepper wie bei iOS: Name links, Wert, rechts − | +
+  const ms = (k, l, step) => `<div class="li step-row"><div class="grow"><div class="t n">${l}</div></div><output class="sv">${draft[k]}</output>
+    <div class="ustep" role="group" aria-label="${l}"><button data-a="draft" data-k="${k}" data-d="${-step}" aria-label="${l} weniger">−</button><button data-a="draft" data-k="${k}" data-d="${step}" aria-label="${l} mehr">+</button></div></div>`;
+  const nx = curDay().items[draft._i + 1], ne = nx && ex(nx.exId), on = !!nx && draft.ss === nx.id, same = !!ne && ne.muscle === e.muscle;
+  return `${sheetHead(esc(e.name), "Fertig", "saveItem", true)}
+    <p class="small muted sh-sub">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
+    <div class="group">${ms("sets", "Sätze", 1)}${ms("rmin", "Wiederholungen ab", 1)}${ms("rmax", "Wiederholungen bis", 1)}</div>
+    <div class="field"><div class="cap">Pause</div><div class="seg">${[45, 60, 90, 120, 180].map(s =>
       `<button data-a="draftRest" data-s="${s}" class="${draft.rest === s ? "on" : ""}" aria-label="${s < 60 ? s + " Sekunden" : String(s / 60).replace(".", ",") + " Minuten"}">${fmtTime(s)}</button>`).join("")}</div></div>
-    <div class="field"><label for="noteIn">Deine Einstellung</label>
-      <input id="noteIn" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
-    ${(() => { const nx = curDay().items[draft._i + 1]; if (!nx) return ""; const ne = ex(nx.exId), on = draft.ss === nx.id, same = ne.muscle === e.muscle;
-      return `<div class="field" id="ssField"><label>Supersatz</label>
-        <button class="btn block ${on ? "primary" : ""}" data-a="ssToggle" aria-pressed="${on}">${on ? "✓ " : ""}Mit ${esc(ne.name)} als Supersatz</button>
-        <p class="small ${same && on ? "" : "muted"}" style="margin:0">${same ? `Gleicher Muskel (${MUSCLES[e.muscle]}): als Supersatz sinkt die Gesamtlast. Besser ein Gegenspieler.` : "Satz hier, sofort ein Satz dort, Pause erst danach."}</p></div>`; })()}
-    <div class="stack-sm">
-      <button class="btn primary block xl" data-a="saveItem">Speichern</button>
-      <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="item">Anleitung ansehen</button>
-      <button class="btn block" data-a="editDev" data-id="${e.id}" data-ret="item">Gerät bearbeiten</button>
-      <button class="btn danger quiet block" data-a="delItem">Aus dem Tag entfernen</button>
-    </div>`;
+    <div class="field"><label for="noteIn" class="cap">Deine Einstellung</label><div class="group">
+      <input id="noteIn" class="cell-in" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div></div>
+    ${nx ? `<div class="field" id="ssField"><div class="group"><div class="li"><div class="grow"><div class="t n">Supersatz mit ${esc(ne.name)}</div></div>
+        <button class="switch" role="switch" aria-checked="${on}" aria-pressed="${on}" data-a="ssToggle" aria-label="Supersatz mit ${esc(ne.name)}"></button></div></div>
+        <p class="small foot ${same && on ? "" : "muted"}">${same ? `Gleicher Muskel (${MUSCLES[e.muscle]}): als Supersatz sinkt die Gesamtlast. Besser ein Gegenspieler.` : "Satz hier, sofort ein Satz dort, Pause erst danach."}</p></div>` : ""}
+    <div class="group">
+      <button class="li" data-a="openGuideSheet" data-id="${e.id}" data-ret="item"><div class="grow"><div class="t n">Anleitung</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="editDev" data-id="${e.id}" data-ret="item"><div class="grow"><div class="t n">Gerät bearbeiten</div></div><span class="chev">›</span></button></div>
+    <div class="group"><button class="li act danger center" data-a="delItem">Aus dem Tag entfernen</button></div>`;
 }
 function openItem(i) { draft = Object.assign({}, curDay().items[i], { _i: i }); openSheet(itemSheet()); }
 
@@ -6083,7 +6296,7 @@ function vFood() {
     ${MEALS.map(([m, l]) => { const es = list.filter(e => e.m === m), k = es.reduce((a, e) => a + entryVals(e).k, 0);
       const prev = dkey(new Date(new Date(d + "T12:00").getTime() - 864e5)), pes = es.length ? [] : (state.food[prev] || []).filter(e => e.m === m);
       return `<section class="section"><div class="section-head"><h2>${l}</h2><span class="small muted">${es.length ? fmtK(k) + " kcal" : ""}</span></div>
-        <div class="group">${es.map(e => { const v = entryVals(e); return `<button class="li" data-a="foodEdit" data-id="${e.id}">
+        <div class="group">${es.map(e => { const v = entryVals(e); return `<button class="li" data-a="foodEdit" data-id="${e.id}" data-swipe="foodDelId" data-label="${esc(e.n)}">
           <div class="grow"><div class="t">${esc(e.n)}</div><div class="s">${e.g !== null ? fmtN(e.g) + " g · " : ""}E ${fmtN(v.p)} · K ${fmtN(v.c)} · F ${fmtN(v.f)} g</div></div>
           <span class="small" style="font-weight:600;white-space:nowrap">${fmtK(v.k)} kcal</span></button>`; }).join("")}
           <button class="li addrow" data-a="foodAdd" data-m="${m}">+ Hinzufügen</button>
@@ -6711,7 +6924,7 @@ function planCheckHtml() {
   const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
   const rows = [
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
-    ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget${(() => { const sg = ssSuggest(x.d), m = sg.reduce((a, y) => a + y.save, 0) / 60; return sg.length && m >= 1 ? ` · Supersatz spart ≈ ${Math.round(m)} Min.` : ""; })()}</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
+    ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
     ...high.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche – über dem Richtwert von ${c.tmin}–${c.tmax}</div></div></div>`)];
   // Grund je Muskel: Zeitbudget voll, nur mittrainiert, Satzgrenze pro Übung erreicht oder einfach Sätze ergänzen
   const capN = p.level === "fortgeschritten" ? 5 : 3, prim = m => p.days.flatMap(d => d.items.filter(it => ex(it.exId).muscle === m).map(it => [d, it]));
@@ -7219,7 +7432,7 @@ const histRec = () => histEdit && state.history.find(h => h.id === histEdit.id);
 const nSets = n => `${n} ${n === 1 ? "Satz" : "Sätze"}`;
 const histSetCount = h => h.exercises.reduce((a, x) => a + x.sets.length, 0);
 // Weiterblättern im offenen Sheet ohne erneute Einblend-Animation
-const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; sheetName(sh); };
+const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh || sh.classList.contains("as")) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; sheetName(sh); };
 function histSheet(h, msg = "") {
   return `${sheetHead(esc(h.day), "Fertig")}
     <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min. · ${nSets(histSetCount(h))}</p>
@@ -7320,7 +7533,10 @@ function stopTick() { if (timer) clearInterval(timer); timer = null; }
 
 /* ================= Aktionen ================= */
 const A = {
-  tab: el => go(el.dataset.v),
+  tab: el => { const t = el.dataset.v; if (!el.closest("nav.tabs")) return go(t);
+    const cur = tabOf(view);
+    if (t === cur) { if (ROOTV.has(view)) window.scrollTo({ top: 0, behavior: animOK() ? "smooth" : "auto" }); else go(t); return; }
+    const m = tabMemOn() ? tabMem[t] : null; if (m && m.v !== t && tabOf(m.v) === t && depthOf(m.v) > 0) go(m.v, { y: m.y }); else go(t, m && m.v === t ? { y: m.y } : {}); },
   closeSheet: (el, ev) => { if (ev.target === el || el.tagName === "BUTTON") closeSheet(); },
   setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
   setupDay: el => { const tm = byId("setupTime"); if (tm && tm.value) setup.time = tm.value;
@@ -7631,10 +7847,8 @@ const A = {
     const time = byId("schedTime").value, sc = cleanSched(Object.assign({}, schedDraft, { time, id: state.sched ? state.sched.id : uid(), since: state.sched ? state.sched.since : new Date().toISOString() }));
     if (!sc) { byId("schedErr").hidden = false; return; }
     state.sched = sc; save(); render();
-    openSheet(`${sheetHead("Termine gespeichert")}
-      <p><b>${sc.days.map(d => WD_LONG[d]).join(", ")}</b> um <b>${sc.time}</b>. Plan B: ${sc.planB === "short" ? "die 30-Minuten-Version" : "am nächsten Tag nachholen"}.</p>
-      <p class="small muted">Soll dich dein iPhone erinnern? Die Termine kommen als wöchentliche Serie in deinen Kalender, mit Erinnerung 30 Minuten vorher.</p>
-      <button class="btn primary block" data-a="schedIcs">In den Kalender eintragen</button><button class="btn block" data-a="closeSheet">Später</button>`);
+    actionSheet("Termine gespeichert", `${sc.days.map(d => WD_LONG[d]).join(", ")} um ${sc.time}. Plan B: ${sc.planB === "short" ? "die 30-Minuten-Version" : "am nächsten Tag nachholen"}. Soll dich dein iPhone erinnern? Die Termine kommen als wöchentliche Serie in deinen Kalender, mit Erinnerung 30 Minuten vorher.`,
+      [{ l: "In den Kalender eintragen", a: "schedIcs", bold: true }], "Später");
   },
   schedIcs: () => {
     if (!state.sched) return;
@@ -7793,8 +8007,7 @@ const A = {
     if (!tgt || JSON.stringify(u.kind === "new" ? tgt : tgt.items) !== u.after) { planNote = "Nicht mehr rückgängig: Der Tag wurde inzwischen geändert."; vPlan(); return; }
     if (u.kind === "new") { state.plan.days = state.plan.days.filter(x => x.id !== u.id); if (state.selDay === u.id) state.selDay = null; } else tgt.items = JSON.parse(u.before);
     planNote = "Kopieren rückgängig gemacht."; save(); vPlan(); },
-  delDay: () => openSheet(`<h2>Tag löschen?</h2><p class="muted">„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.</p>
-    <button class="btn block" style="background:var(--bad);color:#fff" data-a="confirmDelDay">Löschen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
+  delDay: () => actionSheet("Tag löschen?", `„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.`, [{ l: "Tag löschen", a: "confirmDelDay", danger: true }]),
   confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); save(); closeSheet(); go("plan"); },
   moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; ssFix(d.items); save(); vDay(); },
   editItem: el => openItem(+el.dataset.i2),
@@ -7808,6 +8021,8 @@ const A = {
   ssToggle: () => { const nx = curDay().items[draft._i + 1]; if (!nx) return; if (draft.ss === nx.id) delete draft.ss; else draft.ss = nx.id; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
   draftRest: el => { draft.rest = +el.dataset.s; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
   saveItem: () => { const d = curDay(), i = draft._i; delete draft._i; d.items[i] = draft; save(); closeSheet(); vDay(); },
+  delItemAt: el => { const d = curDay(); if (!d) return; d.items.splice(+el.dataset.i2, 1); ssFix(d.items); save(); vDay(); },
+  foodDelId: el => { const d = curFoodDay(); state.food[d] = (state.food[d] || []).filter(e => e.id !== el.dataset.id); if (!state.food[d].length) delete state.food[d]; save(); vFood(); },
   delItem: () => { curDay().items.splice(draft._i, 1); ssFix(curDay().items); save(); closeSheet(); vDay(); },
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
@@ -7862,10 +8077,8 @@ const A = {
     save(); devBack(d._new ? d.id : null); },
   devCancel: () => devBack(null),
   devRelabelAsk: () => { const d = devDraft, tu = draftUnit(d), n = otherUnitCount(d);
-    openSheet(`<h2>Frühere Einträge umstellen?</h2>
-      <p>${n} ${n === 1 ? "Eintrag" : "Einträge"} von „${esc(d.name)}“ ${n === 1 ? "wird" : "werden"} als „${UNIT[tu]}“ gewertet. Die eingetragenen Zahlen ändern sich nicht.</p>
-      <p class="muted small">Danach zählen sie für Vorschläge, Bestwerte und Volumen mit. Das Gerät wird dabei mit dieser Gewichtsangabe gespeichert.</p>
-      <button class="btn primary block" data-a="devRelabel">Umstellen</button><button class="btn block" data-a="devRelabelBack">Zurück</button>`); },
+    actionSheet("Frühere Einträge umstellen?", `${n} ${n === 1 ? "Eintrag" : "Einträge"} von „${esc(d.name)}“ ${n === 1 ? "wird" : "werden"} als „${UNIT[tu]}“ gewertet. Die eingetragenen Zahlen ändern sich nicht. Danach zählen sie für Vorschläge, Bestwerte und Volumen mit; das Gerät wird mit dieser Gewichtsangabe gespeichert.`,
+      [{ l: "Umstellen", a: "devRelabel", bold: true }], "Zurück", "devRelabelBack"); },
   devRelabelBack: () => openSheet(devSheetHtml()),
   devRelabel: () => { const d = devDraft, tu = draftUnit(d);
     state.history.forEach(h => h.exercises.forEach(x => { if (x.exId === d.id) x.u = tu; }));
@@ -7898,13 +8111,11 @@ const A = {
     const i = s.idx; if (!x.sets.length) s.list.splice(i, 1); afterListChange(x.sets.length ? i + 1 : i); },
   openDevInfo: () => openSheet(devInfoSheet()),
   askStop: () => { const s = S(), any = s.list.some(x => x.sets.some(t => t.done));
-    openSheet(`<h2>${s.paused ? "Training beenden?" : "Training unterbrechen?"}</h2>
-      ${s.paused ? "" : `<button class="btn primary block" data-a="pauseT">Pausieren, später weitermachen</button>`}
-      ${any ? `<button class="btn block" data-a="stopSave">Speichern & beenden</button>` : ""}
-      <button class="btn block danger" data-a="askDiscard">Verwerfen</button>
-      <button class="btn block" data-a="closeSheet">${s.paused ? "Abbrechen" : "Weiter trainieren"}</button>`); },
-  askDiscard: () => openSheet(`<h2>Training verwerfen?</h2><p class="muted">Alle Sätze dieser Einheit gehen verloren.</p>
-      <button class="btn block" style="background:var(--bad);color:#fff" data-a="stopDiscard">Verwerfen</button><button class="btn block" data-a="closeSheet">Zurück</button>`),
+    actionSheet(s.paused ? "Training beenden?" : "Training unterbrechen?", "", [
+      ...(s.paused ? [] : [{ l: "Pausieren, später weitermachen", a: "pauseT", bold: true }]),
+      ...(any ? [{ l: "Speichern & beenden", a: "stopSave" }] : []),
+      { l: "Verwerfen", a: "askDiscard", danger: true }], s.paused ? "Abbrechen" : "Weiter trainieren"); },
+  askDiscard: () => actionSheet("Training verwerfen?", "Alle Sätze dieser Einheit gehen verloren.", [{ l: "Verwerfen", a: "stopDiscard", danger: true }], "Zurück"),
   pauseT: () => { const s = S(); if (!s.paused) s.paused = Date.now(); stopTick(); awake(false); save(); closeSheet(); go("home"); },
   resumeT: () => { const s = S(); if (!s) return; if (s.paused) { const d = Date.now() - s.paused; s.start += d; s.paused = null; }
     s.lastAt = Date.now(); s.autoPaused = false;
@@ -7944,9 +8155,8 @@ const A = {
     if (changed) histChanged();
     sheetTo(histSheet(h, changed ? "Datum und Dauer gespeichert." : "")); },
   histDel: () => { const h = histRec(); if (!h) return closeSheet();
-    sheetTo(`${sheetHead("Training löschen?", "")}<p class="muted">„${esc(h.day)}“ vom ${fmtDay(h.date)} mit ${nSets(histSetCount(h))} wird gelöscht.</p>
-      ${h.hk ? `<p class="small muted">Der Eintrag in Apple Health bleibt und lässt sich nur dort löschen.</p>` : ""}
-      <button class="btn block" style="background:var(--bad);color:#fff" data-a="histDelDo">Löschen</button><button class="btn block" data-a="histBack">Abbrechen</button>`); },
+    actionSheet("Training löschen?", `„${esc(h.day)}“ vom ${fmtDay(h.date)} mit ${nSets(histSetCount(h))} wird gelöscht.${h.hk ? " Der Eintrag in Apple Health bleibt und lässt sich nur dort löschen." : ""}`,
+      [{ l: "Training löschen", a: "histDelDo", danger: true }], "Abbrechen", "histBack"); },
   histDelDo: () => { const h = histRec(); if (!h) return closeSheet();
     state.history = state.history.filter(x => x !== h); histNote = `Training „${h.day}“ vom ${fmtDay(h.date)} gelöscht.`;
     closeSheet(); histChanged(); },
@@ -8003,7 +8213,7 @@ document.addEventListener("click", ev => {
   for (const t of ["pointerup", "pointercancel"]) document.addEventListener(t, () => { drag = null; }); }
 document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
-  if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
+  if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); $nav.querySelector(".nb-t").textContent = d.name; } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); tagRefresh(); }
   else if (k === "tagAct") { const dk = tagDay || dkey(), raw = String(el.value).replace(/[.\s']/g, ""), v = raw === "" ? NaN : Math.round(+raw);
@@ -8051,7 +8261,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, ssFix, pairSec, ssSuggest, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
