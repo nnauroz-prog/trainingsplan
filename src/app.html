@@ -167,8 +167,8 @@
   .note.warn{background:var(--warn-tint)}
   .ins{--sig:var(--accent);display:grid;gap:var(--s2);padding:var(--s4);border-radius:var(--r-lg);background:var(--raise);box-shadow:inset 0 0 0 1px var(--hair)}
   .ins.warn{--sig:var(--warn)} .ins.good{--sig:var(--ok)} .ins.ask{--sig:var(--text-3)}
-  .ins>.t{font-weight:700;display:flex;align-items:baseline;gap:10px}
-  .ins>.t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:1px;background:var(--sig);transform:translateY(-1px)}
+  .ins .t{font-weight:700;display:flex;align-items:baseline;gap:10px}
+  .ins .t::before{content:"";flex:0 0 8px;width:8px;height:8px;border-radius:1px;background:var(--sig);transform:translateY(-1px)}
   .note .cap{color:var(--text-2)}
   .reason{font-size:14px;line-height:1.4;color:var(--text-2)}
 
@@ -1920,20 +1920,6 @@ function estimateSec(items, opts = {}) {
 }
 const roundMin = sec => Math.max(5, Math.round(sec / 300) * 5);
 function estMinutes(day) { return roundMin(estimateSec(day.items)); }
-// Supersatz-Vorschläge für einen Tag: freie Gegenspieler-Paare (ANTAG), Ersparnis nach der Zeitschätzung der App
-// Der Partner rückt direkt hinter die erste Übung (wie ssLink); bestes Paar zuerst, jedes Gerät nur einmal
-function ssSuggest(d, n = 2) {
-  const linked = new Set(); d.items.forEach((it, i) => { if (it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss) { linked.add(it.id); linked.add(it.ss); } });
-  const used = new Set(), out = [], base = () => estimateSec(d.items);
-  const pairs = [];
-  d.items.forEach((a, i) => d.items.forEach((b, j) => { if (i >= j || linked.has(a.id) || linked.has(b.id) || !a.sets || !b.sets) return;
-    if (!(ANTAG[ex(a.exId).pattern] || []).includes(ex(b.exId).pattern)) return;
-    const sim = d.items.map(x => Object.assign({}, x)), [pb] = sim.splice(j, 1); sim.splice(i + 1, 0, pb); sim[i].ss = pb.id;
-    pairs.push({ a, b, save: base() - estimateSec(sim) }); }));
-  pairs.sort((x, y) => y.save - x.save);
-  for (const p of pairs) { if (out.length >= n) break; if (used.has(p.a.id) || used.has(p.b.id) || p.save < 60) continue; used.add(p.a.id); used.add(p.b.id); out.push(Object.assign(p, { min: Math.round(p.save / 60) })); }
-  return out;
-}
 
 // Restdauer einer laufenden Einheit (aktuelle Übung zuerst, dann offene Übungen in Listenreihenfolge)
 function remainingSec(s, list = s.list, idx = s.idx) {
@@ -4695,13 +4681,6 @@ function vDay() {
       <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p>
       ${d.items.some((it, i) => it.ss && d.items[i + 1]) ? `<p class="small faint" style="margin:0" id="ssDayNote">Supersatz: Satz am ersten Gerät, sofort ein Satz am zweiten, Pause erst danach. Verschieben löst die Verbindung.</p>` : ""}</section>`
       : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
-    ${(() => { const b = state.plan && state.plan.minutes, est = estMinutes(d); if (!b || est <= b) return "";
-      const sg = ssSuggest(d); if (!sg.length) return "";
-      return `<div class="ins warn" id="ssSuggest"><div class="t">≈ ${est - b} Min. über deinem Zeitbudget</div>
-        <p class="small" style="margin:0">Als Supersatz kürzer, ohne Sätze zu streichen: Gegenspieler direkt nacheinander, Pause erst danach.</p>
-        <div class="group">${sg.map(x => `<div class="li"><div class="grow"><div class="t">${esc(ex(x.a.exId).name)} + ${esc(ex(x.b.exId).name)}</div><div class="s">spart ≈ ${x.min} Min.</div></div>
-          <button class="btn sm" data-a="ssLink" data-id="${x.a.exId}" data-p="${x.b.exId}" data-day="${d.id}">Verbinden</button></div>`).join("")}</div>
-        <p class="small faint" style="margin:0">Ersparnis nach der Zeitschätzung der App. Hintergrund unter Wissen → Gerät → Gut kombinieren.</p></div>`; })()}
     <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
     ${d.items.length ? `<button class="btn block" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}
   </div>`;
@@ -6711,7 +6690,7 @@ function planCheckHtml() {
   const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
   const rows = [
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
-    ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget${(() => { const sg = ssSuggest(x.d), m = sg.reduce((a, y) => a + y.save, 0) / 60; return sg.length && m >= 1 ? ` · Supersatz spart ≈ ${Math.round(m)} Min.` : ""; })()}</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
+    ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
     ...high.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche – über dem Richtwert von ${c.tmin}–${c.tmax}</div></div></div>`)];
   // Grund je Muskel: Zeitbudget voll, nur mittrainiert, Satzgrenze pro Übung erreicht oder einfach Sätze ergänzen
   const capN = p.level === "fortgeschritten" ? 5 : 3, prim = m => p.days.flatMap(d => d.items.filter(it => ex(it.exId).muscle === m).map(it => [d, it]));
@@ -8051,7 +8030,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, ssFix, pairSec, ssSuggest, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
