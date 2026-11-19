@@ -164,7 +164,7 @@
   .field{display:grid;gap:var(--s2)}
   .field>label{margin:0}
   .toggle-row{display:flex;justify-content:space-between;align-items:center;gap:var(--s3)}
-  .title-input{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.01em;min-height:52px;padding:0;background:transparent;border:0;border-bottom:1px solid var(--hair);border-radius:0}
+  .title-input{font-family:var(--display);font-weight:700;font-size:34px;letter-spacing:.01em;min-height:52px;padding:0;background:transparent;border:0;border-bottom:1px solid transparent;border-radius:0}
   .title-input:focus{border-color:var(--accent)}
 
   /* ---------- Hinweise ---------- */
@@ -427,9 +427,37 @@
   .sheet .chip{background:var(--fill)}
   .sheet .chip.on{background:var(--accent);color:var(--on-accent)}
   .grab{width:36px;height:5px;border-radius:5px;background:var(--fill-2);margin:0 auto var(--s1)}
-  .sh-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3)}
-  .sh-head h2{font-size:22px}
-  .sh-head .btn{flex:0 0 auto}
+  .sh-head{display:grid;grid-template-columns:minmax(76px,1fr) minmax(0,auto) minmax(76px,1fr);align-items:center;min-height:44px;margin:0 calc(-1 * var(--s2))}
+  .sh-head h2{grid-column:2;grid-row:1;font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.25;text-align:center}
+  .sh-head .btn{grid-row:1;background:none;min-height:44px;padding:0 var(--s2);border-radius:var(--r);font-size:17px;color:var(--accent-ink)}
+  .sh-head .btn:not(.sh-l){grid-column:3;justify-self:end;font-weight:600}
+  .sh-head .sh-l{grid-column:1;justify-self:start;font-weight:400}
+  .sh-sub{text-align:center;margin-top:calc(-1 * var(--s3))}
+  .sheet .foot,.foot{font-size:13px;color:var(--text-3);padding:0 var(--s4)}
+  .li .t.n{font-weight:400}
+  .step-row{min-height:48px;padding-top:6px;padding-bottom:6px}
+  .step-row .sv{font-family:var(--rounded);font-weight:600;font-size:17px;min-width:28px;text-align:right;color:var(--text-2)}
+  .ustep{display:inline-flex;flex:none;height:32px;border-radius:9px;background:var(--fill);align-items:center;overflow:visible}
+  .ustep button{width:47px;height:44px;margin:-6px 0;display:grid;place-items:center;font-size:24px;font-weight:400;color:var(--text);position:relative}
+  .ustep button+button::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:1px;background:var(--hair)}
+  .ustep button:active{opacity:.4}
+  .switch{position:relative;flex:0 0 51px;width:51px;height:44px}
+  .switch::before{content:"";position:absolute;left:0;top:6.5px;width:51px;height:31px;border-radius:16px;background:var(--fill-2);transition:background-color .2s}
+  .switch::after{content:"";position:absolute;left:2px;top:8.5px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.15),0 3px 1px rgba(0,0,0,.06);transition:transform .2s}
+  .switch[aria-checked="true"]::before{background:#34C759}
+  .switch[aria-checked="true"]::after{transform:translateX(20px)}
+  .cell-in,.sheet .cell-in{background:transparent;border:0;border-radius:0;min-height:48px}
+  .scrim.action{align-items:flex-end}
+  .sheet.as{background:transparent;box-shadow:none;gap:var(--s2);padding:0 var(--s2) calc(var(--s2) + env(safe-area-inset-bottom, 0px));max-width:600px}
+  .sheet.as .as-group,.sheet.as .as-cancel{background:var(--sheet-cell);border-radius:14px;overflow:hidden}
+  .as-head{display:grid;gap:var(--s1);padding:14px var(--s4);text-align:center}
+  .as-t{font-family:var(--body);font-size:13px;font-weight:600;color:var(--text-3);letter-spacing:0}
+  .as-m{font-size:13px;color:var(--text-3)}
+  .sheet.as .as-btn{display:flex;width:100%;min-height:57px;align-items:center;justify-content:center;padding:0 var(--s4);border-radius:0;background:transparent;
+    border-top:.5px solid var(--hair);font-size:20px;font-weight:400;color:var(--accent-ink);text-align:center}
+  .sheet.as .as-btn.danger{color:var(--bad)}
+  .sheet.as .as-btn.bold,.sheet.as .as-cancel{font-weight:600}
+  .sheet.as .as-cancel{border-top:0;border-radius:14px;background:var(--sheet-cell)}
   .warm{display:flex;align-items:center;gap:var(--s3);padding:var(--s3) var(--s4);border-radius:var(--r-lg);background:var(--raise)}
   .warm .t{font-weight:700;font-size:15px}
   .seg.find button{display:grid;align-content:center;gap:0;line-height:1.2;padding:4px 2px}
@@ -474,6 +502,36 @@
   .exv .gmus{gap:var(--s2)}
   .exv .gmus>div{background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4);display:grid;gap:var(--s2);align-content:start}
   .exv .gmus>div:first-child{box-shadow:inset 3px 0 0 var(--mhot)}
+
+  /* ---------- iOS: Navigationsleiste, Übergänge, Sheets, Steuerelemente ---------- */
+  .navbar{position:fixed;top:0;left:0;right:0;z-index:22;padding-top:env(safe-area-inset-top, 0px);border-bottom:.5px solid transparent;transition:background-color .2s,border-color .2s}
+  .navbar.scrolled{background:var(--bar-bg);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom-color:var(--hair)}
+  .navbar .in{position:relative;max-width:600px;margin:0 auto;height:44px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px))}
+  .nb-l,.nb-r{display:flex;align-items:center;gap:2px;min-width:0;position:relative;z-index:1}
+  .nb-r{margin-left:auto}
+  .nb-t{position:absolute;left:104px;right:104px;text-align:center;font-weight:600;font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .18s;pointer-events:none}
+  .navbar.scrolled .nb-t{opacity:1}
+  .nb-back{display:inline-flex;align-items:center;gap:5px;color:var(--accent-ink);font-size:17px;font-weight:400;min-height:44px;padding:0 8px 0 0;max-width:46vw}
+  .nb-back span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nb-chev{width:12px;height:21px;flex:none}
+  .nb-r .icon-btn{background:transparent}
+  .nb-r .icon-btn svg{width:24px;height:24px}
+  .nb-r .link{padding:0 8px;font-size:17px}
+  body.has-nav{padding-top:44px}
+  .head .navsub{font-size:15px;text-transform:none;color:var(--text-2);margin-top:2px}
+  @media (min-width:1024px){ .navbar{left:96px} body.has-nav{padding-top:60px} }
+  /* Übergänge: neue Seite schiebt sich von rechts herein, die alte rückt ein Stück nach links (Abbild beider Seiten) */
+  .navlayer{position:fixed;inset:0;z-index:15;overflow:hidden;background:var(--bg);pointer-events:none;will-change:transform}
+  .navlayer.top{box-shadow:-10px 0 28px rgba(0,0,0,.22)}
+  .navlayer .nl-in{box-sizing:border-box;max-width:600px;margin:0 auto}
+  .navlayer .dim{position:absolute;inset:0;background:#000;opacity:0}
+  body.nav-anim #app{visibility:hidden}
+  .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .li.act{color:var(--accent-ink);font-size:17px;min-height:48px}
+  .li.act.danger{color:var(--bad)}
+  .li.act.center{justify-content:center;text-align:center}
+  .group+p.small,.group+p.faint,.section>.group+p{font-size:13px;color:var(--text-3);padding:0 var(--s4);margin-top:calc(-1 * var(--s1))}
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -482,6 +540,7 @@
 </style>
 
 <p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Training → Einstellungen eine Sicherung erstellen.</p>
+<header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
 <nav class="tabs" id="tabs"><div class="in">
   <button data-a="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Heute</button>
@@ -2226,8 +2285,18 @@ function openSheet(html) {
   sheetName($sheet.querySelector(".sheet"));
 }
 function closeSheet() { stopScan(); $sheet.innerHTML = ""; }
-const sheetHead = (title, close = "Fertig", action = "closeSheet") =>
-  `<div class="sh-head"><h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
+// Kopf wie bei iOS-Sheets: links „Abbrechen“ (optional), Mitte Titel, rechts die bestätigende Aktion fett
+const sheetHead = (title, close = "Fertig", action = "closeSheet", cancel) =>
+  `<div class="sh-head">${cancel ? `<button class="btn sm sh-l" data-a="closeSheet">${cancel === true ? "Abbrechen" : cancel}</button>` : ""}<h2 class="grow">${title}</h2>${close ? `<button class="btn sm" data-a="${action}">${close}</button>` : ""}</div>`;
+// Aktionsblatt wie bei iOS: Frage und Optionen in einer Karte, darunter getrennt „Abbrechen“
+function actionSheet(title, msg, acts, cancel = "Abbrechen") {
+  stopScan();
+  $sheet.innerHTML = `<div class="scrim action" data-a="closeSheet"><div class="sheet as" role="dialog" aria-modal="true">
+    <div class="as-group"><div class="as-head"><h2 class="as-t">${title}</h2>${msg ? `<p class="as-m">${msg}</p>` : ""}</div>
+    ${acts.map(x => `<button class="btn as-btn${x.danger ? " danger" : ""}${x.bold ? " bold" : ""}" data-a="${x.a}">${x.l}</button>`).join("")}</div>
+    <button class="btn as-btn as-cancel" data-a="closeSheet">${cancel}</button></div></div>`;
+  sheetName($sheet.querySelector(".sheet"));
+}
 const ICON = {
   voiceOn: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>`,
   voiceOff: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 6 6M22 9l-6 6"/></svg>`,
@@ -3962,7 +4031,7 @@ function vLib() {
   // Geräte im Studio zuerst
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m).sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0))]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><h1 class="title">Übungen</h1>
+    <div class="head"><h1 class="title">Übungen</h1>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
     ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
@@ -4038,7 +4107,7 @@ function exAltHtml(id) {
 const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">Wissen</div><h1 class="title">Artikel</h1>
+    <div class="head"><h1 class="title">Artikel</h1>
       <p class="sub">Grundlagen zu Training und Ernährung, mit Quellen.</p></div>
     ${wissenSeg("wissen")}
     <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen</div></div><span class="chev">›</span></button></div>
@@ -4075,14 +4144,123 @@ function tabOf(v) {
   return v;
 }
 let homeNote = "";
-function go(v) {
+// Navigation wie bei iOS: Jeder Tab hat einen eigenen Stapel. Unterseiten werden „hineingeschoben“ (push), Zurück
+// holt die vorige Seite mit ihrer Scrollposition. Ein anderer Tab öffnet dort, wo man ihn verlassen hat;
+// Tippen auf den aktiven Tab führt zurück zum Anfang bzw. nach oben.
+const ROOTV = new Set(["home", "plan", "lib", "wissen", "food", "history"]);
+const backOf = v => ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: "plan", tag: "home", setup: "plan" })[v];
+function depthOf(v, n = 0) { if (ROOTV.has(v) || n > 6) return 0; const b = backOf(v); return 1 + (b && !ROOTV.has(b) ? depthOf(b, n + 1) : 0); }
+let navStack = [], tabMem = {}, navNoAnim = false;
+const NAV_MODAL = new Set(["train", "summary", "setup"]);
+function go(v, opt = {}) {
+  const from = view, fromY = window.scrollY, fromTab = tabOf(from), toTab = tabOf(v);
+  const oldHtml = $app.innerHTML;
+  let kind = null;
+  if (from !== v && fromTab === toTab && !NAV_MODAL.has(v) && !NAV_MODAL.has(from)) { const a = depthOf(from), b = depthOf(v); kind = b > a ? "push" : b < a ? "pop" : null; }
+  if (fromTab !== toTab && !NAV_MODAL.has(from)) tabMem[fromTab] = { v: from, y: fromY };
+  if (kind === "push") { navStack.push({ v: from, y: fromY, tab: fromTab, html: oldHtml }); if (navStack.length > 12) navStack.shift(); }
+  let y = opt.y || 0;
+  if (kind === "pop") { const hit = navStack.slice().reverse().find(e => e.v === v && e.tab === toTab); if (hit && opt.y == null) y = hit.y;
+    navStack = navStack.filter(e => e.tab !== toTab || depthOf(e.v) < depthOf(v)); }
+  if (fromTab !== toTab) navStack = navStack.filter(e => e.tab !== toTab || depthOf(e.v) < depthOf(v));
   view = v; if (v !== "home") homeNote = ""; if (v !== "history") histNote = ""; if (v !== "food") { foodNote = ""; copyUndo = null; } if (v !== "plan") { planNote = ""; planUndo = null; } if (v !== "tag") { tagNote = ""; tagCopyUndo = null; }
   document.body.classList.toggle("training", v === "train");
   document.body.classList.toggle("has-bar", v === "setup" || v === "summary");
   $tabs.hidden = v === "train" || v === "summary" || v === "setup";
   $tabs.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === tabOf(v)));
-  render(); window.scrollTo(0, 0);
+  render(); iosChrome(); window.scrollTo(0, y); navScroll();
+  if (kind && !opt.noAnim && !navNoAnim) navAnim(kind, oldHtml, fromY, y);
 }
+// Bewegung nur, wenn erwünscht; automatisierte Tests schalten sie mit tp-anim=1 gezielt ein
+function animOK() { if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false; let f = null; try { f = localStorage.getItem("tp-anim"); } catch (e) {}
+  return f === "1" || (f !== "0" && !navigator.webdriver); }
+// Tab-Verlauf merken (wie iOS); automatisierte Tests, die über die Tabs zur Startseite springen, schalten ihn mit tp-tabmem=0 ab
+function tabMemOn() { try { return localStorage.getItem("tp-tabmem") !== "0"; } catch (e) { return true; } }
+const navReset = () => { navStack = []; tabMem = {}; };
+const NAV_EASE = "cubic-bezier(.32,.72,0,1)";
+function navLayer(html, y, top) {
+  const L = document.createElement("div"); L.className = "navlayer" + (top ? " top" : ""); L.setAttribute("aria-hidden", "true"); L.inert = true;
+  const cs = getComputedStyle(document.body), padTop = document.body.getBoundingClientRect().top + window.scrollY + parseFloat(cs.paddingTop);
+  const i = document.createElement("div"); i.className = "nl-in"; i.innerHTML = html;
+  i.style.padding = `${padTop}px ${cs.paddingRight} 0 ${cs.paddingLeft}`; i.style.transform = `translateY(${-y}px)`;
+  L.appendChild(i); if (!top) { const d = document.createElement("div"); d.className = "dim"; L.appendChild(d); }
+  L.style.zIndex = top ? 16 : 15; document.body.appendChild(L); return L;
+}
+let navBusy = null;
+function navAnim(kind, oldHtml, oldY, newY) {
+  if (!animOK() || $app.querySelector(".actionbar")) return;
+  if (navBusy) navBusy();
+  const push = kind === "push", newHtml = $app.innerHTML, W = innerWidth;
+  const under = navLayer(push ? oldHtml : newHtml, push ? oldY : newY, false), top = navLayer(push ? newHtml : oldHtml, push ? newY : oldY, true);
+  document.body.classList.add("nav-anim");
+  const o = { duration: push ? 380 : 320, easing: NAV_EASE, fill: "forwards" };
+  const a1 = top.animate(push ? [{ transform: `translateX(${W}px)` }, { transform: "none" }] : [{ transform: "none" }, { transform: `translateX(${W}px)` }], o);
+  under.animate(push ? [{ transform: "none" }, { transform: `translateX(${-W * .3}px)` }] : [{ transform: `translateX(${-W * .3}px)` }, { transform: "none" }], o);
+  under.querySelector(".dim").animate(push ? [{ opacity: 0 }, { opacity: .12 }] : [{ opacity: .12 }, { opacity: 0 }], o);
+  const done = () => { navBusy = null; under.remove(); top.remove(); document.body.classList.remove("nav-anim"); };
+  navBusy = done; a1.onfinish = done;
+}
+// Navigationsleiste aus dem Kopf der Ansicht: Zurück links (mit Pfeil), kleiner Titel in der Mitte (erscheint beim
+// Scrollen, wenn der große Titel verschwindet), Aktionen rechts (.nav-r)
+const $nav = document.getElementById("navbar");
+const NB_CHEV = `<svg class="nb-chev" viewBox="0 0 12 21" aria-hidden="true"><path d="M10 2 2 10.5 10 19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+function iosChrome() {
+  const page = $app.querySelector(".page"), on = !!page && view !== "train" && view !== "summary";
+  $nav.hidden = !on; document.body.classList.toggle("has-nav", on); if (!on || page.dataset.nb) return; page.dataset.nb = "1";
+  const L = $nav.querySelector(".nb-l"), T = $nav.querySelector(".nb-t"), R = $nav.querySelector(".nb-r");
+  L.replaceChildren(); R.replaceChildren();
+  const back = [...page.querySelectorAll("button.link")].find(b => /^‹/.test(b.textContent.trim()));
+  if (back) { const lab = back.textContent.trim().replace(/^‹\s*/, ""); back.innerHTML = `${NB_CHEV}<span>${esc(lab)}</span>`; back.classList.add("nb-back"); L.appendChild(back); }
+  page.querySelectorAll(".nav-r").forEach(b => R.appendChild(b));
+  const h = page.querySelector(".title, .title-input"); T.textContent = h ? (h.tagName === "INPUT" ? h.value : h.textContent).trim() : "";
+  // Beschriftung über dem großen Titel wird Untertitel darunter (nur „Heute“ behält das Datum darüber wie Apple-Apps)
+  const head = h && h.closest(".head"), cap = head && head.querySelector(":scope > .cap, :scope > .row > div > .cap");
+  if (cap && view !== "home" && cap.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING) {
+    cap.classList.add("navsub"); const box = h.parentElement.classList.contains("row") ? h.parentElement : h; box.after(cap); }
+}
+function navScroll() {
+  if ($nav.hidden) return; const h = $app.querySelector(".page .title, .page .title-input");
+  $nav.classList.toggle("scrolled", h ? h.getBoundingClientRect().bottom < $nav.getBoundingClientRect().bottom : window.scrollY > 2);
+}
+window.addEventListener("scroll", navScroll, { passive: true });
+new MutationObserver(() => iosChrome()).observe($app, { childList: true });
+// Wischen vom linken Rand: zurück wie bei iOS (die vorige Seite liegt sichtbar darunter)
+{ let sw = null;
+  const end = commit => { if (!sw) return; const { top, under, back } = sw, W = innerWidth, o = { duration: 260, easing: NAV_EASE, fill: "forwards" };
+    sw = null; $nav.style.opacity = "";
+    if (!top) return;
+    const a = top.animate([{ transform: top.style.transform || "none" }, { transform: commit ? `translateX(${W}px)` : "none" }], o);
+    under.animate([{ transform: under.style.transform || "none" }, { transform: commit ? "none" : `translateX(${-W * .3}px)` }], o);
+    a.onfinish = () => { if (commit) { navNoAnim = true; back.click(); navNoAnim = false; } top.remove(); under.remove(); document.body.classList.remove("nav-anim"); }; };
+  document.addEventListener("touchstart", ev => {
+    if (ev.touches.length !== 1 || $sheet.firstElementChild || $nav.hidden) return; const t = ev.touches[0], back = $nav.querySelector(".nb-back");
+    if (!back || t.clientX > 24) return; sw = { x0: t.clientX, y0: t.clientY, t0: performance.now(), back, top: null, under: null, p: 0 }; }, { passive: true });
+  document.addEventListener("touchmove", ev => {
+    if (!sw) return; const t = ev.touches[0], dx = t.clientX - sw.x0, dy = t.clientY - sw.y0, W = innerWidth;
+    if (!sw.top) { if (Math.abs(dy) > 10 && Math.abs(dy) > dx) { sw = null; return; } if (dx < 8) return;
+      const prev = navStack.slice().reverse().find(e => e.tab === tabOf(view));
+      sw.under = navLayer(prev ? prev.html : "", prev ? prev.y : 0, false); sw.top = navLayer($app.innerHTML, window.scrollY, true); document.body.classList.add("nav-anim"); }
+    if (ev.cancelable) ev.preventDefault();
+    sw.p = Math.max(0, Math.min(1, dx / W)); sw.v = dx / Math.max(1, performance.now() - sw.t0);
+    sw.top.style.transform = `translateX(${sw.p * W}px)`; sw.under.style.transform = `translateX(${-W * .3 * (1 - sw.p)}px)`; $nav.style.opacity = String(1 - sw.p * .8); }, { passive: false });
+  document.addEventListener("touchend", () => { if (sw) end(sw.p > .35 || (sw.p > .1 && sw.v > .5)); });
+  document.addEventListener("touchcancel", () => end(false)); }
+{ let dr = null;
+  document.addEventListener("touchstart", ev => {
+    const sh = ev.target.closest && ev.target.closest(".sheet:not(.as)"); if (!sh || ev.touches.length !== 1) return;
+    if (ev.target.closest("input,textarea,select,.seg,.chips,svg.motion,.m3gl,.mctl,.ustep,.switch")) return;
+    const zone = !!ev.target.closest(".grab, .sh-head"); if (!zone && sh.scrollTop > 0) return;
+    dr = { sh, y0: ev.touches[0].clientY, t0: performance.now(), dy: 0, on: false }; }, { passive: true });
+  document.addEventListener("touchmove", ev => {
+    if (!dr) return; const dy = ev.touches[0].clientY - dr.y0;
+    if (!dr.on) { if (dy < -6 || dr.sh.scrollTop > 0) { dr = null; return; } if (dy < 8) return; dr.on = true; }
+    if (ev.cancelable) ev.preventDefault();
+    dr.dy = Math.max(0, dy); dr.v = dy / Math.max(1, performance.now() - dr.t0); dr.sh.style.transform = `translateY(${dr.dy}px)`;
+    const sc = dr.sh.parentElement; if (sc) sc.style.backgroundColor = `rgba(0,0,0,${Math.max(0, .35 * (1 - dr.dy / 400))})`; }, { passive: false });
+  document.addEventListener("touchend", () => { if (!dr) return; const { sh, dy, v, on } = dr; dr = null; if (!on) return;
+    const close = dy > 120 || (dy > 30 && v > .6), o = { duration: 220, easing: NAV_EASE, fill: "forwards" };
+    const a = sh.animate([{ transform: `translateY(${dy}px)` }, { transform: close ? `translateY(${sh.offsetHeight}px)` : "none" }], o);
+    a.onfinish = () => { if (close) closeSheet(); else { sh.style.transform = ""; a.cancel(); if (sh.parentElement) sh.parentElement.style.backgroundColor = ""; } }; }); }
 /* ================= Tagesplan: Training, Schritte, Essen, Kalorienbilanz ================= */
 let tagDay = null, tagMode = "tag"; // tagMode: "tag" oder "woche"
 // Änderung im Tagesplan: "rest" = Ruhetag, sonst ID eines Trainingstags; wirkt nur mit festen Terminen
@@ -4574,7 +4752,7 @@ function vPlan() {
   const p = state.plan;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${GOALS[p.goal]?.label || "Eigener Plan"} · ${p.days.length} ${p.days.length === 1 ? "Tag" : "Tage"}</div>
-      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
+      <div class="row between"><h1 class="title">Training</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div></div>
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     <div class="group"><button class="li" data-a="openSched" id="schedRow"><div class="grow"><div class="s">Termine</div>
@@ -4652,7 +4830,7 @@ function tryRestore(raw, bad) {
 }
 function restoreBackup(data) {
   pendingRestore = null;
-  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet();
+  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet(); navReset();
   homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.`;
   go("home");
 }
@@ -4667,14 +4845,14 @@ function vDay() {
   const ses = state.session, mine = ses && ses.dayId === d.id;
   $app.innerHTML = `<div class="page">
     <div class="head">
-      <div class="row between"><button class="link" data-a="tab" data-v="plan">‹ Training</button><button class="link" style="color:var(--bad)" data-a="delDay">Tag löschen</button></div>
-      <label for="dayName" class="cap" style="margin:var(--s3) 0 0">Name</label>
+      <button class="link" data-a="tab" data-v="plan">‹ Training</button>
+      <label for="dayName" class="sr-only">Name des Trainingstags</label>
       <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${d.items.length === 1 ? "Gerät" : "Geräte"} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
     </div>
     ${d.items.length ? (ses ? `<button class="btn primary block xl" data-a="${ses.paused ? "resumeT" : "toTrain"}" id="dayStart">${mine ? "Training fortsetzen" : "Laufendes Training fortsetzen"}</button>`
       : `<button class="btn primary block xl" data-a="startDay" id="dayStart">${ICON.play} ${esc(d.name)} starten</button>`) : ""}
-    ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2><span class="small muted">Antippen zum Ändern</span></div>
+    ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2></div>
       <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it), ssA = it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss, ssB = i > 0 && d.items[i - 1].ss === it.id; return `
       <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}">
         <span class="idx">${i + 1}</span>
@@ -4687,8 +4865,9 @@ function vDay() {
       <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p>
       ${d.items.some((it, i) => it.ss && d.items[i + 1]) ? `<p class="small faint" style="margin:0" id="ssDayNote">Supersatz: Satz am ersten Gerät, sofort ein Satz am zweiten, Pause erst danach. Verschieben löst die Verbindung.</p>` : ""}</section>`
       : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
-    <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
-    ${d.items.length ? `<button class="btn block" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}
+    <div class="group"><button class="li act" data-a="openPicker">Geräte hinzufügen</button>
+      ${d.items.length ? `<button class="li act" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}</div>
+    <div class="group"><button class="li act danger" data-a="delDay">Tag löschen</button></div>
   </div>`;
 }
 /* Trainingstag 1:1 kopieren: Geräte, Reihenfolge, Sätze, Wiederholungen und Pausen */
@@ -4743,12 +4922,13 @@ function devSheetHtml() {
   const d = devDraft, isCustom = d.id.startsWith("c-");
   const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) =>
     `<button data-a="devSet" data-k="${k}" data-v="${v}" class="${String(d[k]) === String(v) ? "on" : ""}">${l}</button>`).join("")}</div>`;
-  return `${sheetHead(d._new ? "Eigenes Gerät" : "Gerät", "")}
+  return `<div class="sh-head"><button class="btn sm sh-l" data-a="devCancel">Abbrechen</button><h2 class="grow">${d._new ? "Eigenes Gerät" : "Gerät"}</h2><button class="btn sm" data-a="devSave">Fertig</button></div>
     <div class="field"><label for="devName">Name</label><input id="devName" data-i="devName" value="${esc(d.name)}" placeholder="z. B. Brustpresse am Fenster" autocomplete="off" enterkeyhint="done"></div>
-    <div class="toggle-row"><div><h3>Bevorzugt</h3><div class="small muted">${d.off ? "Gilt erst wieder, wenn das Gerät im Studio ist." : "Wird bei Plan und Tausch vorgezogen, wenn die Bewegung passt."}</div></div>
-      <div style="flex:0 0 132px">${seg("fav", [["true", "Ja"], ["false", "Nein"]])}</div></div>
-    <div class="toggle-row"><div><h3>In meinem Studio</h3><div class="small muted">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
-      <div style="flex:0 0 132px">${seg("off", [["false", "Ja"], ["true", "Nein"]])}</div></div>
+    <div class="group">
+      <div class="li"><div class="grow"><div class="t n">Bevorzugt</div><div class="s">${d.off ? "Gilt erst wieder, wenn das Gerät im Studio ist." : "Wird bei Plan und Tausch vorgezogen, wenn die Bewegung passt."}</div></div>
+        <button class="switch" role="switch" aria-checked="${!!d.fav}" data-a="devSet" data-k="fav" data-v="${!d.fav}" aria-label="Bevorzugt"></button></div>
+      <div class="li"><div class="grow"><div class="t n">In meinem Studio</div><div class="s">Nicht vorhandene Geräte schlägt die App nicht vor.</div></div>
+        <button class="switch" role="switch" aria-checked="${!d.off}" data-a="devSet" data-k="off" data-v="${!d.off}" aria-label="In meinem Studio"></button></div></div>
     <div class="field"><label for="devNote">Deine Einstellung</label><input id="devNote" data-i="devNote" value="${esc(d.note || "")}" placeholder="z. B. Sitz 4, Griff weit" autocomplete="off" enterkeyhint="done"></div>
     ${unitLocked(d.id) ? `<p class="note warn small">Gerätetyp und Gewichtsangabe sind gesperrt, solange im laufenden Training schon Sätze an diesem Gerät erledigt sind.</p>` : ""}
     <div class="field"><label>Gerätetyp</label>${seg("type", [["plate", "Scheiben"], ["stack", "Steckgewicht"]])}</div>
@@ -4771,12 +4951,8 @@ function devSheetHtml() {
          <p class="small faint">Bestimmt, welche Geräte als direkte Alternative gelten. Ohne Zuordnung nur als „andere Übung“.</p>`
       : `<p>${d.pattern ? PATTERNS[d.pattern].label : "–"}</p>`}</div>
     <p class="error" id="devErr" hidden></p>
-    <div class="stack-sm">
-      <button class="btn primary block xl" data-a="devSave">Speichern</button>
-      ${!d._new && !isCustom && state.dev[d.id] ? `<button class="btn block" data-a="devReset">Auf Standard zurücksetzen</button>` : ""}
-      ${!d._new && isCustom ? `<button class="btn block danger" data-a="devDelete">Gerät löschen</button>` : ""}
-      <button class="btn quiet block" data-a="devCancel">Abbrechen</button>
-    </div>`;
+    ${!d._new && (isCustom || state.dev[d.id]) ? `<div class="group">${!isCustom ? `<button class="li act center" data-a="devReset">Auf Standard zurücksetzen</button>` : ""}
+      ${isCustom ? `<button class="li act danger center" data-a="devDelete">Gerät löschen</button>` : ""}</div>` : ""}`;
 }
 function unitLocked(id) { const s = state.session; return !!(s && s.list.some(x => x.exId === id && x.sets.some(t => t.done))); }
 const draftUnit = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
@@ -4853,26 +5029,24 @@ function sheetKeep(html) {
 let draft = null;
 function itemSheet() {
   const e = ex(draft.exId);
-  const ms = (k, l, step) => `<div class="field"><label>${l}</label><div class="mini-step">
-    <button data-a="draft" data-k="${k}" data-d="${-step}" aria-label="${l} weniger">−</button><output>${draft[k]}</output>
-    <button data-a="draft" data-k="${k}" data-d="${step}" aria-label="${l} mehr">+</button></div></div>`;
-  return `${sheetHead(esc(e.name), "")}
-    <p class="small muted" style="margin-top:-8px">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
-    <div class="grid3">${ms("sets", "Sätze", 1)}${ms("rmin", "Wdh. von", 1)}${ms("rmax", "Wdh. bis", 1)}</div>
-    <div class="field"><label>Pause</label><div class="seg">${[45, 60, 90, 120, 180].map(s =>
+  // Stepper wie bei iOS: Name links, Wert, rechts − | +
+  const ms = (k, l, step) => `<div class="li step-row"><div class="grow"><div class="t n">${l}</div></div><output class="sv">${draft[k]}</output>
+    <div class="ustep" role="group" aria-label="${l}"><button data-a="draft" data-k="${k}" data-d="${-step}" aria-label="${l} weniger">−</button><button data-a="draft" data-k="${k}" data-d="${step}" aria-label="${l} mehr">+</button></div></div>`;
+  const nx = curDay().items[draft._i + 1], ne = nx && ex(nx.exId), on = !!nx && draft.ss === nx.id, same = !!ne && ne.muscle === e.muscle;
+  return `${sheetHead(esc(e.name), "Fertig", "saveItem", true)}
+    <p class="small muted sh-sub">${MUSCLES[e.muscle]} · ${loadTxt(e)} · Schritt ${stepTxt(e)}</p>
+    <div class="group">${ms("sets", "Sätze", 1)}${ms("rmin", "Wiederholungen ab", 1)}${ms("rmax", "Wiederholungen bis", 1)}</div>
+    <div class="field"><div class="cap">Pause</div><div class="seg">${[45, 60, 90, 120, 180].map(s =>
       `<button data-a="draftRest" data-s="${s}" class="${draft.rest === s ? "on" : ""}" aria-label="${s < 60 ? s + " Sekunden" : String(s / 60).replace(".", ",") + " Minuten"}">${fmtTime(s)}</button>`).join("")}</div></div>
-    <div class="field"><label for="noteIn">Deine Einstellung</label>
-      <input id="noteIn" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
-    ${(() => { const nx = curDay().items[draft._i + 1]; if (!nx) return ""; const ne = ex(nx.exId), on = draft.ss === nx.id, same = ne.muscle === e.muscle;
-      return `<div class="field" id="ssField"><label>Supersatz</label>
-        <button class="btn block ${on ? "primary" : ""}" data-a="ssToggle" aria-pressed="${on}">${on ? "✓ " : ""}Mit ${esc(ne.name)} als Supersatz</button>
-        <p class="small ${same && on ? "" : "muted"}" style="margin:0">${same ? `Gleicher Muskel (${MUSCLES[e.muscle]}): als Supersatz sinkt die Gesamtlast. Besser ein Gegenspieler.` : "Satz hier, sofort ein Satz dort, Pause erst danach."}</p></div>`; })()}
-    <div class="stack-sm">
-      <button class="btn primary block xl" data-a="saveItem">Speichern</button>
-      <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="item">Anleitung ansehen</button>
-      <button class="btn block" data-a="editDev" data-id="${e.id}" data-ret="item">Gerät bearbeiten</button>
-      <button class="btn danger quiet block" data-a="delItem">Aus dem Tag entfernen</button>
-    </div>`;
+    <div class="field"><label for="noteIn" class="cap">Deine Einstellung</label><div class="group">
+      <input id="noteIn" class="cell-in" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div></div>
+    ${nx ? `<div class="field" id="ssField"><div class="group"><div class="li"><div class="grow"><div class="t n">Supersatz mit ${esc(ne.name)}</div></div>
+        <button class="switch" role="switch" aria-checked="${on}" aria-pressed="${on}" data-a="ssToggle" aria-label="Supersatz mit ${esc(ne.name)}"></button></div></div>
+        <p class="small foot ${same && on ? "" : "muted"}">${same ? `Gleicher Muskel (${MUSCLES[e.muscle]}): als Supersatz sinkt die Gesamtlast. Besser ein Gegenspieler.` : "Satz hier, sofort ein Satz dort, Pause erst danach."}</p></div>` : ""}
+    <div class="group">
+      <button class="li" data-a="openGuideSheet" data-id="${e.id}" data-ret="item"><div class="grow"><div class="t n">Anleitung</div></div><span class="chev">›</span></button>
+      <button class="li" data-a="editDev" data-id="${e.id}" data-ret="item"><div class="grow"><div class="t n">Gerät bearbeiten</div></div><span class="chev">›</span></button></div>
+    <div class="group"><button class="li act danger center" data-a="delItem">Aus dem Tag entfernen</button></div>`;
 }
 function openItem(i) { draft = Object.assign({}, curDay().items[i], { _i: i }); openSheet(itemSheet()); }
 
@@ -7305,7 +7479,10 @@ function stopTick() { if (timer) clearInterval(timer); timer = null; }
 
 /* ================= Aktionen ================= */
 const A = {
-  tab: el => go(el.dataset.v),
+  tab: el => { const t = el.dataset.v; if (!el.closest("nav.tabs")) return go(t);
+    const cur = tabOf(view);
+    if (t === cur) { if (ROOTV.has(view)) window.scrollTo({ top: 0, behavior: animOK() ? "smooth" : "auto" }); else go(t); return; }
+    const m = tabMemOn() ? tabMem[t] : null; if (m && m.v !== t && tabOf(m.v) === t && depthOf(m.v) > 0) go(m.v, { y: m.y }); else go(t, m && m.v === t ? { y: m.y } : {}); },
   closeSheet: (el, ev) => { if (ev.target === el || el.tagName === "BUTTON") closeSheet(); },
   setup: el => { const k = el.dataset.k; setup[k] = k === "days" || k === "minutes" ? +el.dataset.val : el.dataset.val; vSetup(); },
   setupDay: el => { const tm = byId("setupTime"); if (tm && tm.value) setup.time = tm.value;
@@ -7778,8 +7955,7 @@ const A = {
     if (!tgt || JSON.stringify(u.kind === "new" ? tgt : tgt.items) !== u.after) { planNote = "Nicht mehr rückgängig: Der Tag wurde inzwischen geändert."; vPlan(); return; }
     if (u.kind === "new") { state.plan.days = state.plan.days.filter(x => x.id !== u.id); if (state.selDay === u.id) state.selDay = null; } else tgt.items = JSON.parse(u.before);
     planNote = "Kopieren rückgängig gemacht."; save(); vPlan(); },
-  delDay: () => openSheet(`<h2>Tag löschen?</h2><p class="muted">„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.</p>
-    <button class="btn block" style="background:var(--bad);color:#fff" data-a="confirmDelDay">Löschen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
+  delDay: () => actionSheet("Tag löschen?", `„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.`, [{ l: "Tag löschen", a: "confirmDelDay", danger: true }]),
   confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); save(); closeSheet(); go("plan"); },
   moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; ssFix(d.items); save(); vDay(); },
   editItem: el => openItem(+el.dataset.i2),
@@ -7883,13 +8059,11 @@ const A = {
     const i = s.idx; if (!x.sets.length) s.list.splice(i, 1); afterListChange(x.sets.length ? i + 1 : i); },
   openDevInfo: () => openSheet(devInfoSheet()),
   askStop: () => { const s = S(), any = s.list.some(x => x.sets.some(t => t.done));
-    openSheet(`<h2>${s.paused ? "Training beenden?" : "Training unterbrechen?"}</h2>
-      ${s.paused ? "" : `<button class="btn primary block" data-a="pauseT">Pausieren, später weitermachen</button>`}
-      ${any ? `<button class="btn block" data-a="stopSave">Speichern & beenden</button>` : ""}
-      <button class="btn block danger" data-a="askDiscard">Verwerfen</button>
-      <button class="btn block" data-a="closeSheet">${s.paused ? "Abbrechen" : "Weiter trainieren"}</button>`); },
-  askDiscard: () => openSheet(`<h2>Training verwerfen?</h2><p class="muted">Alle Sätze dieser Einheit gehen verloren.</p>
-      <button class="btn block" style="background:var(--bad);color:#fff" data-a="stopDiscard">Verwerfen</button><button class="btn block" data-a="closeSheet">Zurück</button>`),
+    actionSheet(s.paused ? "Training beenden?" : "Training unterbrechen?", "", [
+      ...(s.paused ? [] : [{ l: "Pausieren, später weitermachen", a: "pauseT", bold: true }]),
+      ...(any ? [{ l: "Speichern & beenden", a: "stopSave" }] : []),
+      { l: "Verwerfen", a: "askDiscard", danger: true }], s.paused ? "Abbrechen" : "Weiter trainieren"); },
+  askDiscard: () => actionSheet("Training verwerfen?", "Alle Sätze dieser Einheit gehen verloren.", [{ l: "Verwerfen", a: "stopDiscard", danger: true }], "Zurück"),
   pauseT: () => { const s = S(); if (!s.paused) s.paused = Date.now(); stopTick(); awake(false); save(); closeSheet(); go("home"); },
   resumeT: () => { const s = S(); if (!s) return; if (s.paused) { const d = Date.now() - s.paused; s.start += d; s.paused = null; }
     s.lastAt = Date.now(); s.autoPaused = false;
@@ -7988,7 +8162,7 @@ document.addEventListener("click", ev => {
   for (const t of ["pointerup", "pointercancel"]) document.addEventListener(t, () => { drag = null; }); }
 document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
-  if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); } }
+  if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); $nav.querySelector(".nb-t").textContent = d.name; } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); tagRefresh(); }
   else if (k === "tagAct") { const dk = tagDay || dkey(), raw = String(el.value).replace(/[.\s']/g, ""), v = raw === "" ? NaN : Math.round(+raw);
