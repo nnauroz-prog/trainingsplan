@@ -45,13 +45,66 @@ Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt
   - **Heute** (machen): das nächste Training mit Start-Knopf und einer kurzen Nachricht; danach in fester Reihenfolge höchstens ein Hinweis (nur Titel und Aktion, Erklärung nach Antippen), „Diese Woche ›“ (die Überschrift führt zum Wochenrückblick) und „Mein Tag“ (Ringe für Kalorien, Eiweiß, Schritte → Tagesplan)
   - **Plan** (bauen): „Mein Plan“ in fester Reihenfolge – Trainingstage (Gerätebilder, Dauer, ▶ startet den Tag direkt; Antippen öffnet den Tag mit Gerätebildern in Reihenfolge), „Rund um den Plan“ (Termine, Geräte im Studio, Erholung als Zeilen einer Liste) und die Planprüfung als eine Karte mit Status (aufgeklappt nur bei echten Punkten); Zahnrad → Einstellungen
 - **Gleiche Regeln in allen Bereichen:** Der große Titel entspricht dem Bereich (Heute, Mein Plan, Wissen, Essen, Fortschritt). Das Zahnrad steht in jedem Bereich oben rechts; die Einstellungen führen dorthin zurück, wo man herkam. Gerätelisten filtern überall gleich (Marke und Muskel mit Anzahl – in der Geräteauswahl und unter Wissen → Geräte)
+- **Neuer Trainingstag:** „Trainingstag hinzufügen“ öffnet ein Fenster mit „Leerer Tag“ (Geräte selbst wählen) und sechs Vorschlägen (Drücken, Ziehen, Beine, Oberkörper, Unterkörper, Ganzkörper) mit Gerätebildern, Anzahl und Dauer. Vorschläge nutzen dieselben Vorlagen und Regeln wie der ganze Plan: Geräte aus dem eigenen Studio, bevorzugte haben Vorrang; Sätze, Wiederholungen und Pausen sind Startwerte der App für das Ziel und passen ins Zeitbudget. Der Tag öffnet sich danach zum Ändern; vergebene Namen werden nummeriert („Beine 2“)
 - **Plan bauen:** Tagesname mit Stift änderbar; „Ordnen“ in „Mein Plan“ sortiert die Trainingstage mit ↑/↓ (ab zwei Tagen). Die Reihenfolge bestimmt, welcher Tag nach einem Training als Nächstes dran ist; sind dessen Muskeln noch nicht erholt, schlägt die App einen anderen vor (Regel der App)
 - **Die Äste:**
   - **Wissen:** Umschalter „Geräte | Artikel“; Geräte mit Suche und Filtern, Artikel und „So entscheidet die App“ (alle Hinweise an einem Ort, die Regeln als aufklappbare Liste)
   - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
   - **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
 
+## Erweiterungen
+
+Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`): eigene Unterseite, eine Zeile in einer bestehenden Liste (Plan, Wissen, Fortschritt, Einstellungen), eigener Speicherbereich `state.x.<name>` (wird mit gesichert). Bestehende Ansichten werden dafür nicht umgebaut. Jede Erweiterung steht in einem eigenen Block zwischen ihren Marken (`@ext:<name>`), ebenso ihre Tests in `tests/run.js`.
+
+<!-- @ext:hilfe:readme:start -->
+- **Hilfe (Einstellungen → Hilfe):** „So funktioniert die App“ in drei Schritten und häufige Fragen als aufklappbare Liste (Plan bauen, Training starten, Gewichtsvorschlag, pro Seite/insgesamt, Reihenfolge, Sicherung, Home-Bildschirm)
+<!-- @ext:hilfe:readme:end -->
+<!-- Abstand hilfe 1 -->
+<!-- Abstand hilfe 2 -->
+<!-- @ext:meilensteine:readme:start -->
+<!-- @ext:meilensteine:readme:end -->
+<!-- Abstand meilensteine 1 -->
+<!-- Abstand meilensteine 2 -->
+<!-- @ext:masse:readme:start -->
+<!-- @ext:masse:readme:end -->
+<!-- Abstand masse 1 -->
+<!-- Abstand masse 2 -->
+<!-- @ext:rueckblick:readme:start -->
+<!-- @ext:rueckblick:readme:end -->
+<!-- Abstand rueckblick 1 -->
+<!-- Abstand rueckblick 2 -->
+<!-- @ext:werkzeuge:readme:start -->
+<!-- @ext:werkzeuge:readme:end -->
+<!-- Abstand werkzeuge 1 -->
+<!-- Abstand werkzeuge 2 -->
+<!-- @ext:glossar:readme:start -->
+<!-- @ext:glossar:readme:end -->
+<!-- Abstand glossar 1 -->
+<!-- Abstand glossar 2 -->
+<!-- @ext:muskeln:readme:start -->
+<!-- @ext:muskeln:readme:end -->
+<!-- Abstand muskeln 1 -->
+<!-- Abstand muskeln 2 -->
+<!-- @ext:plaene:readme:start -->
+<!-- @ext:plaene:readme:end -->
+<!-- Abstand plaene 1 -->
+<!-- Abstand plaene 2 -->
+<!-- @ext:aussehen:readme:start -->
+<!-- @ext:aussehen:readme:end -->
+<!-- Abstand aussehen 1 -->
+<!-- Abstand aussehen 2 -->
+<!-- @ext:export:readme:start -->
+<!-- @ext:export:readme:end -->
+<!-- Abstand export 1 -->
+<!-- Abstand export 2 -->
+<!-- @ext:artikel:readme:start -->
+<!-- @ext:artikel:readme:end -->
+<!-- Abstand artikel 1 -->
+<!-- Abstand artikel 2 -->
+
 ## Funktionen
+
+- **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
 
 - **Geräteseite neu:** Zeichnung groß über die ganze Breite mit sanftem Licht dahinter, darunter Name, „Am Gerät steht“ und Kurzinfos als Chips (Muskel mit rotem Punkt, Gewichtsart, Schritt, eigene Einstellung); „So geht's“ als nummerierte Karten; danach Tricks, Muskeln (Karten), Deine Werte, In deinem Plan, Mehr zur Übung und Alternativen
 - **„Mehr zur Übung“ in einfacher Sprache:** Warum, Einstellen, Schritte, häufige Fehler, Sicherheit und Tipps für alle 60 Geräte in kurzen, ganzen Sätzen mit „du“ und Anweisungen („Stell den Sitz so ein, dass …“), ohne Fachwörter wie „Bewegungsumfang“ oder „isoliert“; Zahlen und Studienaussagen unverändert

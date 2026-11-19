@@ -619,6 +619,63 @@
   .li.act.danger{color:var(--bad)}
   .li.act.center{justify-content:center;text-align:center}
   .group+p.small,.group+p.faint,.section>.group+p{font-size:13px;color:var(--text-3);padding:0 var(--s4);margin-top:calc(-1 * var(--s1))}
+
+  /* ===================== Erweiterungen (je Erweiterung ein eigener Block) ===================== */
+  /* @ext:hilfe:css:start */
+  /* @ext:hilfe:css:end */
+  /* ── Abstand hilfe/css 1 ── */
+  /* ── Abstand hilfe/css 2 ── */
+  /* ── Abstand hilfe/css 3 ── */
+  /* @ext:meilensteine:css:start */
+  /* @ext:meilensteine:css:end */
+  /* ── Abstand meilensteine/css 1 ── */
+  /* ── Abstand meilensteine/css 2 ── */
+  /* ── Abstand meilensteine/css 3 ── */
+  /* @ext:masse:css:start */
+  /* @ext:masse:css:end */
+  /* ── Abstand masse/css 1 ── */
+  /* ── Abstand masse/css 2 ── */
+  /* ── Abstand masse/css 3 ── */
+  /* @ext:rueckblick:css:start */
+  /* @ext:rueckblick:css:end */
+  /* ── Abstand rueckblick/css 1 ── */
+  /* ── Abstand rueckblick/css 2 ── */
+  /* ── Abstand rueckblick/css 3 ── */
+  /* @ext:werkzeuge:css:start */
+  /* @ext:werkzeuge:css:end */
+  /* ── Abstand werkzeuge/css 1 ── */
+  /* ── Abstand werkzeuge/css 2 ── */
+  /* ── Abstand werkzeuge/css 3 ── */
+  /* @ext:glossar:css:start */
+  /* @ext:glossar:css:end */
+  /* ── Abstand glossar/css 1 ── */
+  /* ── Abstand glossar/css 2 ── */
+  /* ── Abstand glossar/css 3 ── */
+  /* @ext:muskeln:css:start */
+  /* @ext:muskeln:css:end */
+  /* ── Abstand muskeln/css 1 ── */
+  /* ── Abstand muskeln/css 2 ── */
+  /* ── Abstand muskeln/css 3 ── */
+  /* @ext:plaene:css:start */
+  /* @ext:plaene:css:end */
+  /* ── Abstand plaene/css 1 ── */
+  /* ── Abstand plaene/css 2 ── */
+  /* ── Abstand plaene/css 3 ── */
+  /* @ext:aussehen:css:start */
+  /* @ext:aussehen:css:end */
+  /* ── Abstand aussehen/css 1 ── */
+  /* ── Abstand aussehen/css 2 ── */
+  /* ── Abstand aussehen/css 3 ── */
+  /* @ext:export:css:start */
+  /* @ext:export:css:end */
+  /* ── Abstand export/css 1 ── */
+  /* ── Abstand export/css 2 ── */
+  /* ── Abstand export/css 3 ── */
+  /* @ext:artikel:css:start */
+  /* @ext:artikel:css:end */
+  /* ── Abstand artikel/css 1 ── */
+  /* ── Abstand artikel/css 2 ── */
+  /* ── Abstand artikel/css 3 ── */
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -1651,7 +1708,7 @@ const CARDIO = {
   row: { name: "Rudergerät", lv: { m: { l: "Mäßig", d: "unter 100 Watt, mäßige Anstrengung", met: 5.0, code: "02071" }, v: { l: "Anstrengend", d: "hohe Anstrengung", met: 7.3, code: "02070" } } }
 };
 const CARDIO_MAX = 6; // Einträge je Tag (Regel der App)
-function blank() { return { v: 6, plates: null, dayPlan: {}, stepGoal: null, stepLen: null, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null }; }
+function blank() { return { v: 6, plates: null, dayPlan: {}, stepGoal: null, stepLen: null, plan: null, custom: [], dev: {}, notes: {}, history: [], weights: [], session: null, selDay: null, hints: {}, timeplan: null, health: false, watch: false, nutr: null, food: {}, myFoods: [], water: {}, meals: [], fast: null, fasts: [], fastH: 16, nutrOpt: { water: false, fast: false }, sched: null, voice: false, goals: [], why: "", prevPlan: null, coachOff: {}, misses: [], missSkip: null, backupAt: null, x: {} }; }
 const isObj = o => !!o && typeof o === "object" && !Array.isArray(o);
 const clampInt = (v, lo, hi, def) => { const n = Math.round(+v); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def; };
 const kgOrNull = v => { const n = typeof v === "number" ? v : (v === null || v === undefined || String(v).trim() === "" ? null : +String(v).replace(",", ".")); return n === null || !Number.isFinite(n) || n < 0 || n > 1000 ? null : Math.round(n * 100) / 100; };
@@ -1794,6 +1851,8 @@ function normalize(raw) {
   const no = isObj(raw.nutrOpt) ? raw.nutrOpt : {};
   s.nutrOpt = { water: typeof no.water === "boolean" ? no.water : isObj(raw.water) && Object.keys(raw.water).length > 0,
     fast: typeof no.fast === "boolean" ? no.fast : !!raw.fast || (Array.isArray(raw.fasts) && raw.fasts.length > 0) };
+  // Speicherbereiche der Erweiterungen: hier unverändert übernommen, bereinigt von extClean() (jede Erweiterung prüft ihren eigenen Teil)
+  try { s.x = isObj(raw.x) ? JSON.parse(JSON.stringify(raw.x)) : {}; } catch (e) { s.x = {}; }
   return s;
 }
 function load() {
@@ -1846,6 +1905,25 @@ function exIdByName(name, s) {
 let state = blank();
 state = load();
 
+/* ---------- Erweiterungen ----------
+   Neue Funktionen hängen sich hier ein, statt bestehende Ansichten umzubauen. Jede Erweiterung steht in ihrem eigenen Block
+   am Ende des Skripts (Marken „@ext:<name>“) und nutzt nur diese Anschlüsse:
+     EXT.views.<seite> = () => { $app.innerHTML = `<div class="page">…</div>`; }   eigene Unterseite
+     EXT.nav.<seite> = { back: "history" }      wohin „Zurück“ führt (Ansicht eines Bereichs oder eine andere Unterseite); daraus folgt der Tab
+     EXT.actions.<name> = (el, ev) => { … }      Aktion für data-a="<name>"
+     EXT.inputs.<name> = el => { … }             Eingabe in ein Feld mit data-i="<name>"
+     EXT.rows.<platz>.push(() => html)           Zeile(n) in einer bestehenden Liste: plan | lib | history | settings | data
+     EXT.summary.push(sm => html)                Abschnitt in der Zusammenfassung nach dem Training (sm.rec = gespeichertes Training)
+     EXT.clean.<name> = roh => bereinigt         eigener Speicher state.x.<name> (wird mit gesichert und wiederhergestellt)
+     EXT.test.<name> = wert                      in Tests unter window.__tp.<name> erreichbar
+   Helfer: extRow(), extHead(), go("<seite>"), data-a="openExt" data-v="<seite>", data-a="extBack". */
+const EXT = { views: {}, nav: {}, actions: {}, inputs: {}, rows: { plan: [], lib: [], history: [], settings: [], data: [] }, summary: [], clean: {}, test: {} };
+const extRows = slot => EXT.rows[slot].map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("");
+// Alle Speicherbereiche der Erweiterungen prüfen; unbekannte Bereiche (entfernte Erweiterungen) fallen weg
+function extClean() { const src = isObj(state.x) ? state.x : {}, out = {};
+  for (const k in EXT.clean) { try { out[k] = EXT.clean[k](src[k]); } catch (e) { try { out[k] = EXT.clean[k](undefined); } catch (e2) {} } }
+  state.x = out; }
+
 /* ---------- Geräte ---------- */
 const ex = id => devFrom(state, id);
 const allEx = () => LIB.concat(state.custom).map(e => ex(e.id));
@@ -1892,6 +1970,19 @@ const ISO_PAT = new Set(["fly", "lateral", "rear", "bi", "tri", "knee_ext", "kne
 const KRAFT_ISO = { rmin: 8, rmax: 12, rest: 90 };
 const isIso = exId => ISO_PAT.has(ex(exId).pattern);
 function rangeFor(goal, exId) { return goal === "kraft" && isIso(exId) ? KRAFT_ISO : GOALS[goal] || GOALS.aufbau; }
+// Ein einzelner Trainingstag als Vorschlag (für „Trainingstag hinzufügen“): dieselben Vorlagen und Regeln wie beim ganzen Plan –
+// Geräte aus dem eigenen Studio, bevorzugte haben Vorrang, Sätze/Wiederholungen/Pausen als Startwerte der App für das Ziel
+const DAY_TPL = [["Drücken", TEMPLATES[3][0][1]], ["Ziehen", TEMPLATES[3][1][1]], ["Beine", TEMPLATES[3][2][1]],
+  ["Oberkörper", TEMPLATES[4][0][1]], ["Unterkörper", TEMPLATES[4][1][1]], ["Ganzkörper", TEMPLATES[2][0][1]]];
+function tplIds(tpl) { const used = new Set(); return tpl.map(id => { const a = pickForSlot(id, used); if (a) used.add(a); return a; }).filter(Boolean); }
+function dayFromTpl(name, tpl, goal, level, minutes) {
+  const items = tplIds(tpl).map((id, i) => { const r = rangeFor(goal, id); return { id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
+    rmin: r.rmin, rmax: r.rmax, rest: i < 2 ? r.rest : Math.max(60, r.rest - 30) }; });
+  const over = () => minutes && estimateSec(items) / 60 > minutes;
+  while (over() && items.length > 3) items.pop();
+  for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
+  return { id: uid(), name, items };
+}
 function generatePlan(goal, days, level, minutes) {
   const g = GOALS[goal];
   const gaps = [];
@@ -2421,6 +2512,10 @@ function iosSheet() {
   sh.querySelectorAll(".stack-sm").forEach(x => { if (!x.children.length) x.remove(); });
 }
 new MutationObserver(iosSheet).observe($sheet, { childList: true, subtree: true });
+// Helfer für Erweiterungen: Zeile in einer Liste (öffnet die Unterseite) und Seitenkopf mit „Zurück“
+const extRow = (page, icon, color, title, value = "", sub = "") => `<button class="li" data-a="openExt" data-v="${page}" id="row-${page}">${ico(icon, color)}<div class="grow"><div class="t n">${title}</div>${sub ? `<div class="s">${sub}</div>` : ""}</div>${value ? `<span class="val">${value}</span>` : ""}<span class="chev">›</span></button>`;
+const extHead = (title, sub = "") => { const b = backOf(view), lab = ROOTV.has(b) ? TAB_NAME[tabOf(b)] : b === "settings" ? "Einstellungen" : "Zurück";
+  return `<div class="head"><button class="link" data-a="extBack">‹ ${lab}</button><h1 class="title">${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ""}</div>`; };
 // Aktionsblatt wie bei iOS: Frage und Optionen in einer Karte, darunter getrennt „Abbrechen“
 function actionSheet(title, msg, acts, cancel = "Abbrechen", cancelA = "closeSheet") {
   stopScan();
@@ -4301,6 +4396,7 @@ function vWissen() {
       <p class="sub">Grundlagen zu Training und Ernährung, mit Quellen.</p></div>
     ${wissenSeg("wissen")}
     <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen</div></div><span class="chev">›</span></button></div>
+    ${EXT.rows.lib.length ? `<section class="section" id="libMore"><h2>Nachschlagen</h2><div class="group">${extRows("lib")}</div></section>` : ""}
     ${[["Training", ["termine", "progression", "volumen", "frequenz", "last", "rir", "pause", "dehnung"]], ["Ernährung", ["eiweiss", "kalorien", "intervallfasten"]], ["Gesundheit", ["gesundheit"]]]
       .map(([h, ids]) => { const L = ARTICLES.filter(a => ids.includes(a.id)); return L.length ? `<section class="section"><h2>${h}</h2><div class="group">${L.map(a => `<button class="li" data-a="openArt" data-id="${a.id}" data-ret="wissen" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.title)}</div><div class="s">${esc(a.lead)}</div></div><span class="chev">›</span></button>`).join("")}</div></section>` : ""; }).join("")}
@@ -4327,6 +4423,7 @@ function guideSheet(id, ret) {
 let settingsBack = "plan";
 const TAB_NAME = { home: "Heute", plan: "Plan", lib: "Wissen", food: "Essen", history: "Fortschritt" };
 function tabOf(v) {
+  if (EXT.nav[v]) return tabOf(EXT.nav[v].back);
   if (["day", "plan"].includes(v)) return "plan";
   if (v === "settings") return tabOf(settingsBack);
   if (["lib", "wissen"].includes(v)) return "lib";
@@ -4341,7 +4438,7 @@ let homeNote = "";
 // holt die vorige Seite mit ihrer Scrollposition. Ein anderer Tab öffnet dort, wo man ihn verlassen hat;
 // Tippen auf den aktiven Tab führt zurück zum Anfang bzw. nach oben.
 const ROOTV = new Set(["home", "plan", "lib", "wissen", "food", "history"]);
-const backOf = v => ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: settingsBack, tag: "home", setup: "plan" })[v];
+const backOf = v => EXT.nav[v] ? EXT.nav[v].back : ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: settingsBack, tag: "home", setup: "plan" })[v];
 function depthOf(v, n = 0) { if (ROOTV.has(v) || n > 6) return 0; const b = backOf(v); return 1 + (b && !ROOTV.has(b) ? depthOf(b, n + 1) : 0); }
 let navStack = [], tabMem = {}, navNoAnim = false;
 const NAV_MODAL = new Set(["train", "summary", "setup"]);
@@ -4707,9 +4804,12 @@ function vTag() {
     </div></details>
   </div>`;
 }
+const CORE_VIEWS = { home: () => vHome(), plan: () => vPlan(), day: () => vDay(), history: () => vHistory(), train: () => vTrain(), summary: () => vSummary(), setup: () => vSetup(), lib: () => vLib(), ex: () => vEx(),
+  wissen: () => vWissen(), art: () => vArt(), food: () => vFood(), tag: () => vTag(), week: () => vWeek(), settings: () => vSettings(), coach: () => vCoach() };
 function render() {
   if (view === "train" && !state.session) view = "home";
-  ({ home: vHome, plan: vPlan, day: vDay, history: vHistory, train: vTrain, summary: vSummary, setup: vSetup, lib: vLib, ex: vEx, wissen: vWissen, art: vArt, food: vFood, tag: vTag, week: vWeek, settings: vSettings, coach: vCoach })[view]();
+  if (!CORE_VIEWS[view] && !EXT.views[view]) view = "home";
+  (CORE_VIEWS[view] || EXT.views[view])();
 }
 
 /* ================= Einrichtung ================= */
@@ -4719,15 +4819,18 @@ let setup = { goal: "aufbau", days: 3, level: "einsteiger", minutes: 60, wd: [0,
 // Automatisierte Tests, die direkt mit den Fragen beginnen, schalten den Einstieg mit tp-intro=0 ab; Abschnitt 86 prüft ihn eigens.
 let setupStep = "intro";
 function introOn() { try { return localStorage.getItem("tp-intro") !== "0"; } catch (e) { return true; } }
-function vIntro() {
+function stepsCard() {
   const st = (n, ic, t, d) => `<li><span class="stn" aria-hidden="true">${n}</span><div class="grow"><div class="t">${t}</div><div class="s">${d}</div></div><span class="sti" aria-hidden="true">${sym(ic)}</span></li>`;
-  $app.innerHTML = `<div class="page" id="intro">
-    <div class="head"><h1 class="title">Dein Trainingsplan</h1><p class="sub">Für Hammer-Strength- und Life-Fitness-Geräte.</p></div>
-    <ol class="card steps3" aria-label="So funktioniert die App">
+  return `<ol class="card steps3" aria-label="So funktioniert die App">
       ${st(1, "list", "Plan bauen", "Trainingstage anlegen und Geräte aus deinem Studio wählen.")}
       ${st(2, "play", "Start tippen", "Die App läuft mit: Gewicht, Sätze und Pausen.")}
       ${st(3, "chart", "Dranbleiben", "Du siehst, was sich verbessert.")}
-    </ol>
+    </ol>`;
+}
+function vIntro() {
+  $app.innerHTML = `<div class="page" id="intro">
+    <div class="head"><h1 class="title">Dein Trainingsplan</h1><p class="sub">Für Hammer-Strength- und Life-Fitness-Geräte.</p></div>
+    ${stepsCard()}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="emptyPlan">Plan selbst bauen</button>
       <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
@@ -4983,7 +5086,7 @@ function vPlan() {
           ${d.items.length ? thumbStrip(d.items.map(it => it.exId), 5) + sr(d.items.map(it => esc(ex(it.exId).name)).join(" · ")) : `<span class="s">Noch keine Übungen – antippen und Geräte wählen</span>`}</span></button>
         ${d.items.length && !ses ? `<button class="icon-btn dplay" data-a="startDayId" data-id="${d.id}" aria-label="${esc(d.name)} starten">${ICON.play}</button>` : `<span class="chev" aria-hidden="true">›</span>`}
       </div>`).join("")}
-      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
+      <button class="li" data-a="addDayOpen" id="addDayRow"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
     </div>
     <p class="small foot">Tag antippen zum Bearbeiten, ▶ startet das Training.</p></section>
     <section class="section" id="planMore"><div class="section-head"><h2>Rund um den Plan</h2></div><div class="group">
@@ -4994,9 +5097,22 @@ function vPlan() {
         <span class="val">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? sr(` · ${allEx().filter(e => e.fav).length} bevorzugt`) : ""}</span><span class="chev">›</span></button>
       ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
       return `<button class="li" data-a="showRec">${ico("moon", "indigo")}<div class="grow"><div class="t n">Erholung</div><div class="s">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button>`; })()}
+      ${extRows("plan")}
     </div></section>
     ${planCheckHtml()}
   </div>`;
+}
+// Name, den es im Plan noch nicht gibt („Beine“, „Beine 2“ …)
+function freeDayName(n) { let s = n, k = 1; while (state.plan.days.some(d => d.name === s)) s = `${n} ${++k}`; return s; }
+function addDaySheet() {
+  const p = state.plan;
+  return `${sheetHead("Neuer Trainingstag", "", "closeSheet", true)}
+    <div class="group"><button class="li" data-a="addDay" id="addEmpty">${ico("plus", "blue")}<div class="grow"><div class="t">Leerer Tag</div><div class="s">Geräte selbst wählen</div></div><span class="chev">›</span></button></div>
+    <div class="cap">Oder als Vorschlag</div>
+    <div class="group" id="addTpl">${DAY_TPL.map(([name, tpl], k) => { const ids = tplIds(tpl), d = dayFromTpl(name, tpl, p.goal, p.level, p.minutes);
+      return `<button class="li" data-a="addDayTpl" data-k="${k}" ${ids.length ? "" : "disabled"}><div class="grow"><div class="row between" style="gap:var(--s2)"><span class="t">${name}</span><span class="min">${ids.length ? `${nGer(d.items.length)} · ≈ ${estMinutes(d)} Min.` : "kein passendes Gerät"}</span></div>
+        ${ids.length ? thumbStrip(d.items.map(i => i.exId), 6) + sr(d.items.map(i => esc(ex(i.exId).name)).join(" · ")) : ""}</div><span class="chev">›</span></button>`; }).join("")}</div>
+    <p class="small foot">Vorschläge nehmen Geräte aus deinem Studio, bevorzugte haben Vorrang. Sätze, Wiederholungen und Pausen sind Startwerte der App für dein Ziel (${(GOALS[p.goal] || GOALS.aufbau).label}). Alles lässt sich danach ändern.</p>`;
 }
 // Reihenfolge der Trainingstage: Nach einem Training ist der nächste Tag in dieser Liste dran (nach dem letzten wieder der erste)
 function dayOrderSheet() {
@@ -5032,10 +5148,12 @@ function vSettings() {
       <button class="li" data-a="openHealth">${ico("heart", "pink")}<div class="grow"><div class="t n">Apple Health</div></div><span class="val">${state.health ? "An" : "Aus"}</span><span class="chev">›</span></button>
       <button class="li" data-a="openWatch">${ico("watch", "gray")}<div class="grow"><div class="t n">Apple Watch</div></div><span class="val">${state.watch ? "Zeichnet mit auf" : "Aus"}</span><span class="chev">›</span></button></div>
       <p class="small foot">Health: Training und Gewicht per Kurzbefehl eintragen. Watch: Puls und Kalorien landen in Health.</p></section>
+    ${EXT.rows.settings.length ? `<section class="section" id="setApp"><h2>App</h2><div class="group">${extRows("settings")}</div></section>` : ""}
     <section class="section"><h2>Plan und Daten</h2><div class="group">
       <button class="li" data-a="newPlan">${ico("plus", "blue")}<div class="grow"><div class="t n">Neuen Plan erstellen</div></div><span class="chev">›</span></button>
       <button class="li" data-a="exportData">${ico("up", "green")}<div class="grow"><div class="t n">Sicherung erstellen</div><div class="s" id="backupLine">${backupLine()}</div></div><span class="chev">›</span></button>
-      <button class="li" data-a="importOpen">${ico("down", "teal")}<div class="grow"><div class="t n">Sicherung wiederherstellen</div></div><span class="chev">›</span></button></div>
+      <button class="li" data-a="importOpen">${ico("down", "teal")}<div class="grow"><div class="t n">Sicherung wiederherstellen</div></div><span class="chev">›</span></button>
+      ${extRows("data")}</div>
       <p class="small foot">Ein neuer Plan lässt deinen Verlauf unverändert.</p>
       <p class="small foot" id="persistInfo">Plan und Verlauf liegen nur in diesem Browser auf diesem Gerät. Eine Sicherungsdatei schützt bei Handywechsel, Verlust oder gelöschten Browserdaten.</p></section>
   </div>`;
@@ -5071,7 +5189,7 @@ function tryRestore(raw, bad) {
 }
 function restoreBackup(data) {
   pendingRestore = null;
-  state = normalize(Object.assign({}, data, { session: null })); save(); askPersist(); closeSheet(); navReset();
+  state = normalize(Object.assign({}, data, { session: null })); extClean(); save(); askPersist(); closeSheet(); navReset();
   homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.`;
   go("home");
 }
@@ -5781,7 +5899,8 @@ const HK_SENT = "An Health übergeben · erneut senden";
 // Gewicht in ganzen Gramm übergeben: kein Komma/Punkt, das Kurzbefehle je nach Region falsch lesen könnte
 const HK_WEIGHT = "Trainingsplan Gewicht";
 const weightUrl = kg => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_WEIGHT)}&input=text&text=${Math.round(kg * 1000)}`;
-const todayKey = () => new Date().toISOString().slice(0, 10);
+// Datum am Ort des Nutzers. toISOString() wäre UTC: in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr noch der Vortag
+const todayKey = () => dkey();
 const healthTxt = h => { const p = healthPayload(h); return `Krafttraining, Start ${p.start.slice(11)} Uhr, ${p.minuten} Min.`; };
 function openExternal(url) { if (window.__tp) window.__tp.lastUrl = url; else location.href = url; }
 function healthSheet() {
@@ -6194,7 +6313,7 @@ function dayTotals(d) {
 }
 // Gewichtstrend: Ausgleichsgerade über die letzten 28 Tage, mind. 3 Einträge über mind. 14 Tage
 function weightTrend() {
-  const since = new Date(Date.now() - 28 * 864e5).toISOString().slice(0, 10);
+  const since = dkey(new Date(Date.now() - 28 * 864e5));
   const pts = (state.weights || []).filter(w => w.d >= since).sort((a, b) => a.d.localeCompare(b.d));
   if (pts.length < 3) return null;
   const xs = pts.map(w => (new Date(w.d) - new Date(pts[0].d)) / 864e5), ys = pts.map(w => w.kg);
@@ -7492,6 +7611,7 @@ function vSummary() {
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">Mehr Gewicht als je zuvor</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}${reps.map(p =>
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">${p.reps} Wdh. mit ${kgTxt(p.kg)} ${UNIT[p.u]}, vorher höchstens ${p.from}</div></div><span class="badge pr">+${p.reps - p.from} Wdh.</span></div>`).join("")}</div></section>` : ""}
     ${nextTimeHtml(r)}
+    ${EXT.summary.map(f => { try { return f(sm) || ""; } catch (e) { return ""; } }).join("")}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
       <div class="s">${x.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join("  ·  ")} · ${UNIT[x.u]}</div></div></div>`).join("")}</div></section>
     <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="tab" data-v="home">Fertig</button></div></div>
@@ -7550,6 +7670,7 @@ function vHistory() {
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1 class="title">Fortschritt</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div>
     ${histNote ? `<p class="note small" id="histNote" role="status" style="margin:0">${esc(histNote)}</p>` : ""}
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek">${ico("chart", "indigo")}<div class="grow"><div class="t n">Wochenrückblick</div>${sr("Training, Ernährung und Gewicht der Woche")}</div><span class="chev">›</span></button></div>` : ""}
+    ${EXT.rows.history.length ? `<div class="group" id="histMore">${extRows("history")}</div>` : ""}
     ${H.length ? `
     <section class="section">
       <div class="section-head"><h2>Häufigkeit</h2><span class="small muted">${monthCount} ${monthCount === 1 ? "Tag" : "Tage"} im ${cm.toLocaleDateString("de-DE", { month: "long" })}</span></div>
@@ -7592,10 +7713,10 @@ function vHistory() {
 let calOffset = 0, bwOpen = false, logOpen = false, histNote = "";
 function weightCard() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dkey();
   const todayEntry = W.find(w => w.d === today);
   const last = W[W.length - 1];
-  const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  const since = dkey(new Date(Date.now() - 30 * 864e5));
   const base = W.find(w => w.d >= since);
   const diff = last && base && last !== base ? Math.round((last.kg - base.kg) * 10) / 10 : null;
   let chart = "";
@@ -7800,7 +7921,7 @@ const A = {
   addWeight: () => {
     const v = num(byId("bwIn").value);
     if (v === null || v < 30 || v > 300) { byId("bwErr").hidden = false; byId("bwIn").focus(); return; }
-    const d = new Date().toISOString().slice(0, 10);
+    const d = dkey();
     state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
     save(); bwOpen = true; vHistory(); bwOpen = false;
   },
@@ -7996,9 +8117,11 @@ const A = {
     if (d.kcal !== null && !(d.kcal >= 1000 && d.kcal <= 6000)) return fail("Ein eigenes Kalorienziel muss zwischen 1.000 und 6.000 kcal liegen – oder leer bleiben.");
     state.nutr = cleanNutr(Object.assign({}, d, { age: Math.round(d.age), cm: Math.round(d.cm) }));
     const kg = Math.round(d.kg * 10) / 10, w = lastWeight();
-    if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
+    if (!w || w.kg !== kg) { const t = dkey(); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
     save(); closeSheet(); render();
   },
+  openExt: el => { if (EXT.views[el.dataset.v]) go(el.dataset.v); },
+  extBack: () => go(backOf(view) || "home"),
   openSettings: () => { if (view !== "settings") settingsBack = ROOTV.has(view) ? view : tabOf(view); go("settings"); },
   settingsBack: () => go(settingsBack),
   openPreview: () => { const d = nextDay(); if (d) openSheet(previewSheet(d)); },
@@ -8209,7 +8332,10 @@ const A = {
   startDayId: el => { const d = state.plan && state.plan.days.find(x => x.id === el.dataset.id); if (d && d.items.length && !state.session) startTraining(d); },
   startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
   toTrain: () => { if (state.session) go("train"); },
-  addDay: () => { const d = { id: uid(), name: "Tag " + (state.plan.days.length + 1), items: [] }; state.plan.days.push(d); save(); state.editDay = d.id; go("day"); },
+  addDayOpen: () => openSheet(addDaySheet()),
+  addDay: () => { const d = { id: uid(), name: freeDayName("Tag " + (state.plan.days.length + 1)), items: [] }; state.plan.days.push(d); save(); closeSheet(); state.editDay = d.id; go("day"); },
+  addDayTpl: el => { const t = DAY_TPL[+el.dataset.k], p = state.plan; if (!t) return;
+    const d = dayFromTpl(freeDayName(t[0]), t[1], p.goal, p.level, p.minutes); p.days.push(d); save(); closeSheet(); state.editDay = d.id; go("day"); },
   dayCopyOpen: () => openSheet(dayCopySheet()),
   dayCopyAsk: el => { const src = curDay(), tgt = state.plan.days.find(x => x.id === el.dataset.to); if (!src || !tgt) return;
     openSheet(`${sheetHead("Geräte ersetzen?", "Zurück", "dayCopyOpen")}
@@ -8417,7 +8543,7 @@ function addToDay(exId) {
 }
 document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-a]"); if (!el || el.disabled) return;
-  const f = A[el.dataset.a]; if (f) f(el, ev);
+  const f = A[el.dataset.a] || EXT.actions[el.dataset.a]; if (f) f(el, ev);
 });
 // 3D-Ansicht drehen: waagerecht ziehen
 { let drag = null;
@@ -8428,6 +8554,7 @@ document.addEventListener("click", ev => {
   for (const t of ["pointerup", "pointercancel"]) document.addEventListener(t, () => { drag = null; }); }
 document.addEventListener("input", ev => {
   const el = ev.target, k = el.dataset.i; if (!k) return;
+  if (EXT.inputs[k]) return EXT.inputs[k](el, ev);
   if (k === "dayName") { const d = curDay(); if (d && el.value.trim()) { d.name = el.value.trim(); save(); $nav.querySelector(".nb-t").textContent = d.name; } }
   else if (k === "pickQ") { pickQuery = el.value; refreshPicker(); }
   else if (k === "stepLen") { const v = Math.round(+String(el.value).replace(",", ".")); state.stepLen = Number.isInteger(v) && v >= 30 && v <= 150 ? v : null; save(); tagRefresh(); }
@@ -8476,8 +8603,91 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+
+/* ===================== ERWEITERUNGEN: je Erweiterung ein eigener Block zwischen ihren Marken ===================== */
+// @ext:hilfe:js:start
+// Hilfe: So funktioniert die App und häufige Fragen (Einstellungen → Hilfe). Zugleich das Muster für weitere Erweiterungen:
+// eigene Unterseite, Zeile in einer bestehenden Liste, kein Umbau bestehender Ansichten.
+const HILFE = [
+  ["Wie baue ich meinen Plan?", "Unter „Plan“ auf „Trainingstag hinzufügen“ tippen: ein leerer Tag oder ein Vorschlag. Im Tag wählst du mit „Geräte hinzufügen“ die Geräte aus deinem Studio. Ein Gerät antippen ändert Sätze, Wiederholungen und Pause."],
+  ["Wie starte ich ein Training?", "Auf „Heute“ steht das nächste Training mit „Training starten“. Unter „Plan“ startet ▶ jeden Tag direkt."],
+  ["Was macht die App während des Trainings?", "Sie zeigt Gerät, Satz, Gewicht und Wiederholungen, zählt die Pause herunter und führt zum nächsten Satz. Am Ende steht eine Zusammenfassung."],
+  ["Warum schlägt die App dieses Gewicht vor?", "Sie rechnet es aus deinem letzten Training an diesem Gerät. Die Regeln stehen unter Wissen → Artikel → „So entscheidet die App“."],
+  ["Was heißt „pro Seite“?", "Bei Geräten mit zwei getrennten Armen zählt das Gewicht einer Seite. „Insgesamt“ meint alle aufgelegten Scheiben zusammen. Umstellen: Plan → Geräte → Gerät antippen."],
+  ["Wo ändere ich die Reihenfolge der Trainingstage?", "Unter „Plan“ auf „Ordnen“ tippen. Das gibt es ab zwei Trainingstagen."],
+  ["Wie sichere ich meine Daten?", "Einstellungen → „Sicherung erstellen“. Plan und Verlauf liegen nur auf diesem Gerät; eine Sicherungsdatei schützt bei Handywechsel oder Verlust."],
+  ["Wie kommt die App auf den Home-Bildschirm?", "Die Seite in Safari öffnen, auf „Teilen“ tippen und „Zum Home-Bildschirm“ wählen."]
+];
+EXT.nav.hilfe = { back: "settings" };
+EXT.views.hilfe = () => {
+  $app.innerHTML = `<div class="page">
+    ${extHead("Hilfe", "So funktioniert die App.")}
+    ${stepsCard()}
+    <section class="section"><h2>Häufige Fragen</h2>
+      <div class="gdets" id="hilfeList">${HILFE.map(([q, a]) => `<details class="gdet"><summary>${q}</summary><div class="gdet-in"><p class="small muted" style="margin:0">${a}</p></div></details>`).join("")}</div></section>
+  </div>`;
+};
+EXT.rows.settings.push(() => extRow("hilfe", "info", "blue", "Hilfe"));
+EXT.test.HILFE = HILFE;
+// @ext:hilfe:js:end
+// ── Abstand hilfe/js 1 ──
+// ── Abstand hilfe/js 2 ──
+// ── Abstand hilfe/js 3 ──
+// @ext:meilensteine:js:start
+// @ext:meilensteine:js:end
+// ── Abstand meilensteine/js 1 ──
+// ── Abstand meilensteine/js 2 ──
+// ── Abstand meilensteine/js 3 ──
+// @ext:masse:js:start
+// @ext:masse:js:end
+// ── Abstand masse/js 1 ──
+// ── Abstand masse/js 2 ──
+// ── Abstand masse/js 3 ──
+// @ext:rueckblick:js:start
+// @ext:rueckblick:js:end
+// ── Abstand rueckblick/js 1 ──
+// ── Abstand rueckblick/js 2 ──
+// ── Abstand rueckblick/js 3 ──
+// @ext:werkzeuge:js:start
+// @ext:werkzeuge:js:end
+// ── Abstand werkzeuge/js 1 ──
+// ── Abstand werkzeuge/js 2 ──
+// ── Abstand werkzeuge/js 3 ──
+// @ext:glossar:js:start
+// @ext:glossar:js:end
+// ── Abstand glossar/js 1 ──
+// ── Abstand glossar/js 2 ──
+// ── Abstand glossar/js 3 ──
+// @ext:muskeln:js:start
+// @ext:muskeln:js:end
+// ── Abstand muskeln/js 1 ──
+// ── Abstand muskeln/js 2 ──
+// ── Abstand muskeln/js 3 ──
+// @ext:plaene:js:start
+// @ext:plaene:js:end
+// ── Abstand plaene/js 1 ──
+// ── Abstand plaene/js 2 ──
+// ── Abstand plaene/js 3 ──
+// @ext:aussehen:js:start
+// @ext:aussehen:js:end
+// ── Abstand aussehen/js 1 ──
+// ── Abstand aussehen/js 2 ──
+// ── Abstand aussehen/js 3 ──
+// @ext:export:js:start
+// @ext:export:js:end
+// ── Abstand export/js 1 ──
+// ── Abstand export/js 2 ──
+// ── Abstand export/js 3 ──
+// @ext:artikel:js:start
+// @ext:artikel:js:end
+// ── Abstand artikel/js 1 ──
+// ── Abstand artikel/js 2 ──
+// ── Abstand artikel/js 3 ──
+
+if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
+if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
+extClean();
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
