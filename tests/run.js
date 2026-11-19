@@ -78,6 +78,9 @@ async function open(data, opts = {}) {
 const stored = page => page.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
 const tp = (page, fn, arg) => page.evaluate(fn, arg);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+// Welche Elemente ragen rechts hinaus? (für Fehlermeldungen)
+const overflowers = page => page.evaluate(() => [...document.querySelectorAll("body *")].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > innerWidth + .5; })
+  .slice(0, 5).map(e => `${e.tagName.toLowerCase()}.${String(e.className).split(" ")[0]}:${Math.round(e.getBoundingClientRect().right)} „${(e.textContent || "").trim().slice(0, 24)}“`).join(" | "));
 async function finishAllSets(page, kg, reps) {
   for (let g = 0; g < 40 && await page.$("[data-a=doneSet]"); g++) {
     await page.fill("#kgIn", String(kg)); await page.fill("#repsIn", String(reps));
@@ -367,7 +370,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v83)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v83")));
+      ok("Service Worker aktiv (Cache trainingsplan-v84)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v84")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -3485,7 +3488,7 @@ async function finishAllSets(page, kg, reps) {
       ok("Wochenleiste: Tage außerhalb des Planbereichs gesperrt", dis === (wd ? wd : 6), String(dis));
       await page.setViewportSize({ width: 320, height: 640 });
       await page.click(`.tagweek [data-d="${wd ? dk(-7) : dk(14)}"]`).catch(() => {});
-      ok("Tagesplan mit Wochenleiste bei 320 px ohne seitliches Scrollen", await noOverflow(page));
+      ok("Tagesplan mit Wochenleiste bei 320 px ohne seitliches Scrollen", await noOverflow(page), await overflowers(page));
       await ctx.close();
     }
 
