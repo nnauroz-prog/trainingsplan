@@ -374,7 +374,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v89)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v89")));
+      ok("Service Worker aktiv (Cache trainingsplan-v90)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v90")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -2103,7 +2103,8 @@ async function finishAllSets(page, kg, reps) {
     {
       // Seltener als geplant (2 statt 3 pro Woche, montags und donnerstags) → 2-Tage-Plan vorschlagen; gelernte Trainingszeiten
       const history = []; let k = 0;
-      for (let w = 5; w >= 0; w--) for (const wd of [0, 3]) { if (new Date(at(w, wd)) > new Date()) continue; const d = ["a", "b", "c"][k++ % 3]; history.push(H(d, at(w, wd), [[{ a: "hs-chest", b: "hs-pulldown", c: "hs-legpress" }[d], S3(40 + k, 10), d === "a" ? "s" : "t"]])); }
+      // Kein Training von heute: sonst meldet der Buddy montags und donnerstags ab 19 Uhr „Heute erledigt“ statt der gelernten Zeiten (der Test hing an der Uhrzeit)
+      for (let w = 5; w >= 0; w--) for (const wd of [0, 3]) { if (new Date(at(w, wd)) > new Date() || new Date(at(w, wd)).toDateString() === new Date().toDateString()) continue; const d = ["a", "b", "c"][k++ % 3]; history.push(H(d, at(w, wd), [[{ a: "hs-chest", b: "hs-pulldown", c: "hs-legpress" }[d], S3(40 + k, 10), d === "a" ? "s" : "t"]])); }
       const { ctx, page } = await open({ plan: PPL, history });
       const ins = await tp(page, () => window.__tp.insights().map(x => x.id));
       ok("Häufigkeit: „Im Schnitt 2 von 3 Trainings pro Woche“ mit Zählung je Tag", ins.includes("freq:3>2") && (await page.textContent("#coach")).includes("Im Schnitt 2 von 3 Trainings pro Woche") && /Drücken \d×, Ziehen \d× und Beine \d×/.test(await page.textContent("#coach")), ins.join(","));
@@ -4428,7 +4429,7 @@ async function finishAllSets(page, kg, reps) {
       // Großer Titel → kleiner Titel in der Leiste beim Scrollen; Zurück stellt die Scrollposition wieder her
       await page.click("nav.tabs [data-v=lib]"); await page.evaluate(() => window.scrollTo(0, 900)); await sleep(80);
       n = await nav();
-      ok("Beim Scrollen erscheint der kleine Titel „Übungen“ in der Leiste (mit Hintergrund)", n.sc && n.t === "Übungen", JSON.stringify(n));
+      ok("Beim Scrollen erscheint der kleine Titel „Wissen“ in der Leiste (mit Hintergrund)", n.sc && n.t === "Wissen", JSON.stringify(n));
       const y0 = await page.evaluate(() => window.scrollY);
       const id = await page.evaluate(() => { const b = [...document.querySelectorAll("[data-a=openEx]")].find(x => { const r = x.getBoundingClientRect(); return r.top > 120 && r.bottom < innerHeight - 100; }); return b && b.dataset.id; });
       await page.click(`[data-a=openEx][data-id="${id}"]`); await sleep(50);
@@ -4715,7 +4716,74 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("87. Konsole");
+    section("87. Gleiche Regeln in allen Bereichen; Plan bauen");
+    {
+      const P = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Oberkörper", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "b", name: "Beine", items: [{ id: "b1", exId: "hs-legpress", sets: 3, rmin: 8, rmax: 12, rest: 90 }] },
+        { id: "c", name: "Rücken", items: [{ id: "c1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: P, history: [Object.assign(hist("hs-chest", [{ kg: 40, reps: 10 }], 6, "s"), { dayId: "a", day: "Oberkörper" })] });
+      const next0 = await page.textContent(".hero-name");
+      // Titel = Bereich, Einstellungen von jedem Bereich aus, zurück zur Herkunft
+      const res = [];
+      for (const [v, title, back] of [["home", "Heute", "Heute"], ["plan", "Mein Plan", "Plan"], ["lib", "Wissen", "Wissen"], ["food", "Essen", "Essen"], ["history", "Fortschritt", "Fortschritt"]]) {
+        await page.click(`nav.tabs [data-v=${v}]`);
+        const t1 = await page.textContent("#app h1"), gear = await page.$$eval("#navbar .nb-r [data-a=openSettings]", b => b.length);
+        await page.click("#navbar [data-a=openSettings]");
+        const b1 = (await page.textContent("#navbar .nb-back")).trim(), on = await page.$eval("#tabs button.on", b => b.dataset.v);
+        await page.click("#navbar .nb-back");
+        const t2 = await page.textContent("#app h1");
+        res.push(`${v}:${t1 === title && gear === 1 && b1 === back && on === v && t2 === title ? "ok" : [t1, gear, b1, on, t2].join("/")}`);
+      }
+      ok("Jeder Bereich: Titel = Bereich, Zahnrad oben rechts, Einstellungen führen zurück zum Bereich", res.every(r => r.endsWith(":ok")), res.join(" "));
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
+      ok("Artikel: derselbe Titel „Wissen“, Umschalter „Geräte | Artikel“", (await page.textContent("#app h1")) === "Wissen" && (await page.textContent("#wissenSeg")).replace(/\s+/g, "") === "GeräteArtikel");
+      // Geräteliste filtert wie die Geräteauswahl: Muskel-Chips mit Anzahl
+      await page.click("#wissenSeg [data-v=lib]");
+      const m0 = await tp(page, () => ({ all: document.querySelector("#libMuscle [data-k=alle] .n").textContent, brust: document.querySelector("#libMuscle [data-k=brust] .n").textContent, rows: document.querySelectorAll("#libList [data-a=openEx]").length }));
+      await page.click("#libMuscle [data-k=brust]");
+      const m1 = await tp(page, () => ({ rows: document.querySelectorAll("#libList [data-a=openEx]").length, heads: [...document.querySelectorAll("#libList h2")].map(h => h.textContent).join(), on: document.querySelector("#libMuscle [data-k=brust]").getAttribute("aria-pressed") }));
+      ok("Wissen → Geräte: Muskel-Chips mit Anzahl wie in der Geräteauswahl; „Brust“ zeigt nur Brustgeräte", +m0.all === m0.rows && m1.rows === +m0.brust && m1.heads === "Brust" && m1.on === "true", JSON.stringify([m0, m1]));
+      await page.click("#libBrand [data-k=lf]");
+      const m2 = await tp(page, () => ({ rows: document.querySelectorAll("#libList [data-a=openEx]").length, n: document.querySelector("#libMuscle [data-k=brust] .n").textContent }));
+      ok("Marke und Muskel wirken zusammen, die Anzahl stimmt", m2.rows === +m2.n && m2.rows > 0 && m2.rows < m1.rows, JSON.stringify(m2));
+      await page.click("#libMuscle [data-k=alle]"); await page.click("#libBrand [data-k=alle]");
+      // Hinweise: Regeln aufklappbar statt Textwand
+      await page.click("#wissenSeg [data-v=wissen]"); await page.click("#wissenCoach");
+      const ru = await tp(page, () => { const d = [...document.querySelectorAll("#ruleList details")]; return { n: d.length, open: d.filter(x => x.open).length, txt: document.getElementById("coachRules").textContent.includes("72 Stunden") }; });
+      await page.click("#ruleList details summary");
+      ok("„So entscheidet die App“: Regeln als aufklappbare Liste, Inhalt bleibt vollständig", ru.n >= 8 && ru.open === 0 && ru.txt && await page.$eval("#ruleList details", d => d.open), JSON.stringify(ru));
+      // Plan bauen: Tag umbenennen sichtbar, Trainingstage ordnen
+      await page.click("nav.tabs [data-v=plan]"); await page.click("[data-a=editDay][data-id=a]");
+      await page.click("[data-a=dayRename]");
+      const foc = await page.evaluate(() => document.activeElement && document.activeElement.id);
+      await page.keyboard.type("Brust und Arme");
+      ok("Tagesseite: Stift neben dem Namen setzt den Cursor ins Namensfeld und markiert den Namen; Eintippen benennt um", foc === "dayName" && (await stored(page)).plan.days[0].name === "Brust und Arme");
+      await page.click("#navbar .nb-back");
+      ok("Mein Plan: „Ordnen“ bei mehr als einem Tag", await page.isVisible("#dayOrder"));
+      await page.click("#dayOrder");
+      const o0 = await page.$$eval("#dayOrderList .li .t", e => e.map(x => x.textContent).join());
+      await page.click("#dayOrderList [data-a=dayMove][data-i2='2'][data-d='-1']");
+      const o1 = await tp(page, () => ({ sheet: [...document.querySelectorAll("#dayOrderList .li .t")].map(x => x.textContent).join(), plan: [...document.querySelectorAll(".day-row .t")].map(x => x.textContent).join(),
+        up0: document.querySelector("#dayOrderList [data-i2='0'][data-d='-1']").disabled, down2: document.querySelector("#dayOrderList [data-i2='2'][data-d='1']").disabled, foot: document.querySelector(".sheet .foot").textContent }));
+      const st = await stored(page);
+      ok("Ordnen: Rücken eins nach oben → Brust und Arme, Rücken, Beine; Liste dahinter und Speicher folgen", o0 === "Brust und Arme,Beine,Rücken" && o1.sheet === "Brust und Arme,Rücken,Beine" && o1.plan === o1.sheet && st.plan.days.map(d => d.id).join() === "a,c,b" && o1.up0 && o1.down2, JSON.stringify(o1));
+      ok("Erklärt, wofür die Reihenfolge gilt, mit Kennzeichnung „Regel der App“", o1.foot.includes("nächste Tag in dieser Liste") && o1.foot.includes("Regel der App"));
+      await page.click(".sheet .sh-head [data-a=closeSheet]"); await page.click("nav.tabs [data-v=home]");
+      ok("Die Reihenfolge wirkt: Nach dem zuletzt trainierten Tag war „Beine“ dran, jetzt „Rücken“", next0 === "Beine" && (await page.textContent(".hero-name")) === "Rücken", next0 + " → " + await page.textContent(".hero-name"));
+      ok("Ordnen-Sheet und Tagesseite bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); await page.click("nav.tabs [data-v=plan]"); await page.click("#dayOrder"); const a = await noOverflow(page);
+        await page.click(".sheet .sh-head [data-a=closeSheet]"); await page.click("[data-a=editDay][data-id=a]"); const b = await noOverflow(page); return a && b; })());
+      await ctx.close();
+    }
+    {
+      // Nur ein Trainingstag: kein „Ordnen“
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("nav.tabs [data-v=plan]");
+      ok("Ein Trainingstag: kein „Ordnen“", !(await page.$("#dayOrder")));
+      await ctx.close();
+    }
+
+    section("88. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
