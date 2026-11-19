@@ -367,7 +367,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v83)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v83")));
+      ok("Service Worker aktiv (Cache trainingsplan-v84)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v84")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4398,7 +4398,40 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("83. Konsole");
+    section("83. Zu lang für das Zeitbudget: Supersatz-Vorschlag");
+    {
+      // Satz 50 s; ohne Supersatz 120 + (4×50+3×120) + 120 + (3×50+2×90) + 120 + 560 + 120 + 330 = 2260 s (≈ 40 Min.)
+      // Brustpresse+Rudern: 4×(50+20+50)+3×120 = 840 statt 560+120+560 → spart 400 s; Beinstrecker+Beinbeuger: 540 statt 780 → 240 s
+      const TB = { goal: "aufbau", level: "einsteiger", minutes: 25, days: [{ id: "d1", name: "Tag A", items: [
+        { id: "c", exId: "hs-chest", sets: 4, rmin: 8, rmax: 12, rest: 120 }, { id: "e", exId: "hs-legext", sets: 3, rmin: 8, rmax: 12, rest: 90 },
+        { id: "r", exId: "hs-row", sets: 4, rmin: 8, rmax: 12, rest: 120 }, { id: "l", exId: "hs-seatcurl", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan: TB });
+      const sg = await tp(page, () => window.__tp.ssSuggest(window.__tp.state.plan.days[0]).map(x => x.a.exId + "+" + x.b.exId + ":" + x.save));
+      ok("Vorschläge: nur Gegenspieler-Paare, größte Ersparnis zuerst", sg.join() === "hs-chest+hs-row:400,hs-legext+hs-seatcurl:240", sg.join());
+      await page.click("[data-a=tab][data-v=plan]"); await page.waitForTimeout(100);
+      ok("Planprüfung: zu langer Tag nennt die Ersparnis durch Supersatz", /Supersatz spart ≈ 11 Min\./.test(await page.textContent("#app")));
+      await page.click("[data-a=editDay][data-id=d1]"); await page.waitForTimeout(150);
+      const card = await tp(page, () => { const c = document.getElementById("ssSuggest"); return c && { t: c.querySelector(".t").textContent, s: [...c.querySelectorAll(".li .s")].map(x => x.textContent), n: c.querySelectorAll("[data-a=ssLink]").length }; });
+      ok("Tagesansicht: „≈ 15 Min. über deinem Zeitbudget“ mit zwei Paaren und Ersparnis", !!card && /15 Min\. über/.test(card.t) && card.s.join() === "spart ≈ 7 Min.,spart ≈ 4 Min." && card.n === 2, JSON.stringify(card));
+      ok("Vorschlag bei 360 px ohne seitliches Scrollen", await noOverflow(page));
+      const before = await tp(page, () => window.__tp.estimateSec(window.__tp.state.plan.days[0].items));
+      await page.click("#ssSuggest [data-a=ssLink]"); await page.waitForTimeout(150);
+      const a1 = await tp(page, () => { const d = window.__tp.state.plan.days[0]; return { o: d.items.map(i => i.id + (i.ss ? ">" + i.ss : "")).join(), sec: window.__tp.estimateSec(d.items) }; });
+      ok("Verbinden: Rudern rückt hinter die Brustpresse, die Dauer sinkt genau um die genannte Ersparnis", a1.o === "c>r,r,e,l" && before - a1.sec === 400, JSON.stringify(a1));
+      await page.click("#ssSuggest [data-a=ssLink]"); await page.waitForTimeout(150);
+      const a2 = await tp(page, () => ({ o: window.__tp.state.plan.days[0].items.map(i => i.id + (i.ss ? ">" + i.ss : "")).join(), card: !!document.getElementById("ssSuggest"), head: document.querySelector(".head .small").textContent }));
+      ok("Beide verbunden: Tag passt (≈ 25 Min.), der Hinweis verschwindet", a2.o === "c>r,r,e>l,l" && !a2.card && /≈ 25 Min\./.test(a2.head), JSON.stringify(a2));
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [
+        { id: "c", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "r", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] } });
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]"); await page.waitForTimeout(150);
+      ok("Tag im Zeitbudget: kein Supersatz-Vorschlag", !(await page.$("#ssSuggest")));
+      await ctx.close();
+    }
+
+    section("84. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));
