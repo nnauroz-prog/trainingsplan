@@ -573,6 +573,7 @@
   .wkr{display:inline-flex;align-items:center;gap:8px}
   .hlink{font:inherit;letter-spacing:inherit;color:inherit;display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-10px 0}
   .hlink:active{opacity:.5}
+  .section-head>.link{min-height:44px;margin:-10px 0}
   .dthumb{position:relative;overflow:visible}
   .dthumb i{position:absolute;left:-6px;top:-6px;width:20px;height:20px;border-radius:50%;background:var(--raise-3);color:var(--text);font-style:normal;font-family:var(--rounded);font-size:12px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--raise)}
   .day-row{padding-top:0;padding-bottom:0;padding-left:0}
@@ -2459,6 +2460,9 @@ const SYM = {
   x: `<path d="M6 6l12 12M18 6 6 18"/>`,
   play: `<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>`,
   list: `<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>`,
+  pencil: `<path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/>`,
+  arrowUp: `<path d="M12 19V5M5.5 11.500 12 5l6.5 6.500"/>`,
+  arrowDown: `<path d="M12 5v14M5.5 12.500 12 19l6.5-6.500"/>`,
   bulb: `<path d="M9 17h6M10 20h4M12 3a6 6 0 0 0-3.5 10.900c.6.5 1 1.300 1 2.100h5c0-.8.4-1.600 1-2.100A6 6 0 0 0 12 3z"/>`
 };
 const sym = (n, col) => `<svg class="sym" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${col ? ` style="color:${col}"` : ""}>${SYM[n]}</svg>`;
@@ -2511,7 +2515,7 @@ function progShort(x, e, si) {
 }
 
 /* ================= Übungsbibliothek & Wissen ================= */
-let libQuery = "", libBrand = "alle", exDetail = null, exBack = "lib", artId = null, artBack = "wissen", guideRet = null;
+let libQuery = "", libBrand = "alle", libMuscle = "alle", exDetail = null, exBack = "lib", artId = null, artBack = "wissen", guideRet = null;
 // Persönliche Werte an einem Gerät (nur echte, gültige Sätze mit derselben Gewichtsangabe)
 function personalStats(id) {
   const u = unitOf(ex(id)), ss = compSessions(id, u);
@@ -4208,15 +4212,20 @@ function srcList(keys) {
 }
 function vLib() {
   const q = libQuery.toLowerCase();
-  const all = allEx().filter(e => (libBrand === "alle" || e.brand === libBrand) && (findEx(e, q) || MUSCLES[e.muscle].toLowerCase().includes(q)));
+  const base = allEx().filter(e => (libBrand === "alle" || e.brand === libBrand) && (findEx(e, q) || MUSCLES[e.muscle].toLowerCase().includes(q)));
+  const cnt = k => base.filter(e => k === "alle" || e.muscle === k).length;
+  if (libMuscle !== "alle" && !cnt(libMuscle)) libMuscle = "alle";
+  const all = base.filter(e => libMuscle === "alle" || e.muscle === libMuscle);
   // Geräte im Studio zuerst
   const groups = Object.entries(MUSCLES).map(([m, l]) => [l, all.filter(e => e.muscle === m).sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0))]).filter(([, a]) => a.length);
   $app.innerHTML = `<div class="page">
-    <div class="head"><h1 class="title">Übungen</h1>
+    <div class="head"><h1 class="title">Wissen</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button>
       <p class="sub">${allEx().length} Geräte mit Muskeln, Einstellung, Ausführung und typischen Fehlern.</p></div>
     ${wissenSeg("lib")}
     <input id="libQ" data-i="libQ" type="search" placeholder="Suchen, z. B. Rudern oder Brust" value="${esc(libQuery)}" autocomplete="off" enterkeyhint="search">
     <div class="chips" id="libBrand">${[["alle", "Alle"], ["hs", BRAND.hs], ["lf", BRAND.lf]].map(([k, l]) => `<button class="chip ${libBrand === k ? "on" : ""}" data-a="libBrand" data-k="${k}">${l}</button>`).join("")}</div>
+    <div class="chips" id="libMuscle" role="group" aria-label="Nach Muskel filtern">${[["alle", "Alle"], ...Object.entries(MUSCLES)].filter(([k]) => k === "alle" || cnt(k)).map(([k, l]) =>
+      `<button class="chip ${libMuscle === k ? "on" : ""}" data-a="libMuscle" data-k="${k}" aria-pressed="${libMuscle === k}">${l}<span class="n">${cnt(k)}</span></button>`).join("")}</div>
     <div id="libList" class="stack" style="gap:var(--s5)">${groups.map(([l, a]) => `<section class="section"><h2>${l}</h2><div class="group">${a.map(e => `
       <button class="li" data-a="openEx" data-id="${e.id}" data-ret="lib">
         <div class="thumbbox">${motionSvg(e.id, { cls: "thumb" })}</div>
@@ -4285,10 +4294,10 @@ function exAltHtml(id) {
     <div class="group">${list.map(a => `<button class="li" data-a="openEx" data-id="${a.e.id}" data-ret="${exBack}" style="align-items:flex-start">
       <div class="grow"><div class="t">${esc(a.e.name)}</div><div class="s">${esc(aboutOf(a.e))}</div></div><span class="badge">${ALT_TAG[a.kind]}</span></button>`).join("")}</div>`;
 }
-const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Übungen</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
+const wissenSeg = cur => `<div class="seg" id="wissenSeg"><button data-a="tab" data-v="lib" class="${cur === "lib" ? "on" : ""}">Geräte</button><button data-a="tab" data-v="wissen" class="${cur === "wissen" ? "on" : ""}">Artikel</button></div>`;
 function vWissen() {
   $app.innerHTML = `<div class="page">
-    <div class="head"><h1 class="title">Artikel</h1>
+    <div class="head"><h1 class="title">Wissen</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button>
       <p class="sub">Grundlagen zu Training und Ernährung, mit Quellen.</p></div>
     ${wissenSeg("wissen")}
     <div class="group"><button class="li" data-a="openCoach" data-ret="wissen" id="wissenCoach"><div class="grow"><div class="t">So entscheidet die App</div><div class="s">Wie Gewichte, Reihenfolge, Hinweise und Plan B zustande kommen</div></div><span class="chev">›</span></button></div>
@@ -4315,8 +4324,11 @@ function guideSheet(id, ret) {
 
 /* ================= Navigation ================= */
 // Welcher Tab gehört zu welcher Ansicht
+let settingsBack = "plan";
+const TAB_NAME = { home: "Heute", plan: "Plan", lib: "Wissen", food: "Essen", history: "Fortschritt" };
 function tabOf(v) {
-  if (["day", "settings", "plan"].includes(v)) return "plan";
+  if (["day", "plan"].includes(v)) return "plan";
+  if (v === "settings") return tabOf(settingsBack);
   if (["lib", "wissen"].includes(v)) return "lib";
   if (v === "ex") return exBack === "coach" ? tabOf("coach") : exBack === "history" ? "history" : exBack === "home" ? "home" : ["day", "plan"].includes(exBack) ? "plan" : "lib";
   if (v === "art") return artBack === "coach" ? tabOf("coach") : artBack === "home" ? "home" : artBack === "food" ? "food" : artBack === "plan" ? "plan" : artBack === "week" ? (weekBack === "history" ? "history" : "home") : "lib";
@@ -4329,7 +4341,7 @@ let homeNote = "";
 // holt die vorige Seite mit ihrer Scrollposition. Ein anderer Tab öffnet dort, wo man ihn verlassen hat;
 // Tippen auf den aktiven Tab führt zurück zum Anfang bzw. nach oben.
 const ROOTV = new Set(["home", "plan", "lib", "wissen", "food", "history"]);
-const backOf = v => ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: "plan", tag: "home", setup: "plan" })[v];
+const backOf = v => ({ ex: exBack, art: artBack, week: weekBack, coach: coachBack, day: "plan", settings: settingsBack, tag: "home", setup: "plan" })[v];
 function depthOf(v, n = 0) { if (ROOTV.has(v) || n > 6) return 0; const b = backOf(v); return 1 + (b && !ROOTV.has(b) ? depthOf(b, n + 1) : 0); }
 let navStack = [], tabMem = {}, navNoAnim = false;
 const NAV_MODAL = new Set(["train", "summary", "setup"]);
@@ -4777,7 +4789,7 @@ function vHome() {
   const muscles = day ? [...new Set(day.items.map(i => MUSCLES[ex(i.exId).muscle]))] : [];
 
   $app.innerHTML = `<div class="page">
-    <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><h1 class="title">Heute</h1></div>
+    <div class="head home"><div class="cap">${now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}</div><h1 class="title">Heute</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div>
     ${homeNote ? `<p class="note small" id="homeNote" role="status" style="margin:0">${esc(homeNote)}</p>` : ""}
     ${updateReady && !(state.session && !state.session.paused) ? `<div class="note row between" id="updNote" role="status"><p class="small" style="margin:0">Neue Version der App geladen.</p><button class="btn sm" data-a="reloadApp">Neu laden</button></div>` : ""}
     ${ses ? (() => { const tot = ses.list.reduce((a, l) => a + l.sets.length, 0), dn = ses.list.reduce((a, l) => a + l.sets.filter(t => t.done).length, 0);
@@ -4963,7 +4975,7 @@ function vPlan() {
     ${p.gaps && p.gaps.length ? `<div class="note warn" id="gapCard"><div class="cap">Nicht ersetzt</div>${gapList(p.gaps)}
       <button class="btn sm" data-a="gapsDone" style="justify-self:start">Hinweis ausblenden</button></div>` : ""}
     ${planNote ? `<p class="note small" id="planNote" role="status" style="margin:0">${esc(planNote)}${planUndo ? ` <button class="link small" data-a="dayCopyUndo" style="display:inline">Rückgängig</button>` : ""}</p>` : ""}
-    <section class="section" id="planDays"><div class="section-head"><h2>Trainingstage</h2></div>
+    <section class="section" id="planDays"><div class="section-head"><h2>Trainingstage</h2>${p.days.length > 1 ? `<button class="link small" data-a="dayOrderOpen" id="dayOrder">Ordnen</button>` : ""}</div>
     <div class="group">${p.days.map((d, i) => `
       <div class="li day-row">
         <button class="dmain" data-a="editDay" data-id="${d.id}"><span class="idx">${i + 1}</span>
@@ -4986,11 +4998,20 @@ function vPlan() {
     ${planCheckHtml()}
   </div>`;
 }
+// Reihenfolge der Trainingstage: Nach einem Training ist der nächste Tag in dieser Liste dran (nach dem letzten wieder der erste)
+function dayOrderSheet() {
+  const L = state.plan.days;
+  return `${sheetHead("Reihenfolge")}
+    <div class="group" id="dayOrderList">${L.map((d, i) => `<div class="li"><span class="idx">${i + 1}</span><div class="grow"><div class="t">${esc(d.name)}</div><div class="s">${nGer(d.items.length)}</div></div>
+      <button class="icon-btn" data-a="dayMove" data-i2="${i}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(d.name)} nach oben" style="font-size:20px">${sym("arrowUp")}</button>
+      <button class="icon-btn" data-a="dayMove" data-i2="${i}" data-d="1" ${i === L.length - 1 ? "disabled" : ""} aria-label="${esc(d.name)} nach unten" style="font-size:20px">${sym("arrowDown")}</button></div>`).join("")}</div>
+    <p class="small foot">Nach einem Training ist der nächste Tag in dieser Liste dran, nach dem letzten wieder der erste. Sind dessen Muskeln noch nicht erholt, schlägt die App einen anderen Tag vor (Regel der App).</p>`;
+}
 /* ================= Einstellungen ================= */
 function vSettings() {
   const seg = (k, on, label) => `<button class="switch" role="switch" aria-checked="${!!on}" data-a="nOpt" data-k="${k}" data-v="${on ? 0 : 1}" aria-label="${label}"></button>`;
   $app.innerHTML = `<div class="page">
-    <div class="head"><button class="link" data-a="tab" data-v="plan">‹ Plan</button><h1 class="title">Einstellungen</h1></div>
+    <div class="head"><button class="link" data-a="settingsBack">‹ ${TAB_NAME[tabOf(settingsBack)]}</button><h1 class="title">Einstellungen</h1></div>
     <section class="section"><h2>Training</h2><div class="group">
       <button class="li" data-a="openSched">${ico("cal", "red")}<div class="grow"><div class="row between"><span class="t n">Trainingstermine</span>${state.sched ? `<span class="val" aria-hidden="true">${state.sched.time}</span>` : ""}</div>
         ${state.sched ? `<div style="margin-top:6px">${miniWeek(state.sched.days)}</div>` + sr(`${state.sched.days.map(d => WD[d]).join(", ")} · ${state.sched.time}`) : `<div class="s">Noch keine festen Termine</div>`}</div>
@@ -5067,7 +5088,8 @@ function vDay() {
     <div class="head">
       <button class="link" data-a="tab" data-v="plan">‹ Plan</button>
       <label for="dayName" class="sr-only">Name des Trainingstags</label>
-      <input id="dayName" class="title-input" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
+      <div class="row" style="gap:var(--s2)"><input id="dayName" class="title-input grow" data-i="dayName" value="${esc(d.name)}" autocomplete="off" enterkeyhint="done">
+        <button class="icon-btn" data-a="dayRename" aria-label="Tag umbenennen" style="font-size:20px">${sym("pencil")}</button></div>
       <p class="small muted" style="margin-top:var(--s2)">${d.items.length} ${d.items.length === 1 ? "Gerät" : "Geräte"} · ${d.items.reduce((a, i) => a + i.sets, 0)} Sätze · ≈ ${estMinutes(d)} Min.</p>
     </div>
     ${d.items.length ? (ses ? `<button class="btn primary block xl" data-a="${ses.paused ? "resumeT" : "toTrain"}" id="dayStart">${mine ? "Training fortsetzen" : "Laufendes Training fortsetzen"}</button>`
@@ -6439,7 +6461,7 @@ function vFood() {
   const avg = k => days.reduce((a, x) => a + dayTotals(x)[k], 0) / days.length;
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${dl}</div>
-      <div class="row between"><h1 class="title">Essen</h1>
+      <button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button><div class="row between"><h1 class="title">Essen</h1>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="foodDay" data-d="-1" aria-label="Vorheriger Tag">‹</button><button class="icon-btn" data-a="foodDay" data-d="1" aria-label="Nächster Tag" ${d >= maxFoodDay() ? "disabled" : ""}>›</button></div></div></div>
     ${G ? `<section class="card" id="foodSum">
       <div class="kring"><div class="kr-ring">${ringSvg(t.k / G.kcal, left >= 0 ? "var(--accent)" : "var(--warn)", 136, 14)}
@@ -7112,7 +7134,7 @@ function planCheckHtml() {
     more: "Ein paar Sätze mehr bringen dich in den Bereich." };
   const groups = Object.keys(R).map(r => [r, low.filter(x => reason(x) === r).map(x => MUSCLES[x.m])]).filter(([, a]) => a.length);
   const why = groups.length === 1 ? R[groups[0][0]] : groups.map(([r, a]) => `${joinDe(a)}: ${R[r].charAt(0).toLowerCase() + R[r].slice(1)}`).join(" ");
-  const status = rows.length ? `${rows.length} ${rows.length === 1 ? "Punkt" : "Punkte"} zu prüfen` : low.length ? `Alle Muskelgruppen dabei · ${low.length} unter dem Richtwert` : "Alles im Richtwert";
+  const status = rows.length ? `${rows.length} ${rows.length === 1 ? "Punkt" : "Punkte"} zu prüfen` : low.length ? `${low.length} ${low.length === 1 ? "Muskelgruppe" : "Muskelgruppen"} unter dem Richtwert` : "Alles im Richtwert";
   return `<section class="section" id="planCheck"><details class="disc" id="planCheckBox"${rows.length || add.length ? " open" : ""}>
     <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
@@ -7369,7 +7391,7 @@ function vCoach() {
     ${good.length ? `<section class="section" id="coachGood"><h2>Läuft gut</h2>${good.map(x => insightCard(x, "coach")).join("")}</section>` : ""}
     ${hid ? `<div class="group"><button class="li act" data-a="coachShowAll">${hid} ausgeblendet – wieder zeigen</button></div>` : ""}
     <section class="section" id="coachRules"><h2>So entscheidet die App</h2>
-      <div class="group">${COACH_RULES.map(([t, s]) => `<div class="li" style="align-items:flex-start"><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div></div>`).join("")}</div>
+      <div class="gdets" id="ruleList">${COACH_RULES.map(([t, s]) => `<details class="gdet"><summary>${t}</summary><div class="gdet-in"><p class="small muted" style="margin:0">${s}</p></div></details>`).join("")}</div>
       <p class="small foot">Alles wird im Gerät aus deinen Einträgen berechnet. Die App ändert deinen Plan nie ohne deine Bestätigung.</p>
       <div class="gdets"><details class="gdet"><summary>Quellen</summary><div class="gdet-in">${srcList(["acsm2009", "freq2019", "belanger2013", "helms2014", "iraki2019", "morton2018"])}</div></details></div></section>
   </div>`;
@@ -7525,7 +7547,7 @@ function vHistory() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d)), lastW = W[W.length - 1];
 
   $app.innerHTML = `<div class="page">
-    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1 class="title">Fortschritt</h1></div>
+    <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1 class="title">Fortschritt</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div>
     ${histNote ? `<p class="note small" id="histNote" role="status" style="margin:0">${esc(histNote)}</p>` : ""}
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek">${ico("chart", "indigo")}<div class="grow"><div class="t n">Wochenrückblick</div>${sr("Training, Ernährung und Gewicht der Woche")}</div><span class="chev">›</span></button></div>` : ""}
     ${H.length ? `
@@ -7977,7 +7999,8 @@ const A = {
     if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
     save(); closeSheet(); render();
   },
-  openSettings: () => go("settings"),
+  openSettings: () => { if (view !== "settings") settingsBack = ROOTV.has(view) ? view : tabOf(view); go("settings"); },
+  settingsBack: () => go(settingsBack),
   openPreview: () => { const d = nextDay(); if (d) openSheet(previewSheet(d)); },
   prevWhy: el => { const e = prevList[+el.dataset.n]; if (e) openSheet(prevWhySheet(e)); },
   openCoach: el => { coachBack = ["history", "wissen"].includes(el.dataset.ret) ? el.dataset.ret : "home"; go("coach"); },
@@ -8178,6 +8201,11 @@ const A = {
   start: () => { const d = nextDay(); if (d) startTraining(d); },
   editDay: el => { state.editDay = el.dataset.id; go("day"); },
   // Genau diesen Tag trainieren (nicht nur den nächsten aus „Heute“)
+  dayRename: () => { const i = byId("dayName"); if (i) { i.focus(); i.select(); } },
+  dayOrderOpen: () => openSheet(dayOrderSheet()),
+  dayMove: el => { const L = state.plan.days, i = +el.dataset.i2, j = i + (+el.dataset.d); if (j < 0 || j >= L.length) return;
+    [L[i], L[j]] = [L[j], L[i]]; save(); sheetTo(dayOrderSheet()); vPlan(); iosChrome();
+    const b = $sheet.querySelector(`[data-a=dayMove][data-i2="${j}"][data-d="${el.dataset.d}"]:not(:disabled)`) || $sheet.querySelector(`[data-a=dayMove][data-i2="${j}"]:not(:disabled)`); if (b) b.focus(); },
   startDayId: el => { const d = state.plan && state.plan.days.find(x => x.id === el.dataset.id); if (d && d.items.length && !state.session) startTraining(d); },
   startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
   toTrain: () => { if (state.session) go("train"); },
@@ -8232,6 +8260,7 @@ const A = {
     LIB.filter(e => e.brand === devFilter).forEach(e => { state.dev[e.id] = Object.assign({}, state.dev[e.id] || {}, { off }); });
     save(); sheetKeep(devListHtml()); },
   libBrand: el => { libBrand = el.dataset.k; render(); },
+  libMuscle: el => { libMuscle = el.dataset.k; const x = byId("libMuscle").scrollLeft; render(); const c = byId("libMuscle"); if (c) c.scrollLeft = x; },
   editDev: el => { const e = ex(el.dataset.id); devRet = el.dataset.ret || "list";
     devDraft = { id: e.id, name: e.name, muscle: e.muscle, sec: e.sec.slice(), type: e.type, load: e.load, step: e.step, off: !!e.off, fav: !!e.fav, pattern: e.pattern, note: state.notes[e.id] || "" };
     openSheet(devSheetHtml()); },
