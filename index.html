@@ -464,6 +464,8 @@
   .gdet>summary::after{content:"›";color:var(--text-3);font-size:20px;transition:transform .15s}
   .gdet[open]>summary::after{transform:rotate(90deg)}
   .gdet-in{display:grid;gap:var(--s3);padding-bottom:var(--s4)}
+  .li.ssA{box-shadow:inset 3px 0 0 var(--accent)} .li.ssB{box-shadow:inset 3px 0 0 var(--accent)}
+  .badge.ssb{background:var(--accent);color:var(--accent-ink-on,#111)}
   .tiplist{margin:0;padding:0;list-style:none;display:grid;gap:var(--s2);font-size:16px;max-width:65ch}
   .tiplist li{display:flex;gap:var(--s3);align-items:flex-start;background:var(--raise);border-radius:var(--r-lg);padding:var(--s3) var(--s4)}
   .tipn{flex:0 0 28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:700;display:grid;place-items:center;font-size:15px;line-height:1}
@@ -1538,6 +1540,9 @@ function devFrom(s, id) {
 const unitOf = d => d.type === "stack" ? "b" : d.load === "side" ? "s" : "t";
 
 function dayDe(n) { return n === "Push" ? "Drücken" : n === "Pull" ? "Ziehen" : n; }
+// Supersatz: Eine Übung ist mit der direkt folgenden verbunden (ss = deren ID). Steht der Partner nicht mehr direkt dahinter
+// (verschoben, gelöscht), löst sich die Verbindung – so entstehen keine ungewollten Paare
+function ssFix(items) { items.forEach((it, i) => { if (it.ss && (!items[i + 1] || items[i + 1].id !== it.ss)) delete it.ss; }); return items; }
 function cleanPlan(pl) {
   if (!isObj(pl) || !Array.isArray(pl.days)) return null;
   return {
@@ -1548,7 +1553,7 @@ function cleanPlan(pl) {
       id: String(d.id || uid()), name: dayDe(String(d.name || "Trainingstag").slice(0, 60)),
       items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
         return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
-          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90) }; }) })),
+          rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90), ...(typeof i.ss === "string" ? { ss: i.ss } : {}) }; }) })).map(d => (ssFix(d.items), d)),
     gaps: Array.isArray(pl.gaps) ? pl.gaps.filter(isObj).map(g => ({ day: String(g.day || ""), name: String(g.name || ""), pattern: PATTERNS[g.pattern] ? g.pattern : null })) : [] };
 }
 function normalize(raw) {
@@ -1600,7 +1605,7 @@ function normalize(raw) {
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
       trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
-      ord: Number.isInteger(x.ord) ? x.ord : undefined, adv: x.adv === true ? true : undefined,
+      ord: Number.isInteger(x.ord) ? x.ord : undefined, adv: x.adv === true ? true : undefined, ss: typeof x.ss === "string" ? x.ss : undefined,
       findOff: x.findOff === true ? true : undefined,
       find: isObj(x.find) ? { lo: typeof x.find.lo === "number" ? x.find.lo : null, hi: typeof x.find.hi === "number" ? x.find.hi : null, n: clampInt(x.find.n, 0, 99, 0) } : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length + (Array.isArray(x.trim) ? x.trim.length : 0)),
@@ -1612,12 +1617,12 @@ function normalize(raw) {
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
-      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined,
+      sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined, ss: typeof x.ss === "string" ? x.ss : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length), short: typeof x.short === "string" ? x.short : undefined,
       rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
-      phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0,
+      phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0, ssSwitch: r.ssSwitch === true ? true : undefined,
       paused: +r.paused || null, advDone: typeof r.advDone === "string" ? r.advDone.slice(0, 80) : null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
       timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null, timeHintOff: r.timeHintOff === true, warmDone: r.warmDone === true,
       lastAt: +r.lastAt > 0 ? +r.lastAt : null, autoPaused: r.autoPaused === true };
@@ -1908,16 +1913,27 @@ function bestKg(exId, u = unitOf(ex(exId))) {
 // - Wechsel zur nächsten Übung (inkl. Erholung und Geräteeinstellung): 2 Minuten
 // - Aufwärmen vor dem ersten Satz der Einheit: 2 Minuten (ein lockerer Satz)
 // - Keine Pause nach dem letzten Satz einer Einheit
-const TIME = { setBase: 15, perRep: 3.5, change: 120, warm: 120 };
+// - Supersatz: Wechsel zum Partnergerät 20 s (Gerät wechseln und einstellen), Pause erst nach beiden Sätzen (Pausenzeit der zweiten Übung)
+const TIME = { setBase: 15, perRep: 3.5, change: 120, warm: 120, ss: 20 };
 const setSec = it => TIME.setBase + TIME.perRep * ((it.rmin + it.rmax) / 2);
 const blockSec = (it, n) => n > 0 ? n * setSec(it) + (n - 1) * it.rest : 0;
-// items: [{sets, rmin, rmax, rest}] in Reihenfolge
+// Supersatz A+B: je Runde Satz A, Wechsel, Satz B, dann Pause; übrige Sätze der längeren Übung mit ihrer eigenen Pause
+const pairSec = (a, na, b, nb) => { const m = Math.min(na, nb); if (!m) return na ? blockSec(a, na) : blockSec(b, nb);
+  return m * (setSec(a) + TIME.ss + setSec(b)) + (m - 1) * b.rest + (na - m) * (a.rest + setSec(a)) + (nb - m) * (b.rest + setSec(b)); };
+// Übungen in Reihenfolge zu Blöcken: verbundene Paare (ss = key des Partners) zählen als ein Block, zwischen Blöcken der Gerätewechsel
+function blocksSec(arr, nOf) {
+  const act = arr.filter(c => nOf(c) > 0), used = new Set(); let sec = 0, k = 0;
+  for (const c of act) { if (used.has(c)) continue; used.add(c);
+    const p = act.find(o => !used.has(o) && ((c.ss && o.key === c.ss) || (o.ss && o.ss === c.key))); let b;
+    if (p) { used.add(p); const [a, bb] = c.ss && c.ss === p.key ? [c, p] : [p, c]; b = pairSec(a, nOf(a), bb, nOf(bb)); } else b = blockSec(c, nOf(c));
+    sec += b + (k++ ? TIME.change : 0); }
+  return sec;
+}
+// items: [{id, ss, sets, rmin, rmax, rest}] in Reihenfolge
 function estimateSec(items, opts = {}) {
   const act = items.filter(it => it.sets > 0);
   if (!act.length) return 0;
-  let sec = opts.warm === false ? 0 : TIME.warm;
-  act.forEach((it, i) => { sec += blockSec(it, it.sets) + (i ? TIME.change : 0); });
-  return sec;
+  return (opts.warm === false ? 0 : TIME.warm) + blocksSec(act.map(it => Object.assign({}, it, { key: it.id ?? it.key })), c => c.sets);
 }
 const roundMin = sec => Math.max(5, Math.round(sec / 300) * 5);
 function estMinutes(day) { return roundMin(estimateSec(day.items)); }
@@ -1932,11 +1948,7 @@ function remainingSec(s, list = s.list, idx = s.idx) {
   const seq = [first, ...order.filter(i => i !== first)];
   let sec = anyDone ? 0 : TIME.warm;
   if (s.phase === "rest" && !s.paused) sec += Math.max(0, (s.restEnd - Date.now()) / 1000);
-  seq.forEach((i, k) => {
-    const l = list[i], n = open(l);
-    sec += blockSec(l, n) + (k ? TIME.change : 0);
-  });
-  return sec;
+  return sec + blocksSec(seq.map(i => Object.assign({}, list[i], { key: list[i].itemId ?? list[i].key })), open);
 }
 
 const remainMin = s => Math.max(1, Math.round(remainingSec(s) / 60));
@@ -1962,8 +1974,7 @@ function fitToTime(cands, budget, opts = {}) {
     let sec = opts.warm === false ? 0 : TIME.warm;
     sec += opts.restLeft || 0;
     const cur = act.find(c => c.isCurrent), seq = cur ? [cur, ...act.filter(c => c !== cur)] : act;
-    seq.forEach((c, i) => { sec += blockSec(c, c.keep) + (i ? TIME.change : 0); });
-    return sec;
+    return sec + blocksSec(seq, c => c.keep);
   };
   const openSets = () => C.filter(c => !c.drop).reduce((a, c) => a + c.keep, 0);
   const minSets = Math.min(opts.minSets || 4, C.reduce((a, c) => a + c.open, 0));
@@ -2017,7 +2028,7 @@ function previewDay(day, minutes) {
     }
     return Object.assign({}, it, { exId });
   });
-  const cands = items.filter(it => !unavailable.includes(it.id)).map((it, i) => ({ key: it.id, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, done: 0, open: it.sets, planned: it.sets, order: i, isCurrent: false }));
+  const cands = items.filter(it => !unavailable.includes(it.id)).map((it, i) => ({ key: it.id, ss: it.ss, exId: it.exId, rmin: it.rmin, rmax: it.rmax, rest: it.rest, done: 0, open: it.sets, planned: it.sets, order: i, isCurrent: false }));
   const full = estimateSec(items);
   const res = fitToTime(cands, minutes ? minutes * 60 : Infinity, { minSets: 6 });
   res.unavailable = unavailable.map(id => day.items.find(i => i.id === id));
@@ -2043,7 +2054,7 @@ function previewLive(s, minutes) {
   const c = restoredClone(s), curKey = s.list[s.idx] && s.list[s.idx].key;
   const restLeft = s.phase === "rest" ? Math.max(0, (s.restEnd - Date.now()) / 1000) : 0;
   const anyDone = c.list.some(l => l.sets.some(t => t.done));
-  const cands = c.list.map((l, i) => ({ key: l.key, exId: l.exId, rmin: l.rmin, rmax: l.rmax, rest: l.rest,
+  const cands = c.list.map((l, i) => ({ key: l.key, ss: (l.ss && (c.list.find(m => m.itemId === l.ss) || {}).key) || undefined, exId: l.exId, rmin: l.rmin, rmax: l.rmax, rest: l.rest,
     done: l.sets.filter(t => t.done).length, open: l.sets.filter(t => !t.done).length, planned: l.sets.length, order: i, isCurrent: l.key === curKey }));
   const res = fitToTime(cands, minutes ? minutes * 60 : Infinity, { warm: !anyDone, restLeft, minSets: 4 });
   res.doneSets = cands.reduce((a, x) => a + x.done, 0);
@@ -4008,7 +4019,13 @@ function comboHtml(id) {
   const btn = x => `<button class="li" data-a="openEx" data-id="${x.id}" data-ret="${exBack}"><div class="grow"><div class="t">${esc(x.name)}</div><div class="s">${esc(aboutOf(x))} · ${BRAND[x.brand] || "Eigenes Gerät"}</div></div>${inPlan.has(x.id) ? `<span class="badge">Im Plan</span>` : ""}<span class="chev">›</span></button>`;
   return `${part.length ? `<p style="margin:0">Als Supersatz mit dem Gegenspieler: ein Satz hier, sofort ein Satz am Partnergerät, dann die normale Pause.</p>
     <div class="group" id="comboPart">${part.map(btn).join("")}</div>
-    <p class="small muted" style="margin:0">Spart Zeit. Kraft und Muskelaufbau unterschieden sich in Studien nicht deutlich von normalen Sätzen, es ist aber anstrengender.</p>`
+    <p class="small muted" style="margin:0">Spart Zeit. Kraft und Muskelaufbau unterschieden sich in Studien nicht deutlich von normalen Sätzen, es ist aber anstrengender.</p>
+    ${(() => { const days = state.plan ? state.plan.days : [];
+      for (const pt of part) { const d = days.find(dd => dd.items.some(i => i.exId === id) && dd.items.some(i => i.exId === pt.id)); if (!d) continue;
+        const a = d.items.findIndex(i => i.exId === id), linked = d.items[a].ss && d.items[a + 1] && d.items[a + 1].exId === pt.id;
+        return linked ? `<p class="small" style="margin:0" id="ssLinked">In „${esc(d.name)}“ als Supersatz mit ${esc(pt.name)} verbunden.</p>`
+          : `<button class="btn block" data-a="ssLink" data-id="${id}" data-p="${pt.id}" data-day="${d.id}" id="ssLinkBtn">In „${esc(d.name)}“ mit ${esc(pt.name)} verbinden</button>`; }
+      return ""; })()}`
     : `<p class="muted" style="margin:0" id="comboNone">Für den Gegenspieler${ANTAG_NONE[e.pattern] ? ` (${ANTAG_NONE[e.pattern]})` : ""} gibt es hier kein Gerät.</p>`}
     ${same ? `<p class="small" style="margin:0" id="comboSame"><b>Nicht als Supersatz</b> mit einer zweiten Übung für denselben Muskel (z. B. ${esc(same.name)}): Das senkte in Studien die Gesamtlast.</p>` : ""}
     <p class="small" style="margin:0" id="comboOrder"><b>Reihenfolge:</b> Willst du hier vor allem stärker werden, mach die Übung früh. Für den Muskelaufbau spielte die Reihenfolge keine messbare Rolle.</p>
@@ -4669,16 +4686,17 @@ function vDay() {
     ${d.items.length ? (ses ? `<button class="btn primary block xl" data-a="${ses.paused ? "resumeT" : "toTrain"}" id="dayStart">${mine ? "Training fortsetzen" : "Laufendes Training fortsetzen"}</button>`
       : `<button class="btn primary block xl" data-a="startDay" id="dayStart">${ICON.play} ${esc(d.name)} starten</button>`) : ""}
     ${d.items.length ? `<section class="section" id="dayItems"><div class="section-head"><h2>Geräte</h2><span class="small muted">Antippen zum Ändern</span></div>
-      <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it); return `
-      <div class="li">
+      <div class="group">${d.items.map((it, i) => { const e = ex(it.exId), en = makeEntry(it), ssA = it.ss && d.items[i + 1] && d.items[i + 1].id === it.ss, ssB = i > 0 && d.items[i - 1].ss === it.id; return `
+      <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}">
         <span class="idx">${i + 1}</span>
         <div class="grow" data-a="editItem" data-i2="${i}" style="cursor:pointer">
-          <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}</div>
+          <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}${ssA || ssB ? `<span class="badge ssb">Supersatz ${ssA ? "1/2" : "2/2"}</span>` : ""}</div>
           <div class="s">${en.recKg !== null ? entryLine(en) : `${it.sets} × ${repsTxt(it)} Wdh. · Gewicht beim ersten Mal wählen`} · Pause ${fmtTime(it.rest)}</div>
         </div>
         <button class="icon-btn plain" data-a="moveItem" data-i2="${i}" ${i === 0 ? "disabled" : ""} aria-label="${esc(e.name)} nach oben">${ICON.up}</button>
       </div>`; }).join("")}</div>
-      <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p></section>`
+      <p class="small faint" style="margin:0">Gewichte für das nächste Training, berechnet aus deinem letzten Training an diesem Gerät.</p>
+      ${d.items.some((it, i) => it.ss && d.items[i + 1]) ? `<p class="small faint" style="margin:0" id="ssDayNote">Supersatz: Satz am ersten Gerät, sofort ein Satz am zweiten, Pause erst danach. Verschieben löst die Verbindung.</p>` : ""}</section>`
       : `<p class="muted">Noch keine Geräte. Wähle die Geräte aus deinem Studio, die du an diesem Tag nutzt.</p>`}
     <button class="btn block" data-a="openPicker">+ Geräte hinzufügen</button>
     ${d.items.length ? `<button class="btn block" data-a="dayCopyOpen" id="dayCopy">Tag kopieren</button>` : ""}
@@ -4698,7 +4716,8 @@ function dayCopySheet() {
 }
 function dayCopyDo(to) {
   const src = curDay(); if (!src || !src.items.length) return;
-  const items = () => src.items.map(it => Object.assign(JSON.parse(JSON.stringify(it)), { id: uid() }));
+  const items = () => { const ids = src.items.map(() => uid()), map = Object.fromEntries(src.items.map((it, i) => [it.id, ids[i]]));
+    return src.items.map((it, i) => { const c = Object.assign(JSON.parse(JSON.stringify(it)), { id: ids[i] }); if (c.ss) c.ss = map[c.ss]; return c; }); };
   if (to === "new") {
     const nd = { id: uid(), name: `${src.name} (Kopie)`.slice(0, 60), items: items() }; state.plan.days.push(nd);
     planUndo = { kind: "new", id: nd.id, after: JSON.stringify(nd) }; planNote = `„${src.name}“ als neuer Tag „${nd.name}“ angelegt.`;
@@ -4855,6 +4874,10 @@ function itemSheet() {
       `<button data-a="draftRest" data-s="${s}" class="${draft.rest === s ? "on" : ""}" aria-label="${s < 60 ? s + " Sekunden" : String(s / 60).replace(".", ",") + " Minuten"}">${fmtTime(s)}</button>`).join("")}</div></div>
     <div class="field"><label for="noteIn">Deine Einstellung</label>
       <input id="noteIn" data-i="note" data-ex="${e.id}" placeholder="z. B. Sitz 4, Griff weit" value="${esc(state.notes[e.id] || "")}" autocomplete="off" enterkeyhint="done"></div>
+    ${(() => { const nx = curDay().items[draft._i + 1]; if (!nx) return ""; const ne = ex(nx.exId), on = draft.ss === nx.id, same = ne.muscle === e.muscle;
+      return `<div class="field" id="ssField"><label>Supersatz</label>
+        <button class="btn block ${on ? "primary" : ""}" data-a="ssToggle" aria-pressed="${on}">${on ? "✓ " : ""}Mit ${esc(ne.name)} als Supersatz</button>
+        <p class="small ${same && on ? "" : "muted"}" style="margin:0">${same ? `Gleicher Muskel (${MUSCLES[e.muscle]}): als Supersatz sinkt die Gesamtlast. Besser ein Gegenspieler.` : "Satz hier, sofort ein Satz dort, Pause erst danach."}</p></div>`; })()}
     <div class="stack-sm">
       <button class="btn primary block xl" data-a="saveItem">Speichern</button>
       <button class="btn block" data-a="openGuideSheet" data-id="${e.id}" data-ret="item">Anleitung ansehen</button>
@@ -5005,10 +5028,13 @@ function makeEntry(it, ctx) {
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
     }
   }
-  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, short,
+  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, short, ss: it.ss || undefined,
     recKg: sets[0] ? sets[0].kg : null, rec: sets.map(s => s.kg), sets };
 }
 const S = () => state.session;
+// Supersatz-Partner in der laufenden Einheit: {p: Eintrag, first: x ist die erste Übung des Paars}
+const ssPair = (s, x) => { if (!x) return null; const n = x.ss && s.list.find(l => l.itemId === x.ss); if (n) return { p: n, first: true };
+  const v = x.itemId && s.list.find(l => l.ss === x.itemId); return v ? { p: v, first: false } : null; };
 const curSetIdx = x => x.sets.findIndex(s => !s.done);
 function nextOpen(from) {
   const L = S().list;
@@ -5039,9 +5065,13 @@ function doneSet() {
   x.sets[i].done = true; buzz(30); s.lastDone = { key: x.key, si: i }; s.lastAt = Date.now();
   const pr = livePr(x, i), isPR = !!pr, ts = x.sets[i];
   if (s.list.every(e => curSetIdx(e) === -1)) return finish(true);
-  s.phase = "rest"; s.restTotal = x.rest; s.restEnd = Date.now() + x.rest * 1000; s.beeped = 0; s.said10 = false;
-  if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
+  // Supersatz: nach der ersten Übung kurzer Wechsel zum Partner, nach der zweiten die normale Pause und zurück zur ersten
+  const sp = ssPair(s, x), pOpen = sp && curSetIdx(sp.p) !== -1, sw = !!(pOpen && sp.first);
+  const rest = sw ? TIME.ss : x.rest;
+  s.phase = "rest"; s.restTotal = rest; s.restEnd = Date.now() + rest * 1000; s.beeped = 0; s.said10 = false; s.ssSwitch = sw;
+  if (pOpen) s.idx = s.list.indexOf(sp.p); else if (curSetIdx(x) === -1) s.idx = nextOpen(s.idx);
   save();
+  if (sw) { say(isPR ? (pr.reps ? `Neuer Bestwert: ${ts.reps} Wiederholungen mit ${kgTxt(ts.kg)} Kilo. ` : `Neuer Bestwert: ${kgTxt(ts.kg)} Kilo. `) + `Weiter mit ${ex(sp.p.exId).name}.` : `Supersatz: weiter mit ${ex(sp.p.exId).name}.`); return render(); }
   if (isPR) say(pr.reps ? `Neuer Bestwert: ${ts.reps} Wiederholungen mit ${kgTxt(ts.kg)} Kilo.` : `Neuer Bestwert: ${kgTxt(ts.kg)} Kilo.`);
   if (!x.rest) return endRest();
   const adv = setAdvice(s);
@@ -5148,7 +5178,7 @@ function vTrain() {
         <div class="ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="56" fill="none" stroke="var(--raise-2)" stroke-width="3"/>
           <circle id="ringArc" cx="60" cy="60" r="56" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
             stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - (s.restTotal ? left / s.restTotal : 0))}"/></svg>
-          <div class="t"><h1 class="cap">Pause</h1><div class="num" id="timer" role="timer" aria-label="Pause, verbleibende Zeit">${fmtTime(left)}</div></div></div>
+          <div class="t"><h1 class="cap">${s.ssSwitch ? "Wechsel" : "Pause"}</h1><div class="num" id="timer" role="timer" aria-label="${s.ssSwitch ? "Wechsel zum Partnergerät" : "Pause"}, verbleibende Zeit">${fmtTime(left)}</div></div></div>
         <div class="pm"><button class="btn sm" data-a="restAdd" data-d="-15">−15 s</button><button class="btn sm" data-a="restAdd" data-d="15">+15 s</button></div>
       </div>
       ${lt ? `<div class="feel-q"><div class="row between"><h2 class="h3">Wie war Satz ${ld.si + 1}?</h2><span class="small faint">${lt.kg !== null ? kgTxt(lt.kg) + " kg × " + lt.reps : lt.reps + " Wdh."}</span></div>
@@ -5166,12 +5196,12 @@ function vTrain() {
           <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="timeFit" data-m="${b}">Auf ${b} Min. kürzen</button><button class="btn sm" data-a="timeHintOff">Egal, weiter</button></div></div>`; })()}
       ${(() => { const a = setAdvice(s); return a ? `<div class="ins ${a.up ? "good" : "warn"}" id="setAdv"><div class="t">${a.up ? "Mehr Gewicht?" : "Weniger Gewicht?"}</div><p class="small" style="margin:0">${esc(a.txt)}</p>
         <div class="row wrap" style="gap:var(--s2)"><button class="btn sm primary" data-a="advApply">${kgTxt(a.kg)} kg übernehmen</button><button class="btn sm" data-a="advSkip">So lassen</button></div></div>` : ""; })()}
-      <div class="next"><div class="cap">${sameEx ? "Nächster Satz" : "Nächste Übung"}</div>
+      <div class="next"><div class="cap">${s.ssSwitch ? "Supersatz: jetzt" : sameEx ? "Nächster Satz" : lx && ssPair(s, nx) && ssPair(s, nx).first && ssPair(s, nx).p.key === lx.key ? "Supersatz: zurück zu" : "Nächste Übung"}</div>
         ${!sameEx && motSpec(ne.id) ? `<div class="gmot next-mot">${motionSvg(ne.id, { anim: true })}</div>` : ""}
         <h2>${esc(ne.name)}</h2>
         <p class="small muted">Satz ${ni + 1} von ${nx.sets.length} · ${ns.kg !== null ? kgTxt(ns.kg) + " " + unitTxt(ne) : "Gewicht wählen"} × ${ns.reps}</p>
         ${state.notes[nx.exId] ? `<p class="small muted">Einstellung: <b style="color:var(--text)">${esc(state.notes[nx.exId])}</b></p>` : ""}</div>
-      <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="skipRest">Pause überspringen</button></div></div>
+      <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="skipRest">${s.ssSwitch ? "Bin am Gerät" : "Pause überspringen"}</button></div></div>
     </div>`;
     return;
   }
@@ -5188,6 +5218,7 @@ function vTrain() {
       <div class="ex-top"><div class="grow"><div class="label">Übung ${s.idx + 1} von ${s.list.length} · ${MUSCLES[e.muscle]}</div>
       <h1>${esc(e.name)}</h1></div>${motSpec(e.id) ? `<button class="mot-btn" data-a="openDevInfo" aria-label="Bewegungsablauf und Technik">${motionSvg(e.id, { anim: true, cls: "sm" })}</button>` : ""}</div>
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
+      ${(() => { const sp = ssPair(s, x); return sp ? `<p class="small" id="ssNote" style="margin:0"><span class="badge ssb">Supersatz ${sp.first ? "1/2" : "2/2"}</span> ${sp.first ? `danach sofort ${esc(ex(sp.p.exId).name)}` : `mit ${esc(ex(sp.p.exId).name)}, danach Pause`}</p>` : ""; })()}
       ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
       ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
         return pl ? `<p class="reason" id="plateauHint" style="color:var(--warn)">Seit ${pl.weeks} Wochen kein Fortschritt${pl.reserve ? " – zuletzt mit Reserve: näher ans Limit gehen" : ""}. ${pl.reserve ? "" : `<button class="link" data-a="openSwap">Gerät tauschen</button>`}<button class="link small" data-a="showWhy" data-why="${esc(plateauTxt(pl))}" style="color:var(--text-3);margin-left:10px">Warum?</button></p>` : ""; })()}
@@ -7761,14 +7792,19 @@ const A = {
   delDay: () => openSheet(`<h2>Tag löschen?</h2><p class="muted">„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.</p>
     <button class="btn block" style="background:var(--bad);color:#fff" data-a="confirmDelDay">Löschen</button><button class="btn block" data-a="closeSheet">Abbrechen</button>`),
   confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); save(); closeSheet(); go("plan"); },
-  moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; save(); vDay(); },
+  moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; ssFix(d.items); save(); vDay(); },
   editItem: el => openItem(+el.dataset.i2),
   draft: el => { const k = el.dataset.k; draft[k] = Math.max(1, Math.min(k === "sets" ? 10 : 50, draft[k] + +el.dataset.d));
     if (k === "rmin" && draft.rmax < draft.rmin) draft.rmax = draft.rmin; if (k === "rmax" && draft.rmin > draft.rmax) draft.rmin = draft.rmax;
     $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
+  // Wissen → Gut kombinieren: Partner im selben Tag direkt hinter das Gerät stellen und verbinden
+  ssLink: el => { const d = state.plan && state.plan.days.find(x => x.id === el.dataset.day); if (!d) return;
+    const b = d.items.findIndex(i => i.exId === el.dataset.p); if (b < 0) return; const [pi] = d.items.splice(b, 1), a = d.items.findIndex(i => i.exId === el.dataset.id); if (a < 0) { d.items.splice(b, 0, pi); return; }
+    d.items.splice(a + 1, 0, pi); d.items[a].ss = pi.id; ssFix(d.items); if (state.timeplan && state.timeplan.dayId === d.id) state.timeplan = null; save(); render(); },
+  ssToggle: () => { const nx = curDay().items[draft._i + 1]; if (!nx) return; if (draft.ss === nx.id) delete draft.ss; else draft.ss = nx.id; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
   draftRest: el => { draft.rest = +el.dataset.s; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
   saveItem: () => { const d = curDay(), i = draft._i; delete draft._i; d.items[i] = draft; save(); closeSheet(); vDay(); },
-  delItem: () => { curDay().items.splice(draft._i, 1); save(); closeSheet(); vDay(); },
+  delItem: () => { curDay().items.splice(draft._i, 1); ssFix(curDay().items); save(); closeSheet(); vDay(); },
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
   pickAll: () => { pickAll = !pickAll; refreshPicker(); },
@@ -7817,7 +7853,7 @@ const A = {
     // Laufendes Training: noch nicht begonnene Übungen dieses Geräts mit neuer Einstellung neu berechnen
     const ses = state.session;
     if (ses) ses.list = ses.list.map(x => x.exId === d.id && !x.sets.some(t => t.done) && unitOf(ex(d.id)) !== oldU
-      ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest }), { ord: x.ord }) : x);
+      ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss }), { ord: x.ord }) : x);
     if ((d.note || "").trim()) state.notes[d.id] = d.note.trim(); else delete state.notes[d.id];
     save(); devBack(d._new ? d.id : null); },
   devCancel: () => devBack(null),
@@ -7873,7 +7909,7 @@ const A = {
   swapMode: el => { swapPerm = el.dataset.v === "1"; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + swapSheet(); },
   swap: el => {
     const s = S(), x = s.list[s.idx], newId = el.dataset.id;
-    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest }, { from: ex(x.exId).name });
+    const entry = makeEntry({ id: x.itemId, exId: newId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss }, { from: ex(x.exId).name });
     entry.ord = x.ord; s.list[s.idx] = entry;
     if (swapPerm) { const d = state.plan?.days.find(dd => dd.id === s.dayId); const it = d?.items.find(i => i.id === x.itemId); if (it) it.exId = newId; }
     save(); closeSheet(); render();
@@ -8011,7 +8047,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
