@@ -8,7 +8,7 @@ const { spawn } = require("child_process");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
-const PORT = 8790;
+const PORT = +process.env.TP_PORT || 8790; // TP_PORT: eigener Port, wenn mehrere Testläufe gleichzeitig laufen
 const URL = `http://localhost:${PORT}/?test`;
 const KEY = "trainingsplan-v2";
 let pass = 0, fail = 0;
@@ -82,6 +82,17 @@ async function open(data, opts = {}) {
 const stored = page => page.evaluate(k => JSON.parse(localStorage.getItem(k)), KEY);
 const tp = (page, fn, arg) => page.evaluate(fn, arg);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+// Regel „Inhalt liegt auf Karten“: Text, der frei auf dem Seitengrund steht (außer Titel, Abschnittsüberschrift, Beitext .foot, Bedienelemente). Leere Liste = in Ordnung
+const freeTextOn = page => page.evaluate(() => {
+  const pg = document.querySelector("#app .page"); if (!pg) return ["(keine Seite)"];
+  const bg = getComputedStyle(document.body).backgroundColor, clear = c => !c || c === "rgba(0, 0, 0, 0)" || c === "transparent" || c === bg;
+  const onCard = el => { for (let e = el; e && e !== pg; e = e.parentElement) { const cs = getComputedStyle(e); if (!clear(cs.backgroundColor) || cs.backgroundImage !== "none") return true; } return false; };
+  const exempt = el => el.closest(".head,.section-head,.foot,.cap,.label,button,a,label,summary,.exhero,.actionbar,h1,h2,h3");
+  const out = [], seen = new Set(), w = document.createTreeWalker(pg, NodeFilter.SHOW_TEXT);
+  for (let n = w.nextNode(); n; n = w.nextNode()) { if (n.textContent.trim().length < 2) continue; const el = n.parentElement; if (!el || !el.getClientRects().length) continue;
+    if (exempt(el) || onCard(el)) continue; const blk = el.closest("p,li,div,section") || el; if (seen.has(blk)) continue; seen.add(blk);
+    out.push(`${blk.tagName.toLowerCase()}${blk.id ? "#" + blk.id : ""}.${String(blk.className).split(" ")[0]} „${blk.textContent.trim().replace(/\s+/g, " ").slice(0, 40)}“`); }
+  return out; });
 // Welche Elemente ragen rechts hinaus? (für Fehlermeldungen)
 const overflowers = page => page.evaluate(() => [...document.querySelectorAll("body *")].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > innerWidth + .5; })
   .slice(0, 5).map(e => `${e.tagName.toLowerCase()}.${String(e.className).split(" ")[0]}:${Math.round(e.getBoundingClientRect().right)} „${(e.textContent || "").trim().slice(0, 24)}“`).join(" | "));
@@ -374,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v91)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v91")));
+      ok("Service Worker aktiv (Cache trainingsplan-v92)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v92")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4824,6 +4835,88 @@ async function finishAllSets(page, kg, reps) {
       ok("Die Karte erkennt den Eintrag von heute", (await page.getAttribute("#bwIn", "placeholder")).includes("Heute: 81,5"), await page.getAttribute("#bwIn", "placeholder"));
       await ctx.close();
     }
+
+
+    // ===================== Erweiterungen: je Erweiterung ein eigener Abschnitt zwischen ihren Marken =====================
+    // @ext:hilfe:test:start
+    section("E-hilfe. Hilfe (Einstellungen → Hilfe)");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("nav.tabs [data-v=food]"); await page.click("#navbar [data-a=openSettings]");
+      ok("Einstellungen: Abschnitt „App“ mit der Zeile „Hilfe“", (await page.textContent("#setApp")).includes("Hilfe") && await page.isVisible("#row-hilfe .ico"));
+      await page.click("#row-hilfe");
+      const h = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v,
+        steps: document.querySelectorAll("#app .steps3 li").length, n: document.querySelectorAll("#hilfeList details").length, open: document.querySelectorAll("#hilfeList details[open]").length, exp: window.__tp.HILFE.length }));
+      ok("Hilfe: eigene Unterseite mit „‹ Einstellungen“, drei Schritten und allen Fragen (zugeklappt); der Bereich bleibt „Essen“", h.title === "Hilfe" && h.back === "Einstellungen" && h.tab === "food" && h.steps === 3 && h.n === h.exp && h.n >= 6 && h.open === 0, JSON.stringify(h));
+      await page.click("#hilfeList details summary");
+      ok("Frage antippen zeigt die Antwort", await page.$eval("#hilfeList details", d => d.open && d.querySelector("p").textContent.length > 20));
+      await page.$$eval("#hilfeList details", d => d.forEach(x => x.open = true));
+      ok("Hilfe: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu den Einstellungen", (await page.textContent("#app h1")) === "Einstellungen");
+      await ctx.close();
+    }
+    {
+      // Speicher der Erweiterungen: unbekannte Bereiche fallen weg, die Sicherung enthält state.x
+      const { ctx, page } = await open({ plan: PLAN_SMALL, x: { gibtesnicht: { a: 1 }, __proto__: { b: 2 } } });
+      const x = await tp(page, () => ({ keys: Object.keys(window.__tp.state.x).join(), known: Object.keys(window.__tp.EXT.clean).join(), clean: typeof window.__tp.extClean }));
+      ok("Erweiterungs-Speicher: nur bekannte Bereiche bleiben erhalten", !x.keys.includes("gibtesnicht") && x.keys === x.known && x.clean === "function", JSON.stringify(x));
+      await ctx.close();
+    }
+    // @ext:hilfe:test:end
+    // ── Abstand hilfe/test 1 ──
+    // ── Abstand hilfe/test 2 ──
+    // ── Abstand hilfe/test 3 ──
+    // @ext:meilensteine:test:start
+    // @ext:meilensteine:test:end
+    // ── Abstand meilensteine/test 1 ──
+    // ── Abstand meilensteine/test 2 ──
+    // ── Abstand meilensteine/test 3 ──
+    // @ext:masse:test:start
+    // @ext:masse:test:end
+    // ── Abstand masse/test 1 ──
+    // ── Abstand masse/test 2 ──
+    // ── Abstand masse/test 3 ──
+    // @ext:rueckblick:test:start
+    // @ext:rueckblick:test:end
+    // ── Abstand rueckblick/test 1 ──
+    // ── Abstand rueckblick/test 2 ──
+    // ── Abstand rueckblick/test 3 ──
+    // @ext:werkzeuge:test:start
+    // @ext:werkzeuge:test:end
+    // ── Abstand werkzeuge/test 1 ──
+    // ── Abstand werkzeuge/test 2 ──
+    // ── Abstand werkzeuge/test 3 ──
+    // @ext:glossar:test:start
+    // @ext:glossar:test:end
+    // ── Abstand glossar/test 1 ──
+    // ── Abstand glossar/test 2 ──
+    // ── Abstand glossar/test 3 ──
+    // @ext:muskeln:test:start
+    // @ext:muskeln:test:end
+    // ── Abstand muskeln/test 1 ──
+    // ── Abstand muskeln/test 2 ──
+    // ── Abstand muskeln/test 3 ──
+    // @ext:plaene:test:start
+    // @ext:plaene:test:end
+    // ── Abstand plaene/test 1 ──
+    // ── Abstand plaene/test 2 ──
+    // ── Abstand plaene/test 3 ──
+    // @ext:aussehen:test:start
+    // @ext:aussehen:test:end
+    // ── Abstand aussehen/test 1 ──
+    // ── Abstand aussehen/test 2 ──
+    // ── Abstand aussehen/test 3 ──
+    // @ext:export:test:start
+    // @ext:export:test:end
+    // ── Abstand export/test 1 ──
+    // ── Abstand export/test 2 ──
+    // ── Abstand export/test 3 ──
+    // @ext:artikel:test:start
+    // @ext:artikel:test:end
+    // ── Abstand artikel/test 1 ──
+    // ── Abstand artikel/test 2 ──
+    // ── Abstand artikel/test 3 ──
 
     section("89. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));

@@ -52,6 +52,56 @@ Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt
   - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
   - **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
 
+## Erweiterungen
+
+Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`): eigene Unterseite, eine Zeile in einer bestehenden Liste (Plan, Wissen, Fortschritt, Einstellungen), eigener Speicherbereich `state.x.<name>` (wird mit gesichert). Bestehende Ansichten werden dafür nicht umgebaut. Jede Erweiterung steht in einem eigenen Block zwischen ihren Marken (`@ext:<name>`), ebenso ihre Tests in `tests/run.js`.
+
+<!-- @ext:hilfe:readme:start -->
+- **Hilfe (Einstellungen → Hilfe):** „So funktioniert die App“ in drei Schritten und häufige Fragen als aufklappbare Liste (Plan bauen, Training starten, Gewichtsvorschlag, pro Seite/insgesamt, Reihenfolge, Sicherung, Home-Bildschirm)
+<!-- @ext:hilfe:readme:end -->
+<!-- Abstand hilfe 1 -->
+<!-- Abstand hilfe 2 -->
+<!-- @ext:meilensteine:readme:start -->
+<!-- @ext:meilensteine:readme:end -->
+<!-- Abstand meilensteine 1 -->
+<!-- Abstand meilensteine 2 -->
+<!-- @ext:masse:readme:start -->
+<!-- @ext:masse:readme:end -->
+<!-- Abstand masse 1 -->
+<!-- Abstand masse 2 -->
+<!-- @ext:rueckblick:readme:start -->
+<!-- @ext:rueckblick:readme:end -->
+<!-- Abstand rueckblick 1 -->
+<!-- Abstand rueckblick 2 -->
+<!-- @ext:werkzeuge:readme:start -->
+<!-- @ext:werkzeuge:readme:end -->
+<!-- Abstand werkzeuge 1 -->
+<!-- Abstand werkzeuge 2 -->
+<!-- @ext:glossar:readme:start -->
+<!-- @ext:glossar:readme:end -->
+<!-- Abstand glossar 1 -->
+<!-- Abstand glossar 2 -->
+<!-- @ext:muskeln:readme:start -->
+<!-- @ext:muskeln:readme:end -->
+<!-- Abstand muskeln 1 -->
+<!-- Abstand muskeln 2 -->
+<!-- @ext:plaene:readme:start -->
+<!-- @ext:plaene:readme:end -->
+<!-- Abstand plaene 1 -->
+<!-- Abstand plaene 2 -->
+<!-- @ext:aussehen:readme:start -->
+<!-- @ext:aussehen:readme:end -->
+<!-- Abstand aussehen 1 -->
+<!-- Abstand aussehen 2 -->
+<!-- @ext:export:readme:start -->
+<!-- @ext:export:readme:end -->
+<!-- Abstand export 1 -->
+<!-- Abstand export 2 -->
+<!-- @ext:artikel:readme:start -->
+<!-- @ext:artikel:readme:end -->
+<!-- Abstand artikel 1 -->
+<!-- Abstand artikel 2 -->
+
 ## Funktionen
 
 - **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
