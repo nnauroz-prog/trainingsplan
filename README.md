@@ -38,13 +38,16 @@ Kein Standard-Tracker, sondern ein Trainingspartner, der dich zum Training bring
 
 ## Aufbau
 
-Ein Zweck: Krafttraining an Hammer-Strength- und Life-Fitness-Geräten **planen, durchführen, dranbleiben**. Jede Sache steht an genau einem Ort, die App widerspricht sich nicht selbst:
+Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt durchs Training.** Alles andere hängt daran.
 
-- **Heute:** das nächste Training mit Start-Knopf und einer kurzen Nachricht; darunter höchstens eine Karte (die Frage nach einem ausgefallenen Termin oder der wichtigste Hinweis); die Woche mit dem Trainingstag je Termin. Die Übungen mit Gewichten liegen hinter „N Übungen ›“, die Dauer hinter „≈ N Min. ›“. Essen nur, wenn heute etwas eingetragen ist
-- **Training:** Termine, Geräte in deinem Studio, Trainingstage, Erholung nur wenn ein Muskel noch nicht erholt ist, Planprüfung (nur echte Probleme: fehlende Muskelgruppe, Tag über dem Zeitbudget, zu viel); Zahnrad → Einstellungen
-- **Wissen:** Übungsbibliothek, Artikel und „So entscheidet die App“ (alle Hinweise und Regeln an einem Ort)
-- **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
-- **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
+- **Einstieg (erster Start):** drei Schritte („Plan bauen → Start tippen → Dranbleiben“) und zwei Wege: „Plan selbst bauen“ (Hauptweg: ein leerer Tag, Geräte wählen) oder „Plan vorschlagen lassen“ (erst dann die Fragen zu Ziel, Tagen und Zeit). Tests, die direkt bei den Fragen beginnen, schalten den Einstieg mit `tp-intro=0` ab; Abschnitt 86 prüft ihn eigens
+- **Der Stamm – zwei Bereiche:**
+  - **Heute** (machen): das nächste Training mit Start-Knopf und einer kurzen Nachricht; danach in fester Reihenfolge höchstens ein Hinweis (nur Titel und Aktion, Erklärung nach Antippen), „Diese Woche ›“ (die Überschrift führt zum Wochenrückblick) und „Mein Tag“ (Ringe für Kalorien, Eiweiß, Schritte → Tagesplan)
+  - **Plan** (bauen): „Mein Plan“ in fester Reihenfolge – Trainingstage (Gerätebilder, Dauer, ▶ startet den Tag direkt; Antippen öffnet den Tag mit Gerätebildern in Reihenfolge), „Rund um den Plan“ (Termine, Geräte im Studio, Erholung als Zeilen einer Liste) und die Planprüfung als eine Karte mit Status (aufgeklappt nur bei echten Punkten); Zahnrad → Einstellungen
+- **Die Äste:**
+  - **Wissen:** Übungsbibliothek, Artikel und „So entscheidet die App“ (alle Hinweise und Regeln an einem Ort)
+  - **Essen:** Tagebuch mit Kalorien und Eiweiß; Wasser und Intervallfasten nur, wenn eingeschaltet
+  - **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
 
 ## Funktionen
 
@@ -162,6 +165,12 @@ Designsystem im Stil von iOS (CSS-Tokens in `src/app.html`): Systemschrift (auf 
   - „Bewegung reduzieren“ schaltet die Übergänge ab. Die automatisierten Tests springen über die Tab-Leiste zur Startseite (`tp-tabmem=0`) und laufen ohne Übergänge; Abschnitt 83 prüft Tab-Verlauf, Übergang und Wischgeste eigens.
 - **Sheets und Steuerelemente wie bei iOS:** Kopf mit „Abbrechen“ links, Titel in der Mitte und der bestätigenden Aktion fett rechts („Fertig“). Jedes Formular-Sheet mit genau einer Aktion „Speichern“, „Hinzufügen“ oder „Übernehmen“ bekommt diesen Kopf automatisch; er bleibt beim Scrollen stehen; am Griff oder ganz oben im Inhalt herunterziehen schließt das Sheet. Zahlen im Geräte-Sheet mit Stepper „− | +“ in der Zeile, Ein/Aus als iOS-Schalter (Supersatz, Bevorzugt, In meinem Studio), weiterführende Zeilen mit „›“, Löschen als rote Zeile unten. Rückfragen (Tag oder Training löschen, Training unterbrechen/verwerfen, frühere Einträge umstellen, Termine in den Kalender) als Aktionsblatt: Frage und Optionen in einer Karte (Löschen rot), darunter getrennt „Abbrechen“. Hinweistexte unter Listen klein und grau wie Fußzeilen. Geräte im Trainingstag und Einträge unter Essen: nach links wischen zeigt rotes „Löschen“, weit wischen löscht sofort, Tippen woanders schließt. Suchfelder mit Lupe; der aktive Tab zeigt sein Symbol gefüllt.
 - **Inhalt liegt auf Karten:** Wie in iOS-Apps steht auf dem grauen Seitengrund kein Text frei – nur Titel, Abschnittsüberschrift, kleiner grauer Beitext direkt über oder unter einer Karte (`.foot`) und Bedienelemente. Kennzahlen, Diagramme, Erklärtexte, Artikel und aufklappbare Bereiche liegen auf Karten (`.card`), Verweise sind Zeilen mit „›“. Ein Test (Abschnitt 84) prüft das in 15 Ansichten hell und dunkel, mit Gegenprobe; ausgenommen sind nur Training und Zusammenfassung (Vollbild-Aufgabe ohne Navigationsleiste). Ein/Aus in den Einstellungen als iOS-Schalter
+- **Zeigen statt schreiben:** Wo eine Zahl, ein Zustand oder eine Auswahl gemeint ist, steht ein Bild statt eines Satzes; der Satz bleibt als Vorlesetext für Screenreader (`.sr-only`).
+  - Heute: Karte mit Ringen (Kalorien übrig, Eiweiß, Schritte) statt Textzeilen; Wochenziel als Ring; Serie und Fakten als Chips mit Symbol; Termine als sieben Punkte mit Uhrzeit. Der Erklärtext eines Hinweises ist eingeklappt (Titel antippen), auf der Hinweise-Seite offen.
+  - Training: Trainingstage zeigen bis zu fünf Gerätebilder statt der Namensliste (Rest als „+2“); Termine als Mini-Woche; Planprüfung mit Balken je großer Muskelgruppe und hellem Bereich für den Richtwert der App, die Begründung ist eingeklappt.
+  - Essen: Kalorienring mit „Gegessen“ und „Ziel“ daneben; „Letzte 7 Tage“ als Balken mit Ziellinie.
+  - Einstellungen und Listen: jede Zeile mit Symbol auf farbiger Kachel, Werte rechts, Erklärungen als Beitext unter der Gruppe. Wochenrückblick: Statussymbol je Zeile.
+  - Die Symbole sind selbst gezeichnete Liniengrafiken (inline, 24 × 24), keine fremden Bilder. Die Geräteseite behält die Bewegungsanimation als Muskeldarstellung (keine zusätzliche Körperkarte). Test: Abschnitt 85
 - **Natives Gefühl:** Knöpfe, Tabs, Titel und Beschriftungen lassen sich nicht markieren und zeigen beim langen Drücken kein Kontextmenü; kein Doppeltipp-Zoom (`touch-action: manipulation`); alle Eingabefelder mindestens 16 px, damit iOS beim Antippen nicht in die Seite zoomt. Statusleiste: `apple-mobile-web-app-status-bar-style` steht auf `default` und `theme-color` folgt dem Design (hell #F2F2F7, dunkel Schwarz) – so ist die Uhrzeit auch im hellen Design lesbar (vorher weiße Schrift auf hellem Grund). Die Navigationsleiste hat dieselbe Farbe wie die Statusleiste
 - **Blau:** gefüllt nur für die eine Hauptaktion je Ansicht (weiße Schrift, Kontrast 4,7:1). Weitere Knöpfe grau hinterlegt mit blauer Schrift, Textknöpfe und Links blau (eigenes Token `--accent-ink`, im dunklen Design heller). Hinweiskarten zeigen ihre Art mit einem farbigen Punkt (blau Tipp, orange Warnung, grün gut, grau Frage)
 - **Skala statt Balken:** Im Training ist der Fortschritt eine Skala mit einem Strich je Satz
