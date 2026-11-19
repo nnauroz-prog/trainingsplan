@@ -45,6 +45,7 @@ Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt
   - **Heute** (machen): das nächste Training mit Start-Knopf und einer kurzen Nachricht; danach in fester Reihenfolge höchstens ein Hinweis (nur Titel und Aktion, Erklärung nach Antippen), „Diese Woche ›“ (die Überschrift führt zum Wochenrückblick) und „Mein Tag“ (Ringe für Kalorien, Eiweiß, Schritte → Tagesplan)
   - **Plan** (bauen): „Mein Plan“ in fester Reihenfolge – Trainingstage (Gerätebilder, Dauer, ▶ startet den Tag direkt; Antippen öffnet den Tag mit Gerätebildern in Reihenfolge), „Rund um den Plan“ (Termine, Geräte im Studio, Erholung als Zeilen einer Liste) und die Planprüfung als eine Karte mit Status (aufgeklappt nur bei echten Punkten); Zahnrad → Einstellungen
 - **Gleiche Regeln in allen Bereichen:** Der große Titel entspricht dem Bereich (Heute, Mein Plan, Wissen, Essen, Fortschritt). Das Zahnrad steht in jedem Bereich oben rechts; die Einstellungen führen dorthin zurück, wo man herkam. Gerätelisten filtern überall gleich (Marke und Muskel mit Anzahl – in der Geräteauswahl und unter Wissen → Geräte)
+- **Neuer Trainingstag:** „Trainingstag hinzufügen“ öffnet ein Fenster mit „Leerer Tag“ (Geräte selbst wählen) und sechs Vorschlägen (Drücken, Ziehen, Beine, Oberkörper, Unterkörper, Ganzkörper) mit Gerätebildern, Anzahl und Dauer. Vorschläge nutzen dieselben Vorlagen und Regeln wie der ganze Plan: Geräte aus dem eigenen Studio, bevorzugte haben Vorrang; Sätze, Wiederholungen und Pausen sind Startwerte der App für das Ziel und passen ins Zeitbudget. Der Tag öffnet sich danach zum Ändern; vergebene Namen werden nummeriert („Beine 2“)
 - **Plan bauen:** Tagesname mit Stift änderbar; „Ordnen“ in „Mein Plan“ sortiert die Trainingstage mit ↑/↓ (ab zwei Tagen). Die Reihenfolge bestimmt, welcher Tag nach einem Training als Nächstes dran ist; sind dessen Muskeln noch nicht erholt, schlägt die App einen anderen vor (Regel der App)
 - **Die Äste:**
   - **Wissen:** Umschalter „Geräte | Artikel“; Geräte mit Suche und Filtern, Artikel und „So entscheidet die App“ (alle Hinweise an einem Ort, die Regeln als aufklappbare Liste)
@@ -52,6 +53,8 @@ Der Zweck in einem Satz: **Plan selbst bauen → Start tippen → die App führt
   - **Fortschritt:** Wochenrückblick, Häufigkeit, Kraft & Bestwerte, Ziele, Körpergewicht; Volumen, Muskelbelastung und Kalender erst, wenn es Trainings gibt
 
 ## Funktionen
+
+- **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
 
 - **Geräteseite neu:** Zeichnung groß über die ganze Breite mit sanftem Licht dahinter, darunter Name, „Am Gerät steht“ und Kurzinfos als Chips (Muskel mit rotem Punkt, Gewichtsart, Schritt, eigene Einstellung); „So geht's“ als nummerierte Karten; danach Tricks, Muskeln (Karten), Deine Werte, In deinem Plan, Mehr zur Übung und Alternativen
 - **„Mehr zur Übung“ in einfacher Sprache:** Warum, Einstellen, Schritte, häufige Fehler, Sicherheit und Tipps für alle 60 Geräte in kurzen, ganzen Sätzen mit „du“ und Anweisungen („Stell den Sitz so ein, dass …“), ohne Fachwörter wie „Bewegungsumfang“ oder „isoliert“; Zahlen und Studienaussagen unverändert

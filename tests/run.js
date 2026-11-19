@@ -374,7 +374,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v90)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v90")));
+      ok("Service Worker aktiv (Cache trainingsplan-v91)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v91")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4783,7 +4783,49 @@ async function finishAllSets(page, kg, reps) {
       await ctx.close();
     }
 
-    section("88. Konsole");
+    section("88. Neuer Trainingstag (leer oder Vorschlag); Datum am Ort des Nutzers");
+    {
+      const P = { goal: "kraft", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Beine", items: [{ id: "a1", exId: "hs-legpress", sets: 3, rmin: 4, rmax: 6, rest: 180 }] }] };
+      const { ctx, page } = await open({ plan: P, dev: { "hs-hack": { off: true } } });
+      await page.click("nav.tabs [data-v=plan]"); await page.click("#addDayRow");
+      const sh = await tp(page, () => ({ title: document.querySelector(".sheet h2").textContent, cancel: (document.querySelector(".sheet .sh-l") || {}).textContent, empty: document.querySelector("#addEmpty .t").textContent,
+        tpl: [...document.querySelectorAll("#addTpl .li .t")].map(x => x.textContent).join(), thumbs: [...document.querySelectorAll("#addTpl .li")].every(l => l.querySelector(".tstrip svg") && l.querySelector(".sr-only").textContent.length > 5),
+        foot: document.querySelector(".sheet .foot").textContent }));
+      ok("„Trainingstag hinzufügen“: Fenster mit „Leerer Tag“ und sechs Vorschlägen mit Gerätebildern", sh.title === "Neuer Trainingstag" && sh.cancel === "Abbrechen" && sh.empty === "Leerer Tag" && sh.tpl === "Drücken,Ziehen,Beine,Oberkörper,Unterkörper,Ganzkörper" && sh.thumbs, JSON.stringify(sh));
+      ok("Erklärt die Herkunft: Geräte aus dem Studio, Startwerte der App für das Ziel", sh.foot.includes("aus deinem Studio") && sh.foot.includes("Startwerte der App") && sh.foot.includes("Kraft"));
+      ok("Fenster bei 320 px ohne seitliches Scrollen", await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })());
+      await page.click("#addTpl [data-a=addDayTpl][data-k='2']");
+      const st = await stored(page), nd = st.plan.days[1];
+      const info = await tp(page, () => ({ title: document.getElementById("dayName").value, rows: document.querySelectorAll("#dayItems .li").length, sheet: !!document.querySelector(".sheet") }));
+      ok("Vorschlag „Beine“: neuer Tag „Beine 2“ (Name war vergeben), öffnet sich zum Ändern", st.plan.days.length === 2 && nd.name === "Beine 2" && info.title === "Beine 2" && info.rows === nd.items.length && !info.sheet, JSON.stringify(info));
+      ok("Nur Geräte aus dem eigenen Studio (Hackenschmidt ist abgewählt), keines doppelt", nd.items.length >= 4 && !nd.items.some(i => i.exId === "hs-hack") && new Set(nd.items.map(i => i.exId)).size === nd.items.length, nd.items.map(i => i.exId).join());
+      const iso = await tp(page, ids => ids.map(id => window.__tp.isIso(id)), nd.items.map(i => i.exId));
+      ok("Startwerte passen zum Ziel Kraft: Grundübungen 4–6 Wdh., Übungen mit einem Gelenk 8–12", nd.items.every((it, i) => iso[i] ? it.rmin === 8 && it.rmax === 12 : it.rmin === 4 && it.rmax === 6) && nd.items.every(it => it.sets >= 2 && it.sets <= 3), JSON.stringify(nd.items.map((i, k) => [i.exId, iso[k], i.rmin, i.rmax, i.sets])));
+      const est = await tp(page, () => window.__tp.estimateSec(window.__tp.state.plan.days[1].items) / 60);
+      ok("Der Vorschlag passt ins Zeitbudget (60 Min.)", est <= 60, String(est));
+      await page.click("#navbar .nb-back"); await page.click("#addDayRow"); await page.click("#addEmpty");
+      const st2 = await stored(page);
+      ok("„Leerer Tag“: neuer Tag ohne Geräte, bereit zum Auswählen", st2.plan.days.length === 3 && st2.plan.days[2].items.length === 0 && st2.plan.days[2].name === "Tag 3" && await page.isVisible("#app [data-a=openPicker]"));
+      await page.click("#navbar .nb-back"); await page.click("#addDayRow"); await page.click(".sheet .sh-l");
+      ok("Abbrechen legt keinen Tag an", (await stored(page)).plan.days.length === 3 && !(await page.$(".sheet")));
+      await ctx.close();
+    }
+    {
+      // Körpergewicht: gespeichert wird das Datum am Ort des Nutzers, nicht das UTC-Datum.
+      // Zeitzone so gewählt, dass sich beide Daten in diesem Moment sicher unterscheiden (unabhängig von der Uhrzeit des Testlaufs)
+      const tz = new Date().getUTCHours() >= 12 ? "Pacific/Kiritimati" : "Pacific/Pago_Pago";
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, timezoneId: tz, serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-tabmem", "0"); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
+      const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+      const d = await page.evaluate(() => { const n = new Date(), p = x => String(x).padStart(2, "0"); return { local: `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`, utc: n.toISOString().slice(0, 10) }; });
+      await page.click("nav.tabs [data-v=history]"); await page.click("#discWeight summary"); await page.fill("#bwIn", "81,5"); await page.click("[data-a=addWeight]");
+      const w = (await stored(page)).weights;
+      ok("Gewicht eintragen speichert unter dem Datum am Ort (hier weicht es vom UTC-Datum ab)", d.local !== d.utc && w.length === 1 && w[0].d === d.local && w[0].kg === 81.5, JSON.stringify([tz, d, w]));
+      ok("Die Karte erkennt den Eintrag von heute", (await page.getAttribute("#bwIn", "placeholder")).includes("Heute: 81,5"), await page.getAttribute("#bwIn", "placeholder"));
+      await ctx.close();
+    }
+
+    section("89. Konsole");
     ok("Keine JavaScript-Fehler in allen Tests", allErrors.length === 0, allErrors.slice(0, 3).join(" | "));
   } catch (e) {
     fail++; console.log("\n✗ Testlauf abgebrochen: " + (e && e.message ? e.message.split("\n")[0] : e));

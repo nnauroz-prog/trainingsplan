@@ -1892,6 +1892,19 @@ const ISO_PAT = new Set(["fly", "lateral", "rear", "bi", "tri", "knee_ext", "kne
 const KRAFT_ISO = { rmin: 8, rmax: 12, rest: 90 };
 const isIso = exId => ISO_PAT.has(ex(exId).pattern);
 function rangeFor(goal, exId) { return goal === "kraft" && isIso(exId) ? KRAFT_ISO : GOALS[goal] || GOALS.aufbau; }
+// Ein einzelner Trainingstag als Vorschlag (für „Trainingstag hinzufügen“): dieselben Vorlagen und Regeln wie beim ganzen Plan –
+// Geräte aus dem eigenen Studio, bevorzugte haben Vorrang, Sätze/Wiederholungen/Pausen als Startwerte der App für das Ziel
+const DAY_TPL = [["Drücken", TEMPLATES[3][0][1]], ["Ziehen", TEMPLATES[3][1][1]], ["Beine", TEMPLATES[3][2][1]],
+  ["Oberkörper", TEMPLATES[4][0][1]], ["Unterkörper", TEMPLATES[4][1][1]], ["Ganzkörper", TEMPLATES[2][0][1]]];
+function tplIds(tpl) { const used = new Set(); return tpl.map(id => { const a = pickForSlot(id, used); if (a) used.add(a); return a; }).filter(Boolean); }
+function dayFromTpl(name, tpl, goal, level, minutes) {
+  const items = tplIds(tpl).map((id, i) => { const r = rangeFor(goal, id); return { id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
+    rmin: r.rmin, rmax: r.rmax, rest: i < 2 ? r.rest : Math.max(60, r.rest - 30) }; });
+  const over = () => minutes && estimateSec(items) / 60 > minutes;
+  while (over() && items.length > 3) items.pop();
+  for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
+  return { id: uid(), name, items };
+}
 function generatePlan(goal, days, level, minutes) {
   const g = GOALS[goal];
   const gaps = [];
@@ -4983,7 +4996,7 @@ function vPlan() {
           ${d.items.length ? thumbStrip(d.items.map(it => it.exId), 5) + sr(d.items.map(it => esc(ex(it.exId).name)).join(" · ")) : `<span class="s">Noch keine Übungen – antippen und Geräte wählen</span>`}</span></button>
         ${d.items.length && !ses ? `<button class="icon-btn dplay" data-a="startDayId" data-id="${d.id}" aria-label="${esc(d.name)} starten">${ICON.play}</button>` : `<span class="chev" aria-hidden="true">›</span>`}
       </div>`).join("")}
-      <button class="li" data-a="addDay"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
+      <button class="li" data-a="addDayOpen" id="addDayRow"><span class="idx" style="background:transparent;color:var(--accent-ink);font-size:20px">+</span><div class="grow"><div class="t" style="color:var(--accent-ink)">Trainingstag hinzufügen</div></div></button>
     </div>
     <p class="small foot">Tag antippen zum Bearbeiten, ▶ startet das Training.</p></section>
     <section class="section" id="planMore"><div class="section-head"><h2>Rund um den Plan</h2></div><div class="group">
@@ -4997,6 +5010,18 @@ function vPlan() {
     </div></section>
     ${planCheckHtml()}
   </div>`;
+}
+// Name, den es im Plan noch nicht gibt („Beine“, „Beine 2“ …)
+function freeDayName(n) { let s = n, k = 1; while (state.plan.days.some(d => d.name === s)) s = `${n} ${++k}`; return s; }
+function addDaySheet() {
+  const p = state.plan;
+  return `${sheetHead("Neuer Trainingstag", "", "closeSheet", true)}
+    <div class="group"><button class="li" data-a="addDay" id="addEmpty">${ico("plus", "blue")}<div class="grow"><div class="t">Leerer Tag</div><div class="s">Geräte selbst wählen</div></div><span class="chev">›</span></button></div>
+    <div class="cap">Oder als Vorschlag</div>
+    <div class="group" id="addTpl">${DAY_TPL.map(([name, tpl], k) => { const ids = tplIds(tpl), d = dayFromTpl(name, tpl, p.goal, p.level, p.minutes);
+      return `<button class="li" data-a="addDayTpl" data-k="${k}" ${ids.length ? "" : "disabled"}><div class="grow"><div class="row between" style="gap:var(--s2)"><span class="t">${name}</span><span class="min">${ids.length ? `${nGer(d.items.length)} · ≈ ${estMinutes(d)} Min.` : "kein passendes Gerät"}</span></div>
+        ${ids.length ? thumbStrip(d.items.map(i => i.exId), 6) + sr(d.items.map(i => esc(ex(i.exId).name)).join(" · ")) : ""}</div><span class="chev">›</span></button>`; }).join("")}</div>
+    <p class="small foot">Vorschläge nehmen Geräte aus deinem Studio, bevorzugte haben Vorrang. Sätze, Wiederholungen und Pausen sind Startwerte der App für dein Ziel (${(GOALS[p.goal] || GOALS.aufbau).label}). Alles lässt sich danach ändern.</p>`;
 }
 // Reihenfolge der Trainingstage: Nach einem Training ist der nächste Tag in dieser Liste dran (nach dem letzten wieder der erste)
 function dayOrderSheet() {
@@ -5781,7 +5806,8 @@ const HK_SENT = "An Health übergeben · erneut senden";
 // Gewicht in ganzen Gramm übergeben: kein Komma/Punkt, das Kurzbefehle je nach Region falsch lesen könnte
 const HK_WEIGHT = "Trainingsplan Gewicht";
 const weightUrl = kg => `shortcuts://run-shortcut?name=${encodeURIComponent(HK_WEIGHT)}&input=text&text=${Math.round(kg * 1000)}`;
-const todayKey = () => new Date().toISOString().slice(0, 10);
+// Datum am Ort des Nutzers. toISOString() wäre UTC: in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr noch der Vortag
+const todayKey = () => dkey();
 const healthTxt = h => { const p = healthPayload(h); return `Krafttraining, Start ${p.start.slice(11)} Uhr, ${p.minuten} Min.`; };
 function openExternal(url) { if (window.__tp) window.__tp.lastUrl = url; else location.href = url; }
 function healthSheet() {
@@ -6194,7 +6220,7 @@ function dayTotals(d) {
 }
 // Gewichtstrend: Ausgleichsgerade über die letzten 28 Tage, mind. 3 Einträge über mind. 14 Tage
 function weightTrend() {
-  const since = new Date(Date.now() - 28 * 864e5).toISOString().slice(0, 10);
+  const since = dkey(new Date(Date.now() - 28 * 864e5));
   const pts = (state.weights || []).filter(w => w.d >= since).sort((a, b) => a.d.localeCompare(b.d));
   if (pts.length < 3) return null;
   const xs = pts.map(w => (new Date(w.d) - new Date(pts[0].d)) / 864e5), ys = pts.map(w => w.kg);
@@ -7592,10 +7618,10 @@ function vHistory() {
 let calOffset = 0, bwOpen = false, logOpen = false, histNote = "";
 function weightCard() {
   const W = (state.weights || []).slice().sort((a, b) => a.d.localeCompare(b.d));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = dkey();
   const todayEntry = W.find(w => w.d === today);
   const last = W[W.length - 1];
-  const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+  const since = dkey(new Date(Date.now() - 30 * 864e5));
   const base = W.find(w => w.d >= since);
   const diff = last && base && last !== base ? Math.round((last.kg - base.kg) * 10) / 10 : null;
   let chart = "";
@@ -7800,7 +7826,7 @@ const A = {
   addWeight: () => {
     const v = num(byId("bwIn").value);
     if (v === null || v < 30 || v > 300) { byId("bwErr").hidden = false; byId("bwIn").focus(); return; }
-    const d = new Date().toISOString().slice(0, 10);
+    const d = dkey();
     state.weights = (state.weights || []).filter(w => w.d !== d).concat([{ d, kg: Math.round(v * 10) / 10 }]);
     save(); bwOpen = true; vHistory(); bwOpen = false;
   },
@@ -7996,7 +8022,7 @@ const A = {
     if (d.kcal !== null && !(d.kcal >= 1000 && d.kcal <= 6000)) return fail("Ein eigenes Kalorienziel muss zwischen 1.000 und 6.000 kcal liegen – oder leer bleiben.");
     state.nutr = cleanNutr(Object.assign({}, d, { age: Math.round(d.age), cm: Math.round(d.cm) }));
     const kg = Math.round(d.kg * 10) / 10, w = lastWeight();
-    if (!w || w.kg !== kg) { const t = new Date().toISOString().slice(0, 10); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
+    if (!w || w.kg !== kg) { const t = dkey(); state.weights = (state.weights || []).filter(x => x.d !== t).concat([{ d: t, kg }]); }
     save(); closeSheet(); render();
   },
   openSettings: () => { if (view !== "settings") settingsBack = ROOTV.has(view) ? view : tabOf(view); go("settings"); },
@@ -8209,7 +8235,10 @@ const A = {
   startDayId: el => { const d = state.plan && state.plan.days.find(x => x.id === el.dataset.id); if (d && d.items.length && !state.session) startTraining(d); },
   startDay: () => { const d = curDay(); if (d && d.items.length && !state.session) startTraining(d); },
   toTrain: () => { if (state.session) go("train"); },
-  addDay: () => { const d = { id: uid(), name: "Tag " + (state.plan.days.length + 1), items: [] }; state.plan.days.push(d); save(); state.editDay = d.id; go("day"); },
+  addDayOpen: () => openSheet(addDaySheet()),
+  addDay: () => { const d = { id: uid(), name: freeDayName("Tag " + (state.plan.days.length + 1)), items: [] }; state.plan.days.push(d); save(); closeSheet(); state.editDay = d.id; go("day"); },
+  addDayTpl: el => { const t = DAY_TPL[+el.dataset.k], p = state.plan; if (!t) return;
+    const d = dayFromTpl(freeDayName(t[0]), t[1], p.goal, p.level, p.minutes); p.days.push(d); save(); closeSheet(); state.editDay = d.id; go("day"); },
   dayCopyOpen: () => openSheet(dayCopySheet()),
   dayCopyAsk: el => { const src = curDay(), tgt = state.plan.days.find(x => x.id === el.dataset.to); if (!src || !tgt) return;
     openSheet(`${sheetHead("Geräte ersetzen?", "Zurück", "dayCopyOpen")}
@@ -8476,7 +8505,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden || !st
   if (idlePause()) { stopTick(); awake(false); closeSheet(); return go("home"); }
   if (!state.session.paused) { awake(true); tick(); } });
 
-if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
+if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 go(view);
 if (state.session && !state.session.paused) startTick();
