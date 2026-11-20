@@ -640,11 +640,35 @@
   /* ── Abstand masse/css 2 ── */
   /* ── Abstand masse/css 3 ── */
   /* @ext:rueckblick:css:start */
+  /* Rückblick: Zeitraum-Leiste, Kennzahlen, Balken */
+  .rb-nav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;text-align:center;padding:var(--s1)}
+  .rb-nav button{height:44px;display:grid;place-items:center;color:var(--accent-ink);font-size:22px;border-radius:10px}
+  .rb-nav button[disabled]{color:var(--text-3);opacity:.5}
+  .rb-nav b{font-size:17px}
+  .rb-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+  .rb-grid .card{margin:0;display:grid;gap:2px;align-content:start}
+  .rb-grid .num{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .rb-d{color:var(--text-2)}
+  .rb-bars{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;align-items:end;height:110px}
+  .rb-bars>div{display:grid;grid-template-rows:16px minmax(0,1fr) 16px;height:100%;justify-items:center;font-size:11px;color:var(--text-2);gap:2px;min-width:0}
+  .rb-bars i{align-self:end;width:min(26px,100%);border-radius:4px 4px 2px 2px;background:var(--accent);min-height:2px}
+  .rb-bars i.z{background:var(--fill-2)}
+  .rb-ar{color:var(--text-2);font-variant-numeric:tabular-nums}
   /* @ext:rueckblick:css:end */
   /* ── Abstand rueckblick/css 1 ── */
   /* ── Abstand rueckblick/css 2 ── */
   /* ── Abstand rueckblick/css 3 ── */
   /* @ext:werkzeuge:css:start */
+  /* Rechner: zwei Felder nebeneinander, Ergebniszeile, Prozentliste */
+  .wz-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+  .wz-out{min-height:44px;display:grid;align-content:center;gap:var(--s1)}
+  .wz-out .plates{justify-content:flex-start}
+  .wz-big{font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .wz-pct{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s3);padding:10px 0;border-bottom:.5px solid var(--hair)}
+  .wz-pct:last-child{border-bottom:0}
+  .wz-pct .bar{height:6px;border-radius:3px;background:var(--fill-2);overflow:hidden}
+  .wz-pct .bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+  .wz-pct b{font-variant-numeric:tabular-nums}
   /* @ext:werkzeuge:css:end */
   /* ── Abstand werkzeuge/css 1 ── */
   /* ── Abstand werkzeuge/css 2 ── */
@@ -680,6 +704,28 @@
   /* ── Abstand plaene/css 2 ── */
   /* ── Abstand plaene/css 3 ── */
   /* @ext:aussehen:css:start */
+  /* Akzentfarben. Je Farbe: Fläche --ac (in beiden Designs gleich; weiße Schrift darauf ≥ 4,5:1), gedrückt --ac-press,
+     Schriftfarbe im hellen Design --ac-ink-l und im dunklen --ac-ink-d (jeweils ≥ 4,5:1 auf --bg, --raise, --raise-2, --sheet),
+     Grundton der zarten Flächen --ac-rgb-l / --ac-rgb-d. „blau“ sind die Standardwerte der App. Nachgerechnet in tests/run.js (E-aussehen). */
+  [data-accent="blau"]{--ac:#0071E3;--ac-press:#0064CC;--ac-ink-l:#0062CC;--ac-ink-d:#4DA2FF;--ac-rgb-l:0,113,227;--ac-rgb-d:10,132,255}
+  [data-accent="indigo"]{--ac:#5E5CE0;--ac-press:#504ECC;--ac-ink-l:#4F4CD0;--ac-ink-d:#9D9BFF;--ac-rgb-l:94,92,224;--ac-rgb-d:94,92,230}
+  [data-accent="gruen"]{--ac:#1C8139;--ac-press:#187031;--ac-ink-l:#17722F;--ac-ink-d:#30D158;--ac-rgb-l:28,129,57;--ac-rgb-d:48,209,88}
+  [data-accent="orange"]{--ac:#C25000;--ac-press:#AB4600;--ac-ink-l:#A94300;--ac-ink-d:#FF9F0A;--ac-rgb-l:194,80,0;--ac-rgb-d:255,159,10}
+  [data-accent="pink"]{--ac:#D1257F;--ac-press:#BA1F70;--ac-ink-l:#BD1C70;--ac-ink-d:#FF78B4;--ac-rgb-l:209,37,127;--ac-rgb-d:255,55,130}
+  [data-accent="rot"]{--ac:#DB1A1A;--ac-press:#C31515;--ac-ink-l:#C80014;--ac-ink-d:#FF7B72;--ac-rgb-l:219,26,26;--ac-rgb-d:255,69,58}
+  /* Gewählte Farbe: Attribut data-accent an <html>. Bei Blau fehlt es, dann gelten die Farb-Tokens der App unverändert. */
+  :root[data-accent]{--accent:var(--ac);--accent-press:var(--ac-press);--accent-stripe:var(--ac);--accent-ink:var(--ac-ink-d);--accent-ink-on:var(--on-accent);
+    --accent-tint:rgba(var(--ac-rgb-d),.2);--accent-soft:rgba(var(--ac-rgb-d),.4)}
+  @media (prefers-color-scheme: light){:root[data-accent]:not([data-theme="dark"]){--accent-ink:var(--ac-ink-l);--accent-tint:rgba(var(--ac-rgb-l),.1);--accent-soft:rgba(var(--ac-rgb-l),.3)}}
+  :root[data-accent][data-theme="light"]{--accent-ink:var(--ac-ink-l);--accent-tint:rgba(var(--ac-rgb-l),.1);--accent-soft:rgba(var(--ac-rgb-l),.3)}
+  /* Seite „Aussehen“: Farbfelder (Tippfläche 48 px hoch, Punkt 30 px) und Vorschau (nur Anschauung, nicht bedienbar) */
+  .aus-sws{grid-template-columns:repeat(6,1fr);gap:0;padding:var(--s2) var(--s3)}
+  .aus-sw{height:48px;min-width:0;display:grid;place-items:center}
+  .aus-sw i{width:30px;height:30px;border-radius:50%;background:var(--ac);color:var(--on-accent);display:grid;place-items:center;font-size:18px;transition:box-shadow .15s}
+  .aus-sw[aria-pressed="true"] i{box-shadow:0 0 0 2.5px var(--raise),0 0 0 5px var(--ac)}
+  .aus-sw:active i{opacity:.6}
+  .aus-demo{pointer-events:none}
+  .aus-demo .aus-txt{color:var(--accent-ink)}
   /* @ext:aussehen:css:end */
   /* ── Abstand aussehen/css 1 ── */
   /* ── Abstand aussehen/css 2 ── */
@@ -1926,6 +1972,9 @@ function exIdByName(name, s) {
 }
 
 // Erst jetzt laden: alle Hilfsfunktionen für Bereinigung/Migration sind definiert
+// Muss vor dem Laden feststehen: normalize() prüft damit die gespeicherte Scheibenauswahl. Stand die Liste weiter unten,
+// scheiterte das Laden, sobald Scheiben abgewählt waren, und die App startete leer.
+const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
 let state = blank();
 state = load();
 
@@ -1953,7 +2002,6 @@ const ex = id => devFrom(state, id);
 const allEx = () => LIB.concat(state.custom).map(e => ex(e.id));
 const UNIT = { s: "kg pro Seite", t: "kg insgesamt", b: "kg am Gewichtsblock" };
 // Scheibenrechner: welche Scheiben je Seite. Standard-Scheiben (Regel der App), unter Einstellungen → Studio anpassbar
-const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
 function platesOf(perSide, avail) {
   let r = Math.round(perSide * 100) / 100; const out = [];
   for (const p of avail.slice().sort((a, b) => b - a)) while (r >= p - 1e-9) { out.push(p); r = Math.round((r - p) * 100) / 100; }
@@ -2367,7 +2415,7 @@ function baseDay() {
 }
 let nextReason = "";
 // Geschätztes 1RM nach Epley – nur eine Näherung, an Maschinen grob vergleichbar
-function e1rm(t) { return t.kg ? t.kg * (1 + Math.min(t.reps, 12) / 30) : 0; }
+function e1rm(t) { return !t.kg ? 0 : t.reps <= 1 ? t.kg : t.kg * (1 + Math.min(t.reps, 12) / 30); }
 // Stillstand nur bei ausreichender Datenlage: mindestens 4 vollständige, einheitliche Einheiten über mindestens
 // 3 Wochen (letzte 6 betrachtet) ohne neues Höchstgewicht und ohne mehr Wiederholungen beim gleichen Gewicht.
 function plateau(exId) {
@@ -8894,11 +8942,167 @@ EXT.test.masse = { MASSE, LIMIT: MASSE_LIMIT, clean: EXT.clean.masse, parse: mas
 // ── Abstand masse/js 2 ──
 // ── Abstand masse/js 3 ──
 // @ext:rueckblick:js:start
+// Rückblick (Fortschritt → „Monat und Jahr“): Zahlen eines Monats oder Jahres aus dem Verlauf. Nichts wird gespeichert.
+// Monat und Jahr gelten nach dem Datum am Ort des Nutzers. Vergleich immer mit dem Zeitraum davor – nur, wenn es dort Trainings gab.
+// Bestwert: schwerster gültiger Satz je Gerät und Gewichtsangabe im Zeitraum gegen alles davor; das erste Training an einem Gerät zählt nicht.
+{
+  const MON = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const MON_S = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+  const rb = { mode: "m", y: null, m: null };   // null = Zeitraum von heute
+  const rbRange = (mode, y, m) => mode === "y" ? [new Date(y, 0, 1), new Date(y + 1, 0, 1)] : [new Date(y, m, 1), new Date(y, m + 1, 1)];
+  const rbStep = (mode, y, m, dir) => mode === "y" ? [y + dir, 0] : [y + Math.floor((m + dir) / 12), (m + dir + 12) % 12];
+  const rbName = (mode, y, m) => mode === "y" ? String(y) : `${MON[m]} ${y}`;
+  const rbShort = (mode, y, m) => mode === "y" ? String(y) : MON[m];
+  const rbIdx = (mode, y, m) => mode === "y" ? y : y * 12 + m;
+  const rb1 = v => (Math.round(v * 10) / 10).toLocaleString("de-DE", { maximumFractionDigits: 1 });
+  const rbDur = sec => { const min = Math.round(sec / 60), h = Math.floor(min / 60); return h ? `${h} Std.${min % 60 ? ` ${min % 60} Min.` : ""}` : `${min} Min.`; };
+  const rbVol = kg => kg >= 1000 ? `${rb1(kg / 1000)} t` : `${fmtK(kg)} kg`;
+  // Kennzahlen eines Zeitraums. now begrenzt den laufenden Zeitraum für den Wochenschnitt (bis einschließlich heute).
+  function rbStats(hist, weights, mode, y, m, now = new Date()) {
+    const [a, b] = rbRange(mode, y, m), list = hist.filter(h => { const d = new Date(h.date); return d >= a && d < b; });
+    let sec = 0, vol = 0; const perEx = {}, wd = [0, 0, 0, 0, 0, 0, 0], mon = Array(12).fill(0), prevBest = {}, curBest = {};
+    list.forEach(h => { const d = new Date(h.date); sec += h.durationSec || 0; wd[(d.getDay() + 6) % 7]++; mon[d.getMonth()]++;
+      const seen = new Set();
+      (h.exercises || []).forEach(x => { (x.sets || []).forEach(t => { vol += setVol(x, t); });
+        if ((x.sets || []).some(validSet) && !seen.has(x.exId)) { seen.add(x.exId); perEx[x.exId] = (perEx[x.exId] || 0) + 1; } }); });
+    hist.forEach(h => { const d = new Date(h.date); if (d >= b) return; const tgt = d < a ? prevBest : curBest;
+      (h.exercises || []).forEach(x => { const k = x.exId + "|" + (x.u || unitOf(ex(x.exId))); (x.sets || []).forEach(t => { if (validSet(t) && t.kg > (tgt[k] || 0)) tgt[k] = t.kg; }); }); });
+    const recs = Object.keys(curBest).filter(k => prevBest[k] && curBest[k] > prevBest[k]).map(k => { const [exId, u] = k.split("|"); return { exId, u, from: prevBest[k], to: curBest[k] }; })
+      .sort((p, q) => q.to / q.from - p.to / p.from || ex(p.exId).name.localeCompare(ex(q.exId).name, "de"));
+    const top = Object.keys(perEx).map(id => ({ exId: id, n: perEx[id] })).sort((p, q) => q.n - p.n || ex(p.exId).name.localeCompare(ex(q.exId).name, "de")).slice(0, 5);
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), end = b < tomorrow ? b : tomorrow;
+    const days = Math.max(1, Math.round((end - a) / 864e5)), perWeek = list.length / (days / 7);
+    const ka = dkey(a), kb = dkey(b), ws = (weights || []).filter(w => w && w.d >= ka && w.d < kb).sort((p, q) => p.d < q.d ? -1 : 1);
+    const weight = ws.length >= 2 ? { from: ws[0].kg, to: ws[ws.length - 1].kg, diff: Math.round((ws[ws.length - 1].kg - ws[0].kg) * 10) / 10 } : null;
+    return { n: list.length, sec, vol, perWeek: Math.round(perWeek * 10) / 10, days, wd, mon, recs, top, weight };
+  }
+  const rbCur = now => rb.y === null ? [now.getFullYear(), rb.mode === "y" ? 0 : now.getMonth()] : [rb.y, rb.mode === "y" ? 0 : rb.m];
+  // Grenzen: vom Zeitraum des ersten Trainings bis heute
+  function rbBounds(mode, now) { const first = state.history.reduce((mn, h) => { const d = new Date(h.date); return !mn || d < mn ? d : mn; }, null) || now;
+    return [rbIdx(mode, first.getFullYear(), first.getMonth()), rbIdx(mode, now.getFullYear(), now.getMonth())]; }
+  const rbSign = (v, txt) => v === 0 ? "gleich wie" : `${v > 0 ? "+" : "−"}${txt} gegenüber`;
+  const rbBars = (vals, labs, id, full = labs) => { const mx = Math.max(1, ...vals);
+    return `<div class="rb-bars" id="${id}" role="img" aria-label="${vals.map((v, i) => `${full[i]}: ${v}`).join(", ")}">${vals.map((v, i) => `<div><span>${v || ""}</span><i class="${v ? "" : "z"}" style="height:${v ? Math.max(4, Math.round(v / mx * 100)) : 2}%"></i><span>${labs[i]}</span></div>`).join("")}</div>`; };
+  EXT.nav.rueckblick = { back: "history" };
+  EXT.views.rueckblick = () => {
+    const now = new Date(), mode = rb.mode, [y, m] = rbCur(now), [lo, hi] = rbBounds(mode, now), idx = Math.min(hi, Math.max(lo, rbIdx(mode, y, m)));
+    const [cy, cm] = mode === "y" ? [idx, 0] : [Math.floor(idx / 12), idx % 12];
+    const s = rbStats(state.history, state.weights, mode, cy, cm, now), [py, pm] = rbStep(mode, cy, cm, -1), p = rbStats(state.history, state.weights, mode, py, pm, now), pn = rbShort(mode, py, pm);
+    const cmp = (v, txt) => p.n ? `<span class="small rb-d">${rbSign(v, txt)} ${pn}</span>` : "";
+    const dMin = Math.round(s.sec / 60) - Math.round(p.sec / 60), dVol = s.vol - p.vol, dW = Math.round((s.perWeek - p.perWeek) * 10) / 10;
+    $app.innerHTML = `<div class="page">
+      ${extHead("Rückblick", "Ein Monat oder ein Jahr in Zahlen.")}
+      <div class="seg" id="rbMode">${[["m", "Monat"], ["y", "Jahr"]].map(([k, l]) => `<button data-a="rbMode" data-v="${k}" class="${mode === k ? "on" : ""}" aria-pressed="${mode === k}">${l}</button>`).join("")}</div>
+      <div class="card rb-nav" id="rbNav"><button data-a="rbStep" data-v="-1" aria-label="Zeitraum davor"${idx <= lo ? " disabled" : ""}>‹</button><b id="rbTitle">${rbName(mode, cy, cm)}</b><button data-a="rbStep" data-v="1" aria-label="Zeitraum danach"${idx >= hi ? " disabled" : ""}>›</button></div>
+      ${!s.n ? `<div class="card" id="rbEmpty"><b>Kein Training in diesem Zeitraum</b><p class="small muted">${state.history.length ? "Mit den Pfeilen kommst du zu anderen Zeiträumen." : "Nach deinem ersten Training stehen hier die Zahlen."}</p></div>` : `
+      <div class="rb-grid" id="rbGrid">
+        <div class="card"><span class="cap">Trainings</span><span class="num" id="rbN">${s.n}</span>${cmp(s.n - p.n, String(Math.abs(s.n - p.n)))}</div>
+        <div class="card"><span class="cap">Trainingszeit</span><span class="num" id="rbSec">${rbDur(s.sec)}</span>${cmp(dMin, rbDur(Math.abs(dMin) * 60))}</div>
+        <div class="card"><span class="cap">Bewegtes Gewicht</span><span class="num" id="rbVol">${rbVol(s.vol)}</span>${cmp(Math.round(dVol), rbVol(Math.abs(dVol)))}</div>
+        <div class="card"><span class="cap">Pro Woche</span><span class="num" id="rbPw">${rb1(s.perWeek)}</span><span class="small rb-d">Trainings im Schnitt</span>${cmp(dW, rb1(Math.abs(dW)))}</div>
+      </div>
+      ${mode === "y" ? `<section class="section"><h2>Trainings je Monat</h2><div class="card">${rbBars(s.mon, MON_S, "rbMon", MON)}</div></section>` : ""}
+      <section class="section"><h2>Wochentage</h2><div class="card">${rbBars(s.wd, WD, "rbWd", WD_LONG)}</div></section>
+      ${s.recs.length ? `<section class="section"><div class="section-head"><h2>Neue Bestwerte</h2><span class="sub">${s.recs.length}</span></div><div class="group" id="rbRecs">${s.recs.map(r => `<div class="li">${thumbStrip([r.exId], 1)}<div class="grow"><div class="t">${esc(ex(r.exId).name)}</div><div class="small rb-ar">${kgTxt(r.from)} → <b>${kgTxt(r.to)} kg</b> ${UNIT_SHORT[r.u] || ""}</div></div></div>`).join("")}</div>
+        <p class="small foot">Schwerster Satz im Zeitraum gegenüber allem davor.</p></section>` : ""}
+      <section class="section"><h2>Am häufigsten</h2><div class="group" id="rbTop">${s.top.map(t => `<div class="li">${thumbStrip([t.exId], 1)}<div class="grow"><div class="t">${esc(ex(t.exId).name)}</div></div><span class="val">${nTr(t.n)}</span></div>`).join("")}</div></section>`}
+      ${s.weight ? `<section class="section"><h2>Körpergewicht</h2><div class="card" id="rbWeight"><div class="rb-ar">${kgTxt(s.weight.from)} → <b>${kgTxt(s.weight.to)} kg</b></div><div class="small muted">${s.weight.diff === 0 ? "unverändert" : `${s.weight.diff > 0 ? "+" : "−"}${kgTxt(Math.abs(s.weight.diff))} kg`} vom ersten zum letzten Eintrag im Zeitraum</div></div></section>` : ""}
+    </div>`;
+  };
+  const rbGo = (mode, y, m) => { rb.mode = mode; rb.y = y; rb.m = m; render(); };
+  EXT.actions.rbMode = el => { const now = new Date(), [y, m] = rbCur(now); rb.mode = el.dataset.v === "y" ? "y" : "m";
+    if (rb.mode === "m" && rb.y !== null) rb.m = y === now.getFullYear() ? now.getMonth() : 11;   // vom Jahr zurück: letzter Monat dieses Jahres
+    render(); const b = $app.querySelector(`#rbMode [data-v="${rb.mode}"]`); if (b) b.focus({ preventScroll: true }); };
+  EXT.actions.rbStep = el => { const now = new Date(), [y, m] = rbCur(now), [ny, nm] = rbStep(rb.mode, y, m, el.dataset.v === "1" ? 1 : -1), [lo, hi] = rbBounds(rb.mode, now), i = rbIdx(rb.mode, ny, nm);
+    if (i < lo || i > hi) return; const dir = el.dataset.v; rb.y = ny; rb.m = nm; render();
+    const b = $app.querySelector(`#rbNav [data-v="${dir}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); };
+  EXT.rows.history.push(() => extRow("rueckblick", "cal", "purple", "Monat und Jahr"));
+  Object.assign(EXT.test, { rbStats, rbGo, rbDur, rbVol });
+}
 // @ext:rueckblick:js:end
 // ── Abstand rueckblick/js 1 ──
 // ── Abstand rueckblick/js 2 ──
 // ── Abstand rueckblick/js 3 ──
 // @ext:werkzeuge:js:start
+// Rechner (Wissen → Artikel → „Nachschlagen“ → „Rechner“): Scheiben, geschätztes Höchstgewicht, Prozente. Nichts wird gespeichert.
+// Scheiben:       dieselbe Funktion wie im Training (platesOf) mit den Scheiben aus den Einstellungen – beide Stellen zeigen dasselbe.
+// Höchstgewicht:  dieselbe Schätzung wie unter Fortschritt → „Kraft & Bestwerte“ (e1rm), auf 0,5 kg gerundet. Schätzung der App.
+// Prozente:       vom Höchstgewicht, auf 2,5 kg gerundet. Die App sagt nicht, welcher Prozentwert „richtig“ ist.
+const wz = { kg: "", seite: "s", w: "", r: "", max: "" };
+const WZ_PCT = [90, 80, 70, 60, 50], WZ_MAXKG = 1000;
+const wzKg = v => { const n = num(v); return n !== null && n > 0 && n <= WZ_MAXKG ? Math.round(n * 100) / 100 : null; };
+// Scheiben je Seite; seite "t" = Gewicht insgesamt (auf zwei Seiten verteilt). done/total: was sich mit den vorhandenen Scheiben wirklich auflegen lässt
+function wzPlates(kg, seite, avail = state.plates || PLATE_SIZES) {
+  if (!(kg > 0)) return null;
+  const per = seite === "t" ? kg / 2 : kg, { plates, rest } = platesOf(per, avail), done = Math.round((per - rest) * 100) / 100;
+  return { per, plates, rest, done, total: seite === "t" ? done * 2 : done };
+}
+function wzMax(w, r) { return w > 0 && Number.isInteger(r) && r >= 1 && r <= 12 ? Math.round(e1rm({ kg: w, reps: r }) * 2) / 2 : null; }
+const wzPct = max => WZ_PCT.map(p => [p, Math.round(max * p / 100 / 2.5) * 2.5]);
+const wzEst = () => { const w = wzKg(wz.w), r = num(wz.r); return w === null || r === null ? null : wzMax(w, r); };
+function wzPlatesHtml() {
+  const kg = wzKg(wz.kg);
+  if (kg === null) return `<p class="small faint">${wz.kg.trim() ? "Bitte ein Gewicht zwischen 0 und 1.000 kg eingeben." : "Gewicht eingeben – die Scheiben erscheinen hier."}</p>`;
+  const p = wzPlates(kg, wz.seite);
+  const chips = p.plates.map(x => `<span class="pl" style="--p:${x}">${kgTxt(x)}</span>`).join("");
+  const head = `<p class="plates" id="wzChips"><span class="pl-l">Pro Seite</span>${chips || "<span>keine Scheibe</span>"}</p>`;
+  if (!p.rest) return head + `<p class="small muted">${p.plates.length} ${p.plates.length === 1 ? "Scheibe" : "Scheiben"} je Seite · ${kgTxt(p.per)} kg pro Seite</p>`;
+  return head + `<p class="small" id="wzRest">Geht mit deinen Scheiben nicht genau auf: ${kgTxt(p.rest)} kg pro Seite bleiben übrig. Nächstes Gewicht darunter: <b>${kgTxt(p.total)} kg ${wz.seite === "t" ? "insgesamt" : "pro Seite"}</b>.</p>`;
+}
+function wzMaxHtml() {
+  const e = wzEst();
+  if (e === null) { const any = wz.w.trim() || wz.r.trim(), r = num(wz.r);
+    return `<p class="small faint">${any && r !== null && !(Number.isInteger(r) && r >= 1 && r <= 12) ? "Wiederholungen: eine ganze Zahl von 1 bis 12." : "Gewicht und Wiederholungen eines Satzes eingeben."}</p>`; }
+  return `<div class="wz-big" id="wzMaxVal">≈ ${kgTxt(e)} kg</div><p class="small muted">geschätzt für eine einzelne Wiederholung</p>`;
+}
+function wzPctHtml() {
+  const own = wzKg(wz.max), est = wzEst(), max = own !== null ? own : est;
+  if (max === null) return `<p class="small faint">${wz.max.trim() ? "Bitte ein Gewicht zwischen 0 und 1.000 kg eingeben." : "Höchstgewicht eingeben oder oben schätzen lassen."}</p>`;
+  return `<p class="small muted" id="wzPctFrom">Von ${kgTxt(max)} kg (${own !== null ? "deine Eingabe" : "Schätzung oben"}), gerundet auf 2,5 kg</p>` +
+    wzPct(max).map(([p, kg]) => `<div class="wz-pct"><span>${p} %</span><span class="bar"><i style="width:${p}%"></i></span><b>${kgTxt(kg)} kg</b></div>`).join("");
+}
+function wzDraw() {
+  [["wzPlatesOut", wzPlatesHtml], ["wzMaxOut", wzMaxHtml], ["wzPctOut", wzPctHtml]].forEach(([id, f]) => { const el = byId(id); if (el) el.innerHTML = f(); });
+  const m = byId("wzMaxIn"), e = wzEst(); if (m) m.placeholder = e !== null ? kgTxt(e) : "z. B. 100";
+}
+EXT.nav.werkzeuge = { back: "wissen" };
+EXT.views.werkzeuge = () => {
+  const avail = (state.plates || PLATE_SIZES).slice().sort((a, b) => b - a);
+  $app.innerHTML = `<div class="page">
+    ${extHead("Rechner", "Scheiben, Höchstgewicht und Prozente.")}
+    <section class="section"><h2>Scheiben</h2>
+      <div class="card stack">
+        <div class="field"><label for="wzKgIn">Gewicht in kg</label><input id="wzKgIn" data-i="wzKg" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="z. B. 42,5" value="${esc(wz.kg)}"></div>
+        <div class="seg" id="wzSeite">${[["s", "Pro Seite"], ["t", "Insgesamt"]].map(([k, l]) => `<button data-a="wzSeite" data-v="${k}" class="${wz.seite === k ? "on" : ""}" aria-pressed="${wz.seite === k}">${l}</button>`).join("")}</div>
+        <div class="wz-out" id="wzPlatesOut" aria-live="polite"></div>
+      </div>
+      <p class="small foot" id="wzAvail">Scheiben in deinem Studio: ${avail.map(kgTxt).join(" · ")} kg. Änderbar unter Einstellungen.</p></section>
+    <section class="section"><h2>Höchstgewicht schätzen</h2>
+      <div class="card stack">
+        <div class="wz-two">
+          <div class="field"><label for="wzWIn">Gewicht in kg</label><input id="wzWIn" data-i="wzW" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="z. B. 100" value="${esc(wz.w)}"></div>
+          <div class="field"><label for="wzRIn">Wiederholungen</label><input id="wzRIn" data-i="wzR" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="1–12" value="${esc(wz.r)}"></div>
+        </div>
+        <div class="wz-out" id="wzMaxOut" aria-live="polite"></div>
+      </div>
+      <p class="small foot">Schätzung der App: Gewicht × (1 + Wiederholungen ÷ 30), bei einer Wiederholung das Gewicht selbst. So rechnet auch „Kraft & Bestwerte“. Vergleichbar nur am selben Gerät.</p></section>
+    <section class="section"><h2>Prozente</h2>
+      <div class="card stack">
+        <div class="field"><label for="wzMaxIn">Höchstgewicht in kg</label><input id="wzMaxIn" data-i="wzMax" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(wz.max)}"></div>
+        <div id="wzPctOut" aria-live="polite"></div>
+      </div></section>
+  </div>`;
+  wzDraw();
+};
+EXT.inputs.wzKg = el => { wz.kg = el.value; wzDraw(); };
+EXT.inputs.wzW = el => { wz.w = el.value; wzDraw(); };
+EXT.inputs.wzR = el => { wz.r = el.value; wzDraw(); };
+EXT.inputs.wzMax = el => { wz.max = el.value; wzDraw(); };
+EXT.actions.wzSeite = el => { wz.seite = el.dataset.v === "t" ? "t" : "s";
+  byId("wzSeite").querySelectorAll("button").forEach(b => { const on = b.dataset.v === wz.seite; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+  wzDraw(); };
+EXT.rows.lib.push(() => extRow("werkzeuge", "plate", "gray", "Rechner"));
+Object.assign(EXT.test, { wzPlates, wzMax, wzPct, wz, e1rm });
 // @ext:werkzeuge:js:end
 // ── Abstand werkzeuge/js 1 ──
 // ── Abstand werkzeuge/js 2 ──
@@ -9386,6 +9590,65 @@ Object.assign(EXT.test, { PLN_MAX, plnParse, plnCode, plnStats, plnKey, plnFit, 
 // ── Abstand plaene/js 2 ──
 // ── Abstand plaene/js 3 ──
 // @ext:aussehen:js:start
+// Aussehen: Hell/Dunkel und Akzentfarbe (Einstellungen → App → Aussehen). Speicher: state.x.aussehen = { modus, akzent }.
+// Modus:  Attribut data-theme an <html> ("light" | "dark"). Die Farb-Tokens am Anfang des style-Blocks hören darauf; bei
+//         „Automatisch“ fehlt das Attribut und das Design folgt dem Gerät (prefers-color-scheme).
+// Akzent: Attribut data-accent an <html>; die Werte stehen im CSS-Block dieser Erweiterung. Bei Blau fehlt es (= Standard der App).
+// Farben wählt die App nur über CSS-Variablen (auch Zeichnungen und die 3D-Ansicht lesen sie von dort) – deshalb folgt alles den beiden Attributen.
+const AUS_MODI = [["system", "Automatisch"], ["hell", "Hell"], ["dunkel", "Dunkel"]];
+const AUS_AKZ = [["blau", "Blau"], ["indigo", "Indigo"], ["gruen", "Grün"], ["orange", "Orange"], ["pink", "Pink"], ["rot", "Rot"]];
+const AUS_THEME = { hell: "light", dunkel: "dark" };
+const AUS_BAR = { hell: "#F2F2F7", dunkel: "#000000" };   // Statusleiste (theme-color) = Seitengrund --bg des jeweiligen Designs
+const ausClean = roh => { const r = isObj(roh) ? roh : {};
+  return { modus: AUS_MODI.some(m => m[0] === r.modus) ? r.modus : "system", akzent: AUS_AKZ.some(a => a[0] === r.akzent) ? r.akzent : "blau" }; };
+const ausGet = () => ausClean(isObj(state.x) ? state.x.aussehen : null);
+// Ausgangslage: was die Umgebung an <html> vorgibt (eingebettet kann data-theme schon gesetzt sein) und die Farben der Statusleiste aus dem Seitenkopf
+const AUS_ROOT = document.documentElement, AUS_HOST = AUS_ROOT.getAttribute("data-theme");
+const AUS_META = [...document.querySelectorAll('meta[name="theme-color"]')].map(m => [m, m.getAttribute("content")]);
+const ausAttr = (el, k, v) => { if (v == null) { if (el.hasAttribute(k)) el.removeAttribute(k); } else if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
+let ausForced = false;
+// Macht die Seite passend zum gespeicherten Stand. Schreibt nur, was sich ändert; bei „Automatisch“ bleibt data-theme unberührt
+// (nur nach „Hell“/„Dunkel“ wird die Ausgangslage wiederhergestellt).
+function ausApply() {
+  const a = ausGet(), t = AUS_THEME[a.modus] || null;
+  if (t) ausAttr(AUS_ROOT, "data-theme", t); else if (ausForced) ausAttr(AUS_ROOT, "data-theme", AUS_HOST);
+  ausForced = !!t;
+  ausAttr(AUS_ROOT, "data-accent", a.akzent === "blau" ? null : a.akzent);
+  AUS_META.forEach(([m, orig]) => ausAttr(m, "content", t ? AUS_BAR[a.modus] : orig));
+}
+function ausSet(patch, el) {
+  if (!isObj(state.x)) state.x = {};
+  state.x.aussehen = ausClean(Object.assign(ausGet(), patch)); save(); ausApply();
+  const foc = el && document.activeElement === el ? `[data-a="${el.dataset.a}"][data-v="${el.dataset.v}"]` : "";
+  render(); const b = foc && $app.querySelector(foc); if (b) b.focus({ preventScroll: true });
+}
+// Schon beim Laden anwenden – vor dem ersten Zeichnen, damit nichts aufblitzt. Danach nach jedem Zeichnen einer Ansicht abgleichen:
+// so stimmt das Aussehen auch, wenn der Zustand ersetzt wurde (Sicherung wiederhergestellt, Daten gelöscht).
+ausApply();
+new MutationObserver(ausApply).observe($app, { childList: true });
+EXT.clean.aussehen = ausClean;
+EXT.nav.aussehen = { back: "settings" };
+EXT.views.aussehen = () => {
+  const a = ausGet(), name = AUS_AKZ.find(x => x[0] === a.akzent)[1];
+  $app.innerHTML = `<div class="page">
+    ${extHead("Aussehen", "Hell oder dunkel und die Akzentfarbe.")}
+    <section class="section"><h2>Design</h2>
+      <div class="seg" id="ausModus">${AUS_MODI.map(([k, l]) => `<button data-a="ausModus" data-v="${k}" class="${a.modus === k ? "on" : ""}" aria-pressed="${a.modus === k}">${l}</button>`).join("")}</div>
+      <p class="small foot">„Automatisch“ folgt der Einstellung deines Geräts.</p></section>
+    <section class="section"><div class="section-head"><h2>Akzentfarbe</h2><span class="sub" id="ausAkzName">${name}</span></div>
+      <div class="card aus-sws" id="ausAkzent">${AUS_AKZ.map(([k, l]) => `<button class="aus-sw" data-a="ausAkzent" data-v="${k}" data-accent="${k}" aria-label="${l}" aria-pressed="${a.akzent === k}"><i>${a.akzent === k ? sym("check") : ""}</i></button>`).join("")}</div>
+      <p class="small foot">Gilt für Knöpfe, Links, Auswahl und Fortschritt.</p></section>
+    <section class="section"><h2>Vorschau</h2>
+      <div class="card aus-demo" id="ausDemo">
+        <div class="row">${ringSvg(.7, "var(--accent)", 48, 6)}<div class="grow"><div style="font-weight:600">Beispiel</div><div class="small aus-txt">Text in Akzentfarbe</div></div><span class="switch" aria-checked="true" aria-hidden="true"></span></div>
+        <span class="btn primary block">Knopf</span>
+      </div></section>
+  </div>`;
+};
+EXT.actions.ausModus = el => ausSet({ modus: el.dataset.v }, el);
+EXT.actions.ausAkzent = el => ausSet({ akzent: el.dataset.v }, el);
+EXT.rows.settings.push(() => extRow("aussehen", "moon", "indigo", "Aussehen", AUS_MODI.find(m => m[0] === ausGet().modus)[1]));
+Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 // @ext:aussehen:js:end
 // ── Abstand aussehen/js 1 ──
 // ── Abstand aussehen/js 2 ──

@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v93)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v93")));
+      ok("Service Worker aktiv (Cache trainingsplan-v94)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v94")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -5293,11 +5293,142 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand masse/test 2 ──
     // ── Abstand masse/test 3 ──
     // @ext:rueckblick:test:start
+    section("E-rueckblick. Rückblick auf Monat und Jahr (Fortschritt → Monat und Jahr)");
+    {
+      // Fester Verlauf über einen Jahreswechsel; Zeiten ohne Zeitzone = Uhrzeit am Ort
+      const E = (exId, u, sets) => ({ exId, name: exId, u, planned: sets.length, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) });
+      const Hh = (id, date, sec, exs) => ({ id, dayId: "d1", day: "Test", date, durationSec: sec, exercises: exs });
+      const history = [
+        Hh("r1", "2025-11-03T12:00:00", 1800, [E("hs-chest", "s", [[40, 10], [40, 10]])]),
+        Hh("r2", "2025-11-12T12:00:00", 2400, [E("hs-chest", "s", [[40, 12]]), E("hs-row", "s", [[50, 10]])]),
+        Hh("r3", "2025-12-01T12:00:00", 3000, [E("hs-chest", "s", [[45, 8]]), E("hs-row", "s", [[50, 10]])]),
+        Hh("r4", "2025-12-15T12:00:00", 3600, [E("hs-chest", "s", [[45, 10]]), E("hs-legpress", "t", [[100, 10]])]),
+        Hh("r5", "2025-12-31T23:30:00", 1800, [E("hs-row", "s", [[55, 8]])]),
+        Hh("r6", "2026-01-01T00:30:00", 1200, [E("hs-legpress", "t", [[110, 10]])]),
+        Hh("r7", "2026-03-10T12:00:00", 1800, [E("hs-chest", "s", [[45, 10]])])];
+      const weights = [{ d: "2025-12-02", kg: 84 }, { d: "2025-12-20", kg: 83.2 }, { d: "2026-01-05", kg: 83 }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history, weights }, { light: true });
+      const st = (mode, y, m) => tp(page, ([mode, y, m]) => { const T = window.__tp, s = T.rbStats(T.state.history, T.state.weights, mode, y, m, new Date(2026, 5, 15));
+        return { n: s.n, sec: s.sec, vol: s.vol, pw: s.perWeek, wd: s.wd.join(""), mon: s.mon.join(""), recs: s.recs.map(r => `${r.exId}:${r.from}>${r.to}${r.u}`).join(), top: s.top.map(t => `${t.exId}:${t.n}`).join(), w: s.weight ? `${s.weight.from}>${s.weight.to}:${s.weight.diff}` : "" }; }, [mode, y, m]);
+      const dez = await st("m", 2025, 11), nov = await st("m", 2025, 10), jan = await st("m", 2026, 0), feb = await st("m", 2026, 1), y25 = await st("y", 2025, 0), y26 = await st("y", 2026, 0);
+      ok("Dezember 2025: 3 Trainings, 140 Min., 4.500 kg bewegt („pro Seite“ zählt doppelt), 0,7 pro Woche; Silvester 23:30 gehört noch dazu", dez.n === 3 && dez.sec === 8400 && dez.vol === 4500 && dez.pw === .7 && dez.wd === "2010000", JSON.stringify(dez));
+      ok("November 2025: 2 Trainings, 70 Min., 3.560 kg, 0,5 pro Woche, Montag und Mittwoch", nov.n === 2 && nov.sec === 4200 && nov.vol === 3560 && nov.pw === .5 && nov.wd === "1010000", JSON.stringify(nov));
+      ok("Bestwerte im Dezember: Brustpresse 40 → 45, Rudern 50 → 55; das erste Training an der Beinpresse zählt nicht; im November keine", dez.recs === "hs-chest:40>45s,hs-row:50>55s" && nov.recs === "", JSON.stringify([dez.recs, nov.recs]));
+      ok("Am häufigsten im Dezember: Brustpresse 2, Rudern 2, Beinpresse 1", dez.top === "hs-chest:2,hs-row:2,hs-legpress:1", dez.top);
+      ok("Januar 2026: Neujahr 0:30 zählt zum Januar; Bestwert Beinpresse 100 → 110; Februar leer", jan.n === 1 && jan.sec === 1200 && jan.vol === 1100 && jan.wd === "0001000" && jan.recs === "hs-legpress:100>110t" && feb.n === 0 && feb.top === "", JSON.stringify([jan, feb]));
+      ok("Körpergewicht: Dezember 84 → 83,2 (−0,8); mit nur einem Eintrag im Januar keine Angabe", dez.w === "84>83.2:-0.8" && jan.w === "" && y25.w === "84>83.2:-0.8", JSON.stringify([dez.w, jan.w, y25.w]));
+      ok("Jahr 2025: 5 Trainings, 210 Min., 8.060 kg, November 2 und Dezember 3; ohne Vorjahr keine Bestwerte", y25.n === 5 && y25.sec === 12600 && y25.vol === 8060 && y25.mon === "000000000023" && y25.recs === "" && y25.pw === .1, JSON.stringify(y25));
+      ok("Laufendes Jahr (Stichtag 15. Juni): 2 Trainings in 166 Tagen = 0,1 pro Woche; Bestwert nur an der Beinpresse", y26.n === 2 && y26.pw === .1 && y26.mon === "101000000000" && y26.recs === "hs-legpress:100>110t", JSON.stringify(y26));
+      const fm = await tp(page, () => { const T = window.__tp; return [T.rbDur(8400), T.rbDur(1200), T.rbDur(3600), T.rbVol(4500), T.rbVol(940), T.rbVol(8060)].join("|"); });
+      ok("Schreibweise: „2 Std. 20 Min.“, „20 Min.“, „1 Std.“, „4,5 t“, unter einer Tonne „940 kg“, „8,1 t“", fm === "2 Std. 20 Min.|20 Min.|1 Std.|4,5 t|940 kg|8,1 t", fm);
+      // Oberfläche
+      await page.click("nav.tabs [data-v=history]");
+      ok("Fortschritt: Zeile „Monat und Jahr“", (await page.textContent("#histMore")).includes("Monat und Jahr") && await page.isVisible("#row-rueckblick .ico"));
+      await page.click("#row-rueckblick");
+      const v0 = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, back: document.querySelector("#navbar .nb-back").textContent.trim(), per: document.querySelector("#rbTitle").textContent, next: document.querySelector("#rbNav [data-v='1']").disabled, empty: !!document.querySelector("#rbEmpty") }));
+      const nowName = await page.evaluate(() => new Date().toLocaleDateString("de-DE", { month: "long", year: "numeric" }));
+      ok("Rückblick öffnet beim laufenden Monat (ohne Training: Hinweis-Karte); weiter in die Zukunft geht es nicht", v0.title === "Rückblick" && v0.back === "Fortschritt" && v0.per === nowName && v0.next && v0.empty, JSON.stringify([v0, nowName]));
+      await tp(page, () => window.__tp.rbGo("m", 2025, 11));
+      const v1 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, grid: [...document.querySelectorAll("#rbGrid .card")].map(c => c.textContent.replace(/\s+/g, " ").trim()),
+        wd: document.querySelector("#rbWd").getAttribute("aria-label"), recs: [...document.querySelectorAll("#rbRecs .li")].map(l => l.textContent.replace(/\s+/g, " ").trim()), top: [...document.querySelectorAll("#rbTop .li")].map(l => l.textContent.replace(/\s+/g, " ").trim()),
+        w: document.querySelector("#rbWeight").textContent.replace(/\s+/g, " ").trim(), thumbs: document.querySelectorAll("#rbTop svg").length }));
+      ok("Dezember 2025 mit Vergleich zum November: +1 Training, +1 Std. 10 Min., +940 kg, +0,2 pro Woche", v1.per === "Dezember 2025" && v1.grid[0].includes("3") && v1.grid[0].includes("+1 gegenüber November") && v1.grid[1].includes("2 Std. 20 Min.") && v1.grid[1].includes("+1 Std. 10 Min. gegenüber November") && v1.grid[2].includes("4,5 t") && v1.grid[2].includes("+940 kg gegenüber November") && v1.grid[3].includes("0,7") && v1.grid[3].includes("+0,2 gegenüber November"), JSON.stringify(v1.grid));
+      ok("Wochentage, Bestwerte („40 → 45 kg pro Seite“), häufigste Geräte mit Bild und Körpergewicht stehen da", v1.wd.startsWith("Montag: 2, Dienstag: 0, Mittwoch: 1") && v1.recs.length === 2 && v1.recs[0].includes("40 → 45 kg pro Seite") && v1.recs[1].includes("50 → 55 kg pro Seite") && v1.top.length === 3 && v1.top[0].includes("2 Trainings") && v1.top[2].includes("1 Training") && v1.thumbs === 3 && v1.w.includes("84 → 83,2 kg") && v1.w.includes("−0,8 kg"), JSON.stringify(v1));
+      await page.click("#rbNav [data-v='-1']");
+      const v2 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, cmp: document.querySelector("#rbGrid").textContent.includes("gegenüber"), recs: !!document.querySelector("#rbRecs") }));
+      ok("‹ führt zum November 2025: erster Zeitraum, davor geht es nicht weiter; ohne Vormonat kein Vergleich und keine Bestwerte", v2.per === "November 2025" && v2.prev && !v2.cmp && !v2.recs, JSON.stringify(v2));
+      await page.click("#rbNav [data-v='1']"); await page.click("#rbNav [data-v='1']");
+      const v3 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, grid: document.querySelector("#rbGrid").textContent.replace(/\s+/g, " ") }));
+      ok("› › führt über den Jahreswechsel zum Januar 2026: „−2 gegenüber Dezember“", v3.per === "Januar 2026" && v3.grid.includes("−2 gegenüber Dezember") && v3.grid.includes("20 Min."), JSON.stringify(v3));
+      await page.click("#rbNav [data-v='1']");
+      ok("Februar 2026: Hinweis-Karte statt leerer Diagramme", (await page.textContent("#rbTitle")) === "Februar 2026" && await page.isVisible("#rbEmpty") && !(await page.$("#rbGrid")) && !(await page.$("#rbWd")));
+      await page.click("#rbMode [data-v=y]");
+      const v4 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, on: document.querySelector("#rbMode [data-v=y]").classList.contains("on"), mon: document.querySelector("#rbMon").getAttribute("aria-label"), bars: document.querySelectorAll("#rbMon > div").length }));
+      ok("„Jahr“ zeigt 2026 mit zwölf Monatsbalken (Januar 1, März 1)", v4.per === "2026" && v4.on && v4.bars === 12 && v4.mon.startsWith("Januar: 1, Februar: 0, März: 1"), JSON.stringify(v4));
+      await page.click("#rbNav [data-v='-1']");
+      const v5 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, n: document.querySelector("#rbN").textContent, mon: document.querySelector("#rbMon").getAttribute("aria-label") }));
+      ok("2025: 5 Trainings, November 2 und Dezember 3; davor gibt es nichts", v5.per === "2025" && v5.prev && v5.n === "5" && v5.mon.endsWith("November: 2, Dezember: 3"), JSON.stringify(v5));
+      ok("Rückblick: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      const ov1 = await noOverflow(page) && (await overflowers(page)).length === 0;
+      await tp(page, () => window.__tp.rbGo("m", 2025, 11));
+      ok("Rückblick bei 320 px ohne seitliches Scrollen (Jahr und Monat)", ov1 && await noOverflow(page) && (await overflowers(page)).length === 0, JSON.stringify(await overflowers(page)));
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu Fortschritt", (await page.textContent("#app h1")) === "Fortschritt");
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("nav.tabs [data-v=history]"); await page.click("#row-rueckblick");
+      const e = await tp(page, () => ({ txt: document.querySelector("#rbEmpty").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, next: document.querySelector("#rbNav [data-v='1']").disabled }));
+      ok("Ohne Verlauf: freundlicher Hinweis, beide Pfeile gesperrt", e.txt.includes("Nach deinem ersten Training") && e.prev && e.next, JSON.stringify(e));
+      await ctx.close();
+    }
     // @ext:rueckblick:test:end
     // ── Abstand rueckblick/test 1 ──
     // ── Abstand rueckblick/test 2 ──
     // ── Abstand rueckblick/test 3 ──
     // @ext:werkzeuge:test:start
+    section("E-werkzeuge. Rechner (Wissen → Nachschlagen → Rechner)");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { light: true });
+      // Rechenkern mit von Hand nachgerechneten Werten
+      const c = await tp(page, () => { const T = window.__tp, all = [25, 20, 15, 10, 5, 2.5, 1.25];
+        return { a: T.wzPlates(42.5, "s", all), b: T.wzPlates(42.5, "s", [20, 10, 5, 2.5, 1.25]), c: T.wzPlates(40, "t", all), d: T.wzPlates(43, "s", all), e: T.wzPlates(41, "t", [20, 10, 5]),
+          m5: T.wzMax(100, 5), m1: T.wzMax(100, 1), m12: T.wzMax(60, 12), m13: T.wzMax(60, 13), m0: T.wzMax(60, 0), mf: T.wzMax(60, 2.5), pct: T.wzPct(100), pct2: T.wzPct(116.5),
+          app: Math.round(T.e1rm({ kg: 100, reps: 5 }) * 2) / 2, app1: T.e1rm({ kg: 100, reps: 1 }) }; });
+      ok("Scheiben: 42,5 kg pro Seite = 25 + 15 + 2,5; ohne 25er und 15er = 20 + 20 + 2,5", c.a.plates.join() === "25,15,2.5" && c.a.rest === 0 && c.b.plates.join() === "20,20,2.5" && c.b.rest === 0, JSON.stringify([c.a, c.b]));
+      ok("Scheiben: 40 kg insgesamt = 20 je Seite", c.c.per === 20 && c.c.plates.join() === "20" && c.c.total === 40, JSON.stringify(c.c));
+      ok("Geht nicht auf: 43 kg pro Seite → 42,5 kg möglich, 0,5 kg übrig; 41 kg insgesamt mit 20/10/5 → 40 kg, 0,5 kg je Seite übrig", c.d.done === 42.5 && c.d.rest === .5 && c.d.total === 42.5 && c.e.done === 20 && c.e.rest === .5 && c.e.total === 40, JSON.stringify([c.d, c.e]));
+      ok("Höchstgewicht: 100 kg × 5 = 116,5 (100 × 7/6 = 116,67, auf 0,5 kg gerundet) wie in „Kraft & Bestwerte“; 1 Wiederholung = das Gewicht; 60 × 12 = 84", c.m5 === 116.5 && c.app === 116.5 && c.m1 === 100 && c.app1 === 100 && c.m12 === 84, JSON.stringify(c));
+      ok("Höchstgewicht nur für 1–12 ganze Wiederholungen", c.m13 === null && c.m0 === null && c.mf === null);
+      ok("Prozente von 100 kg: 90/80/70/60/50; von 116,5 kg auf 2,5 kg gerundet: 105/92,5/82,5/70/57,5", c.pct.map(x => x[1]).join() === "90,80,70,60,50" && c.pct2.map(x => x[1]).join() === "105,92.5,82.5,70,57.5", JSON.stringify([c.pct, c.pct2]));
+      // Oberfläche
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
+      ok("Wissen → Nachschlagen: Zeile „Rechner“", (await page.textContent("#libMore")).includes("Rechner") && await page.isVisible("#row-werkzeuge .ico"));
+      await page.click("#row-werkzeuge");
+      const h = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v, empty: document.querySelector("#wzPlatesOut").textContent, nan: document.querySelector("#app").textContent.includes("NaN") }));
+      ok("Rechner: eigene Unterseite mit „‹ Wissen“, leer mit Hinweis statt Zahlen", h.title === "Rechner" && h.back === "Wissen" && h.tab === "lib" && h.empty.includes("Gewicht eingeben") && !h.nan, JSON.stringify(h));
+      await page.fill("#wzKgIn", "42,5");
+      const chips = () => page.$$eval("#wzChips .pl", e => e.map(x => x.textContent).join(" "));
+      ok("Eingabe mit Komma: Scheiben erscheinen sofort, das Feld behält den Fokus", (await chips()) === "25 15 2,5" && await page.evaluate(() => document.activeElement.id === "wzKgIn"), await chips());
+      await page.click("#wzSeite [data-v=t]");
+      ok("„Insgesamt“ halbiert: 42,5 kg insgesamt = 21,25 je Seite = 20 + 1,25", (await chips()) === "20 1,25" && await page.$eval("#wzSeite [data-v=t]", b => b.classList.contains("on") && b.getAttribute("aria-pressed") === "true"), await chips());
+      await page.fill("#wzKgIn", "43");
+      ok("Geht nicht auf: Hinweis mit dem nächsten Gewicht darunter (42,5 kg insgesamt)", (await page.textContent("#wzRest")).includes("0,25 kg pro Seite bleiben übrig") && (await page.textContent("#wzRest")).includes("42,5 kg insgesamt"), await page.textContent("#wzPlatesOut"));
+      // dieselbe Rechnung wie die Anzeige im Training
+      const same = await tp(page, () => { const T = window.__tp; return [42.5, 61.25, 100, 7.5].every(kg => JSON.stringify(T.wzPlates(kg, "s").plates) === JSON.stringify(T.platesOf(kg, T.state.plates || [25, 20, 15, 10, 5, 2.5, 1.25]).plates)); });
+      ok("Scheiben wie im Training (dieselbe Funktion)", same);
+      await page.fill("#wzWIn", "100"); await page.fill("#wzRIn", "5");
+      ok("Höchstgewicht: „≈ 116,5 kg“; die Prozente nutzen die Schätzung", (await page.textContent("#wzMaxVal")) === "≈ 116,5 kg" && (await page.textContent("#wzPctFrom")).includes("116,5 kg (Schätzung oben)") && (await page.$$eval("#wzPctOut .wz-pct b", e => e.map(x => x.textContent).join())) === "105 kg,92,5 kg,82,5 kg,70 kg,57,5 kg", await page.textContent("#wzPctOut"));
+      await page.fill("#wzMaxIn", "100");
+      ok("Eigenes Höchstgewicht hat Vorrang: 90/80/70/60/50 kg", (await page.textContent("#wzPctFrom")).includes("100 kg (deine Eingabe)") && (await page.$$eval("#wzPctOut .wz-pct b", e => e.map(x => x.textContent).join())) === "90 kg,80 kg,70 kg,60 kg,50 kg");
+      await page.fill("#wzRIn", "20"); await page.fill("#wzKgIn", "abc"); await page.fill("#wzMaxIn", "-5");
+      const bad = await page.textContent("#app");
+      ok("Ungültige Eingaben: Hinweise statt Zahlen, kein NaN", !bad.includes("NaN") && !bad.includes("≈") && bad.includes("1 bis 12") && !(await page.$("#wzChips")) && !(await page.$(".wz-pct")), bad.slice(0, 300));
+      await page.fill("#wzKgIn", "42,5"); await page.fill("#wzRIn", "5"); await page.fill("#wzMaxIn", "");
+      ok("Rechner: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      ok("Rechner bei 320 px ohne seitliches Scrollen", await noOverflow(page) && (await overflowers(page)).length === 0);
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu Wissen", (await page.textContent("#app h1")) === "Wissen");
+      await ctx.close();
+    }
+    {
+      // Scheiben aus den Einstellungen gelten auch im Rechner
+      const { ctx, page } = await open({ plan: PLAN_SMALL, plates: [20, 10, 5, 2.5, 1.25] });
+      const ld = await tp(page, () => ({ days: window.__tp.state.plan ? window.__tp.state.plan.days.length : 0, plates: (window.__tp.state.plates || []).join() }));
+      ok("Gespeicherte Scheibenauswahl: Plan und Auswahl werden beim Start geladen (vorher startete die App dann leer)", ld.days === 1 && ld.plates === "20,10,5,2.5,1.25", JSON.stringify(ld));
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=plateToggle][data-v='1.25']");
+      await page.reload(); await page.waitForSelector("#app h1");
+      const ld2 = await tp(page, () => ({ days: window.__tp.state.plan ? window.__tp.state.plan.days.length : 0, plates: (window.__tp.state.plates || []).join(), raw: !!JSON.parse(localStorage.getItem("trainingsplan-v2")).plan }));
+      ok("Scheibe in den Einstellungen abwählen und neu laden: der Plan ist noch da", ld2.days === 1 && ld2.plates === "20,10,5,2.5" && ld2.raw, JSON.stringify(ld2));
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=plateToggle][data-v='1.25']");
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-werkzeuge");
+      await page.fill("#wzKgIn", "42,5");
+      ok("Ohne 25er und 15er im Studio: 20 + 20 + 2,5; die Fußzeile nennt die vorhandenen Scheiben", (await page.$$eval("#wzChips .pl", e => e.map(x => x.textContent).join(" "))) === "20 20 2,5" && (await page.textContent("#wzAvail")).includes("20 · 10 · 5 · 2,5 · 1,25 kg"), await page.textContent("#wzAvail"));
+      await ctx.close();
+    }
     // @ext:werkzeuge:test:end
     // ── Abstand werkzeuge/test 1 ──
     // ── Abstand werkzeuge/test 2 ──
@@ -6138,6 +6269,68 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand plaene/test 2 ──
     // ── Abstand plaene/test 3 ──
     // @ext:aussehen:test:start
+    section("E-aussehen. Aussehen (Einstellungen → Aussehen)");
+    {
+      // Farben, wie der Browser sie wirklich rechnet: Hilfselement mit der Variable, daraus Kontrast nach WCAG
+      const probe = page => tp(page, () => { const T = window.__tp, R = document.documentElement;
+        const col = v => { const d = document.createElement("div"); d.style.color = v; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c.match(/[\d.]+/g).slice(0, 3).map(Number); };
+        const lum = c => { const [r, g, b] = c.map(x => x / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * r + .7152 * g + .0722 * b; };
+        const con = (a, b) => { const x = lum(col(a)), y = lum(col(b)); return Math.round((Math.max(x, y) + .05) / (Math.min(x, y) + .05) * 100) / 100; };
+        return { theme: R.getAttribute("data-theme"), accent: R.getAttribute("data-accent"), bg: col("var(--bg)").join(), acc: col("var(--accent)").join(),
+          inkBg: con("var(--accent-ink)", "var(--bg)"), inkCard: con("var(--accent-ink)", "var(--raise)"), inkSheet: con("var(--accent-ink)", "var(--raise-2)"), onAcc: con("var(--on-accent)", "var(--accent)"),
+          metas: [...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content).join(), saved: JSON.stringify(T.state.x.aussehen) }; });
+      const LIGHT = "242,242,247", DARK = "0,0,0";
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { light: true });
+      await page.click("#navbar [data-a=openSettings]");
+      ok("Einstellungen: Zeile „Aussehen“ zeigt „Automatisch“", (await page.textContent("#row-aussehen")).includes("Aussehen") && (await page.textContent("#row-aussehen")).includes("Automatisch"));
+      await page.click("#row-aussehen");
+      const p0 = await probe(page);
+      ok("Standard: kein Attribut gesetzt, Akzent #0071E3, Seite folgt dem Gerät (hell)", (await page.textContent("#app h1")) === "Aussehen" && p0.theme === null && p0.accent === null && p0.acc === "0,113,227" && p0.bg === LIGHT && p0.metas === "#F2F2F7,#000000", JSON.stringify(p0));
+      await page.click("#ausModus [data-v=dunkel]");
+      const p1 = await probe(page);
+      ok("„Dunkel“ bei hellem Gerät: dunkler Seitengrund, Statusleiste schwarz, Auswahl markiert und gespeichert", p1.theme === "dark" && p1.bg === DARK && p1.metas === "#000000,#000000" && p1.saved === '{"modus":"dunkel","akzent":"blau"}' && await page.$eval("#ausModus [data-v=dunkel]", b => b.classList.contains("on") && b.getAttribute("aria-pressed") === "true"), JSON.stringify(p1));
+      await page.reload(); await page.waitForSelector("#app h1");
+      const p2 = await probe(page);
+      await page.click("#navbar [data-a=openSettings]");
+      ok("Nach dem Neuladen gilt „Dunkel“ sofort; die Zeile zeigt „Dunkel“", p2.theme === "dark" && p2.bg === DARK && (await page.textContent("#row-aussehen")).includes("Dunkel"), JSON.stringify(p2));
+      await page.click("#row-aussehen");
+      await page.emulateMedia({ colorScheme: "dark" });
+      await page.click("#ausModus [data-v=hell]");
+      const p3 = await probe(page);
+      ok("„Hell“ bei dunklem Gerät: heller Seitengrund, Statusleiste hell", p3.theme === "light" && p3.bg === LIGHT && p3.metas === "#F2F2F7,#F2F2F7", JSON.stringify(p3));
+      await page.click("#ausModus [data-v=system]");
+      const p4 = await probe(page);
+      await page.emulateMedia({ colorScheme: "light" });
+      const p5 = await probe(page);
+      ok("„Automatisch“ folgt wieder dem Gerät (dunkel, dann hell); die Statusleiste hat ihre Ausgangswerte", p4.theme === null && p4.bg === DARK && p5.bg === LIGHT && p5.metas === "#F2F2F7,#000000", JSON.stringify([p4, p5]));
+      // Jede Akzentfarbe in beiden Designs: Schrift in Akzentfarbe auf Seitengrund, Karte und Sheet sowie weiße Schrift auf dem gefüllten Knopf
+      const bad = [];
+      for (const [k] of await tp(page, () => window.__tp.AUS_AKZ)) for (const m of ["hell", "dunkel"]) {
+        await tp(page, a => window.__tp.ausSet(a), { akzent: k, modus: m });
+        const p = await probe(page);
+        if (!(p.inkBg >= 4.5 && p.inkCard >= 4.5 && p.inkSheet >= 4.5 && p.onAcc >= 4.5) || (k === "blau") !== (p.accent === null)) bad.push([k, m, p.inkBg, p.inkCard, p.inkSheet, p.onAcc, p.accent]);
+      }
+      ok("Sechs Akzentfarben, hell und dunkel: Kontrast überall mindestens 4,5 : 1; Blau bleibt der Standard ohne Attribut", bad.length === 0 && (await tp(page, () => window.__tp.AUS_AKZ.length)) === 6, JSON.stringify(bad));
+      await tp(page, () => window.__tp.ausSet({ akzent: "blau", modus: "system" }));
+      await page.click("#ausAkzent [data-v=gruen]");
+      const p6 = await probe(page);
+      ok("Farbfeld antippen: Grün ist gewählt, benannt und gespeichert; die Vorschau zeigt die Farbe", p6.accent === "gruen" && p6.acc === "28,129,57" && p6.saved === '{"modus":"system","akzent":"gruen"}' && (await page.textContent("#ausAkzName")) === "Grün" && await page.$eval("#ausAkzent [data-v=gruen]", b => b.getAttribute("aria-pressed") === "true") && await page.isVisible("#ausDemo .btn"), JSON.stringify(p6));
+      ok("Aussehen: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      ok("Aussehen bei 320 px ohne seitliches Scrollen, Farbfelder mindestens 44 px breit", await noOverflow(page) && await page.$$eval("#ausAkzent .aus-sw", b => b.every(x => x.getBoundingClientRect().width >= 44 && x.getBoundingClientRect().height >= 44)));
+      // Zustand wird ersetzt (z. B. Sicherung, Daten gelöscht): das Aussehen passt sich beim nächsten Zeichnen an
+      await tp(page, () => { const T = window.__tp; T.state.x = {}; T.extClean(); });
+      await page.click("#navbar .nb-back");
+      await page.waitForFunction(() => document.documentElement.getAttribute("data-accent") === null);
+      ok("Ohne gespeicherte Wahl gilt wieder der Standard", (await probe(page)).acc === "0,113,227" && (await page.textContent("#app h1")) === "Einstellungen");
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, x: { aussehen: { modus: "lila", akzent: 7 } } });
+      const s = await tp(page, () => ({ saved: JSON.stringify(window.__tp.state.x.aussehen), theme: document.documentElement.getAttribute("data-theme"), accent: document.documentElement.getAttribute("data-accent") }));
+      ok("Kaputter Speicher: Standard „Automatisch“ und Blau", s.saved === '{"modus":"system","akzent":"blau"}' && s.theme === null && s.accent === null, JSON.stringify(s));
+      await ctx.close();
+    }
     // @ext:aussehen:test:end
     // ── Abstand aussehen/test 1 ──
     // ── Abstand aussehen/test 2 ──

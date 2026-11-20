@@ -72,10 +72,12 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 <!-- Abstand masse 1 -->
 <!-- Abstand masse 2 -->
 <!-- @ext:rueckblick:readme:start -->
+- **Rückblick (Fortschritt → Monat und Jahr):** Umschalter „Monat | Jahr“ mit ‹ › vom Zeitraum des ersten Trainings bis heute. Trainings, Trainingszeit, bewegtes Gewicht und Trainings pro Woche, jeweils mit Vergleich zum Zeitraum davor (nur, wenn es dort Trainings gab); Wochentage, im Jahr die Trainings je Monat; neue Bestwerte (schwerster Satz je Gerät und Gewichtsangabe gegenüber allem davor, das erste Training an einem Gerät zählt nicht); die fünf häufigsten Geräte; Körpergewicht vom ersten zum letzten Eintrag. Monat und Jahr nach dem Datum am Ort. Nichts wird gespeichert
 <!-- @ext:rueckblick:readme:end -->
 <!-- Abstand rueckblick 1 -->
 <!-- Abstand rueckblick 2 -->
 <!-- @ext:werkzeuge:readme:start -->
+- **Rechner (Wissen → Nachschlagen → Rechner):** Scheiben je Seite für ein Gewicht („pro Seite“ oder „insgesamt“; dieselbe Funktion `platesOf` und dieselben Scheiben wie im Training, mit Hinweis und nächstem Gewicht darunter, wenn es nicht aufgeht), geschätztes Höchstgewicht für eine Wiederholung (Schätzung der App wie in „Kraft & Bestwerte“: Gewicht × (1 + Wdh. ÷ 30), 1–12 Wiederholungen, auf 0,5 kg gerundet; eine Wiederholung zählt als das Gewicht selbst) und Prozente davon (90–50 %, auf 2,5 kg gerundet). Nichts wird gespeichert
 <!-- @ext:werkzeuge:readme:end -->
 <!-- Abstand werkzeuge 1 -->
 <!-- Abstand werkzeuge 2 -->
@@ -95,6 +97,7 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 <!-- Abstand plaene 1 -->
 <!-- Abstand plaene 2 -->
 <!-- @ext:aussehen:readme:start -->
+- **Aussehen (Einstellungen → Aussehen):** „Automatisch | Hell | Dunkel“ (setzt `data-theme` an `<html>`, die Statusleiste folgt) und sechs Akzentfarben (Blau ist der Standard; je Farbe eigene Werte für hell und dunkel, Kontrast überall mindestens 4,5 : 1, im Test mit den vom Browser gerechneten Farben geprüft). Gilt schon beim Start, vor dem ersten Zeichnen. Speicher: `state.x.aussehen`
 <!-- @ext:aussehen:readme:end -->
 <!-- Abstand aussehen 1 -->
 <!-- Abstand aussehen 2 -->
