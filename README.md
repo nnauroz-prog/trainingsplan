@@ -110,6 +110,11 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 <!-- @ext:artikel:readme:end -->
 <!-- Abstand artikel 1 -->
 <!-- Abstand artikel 2 -->
+<!-- @ext:nachtrag:readme:start -->
+- **Training nachtragen (Heute → „Schon trainiert? Nachtragen“, Fortschritt → „Training nachtragen“):** ein Training ohne Live-Modus dokumentieren. Datum (nicht in der Zukunft) und Trainingstag wählen; je Gerät stehen die Vorschläge des Live-Modus (dieselbe Funktion `makeEntry`, gerechnet mit dem Verlauf vor dem gewählten Tag), gekennzeichnet als „Vorschlag“. „Wie geplant“ bestätigt sie, „Werte ändern“ ändert einzelne Sätze oder alle Sätze eines Geräts, „Teilweise“ schaltet Geräte aus („ausgelassen“) und entfernt Sätze. Ohne bekanntes Gewicht (neues Gerät) steht „?“ und es lässt sich nicht speichern. Die Dauer ist freiwillig; ohne Angabe wird nichts geschätzt („ohne Dauer“). Gespeichert wird über dieselbe Stelle wie nach einem Live-Training (`commitTraining`: Bestwerte, Ziele, Zusammenfassung); der Verlauf bleibt nach Datum geordnet. Der Eintrag trägt `nt` (nachgetragen) und `skip` (ausgelassene Geräte). Der Entwurf liegt in `state.x.nachtrag` und übersteht einen Neustart
+<!-- @ext:nachtrag:readme:end -->
+<!-- Abstand nachtrag 1 -->
+<!-- Abstand nachtrag 2 -->
 
 ## Funktionen
 
@@ -247,5 +252,8 @@ Designsystem im Stil von iOS (CSS-Tokens in `src/app.html`): Systemschrift (auf 
 - Quelle: `src/app.html` (wird auch als claude.ai-Artifact veröffentlicht)
 - `./build.sh` erzeugt daraus `index.html`
 - `node tests/run.js` startet die automatisierten Tests (Playwright + Chromium, python3 für den lokalen Server)
+- `.github/workflows/tests.yml`: Bei jedem Pull Request und jedem Stand auf `main` wird gebaut, geprüft, dass `index.html` zum Quelltext passt, und die ganze Testsuite ausgeführt
+- `docs/bestandsaufnahme.md`: Bestandsaufnahme und Risikoanalyse vom 20. November 2026 (bestätigte Fehler, Designschwächen, vermutete Risiken, Stand der Korrekturen, Lücken in den Tests, Plan für die Aufteilung des Quelltexts)
+- Datensicherheit beim Laden: Lässt sich der gespeicherte Stand nicht lesen, bleibt der Rohtext unter `trainingsplan-v2-unlesbar` liegen (Hinweis im Seitenkopf, als Datei sicherbar) und wird beim nächsten Start übernommen, sobald er wieder lesbar ist und nichts Eigenes entstanden ist
 - `sw.js`: Offline-Speicher. Die App-Seite kommt sofort aus dem Speicher (auch bei schlechtem Empfang im Studio kein Warten); im Hintergrund holt der Service Worker die neueste Version. Ist sie anders, zeigt „Heute“ „Neue Version der App geladen · Neu laden“ – nie während eines Trainings. Gemessen mit simuliertem Update: Start aus dem Speicher ca. 45 ms, nach „Neu laden“ die neue Version, offline weiterhin nutzbar
 - Symbole: `icon.svg`, daraus gerenderte PNGs für iOS und Android

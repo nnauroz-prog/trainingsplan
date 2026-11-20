@@ -454,8 +454,9 @@
   .sheet .chip{background:var(--fill)}
   .sheet .chip.on{background:var(--accent);color:var(--on-accent)}
   .grab{width:36px;height:5px;border-radius:5px;background:var(--fill-2);margin:0 auto var(--s1)}
-  .sh-head{display:grid;grid-template-columns:minmax(76px,1fr) minmax(0,auto) minmax(76px,1fr);align-items:center;min-height:44px;margin:0 calc(-1 * var(--s2))}
-  .sh-head h2{grid-column:2;grid-row:1;font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.25;text-align:center}
+  /* Seitenspalten sind mindestens so breit wie ihr Knopf (auch mit breiterer Schrift), der Titel bekommt den Rest und bricht um – nichts überlappt */
+  .sh-head{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,auto) minmax(max-content,1fr);column-gap:var(--s1);align-items:center;min-height:44px;margin:0 calc(-1 * var(--s2))}
+  .sh-head h2{grid-column:2;grid-row:1;min-width:0;overflow-wrap:anywhere;font-size:17px;font-weight:600;letter-spacing:-.02em;line-height:1.25;text-align:center}
   .sh-head .btn{grid-row:1;background:none;min-height:44px;padding:0 var(--s2);border-radius:var(--r);font-size:17px;color:var(--accent-ink)}
   .sh-head .btn:not(.sh-l){grid-column:3;justify-self:end;font-weight:600}
   .sh-head .sh-l{grid-column:1;justify-self:start;font-weight:400}
@@ -764,6 +765,22 @@
   /* ── Abstand artikel/css 1 ── */
   /* ── Abstand artikel/css 2 ── */
   /* ── Abstand artikel/css 3 ── */
+  /* @ext:nachtrag:css:start */
+  /* Training nachtragen: Geräteliste mit Sätzen */
+  .nt-list{display:grid;gap:0;padding-top:0;padding-bottom:0}
+  .nt-x{display:grid;gap:var(--s2);padding:var(--s3) 0;border-bottom:.5px solid var(--hair)}
+  .nt-x:last-child{border-bottom:0}
+  .nt-x.off .row>:not(.switch){opacity:.5}
+  .nt-x .hx-sets{margin-top:0}
+  .nt-x .hx-sets .set-pill{background:var(--fill-2);color:var(--text);font-variant-numeric:tabular-nums}
+  .nt-x .hx-sets button.set-pill{box-shadow:inset 0 0 0 1.5px var(--accent)}
+  .nt-x .hx-sets .set-pill.miss{color:var(--warn);box-shadow:inset 0 0 0 1.5px var(--warn)}
+  .nt-x .hx-sets .set-pill.nt-add{min-width:44px;color:var(--accent-ink);box-shadow:none}
+  .nt-miss{color:var(--warn);margin:0}
+  /* @ext:nachtrag:css:end */
+  /* ── Abstand nachtrag/css 1 ── */
+  /* ── Abstand nachtrag/css 2 ── */
+  /* ── Abstand nachtrag/css 3 ── */
   @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
   @keyframes fade{from{opacity:0}to{opacity:1}}
 
@@ -771,6 +788,7 @@
     .sheet,.scrim{animation:none}.bar>div,.fig .m,details.disc>summary .chev{transition:none}.btn{transition:none}}
 </style>
 
+<div id="loadWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px"><p id="loadWarnTxt" style="margin:0 0 8px"></p><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="badSave">Kopie als Datei sichern</button><button class="btn sm quiet" data-a="badDrop" id="badDropBtn" hidden>Kopie löschen</button></div></div>
 <p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Plan → Einstellungen eine Sicherung erstellen.</p>
 <header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
@@ -1869,12 +1887,17 @@ function normalize(raw) {
     date: isNaN(new Date(h.date)) ? new Date().toISOString() : new Date(h.date).toISOString(),
     durationSec: clampInt(h.durationSec, 0, 86400, 0), adj: +h.adj > 0 ? clampInt(h.adj, 1, 300, 30) : undefined,
     hk: h.hk === true ? true : undefined,
+    nt: h.nt === true ? true : undefined,
+    skip: Array.isArray(h.skip) && h.skip.some(x => typeof x === "string") ? h.skip.filter(x => typeof x === "string").slice(0, 40) : undefined,
     exercises: h.exercises.filter(x => isObj(x) && x.exId).map(x => ({
       exId: String(x.exId), name: LIB.some(e => e.id === String(x.exId)) ? devFrom(s, String(x.exId)).name : String(x.name || devFrom(s, String(x.exId)).name),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
-      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [], adv: x.adv === true ? true : undefined })) })) : [];
+      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [], adv: x.adv === true ? true : undefined })) }))
+    // Immer nach Datum geordnet (alt → neu): Vorschlag, „Letztes Mal“, nächster Trainingstag und Kurven nehmen das letzte Element als jüngstes Training.
+    // Eine Sicherung oder alte Daten können ungeordnet sein; gleiche Zeitpunkte behalten ihre Reihenfolge.
+    .sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
   s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => Object.assign({ d: w.d, kg: +w.kg }, w.hk === true ? { hk: true } : {})) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
     const r = raw.session;
@@ -1943,8 +1966,19 @@ function normalize(raw) {
   try { s.x = isObj(raw.x) ? JSON.parse(JSON.stringify(raw.x)) : {}; } catch (e) { s.x = {}; }
   return s;
 }
+// Gespeicherte Daten, die sich nicht lesen ließen, bleiben als Kopie unter KEY_BAD liegen – das nächste Speichern überschreibt sie nicht.
+// Beim nächsten Start wird die Kopie erneut versucht (z. B. nach einer korrigierten Fassung) und übernommen, wenn seitdem nichts Eigenes entstanden ist.
+const KEY_BAD = KEY + "-unlesbar";
+let loadFailed = false, loadRescued = false;
+const badCopy = () => { try { return localStorage.getItem(KEY_BAD); } catch (e) { return null; } };
 function load() {
-  try { const raw = localStorage.getItem(KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) {}
+  let raw = null, cur = null;
+  try { raw = localStorage.getItem(KEY); if (raw) cur = normalize(JSON.parse(raw)); }
+  catch (e) { if (raw) { loadFailed = true; try { if (!localStorage.getItem(KEY_BAD)) localStorage.setItem(KEY_BAD, raw); } catch (e2) {} } }
+  try { const bad = badCopy();
+    if (bad && (!cur || (!cur.history.length && !(cur.plan && cur.plan.days.some(d => d.items.length))))) {
+      const old = normalize(JSON.parse(bad)); localStorage.removeItem(KEY_BAD); loadFailed = false; loadRescued = true; return old; } } catch (e) {}
+  if (cur) return cur;
   const s = blank();
   try { // Version 1 übernehmen
     const old = JSON.parse(localStorage.getItem("trainingsplan-v1") || "null");
@@ -1968,6 +2002,15 @@ function backupData(at) { const { session, ...rest } = state; return Object.assi
 function sinceBackup() { const b = state.backupAt; return state.history.filter(h => !b || h.date > b).length; }
 function askPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {} }
 function markBackup(at) { state.backupAt = at; save(); askPersist(); }
+// Hinweis auf eine Kopie unlesbarer Daten: sichtbar, solange die Kopie existiert
+function badWarn() {
+  const box = document.getElementById("loadWarn"), has = !!badCopy(); if (!box) return;
+  box.hidden = !has; if (!has) return;
+  document.getElementById("loadWarnTxt").textContent = loadFailed
+    ? "Deine gespeicherten Daten ließen sich nicht lesen. Sie sind nicht gelöscht: Eine Kopie liegt auf diesem Gerät und wird übernommen, sobald sie wieder lesbar ist. Sichere sie am besten zusätzlich als Datei."
+    : "Auf diesem Gerät liegt eine Kopie älterer Daten, die sich zeitweise nicht lesen ließen. Du kannst sie als Datei sichern und unter Einstellungen → „Sicherung wiederherstellen“ einspielen.";
+  document.getElementById("badDropBtn").hidden = loadFailed;
+}
 function parseBackup(raw) {
   raw = String(raw || "").trim();
   let data = raw.startsWith("TP1:") ? JSON.parse(decodeURIComponent(escape(atob(raw.slice(4))))) : JSON.parse(raw);
@@ -4926,6 +4969,25 @@ function vIntro() {
       <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
   </div>`;
 }
+// Bevor ein vorhandener Plan ersetzt wird (neuer Vorschlag oder leerer Plan): unter „Meine Pläne“ sichern, wenn er dort noch nicht
+// unverändert liegt. Ist dort kein Platz mehr, fragt die App nach. Ein altes „Rückgängig“ aus den Hinweisen gilt danach nicht mehr.
+const planOver = { ok: false, again: "" };
+const planHasItems = p => !!p && p.days.some(d => d.items.length);
+const planIsKept = p => plnStore().list.some(e => plnKey(e.plan) === plnKey(p));
+function planReplaceOk(again) {
+  const p = state.plan;
+  if (planHasItems(p) && !planIsKept(p) && !planOver.ok && !plnAdd(plnAuto(), plnCopy(p))) {
+    planOver.again = again;
+    actionSheet("Plan ersetzen?", `Dein aktueller Plan ist nicht gesichert und geht dabei verloren: Alle ${PLN_MAX} Plätze unter „Meine Pläne“ sind belegt. Dein Verlauf bleibt erhalten.`, [{ l: "Trotzdem ersetzen", a: "planOverDo", danger: true }], "Abbrechen");
+    return false;
+  }
+  planOver.ok = false; state.prevPlan = null; state.timeplan = null;
+  return true;
+}
+const planKeepNote = () => { const p = state.plan; if (!planHasItems(p)) return "";
+  return `<div class="card" id="setupKeep"><p class="small muted" style="margin:0">${planIsKept(p) ? "Dein bisheriger Plan liegt schon unter Plan → „Meine Pläne“ und bleibt dort."
+    : plnStore().list.length >= PLN_MAX ? "Achtung: Dein bisheriger Plan wird ersetzt. Unter „Meine Pläne“ ist kein Platz mehr, um ihn zu sichern."
+    : "Dein bisheriger Plan wird vorher unter Plan → „Meine Pläne“ gesichert."}</p></div>`; };
 function vSetup() {
   if (!state.plan && setupStep === "intro" && introOn()) return vIntro();
   const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
@@ -4945,6 +5007,7 @@ function vSetup() {
     <div class="section"><h3>Erfahrung</h3>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="group"><button class="li" data-a="openDevs">
       <div class="grow"><div class="t">Geräte in deinem Studio</div><div class="s">${av} von ${all.length} vorhanden${fav ? ` · ${fav} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
+    ${planKeepNote()}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="createPlan">Plan erstellen</button>
       ${introOn() && !state.plan ? "" : `<button class="btn quiet block sm" data-a="emptyPlan">Lieber selbst zusammenstellen</button>`}</div></div>
@@ -5012,6 +5075,7 @@ function vHome() {
         ${state.watch && day.items.length ? `<p class="small muted" id="watchHint">Apple Watch: Zuerst in der App „Training“ <b style="color:var(--text)">Traditionelles Krafttraining</b> starten.</p>` : ""}
         ${day.items.length ? "" : `<button class="btn sm block" data-a="editDay" data-id="${day.id}">Übungen hinzufügen</button>`}
         ${state.plan.days.length > 1 ? `<button class="btn quiet sm block" data-a="pickDay">Anderes Training wählen</button>` : ""}
+        ${day.items.length ? `<button class="btn quiet sm block" data-a="ntOpen" data-from="home" id="ntHome">Schon trainiert? Nachtragen</button>` : ""}
       </div>
     </section>` : ""}
     ${day && !ses ? (() => { const m = missAskHtml(); if (m) return m;
@@ -5268,10 +5332,15 @@ function tryRestore(raw, bad) {
   const msg = byId("impMsg"), box = byId("impConfirm"); let data;
   try { data = parseBackup(raw); } catch (e) { if (msg) { msg.textContent = bad; msg.style.color = "var(--bad)"; } if (box) box.innerHTML = ""; return; }
   const n = data.history.length, cur = state.history.length;
-  // Weniger Trainings als auf dem Gerät: erst nachfragen, damit nichts aus Versehen verloren geht
-  if (n < cur) {
+  // Laufendes oder pausiertes Training: erst beenden oder verwerfen – die erledigten Sätze gingen sonst ohne Hinweis verloren
+  if (state.session) { if (msg) { msg.textContent = "Erst das laufende Training beenden oder verwerfen. Sonst gingen seine erledigten Sätze verloren."; msg.style.color = "var(--warn)"; } if (box) box.innerHTML = ""; return; }
+  // Weniger Trainings als auf dem Gerät oder auf dem Gerät gibt es neuere: erst nachfragen, damit nichts aus Versehen verloren geht
+  const newest = H => H.reduce((m, h) => Math.max(m, +new Date(h.date) || 0), 0), devNew = newest(state.history), bakNew = newest(data.history.filter(isObj));
+  if (n < cur || (cur && devNew > bakNew)) {
     pendingRestore = data;
-    msg.textContent = `Die Sicherung enthält ${nTr(n)}, auf diesem Gerät sind ${cur}. Beim Ersetzen gehen ${cur - n} verloren.`; msg.style.color = "var(--warn)";
+    msg.textContent = n < cur ? `Die Sicherung enthält ${nTr(n)}, auf diesem Gerät sind ${cur}. Beim Ersetzen gehen ${cur - n} verloren.`
+      : `Auf diesem Gerät gibt es neuere Trainings (zuletzt ${fmtDay(new Date(devNew))}) als in der Sicherung (${bakNew ? `zuletzt ${fmtDay(new Date(bakNew))}` : "keine"}). Beim Ersetzen gehen sie verloren.`;
+    msg.style.color = "var(--warn)";
     box.innerHTML = `<button class="btn block" data-a="restoreConfirm" style="color:var(--bad)">Trotzdem ersetzen</button>`;
     return;
   }
@@ -5523,13 +5592,14 @@ function startTraining(day) {
 /* ================= Progression 2.0 ================= */
 // Vergleichbare Einheiten an einem Gerät: gleiche Gewichtsangabe, nur gültige Arbeitssätze (alt → neu).
 // Gespeicherte Planung (planned, rmin, rmax) wird genutzt, wenn vorhanden; ältere Einträge haben sie nicht.
-function compSessions(exId, u = unitOf(ex(exId))) {
+function compSessions(exId, u = unitOf(ex(exId)), before = Infinity) {
   const out = [];
   state.history.forEach(h => {
+    const ts = new Date(h.date).getTime(); if (!(ts < before)) return;   // before: nur Einheiten vor diesem Zeitpunkt
     const x = h.exercises.find(e => e.exId === exId && e.u === u); if (!x) return;
     const v = x.sets.filter(validSet); if (!v.length) return;
     const kgs = [...new Set(v.map(t => t.kg))];
-    out.push({ date: new Date(h.date).getTime(), sets: v, planned: x.planned || null, rmin: x.rmin || null, rmax: x.rmax || null,
+    out.push({ date: ts, sets: v, planned: x.planned || null, rmin: x.rmin || null, rmax: x.rmax || null,
       uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj, adv: !!x.adv });
   });
   return out;
@@ -5552,7 +5622,8 @@ const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
 function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step, n = it.sets;
   const planned = it.planned || it.sets;
-  const hist = compSessions(it.exId, u);
+  const at = ctx && ctx.at ? ctx.at : Date.now();      // Bezugszeitpunkt: jetzt, beim Nachtragen der gewählte Tag
+  const hist = compSessions(it.exId, u, ctx && ctx.at ? ctx.at : Infinity);
   const L = hist[hist.length - 1] || null, P = hist[hist.length - 2] || null;
   const w = v => `${kgTxt(v)} ${unit}`;
   const clampR = r => Math.min(it.rmax, Math.max(it.rmin, r));
@@ -5632,7 +5703,7 @@ function makeEntry(it, ctx) {
       mode = "keep"; sets = fromLast(1); short = "Gleiches Gewicht · Ziel +1 Wdh.";
       why = `Letztes Mal ${lastTxt}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
     }
-    const gap = Math.floor((Date.now() - L.date) / 864e5);
+    const gap = Math.floor((at - L.date) / 864e5);
     if (gap >= 28 && L.uniform && L.kg - step > 0) {
       mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
@@ -5735,6 +5806,23 @@ function setAdvice(s) {
     : (t.reps <= x.rmin - 2 ? `unter deinem Ziel von ${x.rmin}–${x.rmax}` : `unter dem Ziel und ${t.f === "h" ? "„schwer“" : "ohne Reserve"}`);
   return { key: x.key, si: ld.si, kg, up, txt: `${t.reps} Wdh. bei ${kgTxt(t.kg)} kg – ${how}. Für ${n === 1 ? "den letzten Satz" : `die restlichen ${n} Sätze`}: ${kgTxt(kg)} ${UNIT[u]} (${up ? "+" : "−"}${kgTxt(step)} kg)?` };
 }
+// Nimmt ein fertiges Training in den Verlauf auf – nach einem Live-Training und beim Nachtragen dieselbe Stelle.
+// Bestwerte werden gegen den bisherigen Verlauf gerechnet (vor dem Einfügen). Der Verlauf bleibt nach Datum geordnet:
+// ein Training für einen früheren Tag rückt an seinen Platz, eines von jetzt ans Ende.
+function commitTraining(rec) {
+  const exs = rec.exercises;
+  const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
+    return b === null || m > b ? { exId: x.exId, name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
+  // Ohne mehr Gewicht: mehr Wiederholungen als je zuvor mit mindestens diesem Gewicht (vor dem Speichern berechnet)
+  const repPrs = exs.filter(x => !prs.some(p => p.exId === x.exId)).map(x => { const v = x.sets.filter(validSet); if (!v.length || bestKg(x.exId, x.u) === null) return null;
+    for (const kg of [...new Set(v.map(t => t.kg))].sort((a, b) => b - a)) { const r = Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)), rb = repBest(x.exId, x.u, kg);
+      if (rb !== null && r > rb) return { name: x.name, kg, u: x.u, reps: r, from: rb }; }
+    return null; }).filter(Boolean);
+  const ts = new Date(rec.date).getTime(); let i = state.history.length;
+  while (i > 0 && new Date(state.history[i - 1].date).getTime() > ts) i--;
+  state.history.splice(i, 0, rec);
+  return { rec, prs, repPrs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
+}
 function finish(saveIt) {
   stopTick(); awake(false);
   const s = S();
@@ -5743,18 +5831,11 @@ function finish(saveIt) {
       planned: x.planned || x.sets.length + (x.trim || []).length, rmin: x.rmin, rmax: x.rmax,
       sets: x.sets.filter(t => t.done).map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {}, t.rir != null ? { rir: t.rir } : {})), adv: x.adv ? true : undefined })).filter(x => x.sets.length);
     if (exs.length) {
-      const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
-        return b === null || m > b ? { exId: x.exId, name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
-      // Ohne mehr Gewicht: mehr Wiederholungen als je zuvor mit mindestens diesem Gewicht (vor dem Speichern berechnet)
-      const repPrs = exs.filter(x => !prs.some(p => p.exId === x.exId)).map(x => { const v = x.sets.filter(validSet); if (!v.length || bestKg(x.exId, x.u) === null) return null;
-        for (const kg of [...new Set(v.map(t => t.kg))].sort((a, b) => b - a)) { const r = Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)), rb = repBest(x.exId, x.u, kg);
-          if (rb !== null && r > rb) return { name: x.name, kg, u: x.u, reps: r, from: rb }; }
-        return null; }).filter(Boolean);
       const end = sessionEnd(s);
       const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date(end).toISOString(), durationSec: Math.max(0, Math.round((end - s.start) / 1000)), exercises: exs };
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
-      state.history.push(rec);
-      summary = { rec, prs, repPrs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
+      summary = commitTraining(rec);
+      const { prs, repPrs } = summary;
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]); askPersist();
       say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) || repPrs.length ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
     }
@@ -7065,6 +7146,7 @@ function checkGoals() {
   if (fresh.length) save();
   return fresh;
 }
+const durMin = h => h.durationSec > 0 ? `${Math.max(1, Math.round(h.durationSec / 60))} Min.` : "ohne Dauer";
 const fmtDay = iso => new Date(iso).toLocaleDateString("de-DE", { day: "numeric", month: "long" });
 function goalRow(g) {
   const st = goalStatus(g), done = !!g.done;
@@ -7233,7 +7315,7 @@ function buddySays(day, thisWeek, goal, streak) {
   if (done) {
     const t = H.filter(h => dkey(new Date(h.date)) === dkey(now)), lt = t[t.length - 1];
     title = "Heute erledigt";
-    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze in ${Math.max(1, Math.round((lt.durationSec || 0) / 60))} Min.${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
+    text = `${lt.day}: ${lt.exercises.reduce((a, x) => a + x.sets.filter(validSet).length, 0)} Sätze${lt.durationSec > 0 ? ` in ${Math.max(1, Math.round(lt.durationSec / 60))} Min.` : ""}.${nx ? ` Nächstes Training: ${whenTxt(nx)}.` : ""}`;
   } else if (mToday) {
     title = isTrainDate(now) ? "Heute fällt aus" : "Heute Pause";
     const later = nx2 ? `Nächster Termin: ${whenTxt(nx2)} – ${dn}.` : `Morgen nachholen – ${dn}.`;
@@ -7686,13 +7768,13 @@ function vSummary() {
   $app.innerHTML = `<div class="page">
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
-      <div><div class="cap">Training beendet${r.adj ? " · zeitlich angepasst" : ""}</div><h1 class="title">${esc(r.day)}</h1></div></div>
+      <div><div class="cap" id="sumCap">${r.nt ? `Training nachgetragen · ${fmtDay(r.date)}` : `Training beendet${r.adj ? " · zeitlich angepasst" : ""}`}</div><h1 class="title">${esc(r.day)}</h1></div></div>
     <div class="grid3">
-      <div class="stat"><div class="cap">Dauer</div><div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div></div>
+      <div class="stat" id="sumDur"><div class="cap">Dauer</div>${r.durationSec > 0 ? `<div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div>` : `<div class="num">–</div><div class="small faint">nicht erfasst</div>`}</div>
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
       <div class="stat"><div class="cap">Volumen</div><div class="num">${fmtVol(sm.volume)}</div></div>
     </div>
-    ${state.watch ? `<div class="note" id="watchEnd"><div class="cap">Apple Watch</div><p class="small">Training auf der Watch beenden: nach rechts wischen und „Beenden“ tippen. Puls, Kalorien und Dauer speichert die Watch in Health.</p></div>` : ""}
+    ${state.watch && !r.nt ? `<div class="note" id="watchEnd"><div class="cap">Apple Watch</div><p class="small">Training auf der Watch beenden: nach rechts wischen und „Beenden“ tippen. Puls, Kalorien und Dauer speichert die Watch in Health.</p></div>` : ""}
     ${state.health && !state.watch ? `<section class="section" id="hkBox"><button class="btn block" data-a="sendHealth" data-id="${r.id}">In Apple Health eintragen</button>
       <p class="small faint">Übergibt an den Kurzbefehl „${HK_NAME}“: ${healthTxt(r)}</p></section>` : ""}
     ${sm.goals && sm.goals.length ? `<section class="section" id="goalDone"><h2>Ziel erreicht</h2><div class="group">${sm.goals.map(g => { const st = goalStatus(g);
@@ -7792,7 +7874,7 @@ function vHistory() {
       ${H.length ? disc("discLog", "Letzte Trainings", `${Math.min(30, H.length)} ${H.length === 1 ? "Eintrag" : "Einträge"}`,
         `<div class="plain-list">${[...H].reverse().slice(0, 30).map(h => `<div class="li" style="align-items:flex-start"><div class="grow">
           <button class="hopen" data-a="histOpen" data-id="${h.id}"><span class="grow">
-          <span class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min.</span></span>
+          <span class="row between"><span class="t">${esc(h.day)}</span><span class="small faint">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} · ${durMin(h)}</span></span>
           <span class="s">${h.exercises.map(x => { const v = x.sets.filter(validSet); return esc(x.name) + (v.length ? " " + kgTxt(Math.max(...v.map(t => t.kg))) + " kg " + UNIT_SHORT[x.u] : ""); }).join(" · ")}</span></span><span class="chev">›</span></button>
           ${state.health && !state.watch ? `<button class="link small" data-a="sendHealth" data-id="${h.id}">${h.hk ? HK_SENT : "In Apple Health eintragen"}</button>` : ""}</div></div>`).join("")}</div>
         <p class="small faint" style="margin:0">Antippen zum Korrigieren oder Löschen.</p>`, logOpen) : ""}
@@ -7851,7 +7933,8 @@ const histSetCount = h => h.exercises.reduce((a, x) => a + x.sets.length, 0);
 const sheetTo = html => { const sh = $sheet.querySelector(".sheet"); if (!sh || sh.classList.contains("as")) return openSheet(html); lastSheet = html; sh.innerHTML = `<div class="grab"></div>` + html; sh.scrollTop = 0; sheetName(sh); };
 function histSheet(h, msg = "") {
   return `${sheetHead(esc(h.day), "Fertig")}
-    <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${Math.max(1, Math.round((h.durationSec || 0) / 60))} Min. · ${nSets(histSetCount(h))}</p>
+    <p class="small muted" style="margin:0">${new Date(h.date).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} · ${durMin(h)} · ${nSets(histSetCount(h))}${h.nt ? " · nachgetragen" : ""}</p>
+    ${h.skip && h.skip.length ? `<p class="small muted" id="histSkip" style="margin:0">Ausgelassen: ${h.skip.map(id => esc(ex(id).name)).join(", ")}</p>` : ""}
     <button class="link small" data-a="histMeta" style="justify-self:start;margin-top:calc(-1 * var(--s3))">Datum oder Dauer ändern</button>
     ${msg ? `<p class="small" id="histMsg" role="status" style="margin:0;color:var(--ok)">${esc(msg)}</p>` : ""}
     <div class="plain-list" id="histEx">${h.exercises.map((x, xi) => `<div class="li" style="display:block">
@@ -7876,7 +7959,7 @@ function histMetaSheet() {
   return `${sheetHead("Datum und Dauer", "Zurück", "histBack")}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">
       <div class="field"><label for="hmDate">Datum</label><input id="hmDate" type="date" value="${localDay(new Date(h.date))}" max="${localDay(new Date())}"></div>
-      <div class="field"><label for="hmMin">Dauer in Minuten</label><input id="hmMin" inputmode="numeric" value="${Math.max(1, Math.round((h.durationSec || 0) / 60))}" autocomplete="off" enterkeyhint="done"></div></div>
+      <div class="field"><label for="hmMin">Dauer in Minuten</label><input id="hmMin" inputmode="numeric" value="${h.durationSec > 0 ? Math.max(1, Math.round(h.durationSec / 60)) : ""}"${h.durationSec > 0 ? "" : ` placeholder="nicht erfasst"`} autocomplete="off" enterkeyhint="done"></div></div>
     <p class="error" id="hmErr" role="alert" hidden></p>
     ${h.hk ? `<p class="small muted" style="margin:0">Der Eintrag in Apple Health ändert sich dadurch nicht.</p>` : ""}
     <button class="btn primary block xl" data-a="histMetaSave">Speichern</button>`;
@@ -7961,6 +8044,7 @@ const A = {
   createPlan: () => { const tm = byId("setupTime"); if (tm && /^\d{2}:\d{2}$/.test(tm.value)) setup.time = tm.value;
     if (!TEMPLATES[setup.wd.length]) { const x = byId("setupDaysTxt"); if (x) { x.textContent = "Bitte 2 bis 4 Tage wählen."; x.style.color = "var(--bad)"; } return; }
     setup.days = setup.wd.length;
+    if (!planReplaceOk("createPlan")) return;
     state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null;
     state.sched = cleanSched({ id: uid(), days: setup.wd.slice(), time: setup.time, planB: state.sched ? state.sched.planB : "next", since: new Date().toISOString() });
     save(); go("home");
@@ -8017,7 +8101,12 @@ const A = {
   },
   setupForm: () => { setupStep = "form"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
   setupIntro: () => { setupStep = "intro"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
-  emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
+  emptyPlan: () => { if (!planReplaceOk("emptyPlan")) return;
+    state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
+  badSave: () => { const raw = badCopy(); if (raw) downloadText(raw, `trainingsplan-kopie-${dkey()}.json`, "application/json"); },
+  badDrop: () => actionSheet("Kopie löschen?", "Die Kopie der älteren Daten wird von diesem Gerät entfernt. Deine aktuellen Daten bleiben unverändert.", [{ l: "Kopie löschen", a: "badDropDo", danger: true }], "Abbrechen"),
+  badDropDo: () => { try { localStorage.removeItem(KEY_BAD); } catch (e) {} closeSheet(); badWarn(); },
+  planOverDo: () => { const a = planOver.again; planOver.ok = true; closeSheet(); if (A[a]) A[a](); },
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
@@ -8574,15 +8663,16 @@ const A = {
     histChanged(); sheetTo(histSheet(h, `Satz gelöscht.`)); },
   histMeta: () => { if (histRec()) sheetTo(histMetaSheet()); },
   histMetaSave: () => { const h = histRec(); if (!h) return closeSheet();
-    const dv = byId("hmDate").value, min = num(byId("hmMin").value), old = new Date(h.date), oldMin = Math.max(1, Math.round((h.durationSec || 0) / 60));
+    const noDur = !(h.durationSec > 0), rawMin = byId("hmMin").value.trim(), keepNone = noDur && rawMin === "";   // ohne erfasste Dauer darf das Feld leer bleiben
+    const dv = byId("hmDate").value, min = keepNone ? null : num(rawMin), old = new Date(h.date), oldMin = noDur ? null : Math.max(1, Math.round(h.durationSec / 60));
     let nd = /^\d{4}-\d{2}-\d{2}$/.test(dv) ? new Date(`${dv}T${pad2(old.getHours())}:${pad2(old.getMinutes())}:${pad2(old.getSeconds())}`) : null;
     if (nd && nd > Date.now() && dv === localDay(new Date())) nd = new Date(); // heute, aber Uhrzeit noch nicht erreicht
     const err = !nd || isNaN(nd) ? "Bitte ein Datum wählen." : nd > Date.now() ? "Das Datum liegt in der Zukunft."
-      : !Number.isInteger(min) || min < 1 || min > 300 ? "Bitte eine Dauer von 1 bis 300 Minuten eintragen." : "";
+      : !keepNone && (!Number.isInteger(min) || min < 1 || min > 300) ? "Bitte eine Dauer von 1 bis 300 Minuten eintragen." : "";
     if (err) { const el = byId("hmErr"); el.textContent = err; el.hidden = false; return; }
     const dayChanged = dv !== localDay(old), changed = dayChanged || min !== oldMin;
     if (dayChanged) { h.date = nd.toISOString(); state.history.sort((a, b) => new Date(a.date) - new Date(b.date)); }
-    if (min !== oldMin) h.durationSec = min * 60;
+    if (min !== oldMin && min !== null) h.durationSec = min * 60;
     if (changed) histChanged();
     sheetTo(histSheet(h, changed ? "Datum und Dauer gespeichert." : "")); },
   histDel: () => { const h = histRec(); if (!h) return closeSheet();
@@ -9796,11 +9886,144 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 // ── Abstand artikel/js 1 ──
 // ── Abstand artikel/js 2 ──
 // ── Abstand artikel/js 3 ──
+// @ext:nachtrag:js:start
+// Training nachtragen (Heute → „Schon trainiert? Nachtragen“, Fortschritt → „Training nachtragen“): ein Training ohne Live-Modus dokumentieren.
+// Vorschläge:  dieselbe Funktion wie beim Start eines Live-Trainings (makeEntry), gerechnet mit dem Verlauf VOR dem gewählten Tag.
+// Speichern:   dieselbe Stelle wie nach einem Live-Training (commitTraining) – Bestwerte, Ziele, Reihenfolge im Verlauf.
+// Gespeichert werden nur Sätze mit Gewicht und Wiederholungen, die der Nutzer mit „Training speichern“ bestätigt. Fehlt ein Gewicht
+// (neues Gerät), lässt sich nicht speichern. Die Dauer ist freiwillig; ohne Angabe steht 0 („ohne Dauer“), es wird nichts geschätzt.
+// Eintrag im Verlauf: nt = nachgetragen, skip = ausgelassene Geräte. Entwurf: state.x.nachtrag (übersteht einen Neustart).
+{
+  const NT_MODES = [["plan", "Wie geplant"], ["edit", "Werte ändern"], ["teil", "Teilweise"]];
+  const NT_HINT = { plan: "Die Werte sind Vorschläge der App aus Plan und Verlauf. Mit „Training speichern“ bestätigst du, dass du so trainiert hast.",
+    edit: "Satz antippen und Gewicht oder Wiederholungen ändern. „+“ fügt einen Satz hinzu.",
+    teil: "Schalte aus, was du ausgelassen hast. Einen einzelnen Satz entfernst du nach dem Antippen." };
+  const ntDays = () => state.plan ? state.plan.days.filter(d => d.items.length) : [];
+  const ntDay = id => ntDays().find(d => d.id === id) || null;
+  const ntAt = d => d === dkey() ? Date.now() : new Date(d + "T12:00:00").getTime();   // früherer Tag: 12 Uhr am Ort (die Uhrzeit ist nicht bekannt)
+  const ntGet = () => isObj(state.x) && isObj(state.x.nachtrag) ? state.x.nachtrag : null;
+  const ntPut = dr => { if (!isObj(state.x)) state.x = {}; state.x.nachtrag = dr; save(); };
+  // Entwurf für einen Trainingstag und ein Datum: je Gerät die Vorschläge wie beim Start eines Live-Trainings
+  function ntBuild(dayId, d, keep) {
+    const day = ntDay(dayId); if (!day) return null;
+    const at = ntAt(d);
+    return { d, dayId, mode: keep ? keep.mode : "plan", min: keep ? keep.min : "",
+      list: day.items.map(it => { const e = makeEntry(it, { at });
+        return { exId: e.exId, u: e.u, rmin: e.rmin, rmax: e.rmax, planned: e.planned, short: e.short, on: true, sets: e.sets.map(t => ({ kg: t.kg, reps: t.reps })) }; }) };
+  }
+  EXT.clean.nachtrag = raw => {
+    if (!isObj(raw) || !/^\d{4}-\d{2}-\d{2}$/.test(raw.d) || typeof raw.dayId !== "string" || !Array.isArray(raw.list)) return null;
+    const list = raw.list.filter(x => isObj(x) && typeof x.exId === "string" && Array.isArray(x.sets)).slice(0, 40).map(x => ({
+      exId: x.exId, u: ["s", "t", "b"].includes(x.u) ? x.u : "t", rmin: clampInt(x.rmin, 1, 100, 8), rmax: clampInt(x.rmax, 1, 100, 12), planned: clampInt(x.planned, 1, 20, 1),
+      short: typeof x.short === "string" ? x.short.slice(0, 120) : "", on: x.on !== false, ed: x.ed === true ? true : undefined,
+      sets: x.sets.filter(isObj).slice(0, 20).map(t => ({ kg: typeof t.kg === "number" && t.kg > 0 && t.kg <= 1000 ? t.kg : null, reps: Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 100 ? t.reps : null })) }));
+    return list.length ? { d: raw.d, dayId: raw.dayId, mode: NT_MODES.some(m => m[0] === raw.mode) ? raw.mode : "plan", min: typeof raw.min === "string" ? raw.min.slice(0, 4) : "", list } : null;
+  };
+  // Was fehlt noch? "" = kann gespeichert werden
+  function ntErr(dr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dr.d) || isNaN(new Date(dr.d + "T12:00:00"))) return "Bitte ein Datum wählen.";
+    if (dr.d > dkey()) return "Das Datum liegt in der Zukunft.";
+    const on = dr.list.filter(x => x.on && x.sets.length);
+    if (!on.length) return "Mindestens ein Gerät mit einem Satz.";
+    for (const x of on) for (const t of x.sets) { const er = setError(t);
+      if (er) return `${ex(x.exId).name}: ${t.kg == null ? "Gewicht fehlt." : er}${dr.mode === "plan" ? " Unter „Werte ändern“ eintragen oder unter „Teilweise“ ausschalten." : ""}`; }
+    const m = dr.min.trim(), mv = num(m);
+    if (m && !(Number.isInteger(mv) && mv >= 1 && mv <= 300)) return "Dauer: 1 bis 300 Minuten oder leer lassen.";
+    return "";
+  }
+  const ntPill = (dr, x, xi, t, i) => { const txt = `${t.kg == null ? "?" : kgTxt(t.kg)} × ${t.reps == null ? "?" : t.reps}`, miss = t.kg == null || t.reps == null ? " miss" : "";
+    return dr.mode === "plan" ? `<span class="set-pill${miss}">${txt}</span>` : `<button class="set-pill${miss}" data-a="ntSet" data-x="${xi}" data-i2="${i}" aria-label="Satz ${i + 1} ändern: ${txt}">${txt}</button>`; };
+  const ntListHtml = dr => dr.list.map((x, xi) => { const e = ex(x.exId), miss = x.on && x.sets.some(t => t.kg == null);
+    return `<div class="nt-x${x.on ? "" : " off"}" data-x="${xi}">
+      <div class="row">${thumbStrip([x.exId], 1)}<div class="grow"><div class="t">${esc(e.name)}</div><div class="small muted nt-st">${!x.on ? "ausgelassen" : `${nSets(x.sets.length)} · ${UNIT_SHORT[x.u]} · ${x.ed ? "geändert" : "Vorschlag"}`}</div></div>
+        ${dr.mode === "teil" ? `<button class="switch" role="switch" aria-checked="${x.on}" data-a="ntOn" data-x="${xi}" aria-label="${esc(e.name)} trainiert"></button>` : ""}</div>
+      ${x.on ? `<div class="hx-sets">${x.sets.map((t, i) => ntPill(dr, x, xi, t, i)).join("")}${dr.mode !== "plan" && x.sets.length < 20 ? `<button class="set-pill nt-add" data-a="ntAdd" data-x="${xi}" aria-label="Satz hinzufügen bei ${esc(e.name)}">+</button>` : ""}</div>` : ""}
+      ${miss ? `<p class="small nt-miss">Noch kein Gewicht bekannt – bitte eintragen.</p>` : ""}
+    </div>`; }).join("");
+  EXT.nav.nachtrag = { back: "history" };
+  EXT.views.nachtrag = () => {
+    let dr = ntGet();
+    if (!dr || !ntDay(dr.dayId)) { const nd = nextDay(), day = nd && ntDay(nd.id) ? nd : ntDays()[0]; dr = day ? ntBuild(day.id, dkey()) : null; if (dr) ntPut(dr); }
+    if (!dr) { $app.innerHTML = `<div class="page">${extHead("Training nachtragen")}<div class="card" id="ntNone"><b>Noch kein Trainingstag mit Geräten</b><p class="small muted">Lege zuerst unter „Plan“ einen Trainingstag an.</p></div></div>`; return; }
+    const err = ntErr(dr), same = state.history.filter(h => dkey(new Date(h.date)) === dr.d);
+    const on = dr.list.filter(x => x.on && x.sets.length), nS = on.reduce((a, x) => a + x.sets.length, 0);
+    $app.innerHTML = `<div class="page">
+      ${extHead("Training nachtragen", "Ohne Live-Modus: prüfen, anpassen, speichern.")}
+      <section class="section"><div class="card stack">
+        <div class="field"><label for="ntDate">Datum</label><input id="ntDate" type="date" data-i="ntDate" value="${dr.d}" max="${dkey()}"></div>
+        <div class="field"><label id="ntDayLbl">Trainingstag</label><div class="chips wrap" id="ntDays" role="group" aria-labelledby="ntDayLbl">${ntDays().map(d => `<button class="chip${d.id === dr.dayId ? " on" : ""}" data-a="ntDay" data-id="${d.id}" aria-pressed="${d.id === dr.dayId}">${esc(d.name)}</button>`).join("")}</div></div>
+        ${same.length ? `<p class="small muted" id="ntSame" style="margin:0">An diesem Tag ist schon eingetragen: ${same.map(h => esc(h.day)).join(", ")}.</p>` : ""}
+      </div></section>
+      <section class="section"><h2>Was hast du gemacht?</h2>
+        <div class="seg" id="ntMode">${NT_MODES.map(([k, l]) => `<button data-a="ntMode" data-v="${k}" class="${dr.mode === k ? "on" : ""}" aria-pressed="${dr.mode === k}">${l}</button>`).join("")}</div>
+        <div class="card nt-list" id="ntList">${ntListHtml(dr)}</div>
+        <p class="small foot" id="ntHint">${NT_HINT[dr.mode]}</p></section>
+      <section class="section"><div class="card stack">
+        <div class="field"><label for="ntMin">Dauer in Minuten (freiwillig)</label><input id="ntMin" data-i="ntMin" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="z. B. 60" value="${esc(dr.min)}"></div>
+        <p class="small muted" id="ntSum" style="margin:0">${on.length} ${on.length === 1 ? "Gerät" : "Geräte"} · ${nSets(nS)}</p>
+        <p class="error" id="ntErr" role="alert"${err ? "" : " hidden"}>${esc(err)}</p>
+        <button class="btn primary block xl" data-a="ntSave" id="ntSave">Training speichern</button>
+        <button class="btn quiet sm block" data-a="ntReset">Vorschläge neu laden</button>
+      </div></section>
+    </div>`;
+  };
+  let ntEdit = null;
+  const ntCur = () => { const dr = ntGet(), x = dr && ntEdit ? dr.list[ntEdit.x] : null, t = x ? x.sets[ntEdit.i] : null; return t ? { dr, x, t } : null; };
+  function ntSetSheet() { const { x, t } = ntCur();
+    return `${sheetHead(`Satz ${ntEdit.i + 1}`, "Abbrechen")}
+      <p class="small muted" id="ntSetFor" style="margin:0">${esc(ex(x.exId).name)}${x.sets.length > 1 ? ` · ${nSets(x.sets.length)}` : ""}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">
+        <div class="field"><label for="ntKg">${UNIT[x.u] || "kg"}</label><input id="ntKg" inputmode="decimal" value="${t.kg != null ? kgTxt(t.kg) : ""}" autocomplete="off" enterkeyhint="next"></div>
+        <div class="field"><label for="ntReps">Wiederholungen</label><input id="ntReps" inputmode="numeric" value="${t.reps ?? ""}" autocomplete="off" enterkeyhint="done"></div></div>
+      <p class="error" id="ntSetErr" role="alert" hidden></p>
+      <div class="stack-sm"><button class="btn primary block xl" data-a="ntSetSave">Für diesen Satz</button>
+        ${x.sets.length > 1 ? `<button class="btn block" data-a="ntSetAll">Für alle ${x.sets.length} Sätze</button><button class="btn block danger" data-a="ntSetDel">Satz entfernen</button>` : ""}</div>`; }
+  // Liest die beiden Felder; bei einem Fehler steht er im Sheet und es kommt null zurück
+  const ntRead = () => { const v = { kg: num(byId("ntKg").value), reps: num(byId("ntReps").value) }, er = setError(v), el = byId("ntSetErr");
+    if (er) { el.textContent = er; el.hidden = false; return null; } return { kg: Math.round(v.kg * 100) / 100, reps: v.reps }; };
+  const ntRedraw = dr => { ntPut(dr); render(); };
+  Object.assign(EXT.actions, {
+    ntOpen: el => { EXT.nav.nachtrag.back = el.dataset.from === "home" ? "home" : "history"; go("nachtrag"); },
+    ntDay: el => { const dr = ntGet(), n = dr && ntBuild(el.dataset.id, dr.d, dr); if (n) { ntRedraw(n); const b = $app.querySelector(`#ntDays [data-id="${el.dataset.id}"]`); if (b) b.focus({ preventScroll: true }); } },
+    ntMode: el => { const dr = ntGet(); if (!dr || !NT_MODES.some(m => m[0] === el.dataset.v)) return; dr.mode = el.dataset.v; ntRedraw(dr);
+      const b = $app.querySelector(`#ntMode [data-v="${dr.mode}"]`); if (b) b.focus({ preventScroll: true }); },
+    ntOn: el => { const dr = ntGet(), x = dr && dr.list[+el.dataset.x]; if (!x) return; x.on = !x.on; ntRedraw(dr);
+      const b = $app.querySelector(`.nt-x[data-x="${el.dataset.x}"] .switch`); if (b) b.focus({ preventScroll: true }); },
+    ntAdd: el => { const dr = ntGet(), x = dr && dr.list[+el.dataset.x]; if (!x || x.sets.length >= 20) return; const l = x.sets[x.sets.length - 1];
+      x.sets.push(l ? { kg: l.kg, reps: l.reps } : { kg: null, reps: x.rmax }); x.ed = true; ntRedraw(dr); },
+    ntSet: el => { ntEdit = { x: +el.dataset.x, i: +el.dataset.i2 }; if (ntCur()) openSheet(ntSetSheet()); },
+    ntSetSave: () => { const c = ntCur(); if (!c) return closeSheet(); const v = ntRead(); if (!v) return; Object.assign(c.t, v); c.x.ed = true; closeSheet(); ntRedraw(c.dr); },
+    ntSetAll: () => { const c = ntCur(); if (!c) return closeSheet(); const v = ntRead(); if (!v) return; c.x.sets.forEach(t => Object.assign(t, v)); c.x.ed = true; closeSheet(); ntRedraw(c.dr); },
+    ntSetDel: () => { const c = ntCur(); if (!c) return closeSheet(); c.x.sets.splice(ntEdit.i, 1); c.x.ed = true; if (!c.x.sets.length) c.x.on = false; closeSheet(); ntRedraw(c.dr); },
+    ntReset: () => { const dr = ntGet(), n = dr && ntBuild(dr.dayId, dr.d, { mode: dr.mode, min: dr.min }); if (n) ntRedraw(n); },
+    ntSave: () => { const dr = ntGet(), day = dr && ntDay(dr.dayId); if (!dr || !day) return;
+      const err = ntErr(dr); if (err) { const el = byId("ntErr"); if (el) { el.textContent = err; el.hidden = false; el.scrollIntoView({ block: "center" }); } buzz(60); return; }
+      const exs = dr.list.filter(x => x.on && x.sets.length).map(x => ({ exId: x.exId, name: ex(x.exId).name, u: x.u, planned: x.planned, rmin: x.rmin, rmax: x.rmax, sets: x.sets.map(t => ({ kg: t.kg, reps: t.reps })) }));
+      const skip = dr.list.filter(x => !x.on || !x.sets.length).map(x => x.exId), m = num(dr.min.trim());
+      const rec = { id: uid(), dayId: day.id, day: day.name, date: new Date(ntAt(dr.d)).toISOString(), durationSec: m ? m * 60 : 0, exercises: exs, nt: true };
+      if (skip.length) rec.skip = skip;
+      summary = commitTraining(rec);
+      state.x.nachtrag = null;
+      if (dr.d === dkey()) { if (state.selDay === day.id) state.selDay = null; if (state.timeplan && state.timeplan.dayId === day.id) state.timeplan = null; }
+      save(); askPersist(); go("summary"); }
+  });
+  EXT.inputs.ntDate = el => { const dr = ntGet(), d = el.value; if (!dr || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+    if (d > dkey()) { el.value = dr.d; const e = byId("ntErr"); if (e) { e.textContent = "Das Datum liegt in der Zukunft."; e.hidden = false; } return; }
+    if (d !== dr.d) { const n = ntBuild(dr.dayId, d, dr); if (n) ntRedraw(n); } };
+  EXT.inputs.ntMin = el => { const dr = ntGet(); if (!dr) return; dr.min = el.value.slice(0, 4); ntPut(dr); const e = byId("ntErr"), er = ntErr(dr); if (e) { e.textContent = er; e.hidden = !er; } };
+  EXT.rows.history.unshift(() => ntDays().length ? `<button class="li" data-a="ntOpen" data-from="history" id="row-nachtrag">${ico("pencil", "blue")}<div class="grow"><div class="t n">Training nachtragen</div></div><span class="chev">›</span></button>` : "");
+  Object.assign(EXT.test, { ntBuild, ntErr, commitTraining, compSessions, bestKg });
+}
+// @ext:nachtrag:js:end
+// ── Abstand nachtrag/js 1 ──
+// ── Abstand nachtrag/js 2 ──
+// ── Abstand nachtrag/js 3 ──
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
-extClean();
+extClean(); badWarn();
+if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
