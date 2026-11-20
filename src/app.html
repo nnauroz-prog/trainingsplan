@@ -632,26 +632,68 @@
   /* ── Abstand meilensteine/css 2 ── */
   /* ── Abstand meilensteine/css 3 ── */
   /* @ext:masse:css:start */
+  .masse-spark{width:52px;height:26px;flex:0 0 52px}
+  .masse-chart{display:block;width:100%;height:auto}
+  .masse-v{color:var(--text);font-weight:600}
   /* @ext:masse:css:end */
   /* ── Abstand masse/css 1 ── */
   /* ── Abstand masse/css 2 ── */
   /* ── Abstand masse/css 3 ── */
   /* @ext:rueckblick:css:start */
+  /* Rückblick: Zeitraum-Leiste, Kennzahlen, Balken */
+  .rb-nav{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;text-align:center;padding:var(--s1)}
+  .rb-nav button{height:44px;display:grid;place-items:center;color:var(--accent-ink);font-size:22px;border-radius:10px}
+  .rb-nav button[disabled]{color:var(--text-3);opacity:.5}
+  .rb-nav b{font-size:17px}
+  .rb-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+  .rb-grid .card{margin:0;display:grid;gap:2px;align-content:start}
+  .rb-grid .num{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .rb-d{color:var(--text-2)}
+  .rb-bars{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;align-items:end;height:110px}
+  .rb-bars>div{display:grid;grid-template-rows:16px minmax(0,1fr) 16px;height:100%;justify-items:center;font-size:11px;color:var(--text-2);gap:2px;min-width:0}
+  .rb-bars i{align-self:end;width:min(26px,100%);border-radius:4px 4px 2px 2px;background:var(--accent);min-height:2px}
+  .rb-bars i.z{background:var(--fill-2)}
+  .rb-ar{color:var(--text-2);font-variant-numeric:tabular-nums}
   /* @ext:rueckblick:css:end */
   /* ── Abstand rueckblick/css 1 ── */
   /* ── Abstand rueckblick/css 2 ── */
   /* ── Abstand rueckblick/css 3 ── */
   /* @ext:werkzeuge:css:start */
+  /* Rechner: zwei Felder nebeneinander, Ergebniszeile, Prozentliste */
+  .wz-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s3)}
+  .wz-out{min-height:44px;display:grid;align-content:center;gap:var(--s1)}
+  .wz-out .plates{justify-content:flex-start}
+  .wz-big{font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .wz-pct{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--s3);padding:10px 0;border-bottom:.5px solid var(--hair)}
+  .wz-pct:last-child{border-bottom:0}
+  .wz-pct .bar{height:6px;border-radius:3px;background:var(--fill-2);overflow:hidden}
+  .wz-pct .bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+  .wz-pct b{font-variant-numeric:tabular-nums}
   /* @ext:werkzeuge:css:end */
   /* ── Abstand werkzeuge/css 1 ── */
   /* ── Abstand werkzeuge/css 2 ── */
   /* ── Abstand werkzeuge/css 3 ── */
   /* @ext:glossar:css:start */
+  /* Begriffe: Abschnitte je Anfangsbuchstabe; lange Begriffe brechen sauber um; „Siehe auch“ als Zeile mit Verweisen (Tippfläche 44 px) */
+  .gl-list{display:grid;gap:var(--s5)}
+  .gl-list .gdet>summary{gap:var(--s3);padding-block:var(--s3)}
+  .gl-app b{color:var(--text);font-weight:600}
+  .gl-see{display:grid}
+  .gl-links{display:flex;flex-wrap:wrap;column-gap:var(--s5);margin-bottom:calc(-1 * var(--s3))}
+  .gl-links .link{text-align:left}
   /* @ext:glossar:css:end */
   /* ── Abstand glossar/css 1 ── */
   /* ── Abstand glossar/css 2 ── */
   /* ── Abstand glossar/css 3 ── */
   /* @ext:muskeln:css:start */
+  .mk-fig{width:100%;max-width:240px;margin:0 auto}
+  .legend i.mk-grad{width:40px;border-radius:5px;background:var(--mhot);-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.25),#000);mask-image:linear-gradient(90deg,rgba(0,0,0,.25),#000)}
+  .mk-row .mtrack{margin:7px 0 5px}
+  .mk-row .val{min-width:40px;justify-content:flex-end}
+  .mk-two{display:grid;grid-template-columns:minmax(max-content,1fr) 1fr;gap:var(--s3)}
+  .mk-sub{display:grid;gap:var(--s2)}
+  .mk-sub>.cap{padding:0 var(--s4)}
+  .thumbbox.mk-noth{display:grid;place-items:center;height:40px;font-size:22px;color:var(--text-3)}
   /* @ext:muskeln:css:end */
   /* ── Abstand muskeln/css 1 ── */
   /* ── Abstand muskeln/css 2 ── */
@@ -662,11 +704,39 @@
   /* ── Abstand plaene/css 2 ── */
   /* ── Abstand plaene/css 3 ── */
   /* @ext:aussehen:css:start */
+  /* Akzentfarben. Je Farbe: Fläche --ac (in beiden Designs gleich; weiße Schrift darauf ≥ 4,5:1), gedrückt --ac-press,
+     Schriftfarbe im hellen Design --ac-ink-l und im dunklen --ac-ink-d (jeweils ≥ 4,5:1 auf --bg, --raise, --raise-2, --sheet),
+     Grundton der zarten Flächen --ac-rgb-l / --ac-rgb-d. „blau“ sind die Standardwerte der App. Nachgerechnet in tests/run.js (E-aussehen). */
+  [data-accent="blau"]{--ac:#0071E3;--ac-press:#0064CC;--ac-ink-l:#0062CC;--ac-ink-d:#4DA2FF;--ac-rgb-l:0,113,227;--ac-rgb-d:10,132,255}
+  [data-accent="indigo"]{--ac:#5E5CE0;--ac-press:#504ECC;--ac-ink-l:#4F4CD0;--ac-ink-d:#9D9BFF;--ac-rgb-l:94,92,224;--ac-rgb-d:94,92,230}
+  [data-accent="gruen"]{--ac:#1C8139;--ac-press:#187031;--ac-ink-l:#17722F;--ac-ink-d:#30D158;--ac-rgb-l:28,129,57;--ac-rgb-d:48,209,88}
+  [data-accent="orange"]{--ac:#C25000;--ac-press:#AB4600;--ac-ink-l:#A94300;--ac-ink-d:#FF9F0A;--ac-rgb-l:194,80,0;--ac-rgb-d:255,159,10}
+  [data-accent="pink"]{--ac:#D1257F;--ac-press:#BA1F70;--ac-ink-l:#BD1C70;--ac-ink-d:#FF78B4;--ac-rgb-l:209,37,127;--ac-rgb-d:255,55,130}
+  [data-accent="rot"]{--ac:#DB1A1A;--ac-press:#C31515;--ac-ink-l:#C80014;--ac-ink-d:#FF7B72;--ac-rgb-l:219,26,26;--ac-rgb-d:255,69,58}
+  /* Gewählte Farbe: Attribut data-accent an <html>. Bei Blau fehlt es, dann gelten die Farb-Tokens der App unverändert. */
+  :root[data-accent]{--accent:var(--ac);--accent-press:var(--ac-press);--accent-stripe:var(--ac);--accent-ink:var(--ac-ink-d);--accent-ink-on:var(--on-accent);
+    --accent-tint:rgba(var(--ac-rgb-d),.2);--accent-soft:rgba(var(--ac-rgb-d),.4)}
+  @media (prefers-color-scheme: light){:root[data-accent]:not([data-theme="dark"]){--accent-ink:var(--ac-ink-l);--accent-tint:rgba(var(--ac-rgb-l),.1);--accent-soft:rgba(var(--ac-rgb-l),.3)}}
+  :root[data-accent][data-theme="light"]{--accent-ink:var(--ac-ink-l);--accent-tint:rgba(var(--ac-rgb-l),.1);--accent-soft:rgba(var(--ac-rgb-l),.3)}
+  /* Seite „Aussehen“: Farbfelder (Tippfläche 48 px hoch, Punkt 30 px) und Vorschau (nur Anschauung, nicht bedienbar) */
+  .aus-sws{grid-template-columns:repeat(6,1fr);gap:0;padding:var(--s2) var(--s3)}
+  .aus-sw{height:48px;min-width:0;display:grid;place-items:center}
+  .aus-sw i{width:30px;height:30px;border-radius:50%;background:var(--ac);color:var(--on-accent);display:grid;place-items:center;font-size:18px;transition:box-shadow .15s}
+  .aus-sw[aria-pressed="true"] i{box-shadow:0 0 0 2.5px var(--raise),0 0 0 5px var(--ac)}
+  .aus-sw:active i{opacity:.6}
+  .aus-demo{pointer-events:none}
+  .aus-demo .aus-txt{color:var(--accent-ink)}
   /* @ext:aussehen:css:end */
   /* ── Abstand aussehen/css 1 ── */
   /* ── Abstand aussehen/css 2 ── */
   /* ── Abstand aussehen/css 3 ── */
   /* @ext:export:css:start */
+  #expMsg{margin:0;overflow-wrap:anywhere;color:var(--ok)}   /* Meldung nach dem Export; lange Dateinamen brechen auch bei 320 px um */
+  /* Der lange Titel steht beim Scrollen klein in der Navigationsleiste. Neben „‹ Einstellungen“ ist dafür kein Platz:
+     Dann bleibt vom Zurück-Knopf nur der Pfeil sichtbar (wie bei iOS), und der Titel bekommt die ganze Breite. Gilt nur für diese Seite. */
+  body:has(#app #expList) .nb-t{left:40px;right:40px}
+  body:has(#app #expList) .nb-back span{transition:opacity .18s}
+  body:has(#app #expList) .navbar.scrolled .nb-back span{opacity:0}
   /* @ext:export:css:end */
   /* ── Abstand export/css 1 ── */
   /* ── Abstand export/css 2 ── */
@@ -1902,6 +1972,9 @@ function exIdByName(name, s) {
 }
 
 // Erst jetzt laden: alle Hilfsfunktionen für Bereinigung/Migration sind definiert
+// Muss vor dem Laden feststehen: normalize() prüft damit die gespeicherte Scheibenauswahl. Stand die Liste weiter unten,
+// scheiterte das Laden, sobald Scheiben abgewählt waren, und die App startete leer.
+const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
 let state = blank();
 state = load();
 
@@ -1929,7 +2002,6 @@ const ex = id => devFrom(state, id);
 const allEx = () => LIB.concat(state.custom).map(e => ex(e.id));
 const UNIT = { s: "kg pro Seite", t: "kg insgesamt", b: "kg am Gewichtsblock" };
 // Scheibenrechner: welche Scheiben je Seite. Standard-Scheiben (Regel der App), unter Einstellungen → Studio anpassbar
-const PLATE_SIZES = [25, 20, 15, 10, 5, 2.5, 1.25];
 function platesOf(perSide, avail) {
   let r = Math.round(perSide * 100) / 100; const out = [];
   for (const p of avail.slice().sort((a, b) => b - a)) while (r >= p - 1e-9) { out.push(p); r = Math.round((r - p) * 100) / 100; }
@@ -2343,7 +2415,7 @@ function baseDay() {
 }
 let nextReason = "";
 // Geschätztes 1RM nach Epley – nur eine Näherung, an Maschinen grob vergleichbar
-function e1rm(t) { return t.kg ? t.kg * (1 + Math.min(t.reps, 12) / 30) : 0; }
+function e1rm(t) { return !t.kg ? 0 : t.reps <= 1 ? t.kg : t.kg * (1 + Math.min(t.reps, 12) / 30); }
 // Stillstand nur bei ausreichender Datenlage: mindestens 4 vollständige, einheitliche Einheiten über mindestens
 // 3 Wochen (letzte 6 betrachtet) ohne neues Höchstgewicht und ohne mehr Wiederholungen beim gleichen Gewicht.
 function plateau(exId) {
@@ -8634,46 +8706,1069 @@ EXT.test.HILFE = HILFE;
 // ── Abstand hilfe/js 2 ──
 // ── Abstand hilfe/js 3 ──
 // @ext:meilensteine:js:start
+// Meilensteine (Fortschritt → Meilensteine): Tatsachen aus dem eigenen Verlauf zum Dranbleiben – keine Aussagen über Wirkungen.
+// Fünf Reihen mit festen Stufen (Stufen der App). Alles wird aus state.history berechnet, nichts wird gespeichert.
+// Der Block hat einen eigenen Namensraum ({ … }): Seine Namen können mit keiner anderen Erweiterung zusammenstoßen.
+{
+  // sc: Gewicht und Zeit zählen in Zehnteln und werden abgerundet – „9,9 t“ erscheint nie als erreichte 10.
+  const msNum = (v, sc) => sc === 1 ? fmtK(v) : (v / sc).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const msDate = iso => new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  // lab: Stufe ausgeschrieben · mark: Stufe kurz (Marke, Ziel) · rest: Abstand zur nächsten Stufe · sub: Text neben der großen Zahl · note: Unterzeile in der Zusammenfassung
+  const MS = [
+    { k: "tr", t: "Trainings", sc: 1, steps: [1, 5, 10, 25, 50, 100, 150, 200, 300, 500], note: "insgesamt",
+      lab: n => nTr(n), mark: n => fmtK(n), rest: r => nTr(r), sub: s => `${s.val === 1 ? "Training" : "Trainings"} insgesamt` },
+    { k: "wk", t: "Wochen in Folge", sc: 1, steps: [2, 4, 8, 12, 26, 52], note: "mit erreichtem Wochenziel",
+      lab: n => `${n} Wochen in Folge`, mark: n => String(n), rest: r => `${r} ${r === 1 ? "Woche" : "Wochen"}`,
+      sub: s => `${s.val === 1 ? "Woche" : "Wochen"} aktuell · beste Serie: ${s.best}` },
+    { k: "ton", t: "Bewegtes Gewicht", sc: 10, steps: [10, 25, 50, 100, 250, 500, 1000], note: "Gewicht bewegt, insgesamt",
+      lab: n => `${fmtK(n)} Tonnen`, mark: n => `${fmtK(n)} t`, rest: r => `${msNum(r, 10)} t`, sub: () => "Tonnen insgesamt" },
+    { k: "std", t: "Trainingszeit", sc: 10, steps: [5, 10, 25, 50, 100, 250], note: "Trainingszeit insgesamt",
+      lab: n => `${n} Stunden`, mark: n => `${n} Std.`, rest: r => `${msNum(r, 10)} Std.`, sub: () => "Stunden insgesamt" },
+    { k: "ger", t: "Geräte", sc: 1, steps: [5, 10, 20, 30, 40], note: "verschiedene trainiert",
+      lab: n => `${n} Geräte`, mark: n => String(n), rest: r => `${r} ${r === 1 ? "Gerät" : "Geräte"}`,
+      sub: s => s.val === 1 ? "Gerät trainiert" : "verschiedene Geräte trainiert" }
+  ];
+  const MS_ALL = MS.reduce((a, m) => a + m.steps.length, 0);
+  // Wochenziel wie auf „Heute“: Zahl der Trainingstage im Plan, mindestens 1
+  const msGoal = () => Math.max(1, state.plan?.days.length || 1);
+  const msMonday = date => { const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; };
+  // Ein Durchgang durch den Verlauf in zeitlicher Reihenfolge. Nach jedem Training steht der Stand jeder Reihe fest;
+  // eine Stufe gilt mit dem Training als erreicht, mit dem ihr Wert zum ersten Mal erreicht ist (at = Datum dieses Trainings).
+  // v: Stand je Reihe (ton und std in Zehnteln). „Wochen in Folge“ ist hier die bisher beste Serie; der aktuelle Stand kommt aus weekStreak().
+  function msCalc(H, goal) {
+    const L = H.map((h, i) => ({ h, at: Date.parse(h.date), i })).sort((a, b) => a.at - b.at || a.i - b.i);
+    const v = { tr: 0, wk: 0, ton: 0, std: 0, ger: 0 }, got = { tr: [], wk: [], ton: [], std: [], ger: [] };
+    const dev = new Set(), wCnt = new Map(), wRun = new Map(); let cKg = 0, sec = 0;
+    for (const { h } of L) {
+      v.tr++;
+      sec += h.durationSec || 0; v.std = Math.floor(sec / 360);
+      for (const x of h.exercises) { let any = false;
+        for (const t of x.sets) if (validSet(t)) { cKg += Math.round(setVol(x, t) * 100); any = true; }   // in Hundertstel-kg: ohne Rundungsfehler an der Schwelle
+        if (any) dev.add(x.exId); }
+      v.ton = Math.floor(cKg / 10000); v.ger = dev.size;
+      // Woche (Montag 0 Uhr am Ort): Mit dem Training, das das Wochenziel erreicht, wächst die Serie der Vorwoche um 1
+      const d = msMonday(h.date), wk = d.getTime(), n = (wCnt.get(wk) || 0) + 1; wCnt.set(wk, n);
+      if (n === goal) { d.setDate(d.getDate() - 7); const run = (wRun.get(d.getTime()) || 0) + 1; wRun.set(wk, run); if (run > v.wk) v.wk = run; }
+      for (const m of MS) { const g = got[m.k]; while (g.length < m.steps.length && v[m.k] >= m.steps[g.length] * m.sc) g.push({ n: m.steps[g.length], at: h.date }); }
+    }
+    return { v, got };
+  }
+  // Stufen, die genau dieses Training gebracht hat: mit ihm erreicht, ohne es nicht
+  function msNew(rec) {
+    const goal = msGoal(), a = msCalc(state.history, goal).got, b = msCalc(state.history.filter(h => h !== rec), goal).got;
+    return MS.flatMap(m => a[m.k].slice(b[m.k].length).map(g => ({ m, n: g.n })));
+  }
+  // Stand für Zeile und Unterseite, zwischengespeichert. Neu gerechnet wird nur, wenn sich die Zahl der Trainings, das Wochenziel,
+  // die laufende Woche oder der Inhalt des Verlaufs ändert. Für den Inhalt genügt eine Prüfsumme in einem schnellen Durchgang:
+  // Ein Training lässt sich nachträglich korrigieren (Satz, Datum, Dauer) – die Zahl der Trainings allein würde das nicht bemerken.
+  let msMemo = null, msRuns = 0;
+  function msData() {
+    const H = state.history, goal = msGoal(), mon = msMonday(new Date());
+    let a = H.length;   // Prüfsumme (31er-Streuwert über Datum, Dauer, Gerät, Gewichtsangabe, kg und Wdh. jedes Satzes)
+    for (const h of H) { const ds = String(h.date); for (let i = 0; i < ds.length; i++) a = (Math.imul(a, 31) + ds.charCodeAt(i)) | 0;
+      a = (Math.imul(a, 31) + (h.durationSec | 0)) | 0;
+      for (const x of h.exercises) { const id = String(x.exId); for (let i = 0; i < id.length; i++) a = (Math.imul(a, 31) + id.charCodeAt(i)) | 0;
+        a = (Math.imul(a, 31) + (x.u === "s" ? 2 : 1)) | 0;
+        for (const t of x.sets) a = (Math.imul((Math.imul(a, 31) + (t.kg * 100 | 0)) | 0, 31) + (t.reps | 0)) | 0; } }
+    const key = `${H.length}|${goal}|${mon.getTime()}|${a}`;
+    if (msMemo && msMemo.key === key) return msMemo;
+    msRuns++;
+    const c = msCalc(H, goal), cur = weekStreak(mon, goal);
+    const series = MS.map(m => { const got = c.got[m.k]; return { m, val: m.k === "wk" ? cur : c.v[m.k], best: c.v.wk, got, next: got.length < m.steps.length ? m.steps[got.length] : null }; });
+    return msMemo = { key, goal, series, n: series.reduce((s, x) => s + x.got.length, 0) };
+  }
+  function msCard(s, goal) {
+    const m = s.m, pct = s.next ? Math.min(100, s.val / (s.next * m.sc) * 100) : 100;
+    // Stand 0: Ziel nennen statt eines Abstands („Noch 26 Wochen bis 26“ wäre richtig, aber sperrig)
+    const line = !s.next ? "Alle Stufen erreicht" : !s.val ? `${s.got.length ? "Nächste" : "Erste"} Stufe: ${m.lab(s.next)}` : `Noch ${m.rest(s.next * m.sc - s.val)} bis ${m.mark(s.next)}`;
+    const more = m.k === "wk" ? (state.plan?.days.length ? `Wochenziel: ${nTr(goal)} pro Woche (Zahl der Trainingstage in deinem Plan), gerechnet für alle Wochen im Verlauf.`
+        : "Wochenziel ohne Trainingstage im Plan: 1 Training pro Woche (Regel der App).")
+      : m.k === "ton" ? "Gewicht × Wiederholungen aller Sätze, bei „pro Seite“ beide Seiten." : "";
+    return `<div class="card" id="ms-${m.k}">
+      <div class="row between"><span class="cap">${m.t}</span><span class="small faint ms-cnt">${s.got.length} von ${m.steps.length} Stufen</span></div>
+      <div class="kpi wrap"><span class="num">${msNum(s.val, m.sc)}</span><span class="sub">${m.sub(s)}</span></div>
+      <div class="mtrack" role="img" aria-label="${s.next ? `${msNum(s.val, m.sc)} von ${m.mark(s.next)}` : "Alle Stufen erreicht"}"><div class="mfill" style="width:${pct.toFixed(1)}%;background:var(--accent)"></div></div>
+      <p class="small muted ms-next">${line}</p>
+      ${s.got.length ? `<div class="fchips ms-got" role="list" aria-label="Erreichte Stufen mit Datum">${s.got.map(g => `<span class="badge up" role="listitem">${m.mark(g.n)} · ${msDate(g.at)}</span>`).join("")}</div>` : ""}
+      ${more ? `<p class="small faint ms-more">${more}</p>` : ""}
+    </div>`;
+  }
+  EXT.nav.meilensteine = { back: "history" };
+  EXT.views.meilensteine = () => {
+    const d = msData();
+    $app.innerHTML = `<div class="page">
+      ${extHead("Meilensteine", state.history.length ? `${d.n} von ${MS_ALL} Stufen erreicht` : "Noch kein Training. Dein erstes bringt die erste Stufe.")}
+      <section class="section" id="msList">${d.series.map(s => msCard(s, d.goal)).join("")}
+        <p class="small foot">Stufen der App: feste Werte je Reihe. Stand und Datum kommen aus deinem Verlauf. Das Datum ist der Tag des Trainings, mit dem die Stufe erreicht wurde.</p></section>
+    </div>`;
+  };
+  EXT.rows.history.push(() => extRow("meilensteine", "trophy", "orange", "Meilensteine", `${msData().n} erreicht`));
+  EXT.summary.push(sm => { const neu = msNew(sm.rec); if (!neu.length) return "";
+    return `<section class="section" id="msNew"><h2>${neu.length === 1 ? "Neuer Meilenstein" : "Neue Meilensteine"}</h2><div class="group">${neu.map(x =>
+      `<div class="li">${ico("trophy", "orange")}<div class="grow"><div class="t">${x.m.lab(x.n)}</div><div class="s">${x.m.note}</div></div></div>`).join("")}</div></section>`; });
+  EXT.test.meilensteine = { MS, calc: msCalc, neu: msNew, data: msData, runs: () => msRuns };
+}
 // @ext:meilensteine:js:end
 // ── Abstand meilensteine/js 1 ──
 // ── Abstand meilensteine/js 2 ──
 // ── Abstand meilensteine/js 3 ──
 // @ext:masse:js:start
+// Körpermaße: Umfänge in cm eintragen und ihren Verlauf sehen (Fortschritt → Körpermaße).
+// Speicher: state.x.masse = { e: [{ d: "JJJJ-MM-TT", k: "taille", cm: 84.5 }] } – nach Datum sortiert, je Maß und Tag genau ein Eintrag.
+// Die App bewertet die Werte nicht (keine Farben für „gut“ oder „schlecht“, keine Richtwerte).
+SYM.massband = `<circle cx="9" cy="9.5" r="5.5"/><circle cx="9" cy="9.5" r="1.2"/><path d="M3.5 9.5V14A5.5 5.5 0 0 0 9 19.5h11.5V15H9M13 15v2M17 15v2"/>`;
+const MASSE = [["brust", "Brust"], ["taille", "Taille"], ["huefte", "Hüfte"], ["oberarm", "Oberarm"], ["oberschenkel", "Oberschenkel"], ["wade", "Wade"]];
+const MASSE_NAME = new Map(MASSE), MASSE_MIN = 10, MASSE_MAX = 250, MASSE_LIMIT = 2000;   // Grenzen: Regel der App
+const MASSE_ERR = `Bitte eine Zahl zwischen ${MASSE_MIN} und ${MASSE_MAX} eingeben.`;
+const masseDateOk = d => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) && dkey(dateOf(d)) === d;
+// Strenge Prüfung des gespeicherten Werts: nur bekannte Maße, echtes Datum, 10–250 cm auf eine Nachkommastelle;
+// je Maß und Tag ein Eintrag (der spätere ersetzt den früheren), höchstens 2000 Einträge (die neuesten bleiben)
+EXT.clean.masse = raw => {
+  const by = new Map();
+  for (const x of isObj(raw) && Array.isArray(raw.e) ? raw.e : []) {
+    if (!isObj(x) || !MASSE_NAME.has(x.k) || !masseDateOk(x.d) || typeof x.cm !== "number" || !(x.cm >= MASSE_MIN && x.cm <= MASSE_MAX)) continue;
+    by.set(x.d + "|" + x.k, { d: x.d, k: x.k, cm: Math.round(x.cm * 10) / 10 });
+  }
+  const ord = k => MASSE.findIndex(m => m[0] === k);
+  return { e: [...by.values()].sort((a, b) => a.d.localeCompare(b.d) || ord(a.k) - ord(b.k)).slice(-MASSE_LIMIT) };
+};
+// Eingabe lesen: „84,5“ oder „84.5“ → 84.5, kaufmännisch auf eine Nachkommastelle gerundet (an den Ziffern, nicht an der
+// Gleitkommazahl: „84,55“ wird 84,6). null, wenn es keine Zahl von 10 bis 250 ist
+function masseParse(raw) {
+  const m = /^(\d{1,3})(?:[.,](\d*))?$/.exec(String(raw ?? "").trim()); if (!m) return null;
+  const f = m[2] || "", v = +`${m[1]}.${f || 0}`;
+  if (v < MASSE_MIN || v > MASSE_MAX) return null;
+  return (+m[1] * 10 + +(f[0] || 0) + (+(f[1] || 0) >= 5 ? 1 : 0)) / 10;
+}
+const masseStore = () => { if (!isObj(state.x)) state.x = {}; const m = state.x.masse; return isObj(m) && Array.isArray(m.e) ? m : (state.x.masse = { e: [] }); };
+const masseOf = k => masseStore().e.filter(x => x.k === k);            // Einträge eines Maßes, älteste zuerst
+const masseCm = v => `${kgTxt(v)}\u00A0cm`;                              // geschütztes Leerzeichen: Zahl und Einheit bleiben in einer Zeile
+// „3. Oktober“; mit Jahr, wenn es nicht das laufende ist. Ohne Umbruch innerhalb des Datums
+const masseDay = d => dateOf(d).toLocaleDateString("de-DE", Object.assign({ day: "numeric", month: "long" }, +d.slice(0, 4) === new Date().getFullYear() ? {} : { year: "numeric" })).replace(/ /g, "\u00A0");
+// Veränderung vom ersten zum letzten Eintrag, z. B. „−2,5 cm seit 3. Oktober“; leer bei weniger als zwei Einträgen
+function masseChange(L) {
+  if (L.length < 2) return "";
+  const diff = Math.round((L[L.length - 1].cm - L[0].cm) * 10) / 10, since = `seit ${masseDay(L[0].d)}`;
+  return diff ? `${diff > 0 ? "+" : "−"}${masseCm(Math.abs(diff))} ${since}` : `Unverändert ${since}`;
+}
+// Punkte einer Verlaufslinie: waagerecht nach Datum, senkrecht nach Wert (yLo = Höhe des kleinsten, yHi = des größten Werts)
+const masseDayNo = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5;   // Tageszahl, unabhängig von Zeitzone und Sommerzeit
+function massePts(L, x0, x1, yLo, yHi, lo, hi) {
+  const t = L.map(p => masseDayNo(p.d)), span = t[t.length - 1] - t[0] || 1;
+  return L.map((p, i) => [x0 + (t[i] - t[0]) / span * (x1 - x0), yLo + (hi === lo ? .5 : (p.cm - lo) / (hi - lo)) * (yHi - yLo)].map(n => n.toFixed(1)));
+}
+// Kleine Verlaufslinie für die Liste (ein Eintrag: Punkt, keiner: nichts)
+function masseSpark(L) {
+  if (!L.length) return "";
+  const v = L.map(p => p.cm), pts = L.length < 2 ? [["26.0", "13.0"]] : massePts(L, 4, 48, 21, 5, Math.min(...v), Math.max(...v)), e = pts[pts.length - 1];
+  return `<svg class="masse-spark" viewBox="0 0 52 26" aria-hidden="true">${L.length < 2 ? "" : `<polyline points="${pts.map(q => q.join(",")).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`}<circle cx="${e[0]}" cy="${e[1]}" r="2.2" fill="var(--accent)"/></svg>`;
+}
+// Liniendiagramm im Sheet (ab zwei Einträgen): alle Einträge des Maßes, oben und unten der größte und kleinste Wert
+function masseChart(L, name) {
+  if (L.length < 2) return "";
+  const W = 320, H = 132, pl = 38, pr = 10, pt = 12, pb = 26, v = L.map(p => p.cm), a = L[0], z = L[L.length - 1];
+  let lo = Math.min(...v), hi = Math.max(...v); if (hi - lo < 1) { lo -= .5; hi += .5; }
+  const pts = massePts(L, pl, W - pr, H - pb, pt, lo, hi), e = pts[pts.length - 1], yr = new Date().getFullYear();
+  const dl = d => { const x = dateOf(d); return `${x.getDate()}.${x.getMonth() + 1}.${x.getFullYear() === yr ? "" : String(x.getFullYear()).slice(-2)}`; };
+  const ax = (y, val) => `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--hair)"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--text-3)">${kgTxt(Math.round(val * 10) / 10)}</text>`;
+  return `<svg class="masse-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Verlauf ${name}: ${masseCm(a.cm)} am ${masseDay(a.d)}, ${masseCm(z.cm)} am ${masseDay(z.d)}">
+    ${ax(pt, hi)}${ax(H - pb, lo)}
+    <polyline points="${pts.map(q => q.join(",")).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${L.length <= 24 ? pts.slice(0, -1).map(q => `<circle cx="${q[0]}" cy="${q[1]}" r="3" fill="var(--accent)"/>`).join("") : ""}
+    <circle cx="${e[0]}" cy="${e[1]}" r="4.5" fill="var(--accent)" stroke="var(--sheet-cell)" stroke-width="2"/>
+    <text x="${pl}" y="${H - 6}" font-size="11" fill="var(--text-3)">${dl(a.d)}</text><text x="${W - pr}" y="${H - 6}" text-anchor="end" font-size="11" fill="var(--text-3)">${dl(z.d)}</text></svg>`;
+}
+EXT.nav.masse = { back: "history" };
+EXT.views.masse = () => {
+  const n = masseStore().e.length, any = n > 0;
+  $app.innerHTML = `<div class="page">
+    ${extHead("Körpermaße", "Umfänge in cm eintragen und den Verlauf sehen.")}
+    ${any ? "" : `<div class="card empty" id="masseEmpty">${sym("massband")}<p class="small muted">Noch keine Maße eingetragen. Tippe ein Maß an und trag deinen ersten Wert ein.</p></div>`}
+    <section class="section">
+      <div class="group" id="masseList">${MASSE.map(([k, name]) => { const L = masseOf(k), last = L[L.length - 1], ch = masseChange(L);
+        return `<button class="li" data-a="masseOpen" data-k="${k}" id="masse-${k}"><div class="grow"><div class="row"><span class="t n grow">${name}</span>${masseSpark(L)}</div>
+          ${last ? `<div class="s"><span class="masse-v">${masseCm(last.cm)}</span> · ${masseDay(last.d)}</div>${ch ? `<div class="s masse-ch">${ch}</div>` : ""}` : any ? `<div class="s">Noch kein Eintrag</div>` : ""}</div>
+          <span class="chev">›</span></button>`; }).join("")}</div>
+      <p class="small foot">Immer an derselben Stelle und zur gleichen Tageszeit messen, dann sind die Werte vergleichbar. Bei Arm und Bein immer dieselbe Seite.${any ? " Die Veränderung zählt vom ersten bis zum letzten Eintrag." : ""}</p>
+      ${n >= MASSE_LIMIT - 100 ? `<p class="small foot" id="masseLimit">${fmtK(n)} von höchstens ${fmtK(MASSE_LIMIT)} Einträgen gespeichert (Regel der App). Ist die Grenze erreicht, fällt für jeden neuen Eintrag der älteste weg.</p>` : ""}
+    </section>
+  </div>`;
+};
+// Sheet eines Maßes: letzter Wert und Verlauf, Eingabe für heute, darunter alle Einträge (neueste zuerst) zum Löschen
+let masseCur = null, masseDelD = null, masseDraft = "", masseTop = 0;
+function masseSheet(draft = "") {
+  const k = masseCur, name = MASSE_NAME.get(k), L = masseOf(k), last = L[L.length - 1], today = L.find(x => x.d === dkey()), ch = masseChange(L);
+  return `${sheetHead(name, "", "closeSheet", true)}
+    ${last ? `<div class="card" id="masseCard"><div class="kpi"><span class="num" style="font-size:44px">${kgTxt(last.cm)}</span><span class="sub">cm · ${masseDay(last.d)}</span></div>
+      ${ch ? `<p class="small muted" id="masseDelta" style="margin:0">${ch}</p>` : ""}${masseChart(L, name)}</div>` : ""}
+    <div class="field"><label for="masseIn">Heute in cm</label><input id="masseIn" data-i="masseIn" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(draft)}"${today ? ` placeholder="Heute: ${masseCm(today.cm)}"` : last ? ` placeholder="Zuletzt: ${masseCm(last.cm)}"` : ""}></div>
+    <p class="error" id="masseErr" role="alert" hidden>${MASSE_ERR}</p>
+    ${today ? `<p class="small muted" id="masseToday" style="margin:0">Heute schon eingetragen: ${masseCm(today.cm)}. Ein neuer Wert ersetzt ihn.</p>` : ""}
+    <button class="btn primary block" data-a="masseSave">Speichern</button>
+    ${L.length ? `<section class="section"><h3>Einträge</h3><div class="group" id="masseEntries">${L.slice().reverse().map(x => `<div class="li" style="padding-right:var(--s2)"><div class="grow"><div class="t n">${masseDay(x.d)}</div></div><span class="val">${masseCm(x.cm)}</span>
+      <button class="icon-btn plain" data-a="masseDel" data-d="${x.d}" style="font-size:20px" aria-label="Eintrag vom ${masseDay(x.d)} löschen">×</button></div>`).join("")}</div></section>` : ""}`;
+}
+EXT.actions.masseOpen = el => { if (!MASSE_NAME.has(el.dataset.k)) return; masseCur = el.dataset.k; openSheet(masseSheet()); };
+EXT.inputs.masseIn = () => { const e = byId("masseErr"); if (e) e.hidden = true; };
+EXT.actions.masseSave = () => {
+  const inp = byId("masseIn"); if (!inp || !MASSE_NAME.has(masseCur)) return closeSheet();
+  const cm = masseParse(inp.value);
+  if (cm === null) { byId("masseErr").hidden = false; inp.focus(); return; }
+  const d = dkey();                                   // Datum am Ort des Nutzers, nicht UTC
+  state.x.masse = EXT.clean.masse({ e: masseStore().e.concat([{ d, k: masseCur, cm }]) });   // ersetzt den Eintrag von heute, hält Reihenfolge und Obergrenze
+  save(); closeSheet(); render();
+};
+EXT.actions.masseDel = el => {
+  const x = masseOf(masseCur).find(y => y.d === el.dataset.d); if (!x) return;
+  const sh = $sheet.querySelector(".sheet");
+  masseDelD = x.d; masseDraft = byId("masseIn") ? byId("masseIn").value : ""; masseTop = sh ? sh.scrollTop : 0;   // Eingabe und Stelle im Sheet merken
+  actionSheet("Eintrag löschen?", `${MASSE_NAME.get(masseCur)}: ${masseCm(x.cm)} vom ${masseDay(x.d)}.`, [{ l: "Löschen", a: "masseDelDo", danger: true }], "Abbrechen", "masseBack");
+};
+EXT.actions.masseBack = () => {
+  if (!MASSE_NAME.has(masseCur)) return closeSheet();
+  sheetTo(masseSheet(masseDraft));
+  // Erst wenn die App den Kopf des Sheets fertig gebaut hat („Speichern“ wandert nach oben), stimmt die Höhe: dann zurück an die alte Stelle
+  const top = masseTop; Promise.resolve().then(() => { const sh = $sheet.querySelector(".sheet:not(.as)"); if (sh && byId("masseIn")) sh.scrollTop = top; });
+};
+EXT.actions.masseDelDo = () => {
+  const st = masseStore(); st.e = st.e.filter(x => !(x.d === masseDelD && x.k === masseCur)); masseDelD = null;
+  save(); render(); EXT.actions.masseBack();
+};
+EXT.rows.history.push(() => { const n = new Set(masseStore().e.map(x => x.k)).size;
+  return extRow("masse", "massband", "teal", "Körpermaße", n ? `${n} ${n === 1 ? "Maß" : "Maße"}` : ""); });
+EXT.test.masse = { MASSE, LIMIT: MASSE_LIMIT, clean: EXT.clean.masse, parse: masseParse, change: masseChange, day: masseDay, pts: massePts };
 // @ext:masse:js:end
 // ── Abstand masse/js 1 ──
 // ── Abstand masse/js 2 ──
 // ── Abstand masse/js 3 ──
 // @ext:rueckblick:js:start
+// Rückblick (Fortschritt → „Monat und Jahr“): Zahlen eines Monats oder Jahres aus dem Verlauf. Nichts wird gespeichert.
+// Monat und Jahr gelten nach dem Datum am Ort des Nutzers. Vergleich immer mit dem Zeitraum davor – nur, wenn es dort Trainings gab.
+// Bestwert: schwerster gültiger Satz je Gerät und Gewichtsangabe im Zeitraum gegen alles davor; das erste Training an einem Gerät zählt nicht.
+{
+  const MON = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const MON_S = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+  const rb = { mode: "m", y: null, m: null };   // null = Zeitraum von heute
+  const rbRange = (mode, y, m) => mode === "y" ? [new Date(y, 0, 1), new Date(y + 1, 0, 1)] : [new Date(y, m, 1), new Date(y, m + 1, 1)];
+  const rbStep = (mode, y, m, dir) => mode === "y" ? [y + dir, 0] : [y + Math.floor((m + dir) / 12), (m + dir + 12) % 12];
+  const rbName = (mode, y, m) => mode === "y" ? String(y) : `${MON[m]} ${y}`;
+  const rbShort = (mode, y, m) => mode === "y" ? String(y) : MON[m];
+  const rbIdx = (mode, y, m) => mode === "y" ? y : y * 12 + m;
+  const rb1 = v => (Math.round(v * 10) / 10).toLocaleString("de-DE", { maximumFractionDigits: 1 });
+  const rbDur = sec => { const min = Math.round(sec / 60), h = Math.floor(min / 60); return h ? `${h} Std.${min % 60 ? ` ${min % 60} Min.` : ""}` : `${min} Min.`; };
+  const rbVol = kg => kg >= 1000 ? `${rb1(kg / 1000)} t` : `${fmtK(kg)} kg`;
+  // Kennzahlen eines Zeitraums. now begrenzt den laufenden Zeitraum für den Wochenschnitt (bis einschließlich heute).
+  function rbStats(hist, weights, mode, y, m, now = new Date()) {
+    const [a, b] = rbRange(mode, y, m), list = hist.filter(h => { const d = new Date(h.date); return d >= a && d < b; });
+    let sec = 0, vol = 0; const perEx = {}, wd = [0, 0, 0, 0, 0, 0, 0], mon = Array(12).fill(0), prevBest = {}, curBest = {};
+    list.forEach(h => { const d = new Date(h.date); sec += h.durationSec || 0; wd[(d.getDay() + 6) % 7]++; mon[d.getMonth()]++;
+      const seen = new Set();
+      (h.exercises || []).forEach(x => { (x.sets || []).forEach(t => { vol += setVol(x, t); });
+        if ((x.sets || []).some(validSet) && !seen.has(x.exId)) { seen.add(x.exId); perEx[x.exId] = (perEx[x.exId] || 0) + 1; } }); });
+    hist.forEach(h => { const d = new Date(h.date); if (d >= b) return; const tgt = d < a ? prevBest : curBest;
+      (h.exercises || []).forEach(x => { const k = x.exId + "|" + (x.u || unitOf(ex(x.exId))); (x.sets || []).forEach(t => { if (validSet(t) && t.kg > (tgt[k] || 0)) tgt[k] = t.kg; }); }); });
+    const recs = Object.keys(curBest).filter(k => prevBest[k] && curBest[k] > prevBest[k]).map(k => { const [exId, u] = k.split("|"); return { exId, u, from: prevBest[k], to: curBest[k] }; })
+      .sort((p, q) => q.to / q.from - p.to / p.from || ex(p.exId).name.localeCompare(ex(q.exId).name, "de"));
+    const top = Object.keys(perEx).map(id => ({ exId: id, n: perEx[id] })).sort((p, q) => q.n - p.n || ex(p.exId).name.localeCompare(ex(q.exId).name, "de")).slice(0, 5);
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1), end = b < tomorrow ? b : tomorrow;
+    const days = Math.max(1, Math.round((end - a) / 864e5)), perWeek = list.length / (days / 7);
+    const ka = dkey(a), kb = dkey(b), ws = (weights || []).filter(w => w && w.d >= ka && w.d < kb).sort((p, q) => p.d < q.d ? -1 : 1);
+    const weight = ws.length >= 2 ? { from: ws[0].kg, to: ws[ws.length - 1].kg, diff: Math.round((ws[ws.length - 1].kg - ws[0].kg) * 10) / 10 } : null;
+    return { n: list.length, sec, vol, perWeek: Math.round(perWeek * 10) / 10, days, wd, mon, recs, top, weight };
+  }
+  const rbCur = now => rb.y === null ? [now.getFullYear(), rb.mode === "y" ? 0 : now.getMonth()] : [rb.y, rb.mode === "y" ? 0 : rb.m];
+  // Grenzen: vom Zeitraum des ersten Trainings bis heute
+  function rbBounds(mode, now) { const first = state.history.reduce((mn, h) => { const d = new Date(h.date); return !mn || d < mn ? d : mn; }, null) || now;
+    return [rbIdx(mode, first.getFullYear(), first.getMonth()), rbIdx(mode, now.getFullYear(), now.getMonth())]; }
+  const rbSign = (v, txt) => v === 0 ? "gleich wie" : `${v > 0 ? "+" : "−"}${txt} gegenüber`;
+  const rbBars = (vals, labs, id, full = labs) => { const mx = Math.max(1, ...vals);
+    return `<div class="rb-bars" id="${id}" role="img" aria-label="${vals.map((v, i) => `${full[i]}: ${v}`).join(", ")}">${vals.map((v, i) => `<div><span>${v || ""}</span><i class="${v ? "" : "z"}" style="height:${v ? Math.max(4, Math.round(v / mx * 100)) : 2}%"></i><span>${labs[i]}</span></div>`).join("")}</div>`; };
+  EXT.nav.rueckblick = { back: "history" };
+  EXT.views.rueckblick = () => {
+    const now = new Date(), mode = rb.mode, [y, m] = rbCur(now), [lo, hi] = rbBounds(mode, now), idx = Math.min(hi, Math.max(lo, rbIdx(mode, y, m)));
+    const [cy, cm] = mode === "y" ? [idx, 0] : [Math.floor(idx / 12), idx % 12];
+    const s = rbStats(state.history, state.weights, mode, cy, cm, now), [py, pm] = rbStep(mode, cy, cm, -1), p = rbStats(state.history, state.weights, mode, py, pm, now), pn = rbShort(mode, py, pm);
+    const cmp = (v, txt) => p.n ? `<span class="small rb-d">${rbSign(v, txt)} ${pn}</span>` : "";
+    const dMin = Math.round(s.sec / 60) - Math.round(p.sec / 60), dVol = s.vol - p.vol, dW = Math.round((s.perWeek - p.perWeek) * 10) / 10;
+    $app.innerHTML = `<div class="page">
+      ${extHead("Rückblick", "Ein Monat oder ein Jahr in Zahlen.")}
+      <div class="seg" id="rbMode">${[["m", "Monat"], ["y", "Jahr"]].map(([k, l]) => `<button data-a="rbMode" data-v="${k}" class="${mode === k ? "on" : ""}" aria-pressed="${mode === k}">${l}</button>`).join("")}</div>
+      <div class="card rb-nav" id="rbNav"><button data-a="rbStep" data-v="-1" aria-label="Zeitraum davor"${idx <= lo ? " disabled" : ""}>‹</button><b id="rbTitle">${rbName(mode, cy, cm)}</b><button data-a="rbStep" data-v="1" aria-label="Zeitraum danach"${idx >= hi ? " disabled" : ""}>›</button></div>
+      ${!s.n ? `<div class="card" id="rbEmpty"><b>Kein Training in diesem Zeitraum</b><p class="small muted">${state.history.length ? "Mit den Pfeilen kommst du zu anderen Zeiträumen." : "Nach deinem ersten Training stehen hier die Zahlen."}</p></div>` : `
+      <div class="rb-grid" id="rbGrid">
+        <div class="card"><span class="cap">Trainings</span><span class="num" id="rbN">${s.n}</span>${cmp(s.n - p.n, String(Math.abs(s.n - p.n)))}</div>
+        <div class="card"><span class="cap">Trainingszeit</span><span class="num" id="rbSec">${rbDur(s.sec)}</span>${cmp(dMin, rbDur(Math.abs(dMin) * 60))}</div>
+        <div class="card"><span class="cap">Bewegtes Gewicht</span><span class="num" id="rbVol">${rbVol(s.vol)}</span>${cmp(Math.round(dVol), rbVol(Math.abs(dVol)))}</div>
+        <div class="card"><span class="cap">Pro Woche</span><span class="num" id="rbPw">${rb1(s.perWeek)}</span><span class="small rb-d">Trainings im Schnitt</span>${cmp(dW, rb1(Math.abs(dW)))}</div>
+      </div>
+      ${mode === "y" ? `<section class="section"><h2>Trainings je Monat</h2><div class="card">${rbBars(s.mon, MON_S, "rbMon", MON)}</div></section>` : ""}
+      <section class="section"><h2>Wochentage</h2><div class="card">${rbBars(s.wd, WD, "rbWd", WD_LONG)}</div></section>
+      ${s.recs.length ? `<section class="section"><div class="section-head"><h2>Neue Bestwerte</h2><span class="sub">${s.recs.length}</span></div><div class="group" id="rbRecs">${s.recs.map(r => `<div class="li">${thumbStrip([r.exId], 1)}<div class="grow"><div class="t">${esc(ex(r.exId).name)}</div><div class="small rb-ar">${kgTxt(r.from)} → <b>${kgTxt(r.to)} kg</b> ${UNIT_SHORT[r.u] || ""}</div></div></div>`).join("")}</div>
+        <p class="small foot">Schwerster Satz im Zeitraum gegenüber allem davor.</p></section>` : ""}
+      <section class="section"><h2>Am häufigsten</h2><div class="group" id="rbTop">${s.top.map(t => `<div class="li">${thumbStrip([t.exId], 1)}<div class="grow"><div class="t">${esc(ex(t.exId).name)}</div></div><span class="val">${nTr(t.n)}</span></div>`).join("")}</div></section>`}
+      ${s.weight ? `<section class="section"><h2>Körpergewicht</h2><div class="card" id="rbWeight"><div class="rb-ar">${kgTxt(s.weight.from)} → <b>${kgTxt(s.weight.to)} kg</b></div><div class="small muted">${s.weight.diff === 0 ? "unverändert" : `${s.weight.diff > 0 ? "+" : "−"}${kgTxt(Math.abs(s.weight.diff))} kg`} vom ersten zum letzten Eintrag im Zeitraum</div></div></section>` : ""}
+    </div>`;
+  };
+  const rbGo = (mode, y, m) => { rb.mode = mode; rb.y = y; rb.m = m; render(); };
+  EXT.actions.rbMode = el => { const now = new Date(), [y, m] = rbCur(now); rb.mode = el.dataset.v === "y" ? "y" : "m";
+    if (rb.mode === "m" && rb.y !== null) rb.m = y === now.getFullYear() ? now.getMonth() : 11;   // vom Jahr zurück: letzter Monat dieses Jahres
+    render(); const b = $app.querySelector(`#rbMode [data-v="${rb.mode}"]`); if (b) b.focus({ preventScroll: true }); };
+  EXT.actions.rbStep = el => { const now = new Date(), [y, m] = rbCur(now), [ny, nm] = rbStep(rb.mode, y, m, el.dataset.v === "1" ? 1 : -1), [lo, hi] = rbBounds(rb.mode, now), i = rbIdx(rb.mode, ny, nm);
+    if (i < lo || i > hi) return; const dir = el.dataset.v; rb.y = ny; rb.m = nm; render();
+    const b = $app.querySelector(`#rbNav [data-v="${dir}"]`); if (b && !b.disabled) b.focus({ preventScroll: true }); };
+  EXT.rows.history.push(() => extRow("rueckblick", "cal", "purple", "Monat und Jahr"));
+  Object.assign(EXT.test, { rbStats, rbGo, rbDur, rbVol });
+}
 // @ext:rueckblick:js:end
 // ── Abstand rueckblick/js 1 ──
 // ── Abstand rueckblick/js 2 ──
 // ── Abstand rueckblick/js 3 ──
 // @ext:werkzeuge:js:start
+// Rechner (Wissen → Artikel → „Nachschlagen“ → „Rechner“): Scheiben, geschätztes Höchstgewicht, Prozente. Nichts wird gespeichert.
+// Scheiben:       dieselbe Funktion wie im Training (platesOf) mit den Scheiben aus den Einstellungen – beide Stellen zeigen dasselbe.
+// Höchstgewicht:  dieselbe Schätzung wie unter Fortschritt → „Kraft & Bestwerte“ (e1rm), auf 0,5 kg gerundet. Schätzung der App.
+// Prozente:       vom Höchstgewicht, auf 2,5 kg gerundet. Die App sagt nicht, welcher Prozentwert „richtig“ ist.
+const wz = { kg: "", seite: "s", w: "", r: "", max: "" };
+const WZ_PCT = [90, 80, 70, 60, 50], WZ_MAXKG = 1000;
+const wzKg = v => { const n = num(v); return n !== null && n > 0 && n <= WZ_MAXKG ? Math.round(n * 100) / 100 : null; };
+// Scheiben je Seite; seite "t" = Gewicht insgesamt (auf zwei Seiten verteilt). done/total: was sich mit den vorhandenen Scheiben wirklich auflegen lässt
+function wzPlates(kg, seite, avail = state.plates || PLATE_SIZES) {
+  if (!(kg > 0)) return null;
+  const per = seite === "t" ? kg / 2 : kg, { plates, rest } = platesOf(per, avail), done = Math.round((per - rest) * 100) / 100;
+  return { per, plates, rest, done, total: seite === "t" ? done * 2 : done };
+}
+function wzMax(w, r) { return w > 0 && Number.isInteger(r) && r >= 1 && r <= 12 ? Math.round(e1rm({ kg: w, reps: r }) * 2) / 2 : null; }
+const wzPct = max => WZ_PCT.map(p => [p, Math.round(max * p / 100 / 2.5) * 2.5]);
+const wzEst = () => { const w = wzKg(wz.w), r = num(wz.r); return w === null || r === null ? null : wzMax(w, r); };
+function wzPlatesHtml() {
+  const kg = wzKg(wz.kg);
+  if (kg === null) return `<p class="small faint">${wz.kg.trim() ? "Bitte ein Gewicht zwischen 0 und 1.000 kg eingeben." : "Gewicht eingeben – die Scheiben erscheinen hier."}</p>`;
+  const p = wzPlates(kg, wz.seite);
+  const chips = p.plates.map(x => `<span class="pl" style="--p:${x}">${kgTxt(x)}</span>`).join("");
+  const head = `<p class="plates" id="wzChips"><span class="pl-l">Pro Seite</span>${chips || "<span>keine Scheibe</span>"}</p>`;
+  if (!p.rest) return head + `<p class="small muted">${p.plates.length} ${p.plates.length === 1 ? "Scheibe" : "Scheiben"} je Seite · ${kgTxt(p.per)} kg pro Seite</p>`;
+  return head + `<p class="small" id="wzRest">Geht mit deinen Scheiben nicht genau auf: ${kgTxt(p.rest)} kg pro Seite bleiben übrig. Nächstes Gewicht darunter: <b>${kgTxt(p.total)} kg ${wz.seite === "t" ? "insgesamt" : "pro Seite"}</b>.</p>`;
+}
+function wzMaxHtml() {
+  const e = wzEst();
+  if (e === null) { const any = wz.w.trim() || wz.r.trim(), r = num(wz.r);
+    return `<p class="small faint">${any && r !== null && !(Number.isInteger(r) && r >= 1 && r <= 12) ? "Wiederholungen: eine ganze Zahl von 1 bis 12." : "Gewicht und Wiederholungen eines Satzes eingeben."}</p>`; }
+  return `<div class="wz-big" id="wzMaxVal">≈ ${kgTxt(e)} kg</div><p class="small muted">geschätzt für eine einzelne Wiederholung</p>`;
+}
+function wzPctHtml() {
+  const own = wzKg(wz.max), est = wzEst(), max = own !== null ? own : est;
+  if (max === null) return `<p class="small faint">${wz.max.trim() ? "Bitte ein Gewicht zwischen 0 und 1.000 kg eingeben." : "Höchstgewicht eingeben oder oben schätzen lassen."}</p>`;
+  return `<p class="small muted" id="wzPctFrom">Von ${kgTxt(max)} kg (${own !== null ? "deine Eingabe" : "Schätzung oben"}), gerundet auf 2,5 kg</p>` +
+    wzPct(max).map(([p, kg]) => `<div class="wz-pct"><span>${p} %</span><span class="bar"><i style="width:${p}%"></i></span><b>${kgTxt(kg)} kg</b></div>`).join("");
+}
+function wzDraw() {
+  [["wzPlatesOut", wzPlatesHtml], ["wzMaxOut", wzMaxHtml], ["wzPctOut", wzPctHtml]].forEach(([id, f]) => { const el = byId(id); if (el) el.innerHTML = f(); });
+  const m = byId("wzMaxIn"), e = wzEst(); if (m) m.placeholder = e !== null ? kgTxt(e) : "z. B. 100";
+}
+EXT.nav.werkzeuge = { back: "wissen" };
+EXT.views.werkzeuge = () => {
+  const avail = (state.plates || PLATE_SIZES).slice().sort((a, b) => b - a);
+  $app.innerHTML = `<div class="page">
+    ${extHead("Rechner", "Scheiben, Höchstgewicht und Prozente.")}
+    <section class="section"><h2>Scheiben</h2>
+      <div class="card stack">
+        <div class="field"><label for="wzKgIn">Gewicht in kg</label><input id="wzKgIn" data-i="wzKg" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="z. B. 42,5" value="${esc(wz.kg)}"></div>
+        <div class="seg" id="wzSeite">${[["s", "Pro Seite"], ["t", "Insgesamt"]].map(([k, l]) => `<button data-a="wzSeite" data-v="${k}" class="${wz.seite === k ? "on" : ""}" aria-pressed="${wz.seite === k}">${l}</button>`).join("")}</div>
+        <div class="wz-out" id="wzPlatesOut" aria-live="polite"></div>
+      </div>
+      <p class="small foot" id="wzAvail">Scheiben in deinem Studio: ${avail.map(kgTxt).join(" · ")} kg. Änderbar unter Einstellungen.</p></section>
+    <section class="section"><h2>Höchstgewicht schätzen</h2>
+      <div class="card stack">
+        <div class="wz-two">
+          <div class="field"><label for="wzWIn">Gewicht in kg</label><input id="wzWIn" data-i="wzW" inputmode="decimal" enterkeyhint="done" autocomplete="off" placeholder="z. B. 100" value="${esc(wz.w)}"></div>
+          <div class="field"><label for="wzRIn">Wiederholungen</label><input id="wzRIn" data-i="wzR" inputmode="numeric" enterkeyhint="done" autocomplete="off" placeholder="1–12" value="${esc(wz.r)}"></div>
+        </div>
+        <div class="wz-out" id="wzMaxOut" aria-live="polite"></div>
+      </div>
+      <p class="small foot">Schätzung der App: Gewicht × (1 + Wiederholungen ÷ 30), bei einer Wiederholung das Gewicht selbst. So rechnet auch „Kraft & Bestwerte“. Vergleichbar nur am selben Gerät.</p></section>
+    <section class="section"><h2>Prozente</h2>
+      <div class="card stack">
+        <div class="field"><label for="wzMaxIn">Höchstgewicht in kg</label><input id="wzMaxIn" data-i="wzMax" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${esc(wz.max)}"></div>
+        <div id="wzPctOut" aria-live="polite"></div>
+      </div></section>
+  </div>`;
+  wzDraw();
+};
+EXT.inputs.wzKg = el => { wz.kg = el.value; wzDraw(); };
+EXT.inputs.wzW = el => { wz.w = el.value; wzDraw(); };
+EXT.inputs.wzR = el => { wz.r = el.value; wzDraw(); };
+EXT.inputs.wzMax = el => { wz.max = el.value; wzDraw(); };
+EXT.actions.wzSeite = el => { wz.seite = el.dataset.v === "t" ? "t" : "s";
+  byId("wzSeite").querySelectorAll("button").forEach(b => { const on = b.dataset.v === wz.seite; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
+  wzDraw(); };
+EXT.rows.lib.push(() => extRow("werkzeuge", "plate", "gray", "Rechner"));
+Object.assign(EXT.test, { wzPlates, wzMax, wzPct, wz, e1rm });
 // @ext:werkzeuge:js:end
 // ── Abstand werkzeuge/js 1 ──
 // ── Abstand werkzeuge/js 2 ──
 // ── Abstand werkzeuge/js 3 ──
 // @ext:glossar:js:start
+// Begriffe: kleines Lexikon der Trainingswörter (Wissen → Artikel → „Nachschlagen“ → „Begriffe“). Kein gespeicherter Zustand.
+// Je Eintrag: [Schlüssel, Begriff, Erklärung, „In der App: …“ (nur, wo die App den Begriff selbst benutzt), Verweise „Siehe auch“ (höchstens drei)].
+// Die Erklärungen sagen nur, was ein Wort bedeutet – keine Aussagen über Wirkungen. Was unter „In der App“ steht, tut die App wirklich:
+// Die Tests prüfen die dort genannten Zahlen gegen die Regeln der App und jede Bezeichnung in „…“ gegen die Texte der App.
+const GLOSSAR = [
+  ["satz", "Satz", "Mehrere Wiederholungen einer Übung direkt hintereinander. Danach kommt eine Pause.",
+    "Im Plan legst du je Gerät die Zahl der Sätze fest. Im Training schließt du jeden mit „Satz fertig“ ab.", ["wdh", "arbeitssatz", "satzpause"]],
+  ["wdh", "Wiederholung", "Eine einzelne vollständige Ausführung einer Übung: einmal hin und einmal zurück. Abgekürzt „Wdh.“.",
+    "Zu jedem Satz werden Gewicht und Wiederholungen gespeichert.", ["satz", "wdhbereich", "rom"]],
+  ["arbeitssatz", "Arbeitssatz", "Ein Satz mit dem eigentlichen Trainingsgewicht – im Unterschied zum leichteren Aufwärmsatz.",
+    "Die Sätze in deinem Plan sind Arbeitssätze. Aufwärmsätze trägst du nicht ein.", ["aufwaermsatz", "satz"]],
+  ["aufwaermsatz", "Aufwärmsatz", "Ein Satz mit deutlich leichterem Gewicht vor den Arbeitssätzen, als Vorbereitung auf die Bewegung.",
+    "Vor dem ersten Satz eines Trainings schlägt die App leichtere Sätze vor: etwa 50 % des Gewichts × 10, dann 75 % × 5 (Startwerte der App).", ["arbeitssatz"]],
+  ["satzpause", "Satzpause", "Die Erholungszeit zwischen zwei Sätzen.",
+    "Die Pause wählst du je Gerät: 45 Sekunden bis 3 Minuten. Im Training zählt die App sie nach dem Satz herunter.", ["satz", "supersatz"]],
+  ["wdhbereich", "Wiederholungsbereich", "Die Spanne, in der die Wiederholungen eines Satzes liegen sollen. 8–12 heißt: mindestens 8, höchstens 12.",
+    "Jedes Gerät im Plan hat „Wiederholungen ab“ und „bis“. Startwerte der App je Ziel: Muskelaufbau 8–12, Kraft 4–6 (Grundübungen), Fitness & Straffung 12–15.", ["wdh", "doppelt"]],
+  ["volumen", "Trainingsvolumen", "Die Menge an Trainingsarbeit. Gezählt wird sie unterschiedlich: als Zahl der Sätze oder als Gewicht × Wiederholungen.",
+    "Unter „Fortschritt“ zeigt „Trainingsvolumen“ je Woche Gewicht × Wiederholungen aller Sätze; bei „pro Seite“ zählen beide Seiten. „Muskelbelastung“ zählt die Sätze je Muskel.", ["satz", "haeufigkeit", "proseite"]],
+  ["haeufigkeit", "Trainingshäufigkeit", "Wie oft pro Woche trainiert wird – insgesamt oder bezogen auf einen einzelnen Muskel. Auch „Frequenz“ genannt.",
+    "Unter „Fortschritt“ zeigt „Häufigkeit“ deine Trainings pro Woche im Schnitt der letzten 4 Wochen.", ["volumen", "split"]],
+  ["progression", "Steigerung (Progression)", "Die Anforderung im Training wird nach und nach erhöht – zum Beispiel mit mehr Gewicht, mehr Wiederholungen oder mehr Sätzen.",
+    "Für jedes Gerät gibt es einen Vorschlag für Gewicht und Wiederholungen, berechnet aus deinem letzten Training daran. Die Regeln stehen unter Wissen → Artikel → „So entscheidet die App“.", ["doppelt", "schritt", "plateau"]],
+  ["doppelt", "Doppelte Progression", "Eine Steigerungsregel in zwei Stufen: erst beim gleichen Gewicht mehr Wiederholungen, bis das obere Ende des Bereichs erreicht ist. Dann mehr Gewicht, und es geht am unteren Ende weiter.",
+    "Schaffst du in allen Sätzen das obere Ende, schlägt die App beim nächsten Mal einen Gewichtsschritt mehr vor (Regel der App). Ausnahmen stehen unter „So entscheidet die App“.", ["progression", "wdhbereich", "schritt"]],
+  ["schritt", "Gewichtsschritt", "Der kleinste Sprung, um den sich das Gewicht an einem Gerät ändern lässt – zum Beispiel die kleinste Scheibe oder eine Platte am Gewichtsblock.",
+    "Je Gerät einstellbar: 1,25, 2,5, 5 oder 10 kg. Um diesen Schritt ändert die App ihre Vorschläge.", ["doppelt", "steck"]],
+  ["versagen", "Muskelversagen", "Der Punkt in einem Satz, an dem trotz voller Anstrengung keine weitere saubere Wiederholung mehr gelingt.",
+    "Bei „Reserve angeben“ entspricht das der 0.", ["rir"]],
+  ["rir", "Wiederholungen in Reserve", "Eine eigene Schätzung nach dem Satz: Wie viele saubere Wiederholungen wären noch möglich gewesen? 0 heißt: keine. Englisch abgekürzt „RIR“.",
+    "In der Pause kannst du mit „Reserve angeben“ 0 bis 4+ wählen. Das ist freiwillig; die App berücksichtigt es bei ihren Vorschlägen.", ["versagen", "progression"]],
+  ["supersatz", "Supersatz", "Zwei Übungen im Wechsel: ein Satz der ersten, sofort danach ein Satz der zweiten – erst dann die Pause.",
+    "Im Trainingstag ein Gerät antippen und „Supersatz mit …“ einschalten. Verbunden wird es mit dem Gerät direkt darunter.", ["satzpause", "antagonist"]],
+  ["uebung", "Übung", "Eine festgelegte Bewegung für bestimmte Muskeln, zum Beispiel Brustpresse oder Beinstrecker.",
+    "Jedes Gerät in einem Trainingstag zählt als eine Übung. Im Training steht über dem Gerät, die wievielte es ist – zum Beispiel Übung 2 von 5.", ["satz", "mehrgelenk", "eingelenk"]],
+  ["split", "Split", "Die Aufteilung des Trainings auf mehrere Tage mit verschiedenen Schwerpunkten – zum Beispiel ein Tag für den Oberkörper, einer für den Unterkörper.",
+    "Lässt du dir einen Plan vorschlagen, hängt die Aufteilung von der Zahl der Tage ab: 2 Tage Ganzkörper, 3 Tage Drücken/Ziehen/Beine, 4 Tage Ober- und Unterkörper.", ["ganzkoerper", "ppl", "okuk"]],
+  ["ganzkoerper", "Ganzkörpertraining", "Ein Training, das in einer Einheit alle großen Muskelgruppen des Körpers anspricht.",
+    "Der Planvorschlag für 2 Tage pro Woche besteht aus zwei Ganzkörper-Tagen, A und B.", ["split"]],
+  ["okuk", "Ober-/Unterkörper-Split", "Eine Aufteilung in zwei Arten von Trainingstagen: Oberkörper mit Brust, Rücken, Schultern und Armen – und Unterkörper mit Beinen und Po.",
+    "Der Planvorschlag für 4 Tage pro Woche: je zwei Oberkörper- und zwei Unterkörper-Tage.", ["split", "ppl"]],
+  ["ppl", "Drücken/Ziehen/Beine", "Eine Aufteilung in drei Trainingstage: drückende Übungen für Brust, Schultern und Trizeps, ziehende Übungen für Rücken und Bizeps, dazu ein Tag für die Beine. Englisch „Push/Pull/Legs“.",
+    "Der Planvorschlag für 3 Tage pro Woche.", ["split", "okuk"]],
+  ["mehrgelenk", "Mehrgelenksübung", "Eine Übung, bei der sich mehrere Gelenke gleichzeitig bewegen – zum Beispiel Schulter und Ellbogen an der Brustpresse.",
+    "Solche Übungen heißen hier „Grundübung“.", ["eingelenk", "uebung"]],
+  ["eingelenk", "Eingelenksübung", "Eine Übung, bei der sich nur ein Gelenk bewegt – zum Beispiel das Knie am Beinstrecker. Auch „Isolationsübung“ genannt.",
+    "Beim Ziel „Kraft“ starten diese Übungen mit 8–12 statt 4–6 Wiederholungen (Startwert der App).", ["mehrgelenk", "uebung"]],
+  ["konz", "Konzentrisch", "Die Phase einer Wiederholung, in der der arbeitende Muskel kürzer wird und das Gewicht überwindet – zum Beispiel das Wegdrücken an der Brustpresse.",
+    "", ["exz", "isom"]],
+  ["exz", "Exzentrisch", "Die Phase einer Wiederholung, in der der Muskel unter Spannung länger wird und das Gewicht abbremst – zum Beispiel das Zurückführen an der Brustpresse.",
+    "", ["konz", "isom", "tempo"]],
+  ["isom", "Isometrisch", "Der Muskel spannt an, ohne dass sich seine Länge ändert: Das Gelenk bewegt sich nicht – zum Beispiel, wenn du ein Gewicht in einer Position hältst.",
+    "", ["konz", "exz"]],
+  ["rom", "Bewegungsumfang", "Der Weg, den ein Gelenk bei einer Wiederholung zurücklegt – von der Ausgangsposition bis zur Endposition. Englisch „Range of Motion“, kurz „ROM“.",
+    "", ["wdh", "tempo"]],
+  ["tempo", "Tempo", "Die Geschwindigkeit, mit der eine Wiederholung ausgeführt wird. Oft in Sekunden je Phase angegeben, zum Beispiel 1 Sekunde hin und 2 Sekunden zurück.",
+    "Die geschätzte Trainingsdauer rechnet mit 3,5 Sekunden je Wiederholung (Schätzung der App).", ["konz", "exz"]],
+  ["einseitig", "Einseitig (unilateral)", "Eine Übung wird nur mit einem Arm oder einem Bein ausgeführt. Die andere Seite pausiert in dieser Zeit.",
+    "", ["beidseitig", "isolateral"]],
+  ["beidseitig", "Beidseitig (bilateral)", "Eine Übung wird mit beiden Armen oder beiden Beinen gleichzeitig ausgeführt.",
+    "", ["einseitig", "isolateral"]],
+  ["agonist", "Agonist", "Der Muskel, der eine Bewegung hauptsächlich ausführt – zum Beispiel der Bizeps, wenn du den Ellbogen beugst.",
+    "Bei jedem Gerät steht er als „Hauptmuskel“.", ["antagonist"]],
+  ["antagonist", "Antagonist", "Der Gegenspieler: der Muskel für die entgegengesetzte Bewegung. Beugt der Bizeps den Ellbogen, ist der Trizeps sein Antagonist, denn er streckt ihn.",
+    "Hier heißt er „Gegenspieler“. Auf der Seite eines Geräts schlägt „Gut kombinieren“ Partner für einen Supersatz vor.", ["agonist", "supersatz"]],
+  ["hypertrophie", "Hypertrophie", "Das Fachwort für Muskelwachstum: Die Muskelfasern werden dicker, der Muskel gewinnt an Querschnitt.",
+    "Das passende Ziel heißt hier „Muskelaufbau“.", ["maxkraft"]],
+  ["maxkraft", "Maximalkraft", "Die größte Kraft, die du bei einer einzelnen Anstrengung willentlich aufbringen kannst. Im Studio wird sie oft als Höchstgewicht für eine Wiederholung angegeben.",
+    "Beim Ziel „Kraft“ starten Grundübungen mit 4–6 Wiederholungen (Startwert der App).", ["rm1", "hypertrophie"]],
+  ["rm1", "Höchstgewicht für eine Wiederholung (1RM)", "Das schwerste Gewicht, das du bei einer Übung genau einmal sauber bewegen kannst. Englisch „One-Repetition Maximum“, kurz „1RM“.",
+    "Fortschritt → „Kraft & Bestwerte“ → Gerät antippen: „1RM geschätzt“ ist Gewicht × (1 + Wiederholungen ÷ 30), gerechnet mit höchstens 12 Wiederholungen. Eine grobe Näherung.", ["maxkraft"]],
+  ["deload", "Entlastungswoche (Deload)", "Eine geplante Woche mit bewusst weniger Training – zum Beispiel weniger Sätze oder leichtere Gewichte. Danach geht es normal weiter. Englisch „Deload“.",
+    "", ["plateau"]],
+  ["plateau", "Plateau", "Ein Stillstand: Über mehrere Wochen kommen an einer Übung weder mehr Gewicht noch mehr Wiederholungen dazu.",
+    "Hier heißt das „Stillstand“. Gemeldet wird er nach mindestens 4 vollständigen Einheiten über mindestens 3 Wochen ohne Fortschritt (Regel der App).", ["progression", "deload"]],
+  ["kater", "Muskelkater", "Muskelschmerz, der nicht beim Training selbst, sondern verzögert danach auftritt – typisch nach ungewohnter oder besonders harter Belastung.",
+    "", []],
+  ["scheiben", "Scheibengerät (plate-loaded)", "Ein Gerät, das du selbst mit Gewichtsscheiben belädst – statt einen Stift in einen Gewichtsblock zu stecken. Englisch „plate-loaded“.",
+    "Gerätetyp „Scheiben“. Im Training zeigt die App, welche Scheiben du je Seite auflegst.", ["steck", "proseite", "isolateral"]],
+  ["steck", "Steckgewicht-Gerät", "Ein Gerät mit eingebautem Gewichtsblock. Das Gewicht wählst du mit einem Stift, den du in die gewünschte Platte steckst.",
+    "Gerätetyp „Steckgewicht“. Du trägst das Gewicht am Gewichtsblock ein.", ["scheiben", "schritt"]],
+  ["isolateral", "Getrennte Arme (iso-lateral)", "Jede Seite des Geräts bewegt sich für sich an einem eigenen Hebelarm. Du kannst beide Seiten zusammen, einzeln oder im Wechsel bewegen. Am Gerät steht oft „Iso-Lateral“.",
+    "Hier heißt das „Getrennte Seiten“. Bei diesen Geräten ist die Gewichtsangabe „pro Seite“ voreingestellt.", ["einseitig", "proseite", "scheiben"]],
+  ["proseite", "Pro Seite und insgesamt", "Zwei Arten, das Gewicht an einem Scheibengerät anzugeben: „pro Seite“ meint die Scheiben auf einer Seite des Geräts, „insgesamt“ alle aufgelegten Scheiben zusammen.",
+    "Die Angabe stellst du je Gerät ein. Beim Volumen zählt die App bei „pro Seite“ beide Seiten, also das Doppelte.", ["scheiben", "isolateral", "volumen"]],
+  ["obergriff", "Obergriff", "Griff von oben: Die Handrücken zeigen nach oben oder zu dir, die Handflächen nach unten oder von dir weg. Auch „Ristgriff“ genannt.",
+    "Beispiel: „Latzug breit“ mit breitem Obergriff an der langen Stange.", ["untergriff", "neutralgriff"]],
+  ["untergriff", "Untergriff", "Griff von unten: Die Handflächen zeigen nach oben oder zu dir, die Handrücken nach unten oder von dir weg. Auch „Kammgriff“ genannt.",
+    "Beispiele: „Rudern Untergriff“ und „Latzug Untergriff“.", ["obergriff", "neutralgriff"]],
+  ["neutralgriff", "Neutralgriff", "Die Handflächen zeigen zueinander, wie beim Händeschütteln. Auch „Parallelgriff“ oder „Hammergriff“ genannt.",
+    "Hier heißt er „Parallelgriff“, zum Beispiel bei „Latzug eng“.", ["obergriff", "untergriff"]],
+  ["kcal", "Kalorie (kcal)", "Eine Einheit für Energie. Bei Lebensmitteln ist fast immer die Kilokalorie gemeint, kurz „kcal“. 1 kcal entspricht etwa 4,2 Kilojoule (kJ).",
+    "Alle Energiewerte sind in kcal angegeben.", ["bilanz", "makros"]],
+  ["bilanz", "Kalorienbilanz", "Der Unterschied zwischen der Energie, die du mit Essen und Trinken aufnimmst, und der Energie, die dein Körper verbraucht. Mehr aufgenommen heißt Überschuss, weniger heißt Defizit.",
+    "Im Tagesplan: Gegessenes minus Verbrauch. Der Verbrauch ist eine Schätzung der App.", ["kcal", "gesamtumsatz"]],
+  ["makros", "Makronährstoffe", "Die drei Hauptnährstoffe, die dem Körper Energie liefern: Eiweiß, Kohlenhydrate und Fett. Kurz „Makros“.",
+    "Unter „Essen“ zählt die App neben den Kalorien auch Eiweiß, Kohlenhydrate und Fett zusammen.", ["eiweiss", "kh", "fett"]],
+  ["eiweiss", "Eiweiß", "Ein Makronährstoff, auch „Protein“ genannt. Eiweiße sind aus Aminosäuren aufgebaut. Viel Eiweiß steckt zum Beispiel in Fleisch, Fisch, Eiern, Milchprodukten und Hülsenfrüchten.",
+    "Startwert der App für dein Tagesziel: 1,6 g je kg Körpergewicht. Gerechnet wird mit 4 kcal je Gramm.", ["makros", "kh", "fett"]],
+  ["kh", "Kohlenhydrate", "Ein Makronährstoff: vor allem Zucker und Stärke, zum Beispiel in Brot, Nudeln, Reis, Kartoffeln und Obst.",
+    "Dein Ziel ist, was vom Kalorienziel nach Eiweiß und Fett übrig bleibt (Regel der App). Gerechnet wird mit 4 kcal je Gramm.", ["makros", "eiweiss", "fett"]],
+  ["fett", "Fett", "Ein Makronährstoff, zum Beispiel in Öl, Butter, Nüssen und Käse.",
+    "Dein Ziel ist ein Bereich von 20–35 % deiner Kalorien. Gerechnet wird mit 9 kcal je Gramm.", ["makros", "eiweiss", "kh"]],
+  ["grundumsatz", "Grundumsatz", "Die Energie, die dein Körper an einem Tag in völliger Ruhe verbraucht – etwa für Atmung, Herzschlag und Körperwärme.",
+    "Geschätzt mit einer Formel aus Gewicht, Größe, Alter und Geschlecht. Das ist keine Messung.", ["gesamtumsatz", "kcal"]],
+  ["gesamtumsatz", "Gesamtumsatz", "Die Energie, die dein Körper an einem ganzen Tag verbraucht: der Grundumsatz plus alles, was durch Bewegung, Arbeit und Verdauung dazukommt.",
+    "Hier heißt er „Erhaltungsbedarf“. Geschätzt wird er als Grundumsatz × Aktivitätsfaktor.", ["grundumsatz", "bilanz"]]
+].map(([k, t, d, a, s]) => ({ k, t, d, a, s }));
+const GL_BY = Object.fromEntries(GLOSSAR.map(x => [x.k, x]));
+// Suche ohne Groß-/Kleinschreibung und tolerant bei Umlauten: „ubung“ und „uebung“ finden „Übung“, „eiweiss“ findet „Eiweiß“
+const glNorm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
+const glNorm2 = s => glNorm(s).replace(/([aou])e/g, "$1");
+const GL_HAY = new Map(GLOSSAR.map(x => { const txt = `${x.t} ${x.d} ${x.a}`; return [x.k, [glNorm(txt), glNorm2(txt)]]; }));
+// Alle Wörter der Eingabe müssen im Begriff, in der Erklärung oder im Satz „In der App“ vorkommen
+function glossarFind(q) {
+  const words = glNorm(q).split(/\s+/).filter(Boolean);
+  return words.length ? GLOSSAR.filter(x => { const [h, h2] = GL_HAY.get(x.k); return words.every(w => h.includes(w) || (/[aou]e/.test(w) && h2.includes(glNorm2(w)))); }) : GLOSSAR;
+}
+// Deutsche Sortierung; Gruppen nach Anfangsbuchstaben, Umlaute unter dem Grundbuchstaben (Ü bei U)
+function glGroups(list) {
+  const out = [];
+  list.slice().sort((a, b) => a.t.localeCompare(b.t, "de")).forEach(x => { const c = glNorm(x.t).charAt(0).toUpperCase(), l = /[A-Z]/.test(c) ? c : "#", g = out[out.length - 1];
+    if (g && g[0] === l) g[1].push(x); else out.push([l, [x]]); });
+  return out;
+}
+// Stand der Seite: Suchtext und von Hand aufgeklappte Begriffe. Bleibt beim Neuzeichnen und beim Tab-Wechsel erhalten;
+// das Öffnen über die Zeile „Begriffe“ beginnt frisch.
+let glQuery = "";
+const glOpen = new Set();
+const glItem = (x, open) => `<details class="gdet" id="gl-${x.k}" data-k="${x.k}"${open ? " open" : ""}><summary data-a="glossarToggle">${esc(x.t)}</summary><div class="gdet-in">
+    <p class="small muted">${esc(x.d)}</p>
+    ${x.a ? `<p class="small muted gl-app"><b>In der App:</b> ${esc(x.a)}</p>` : ""}
+    ${x.s.length ? `<div class="gl-see" role="group" aria-label="Siehe auch"><div class="cap" aria-hidden="true">Siehe auch</div><div class="gl-links">${x.s.map(k => `<button class="link small" data-a="glossarGo" data-k="${k}">${esc(GL_BY[k].t)}</button>`).join("")}</div></div>` : ""}</div></details>`;
+// Liste zu den Treffern; bleibt genau ein Treffer, ist er aufgeklappt
+function glossarList(hits) {
+  if (!hits.length) return `<div class="card empty" id="glEmpty">${sym("book")}<p class="small muted">Kein Begriff zu „${esc(glQuery.trim())}“ gefunden. Prüf die Schreibweise oder such nach einem anderen Wort.</p>
+    <button class="btn sm" data-a="glossarClear">Suche löschen</button></div>`;
+  return glGroups(hits).map(([l, a]) => `<section class="section"><h2 class="cap">${l}</h2><div class="gdets">${a.map(x => glItem(x, hits.length === 1 || glOpen.has(x.k))).join("")}</div></section>`).join("");
+}
+// Nur Liste und Trefferzahl neu zeichnen: Das Suchfeld bleibt stehen, Fokus und Cursor bleiben erhalten.
+// Die Trefferzahl steht unter dem Feld und wird vorgelesen; ohne Treffer sagt es die Karte, die Zeile ist dann nur zum Vorlesen da.
+function glossarDraw() {
+  const L = byId("glList"), st = byId("glStatus"); if (!L) return;
+  const hits = glossarFind(glQuery), n = hits.length, on = !!glQuery.trim();
+  L.innerHTML = glossarList(hits);
+  if (st) { st.textContent = !on ? "" : n ? `${n} Treffer` : "Kein Treffer"; st.hidden = !on; st.classList.toggle("sr-only", !n); }
+}
+EXT.nav.glossar = { back: "wissen" };
+EXT.views.glossar = () => {
+  $app.innerHTML = `<div class="page">
+    ${extHead("Begriffe", `${GLOSSAR.length} Wörter aus Training und Ernährung, kurz erklärt.`)}
+    <section class="section" style="gap:var(--s5)">
+      <div class="stack-sm"><input id="glQ" data-i="glossarQ" type="search" placeholder="Begriff suchen, z. B. Satz" value="${esc(glQuery)}" aria-label="Begriffe durchsuchen" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+        <p class="small foot" id="glStatus" role="status" hidden></p></div>
+      <div id="glList" class="gl-list"></div>
+    </section>
+  </div>`;
+  glossarDraw();
+};
+EXT.inputs.glossarQ = el => { glQuery = el.value; glossarDraw(); };
+// Antippen eines Begriffs: Der Browser klappt auf oder zu; hier wird nur der neue Stand gemerkt (el = summary, vor dem Umschalten)
+EXT.actions.glossarToggle = el => { const d = el.parentElement, k = d.dataset.k; if (d.open) glOpen.delete(k); else glOpen.add(k); };
+EXT.actions.glossarClear = () => { glQuery = ""; const q = byId("glQ"); if (q) { q.value = ""; q.focus(); } glossarDraw(); };
+// „Siehe auch“: zum Begriff springen und ihn aufklappen; ist er wegen der Suche gerade nicht in der Liste, wird die Suche geleert
+EXT.actions.glossarGo = el => {
+  const k = el.dataset.k; if (!GL_BY[k]) return;
+  glOpen.add(k);
+  if (!byId("gl-" + k)) { glQuery = ""; const q = byId("glQ"); if (q) q.value = ""; glossarDraw(); }
+  const d = byId("gl-" + k); if (!d) return;
+  d.open = true;
+  const top = d.getBoundingClientRect().top + window.scrollY - ($nav.hidden ? 0 : $nav.getBoundingClientRect().bottom) - 12;
+  window.scrollTo({ top: Math.max(0, top), behavior: animOK() ? "smooth" : "auto" });
+  d.querySelector("summary").focus({ preventScroll: true });
+};
+// Öffnen über die Zeile unter „Nachschlagen“: leere Suche, alles zugeklappt (läuft vor der Aktion der Zeile)
+document.addEventListener("click", ev => { if (ev.target.closest && ev.target.closest("#row-glossar")) { glQuery = ""; glOpen.clear(); } }, true);
+// „Suchen“ auf der Tastatur: Tastatur schließen, die Treffer stehen schon da
+document.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.id === "glQ") ev.target.blur(); });
+EXT.rows.lib.push(() => extRow("glossar", "book", "indigo", "Begriffe", String(GLOSSAR.length)));
+Object.assign(EXT.test, { GLOSSAR, glossarFind: q => glossarFind(q).map(x => x.k), glossarGroups: names => glGroups(names.map(t => ({ t }))).map(([l, a]) => [l, a.map(x => x.t)]) });
 // @ext:glossar:js:end
 // ── Abstand glossar/js 1 ──
 // ── Abstand glossar/js 2 ──
 // ── Abstand glossar/js 3 ──
 // @ext:muskeln:js:start
+// Muskeln (Wissen → Artikel → „Nachschlagen“): Übersicht aller Muskelgruppen und je Muskel eine Detailseite. Alles wird aus Plan, Verlauf
+// und Geräteliste berechnet – mit den Funktionen der App: Sätze pro Woche und Richtwert wie die Planprüfung (planCheck, muscleSets),
+// Erholung aus recovery(). Nur Anzeige: kein gespeicherter Zustand, keine neuen Aussagen über Muskeln oder Wirkungen.
+let mkSel = "brust";
+const mkF = v => String(Math.round(v * 2) / 2).replace(".", ",");   // auf halbe Sätze, wie in der Planprüfung
+const mkN = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const mkSetsTxt = v => `${mkF(v)} ${Math.round(v * 2) === 2 ? "Satz" : "Sätze"}`;
+// Sätze pro Woche je Muskel und Richtwert: dieselbe Rechnung wie die Balken der Planprüfung (#planBars). null = kein Plan oder Plan ohne Übungen
+function mkPlan() {
+  const p = state.plan; if (!p || !p.days.some(d => d.items.length)) return null;
+  const c = planCheck();
+  return { tmin: c.tmin, tmax: c.tmax, per: c.per, ms: muscleSets(p, c.per), scale: c.tmax * 1.3, goal: (GOALS[p.goal] || GOALS.aufbau).label };
+}
+// Zählregel in den Worten der Planprüfung
+const mkRule = () => `Hauptmuskel voll, mittrainierte halb gezählt, ${state.sched ? `${mkN(state.sched.days.length, "Termin", "Termine")} pro Woche` : "jeder Tag einmal pro Woche"}`;
+// Balken gegen den Richtwert: Maßstab, heller Bereich und Farben wie in der Planprüfung
+const mkBar = (P, v) => `<div class="mtrack"><div class="mband" style="left:${P.tmin / P.scale * 100}%;width:${(P.tmax - P.tmin) / P.scale * 100}%"></div><div class="mfill" style="width:${Math.min(100, v / P.scale * 100)}%;background:${v >= P.tmin && v <= P.tmax ? "var(--ok)" : v > P.tmax ? "var(--warn)" : "var(--accent)"}"></div></div>`;
+// Farbe in der Figur: je mehr Sätze pro Woche, desto kräftiger (Deckkraft 25–100 %); volle Farbe ab der oberen Grenze des Richtwerts.
+// Ohne Sätze bleibt der Muskel grau. figure() setzt den Wert als „fill:…“ ein, die Deckkraft hängt daran
+const mkOpacity = (v, tmax) => v > 0 ? Math.round(25 + 75 * Math.min(1, v / tmax)) / 100 : 0;
+const mkShade = (v, tmax) => v > 0 ? `var(--mhot);fill-opacity:${mkOpacity(v, tmax)}` : "";
+// Im Plan: je Trainingstag die Übungen für diesen Muskel. n = gezählte Sätze (Hauptmuskel voll, mittrainiert halb – wie muscleSets)
+function mkDays(m) {
+  return (state.plan ? state.plan.days : []).map(d => {
+    const rows = d.items.map(it => { const e = ex(it.exId), main = e.muscle === m; return main || e.sec.includes(m) ? { it, e, main, n: main ? it.sets : it.sets / 2 } : null; }).filter(Boolean);
+    return { d, rows, n: rows.reduce((a, r) => a + r.n, 0) }; }).filter(x => x.rows.length);
+}
+// Zuletzt trainiert: das jüngste Training im Verlauf mit mindestens einem Satz an einem Gerät für diesen Muskel (Haupt- oder mittrainierter Muskel).
+// Gelöschte eigene Geräte zählen nicht mit – ihr Muskel ist nicht mehr bekannt
+function mkLast(m) {
+  const known = new Set(allEx().map(e => e.id)); let best = null;
+  state.history.forEach(h => { const xs = h.exercises.filter(x => known.has(x.exId) && x.sets.length && (ex(x.exId).muscle === m || ex(x.exId).sec.includes(m)));
+    if (xs.length && (!best || new Date(h.date) >= new Date(best.h.date))) best = { h, xs }; });
+  return best && { h: best.h, names: [...new Set(best.xs.map(x => ex(x.exId).name))], main: best.xs.some(x => ex(x.exId).muscle === m) };
+}
+// Geräte in der App: erst die, die den Muskel hauptsächlich trainieren, dann die, die ihn unterstützend trainieren; Geräte im Studio zuerst
+function mkDevs(m) {
+  const all = allEx(), st = a => a.sort((x, y) => (x.off ? 1 : 0) - (y.off ? 1 : 0));
+  return { main: st(all.filter(e => e.muscle === m)), sup: st(all.filter(e => e.muscle !== m && e.sec.includes(m))) };
+}
+// Abstand in Kalendertagen am Ort, in den Worten von fmtWhenDay. Gerundet statt abgeschnitten: Ein Tag mit Zeitumstellung hat 23 oder 25 Stunden
+const mkAgo = (iso, now = new Date()) => { const a = new Date(now), b = new Date(iso); a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0);
+  const d = Math.round((a - b) / 864e5); return d <= 0 ? "heute" : d === 1 ? "gestern" : `vor ${d} Tagen`; };
+// Datum wie fmtDay; mit Jahr, wenn es nicht das laufende ist
+const mkDate = iso => { const d = new Date(iso); return d.toLocaleDateString("de-DE", { day: "numeric", month: "long", ...(d.getFullYear() === new Date().getFullYear() ? {} : { year: "numeric" }) }); };
+// Gerätezeile: öffnet die Geräteseite der App (openEx); „Zurück“ führt von dort wieder zur Muskel-Seite
+const mkDevRow = (e, sub) => `<button class="li" data-a="openEx" data-id="${esc(e.id)}" data-ret="muskel">${motSpec(e.id) ? `<div class="thumbbox" aria-hidden="true">${motionSvg(e.id, { cls: "thumb" })}</div>` : `<div class="thumbbox mk-noth" aria-hidden="true">${sym("dumbbell")}</div>`}
+  <div class="grow"><div class="t">${esc(e.name)}</div><div class="s">${sub}</div></div><span class="chev">›</span></button>`;
+// Die Geräteseite kennt als Rückweg nur feste Ansichten der App. Für den Rückweg „muskel“ wird ihre Zurück-Aktion hier ergänzt;
+// alle anderen Rückwege laufen unverändert durch die ursprüngliche Aktion
+{ const core = A.exBack; A.exBack = (el, ev) => exBack === "muskel" ? go("muskel") : core(el, ev); }
+
+EXT.nav.muskeln = { back: "wissen" };
+EXT.views.muskeln = () => {
+  const P = mkPlan(), all = allEx(), colors = {};
+  if (P) for (const m in MUSCLES) colors[m] = mkShade(P.ms[m], P.tmax);
+  const label = P ? `Sätze pro Woche im Plan: ${Object.keys(MUSCLES).map(m => `${MUSCLES[m]} ${mkF(P.ms[m])}`).join(", ")}` : "Muskelgruppen von vorn und von hinten";
+  const row = m => { const v = P ? P.ms[m] : 0, n = all.filter(e => e.muscle === m).length;
+    return `<button class="li mk-row" data-a="muskelOpen" data-m="${m}" id="mk-${m}"><div class="grow"><div class="t">${MUSCLES[m]}</div>${P ? mkBar(P, v) : ""}
+      <div class="s">${P && !(v > 0) ? "Kommt im Plan nicht vor · " : ""}${mkN(n, "Gerät", "Geräte")}</div></div>
+      ${P ? `<span class="val">${mkF(v)}${sr(" Sätze pro Woche")}</span>` : ""}<span class="chev">›</span></button>`; };
+  $app.innerHTML = `<div class="page">
+    ${extHead("Muskeln", "Dein Plan, dein Verlauf und die Geräte je Muskel.")}
+    <section class="section" id="mkTop"><div class="card"><div class="mk-fig">${figure(colors, label)}</div>
+      ${P ? `<div class="legend" id="mkLegend" style="justify-content:center"><span><i style="background:var(--muscle)"></i>Nicht im Plan</span><span><i class="mk-grad"></i>Kräftiger = mehr Sätze</span></div>`
+        : `<p class="small muted" id="mkEmpty" style="text-align:center">${state.plan ? "Dein Plan hat noch keine Übungen." : "Du hast noch keinen Plan."} Mit Übungen im Plan zeigt die Figur die Sätze pro Woche je Muskel.</p>`}</div>
+      ${P ? `<p class="small foot" id="mkTopFoot">Farbe: Sätze pro Woche im Plan. Volle Farbe ab ${P.tmax} Sätzen.</p>` : ""}</section>
+    <section class="section" id="mkList"><h2>${P ? "Sätze pro Woche im Plan" : "Muskelgruppen"}</h2>
+      <div class="group">${Object.keys(MUSCLES).map(row).join("")}</div>
+      <p class="small foot" id="mkListFoot">${P ? `Sätze pro Woche: ${mkRule()}. Heller Bereich: Richtwert der App für ${P.goal}, ${P.tmin}–${P.tmax} Sätze. ` : ""}Geräte: alle in der App mit diesem Hauptmuskel.</p></section>
+  </div>`;
+};
+EXT.nav.muskel = { back: "muskeln" };
+EXT.views.muskel = () => {
+  const m = MUSCLES[mkSel] ? mkSel : "brust", name = MUSCLES[m], P = mkPlan(), v = P ? P.ms[m] : 0, days = mkDays(m), last = mkLast(m), devs = mkDevs(m);
+  const inPlan = new Set((state.plan ? state.plan.days : []).flatMap(d => d.items.map(i => i.exId))), sum = days.reduce((a, x) => a + x.n, 0);
+  const planHtml = !days.length ? `<p class="card muted" id="mkNone">${state.plan ? "Kommt im Plan nicht vor." : "Du hast noch keinen Plan."}</p>` : `
+    <div class="card" id="mkStat"><div class="mk-two">
+        <div class="stat"><div class="cap">Sätze pro Woche</div><div class="num" id="mkSets">${mkF(v)}</div><div class="small faint">Richtwert ${P.tmin}–${P.tmax}</div></div>
+        <div class="stat"><div class="cap">Trainingstage</div><div class="num" id="mkDayN">${days.length}</div><div class="small faint">von ${state.plan.days.length}</div></div></div>
+      ${mkBar(P, v)}<p class="small faint" id="mkBand">Heller Bereich: Richtwert der App für ${P.goal}.</p></div>
+    ${days.map(x => `<div class="mk-sub mk-day" data-day="${esc(x.d.id)}"><div class="cap">${esc(x.d.name)} · ${mkSetsTxt(x.n)}</div>
+      <div class="group">${x.rows.map(r => mkDevRow(r.e, `${mkN(r.it.sets, "Satz", "Sätze")} · ${r.main ? "Hauptmuskel" : "mittrainiert, zählt halb"}`)).join("")}</div></div>`).join("")}
+    <p class="small foot" id="mkRule">Sätze pro Woche: ${mkRule()}.${P.per !== 1 ? ` Die Tage zusammen ergeben ${mkSetsTxt(sum)}. Bei ${mkN(state.sched.days.length, "Termin", "Terminen")} pro Woche und ${mkN(state.plan.days.length, "Trainingstag", "Trainingstagen")} sind das ${Math.abs(v * 2 - Math.round(v * 2)) > 1e-9 ? "rund " : ""}${mkF(v)} pro Woche.` : ""}</p>`;
+  const rec = last ? recovery()[m] : null, recWord = { "var(--ok)": "Erholt", "var(--warn)": "Teilweise", "var(--bad)": "Belastet" };
+  const lastHtml = !last ? `<p class="card muted" id="mkNever">Im Verlauf steht noch kein Training für ${name}.</p>` : `
+    <div class="group" id="mkLastBox">
+      <div class="li"><div class="grow"><div class="t" id="mkLastT">${mkDate(last.h.date)} · ${mkAgo(last.h.date)}</div><div class="s" id="mkLastS">Training „${esc(last.h.day)}“ · ${esc(joinDe(last.names))}${last.main ? "" : " · mittrainiert"}</div></div></div>
+      <button class="li mk-row" data-a="showRec" id="mkRec"><div class="grow"><div class="t n">Erholung</div><div class="mtrack"><div class="mfill" style="width:${Math.round(rec)}%;background:${recColor(rec)}"></div></div>
+        <div class="s">${recWord[recColor(rec)]} · Schätzung der App</div></div><span class="val">${Math.round(rec)} %</span><span class="chev">›</span></button></div>
+    <p class="small foot">Schätzung der App: Hauptmuskel 72 Stunden, mittrainierter Muskel 48 Stunden.</p>`;
+  const devList = (id, cap, L) => L.length ? `<div class="mk-sub" id="${id}"><div class="cap">${cap} · ${L.length}</div>
+    <div class="group">${L.map(e => mkDevRow(e, `${inPlan.has(e.id) ? "Im Plan · " : ""}${esc(aboutOf(e))}${e.off ? " · nicht im Studio" : ""}`)).join("")}</div></div>` : "";
+  $app.innerHTML = `<div class="page">
+    ${extHead(name)}
+    <div class="card" id="mkOne"><div class="mk-fig">${figure({ [m]: "var(--mhot)" }, `${name} an der Figur hervorgehoben`)}</div></div>
+    <section class="section" id="mkInPlan"><h2>Im Plan</h2>${planHtml}</section>
+    <section class="section" id="mkLast"><h2>Zuletzt trainiert</h2>${lastHtml}</section>
+    <section class="section" id="mkDevs"><h2>Geräte in der App</h2>${devList("mkMain", "Hauptsächlich", devs.main)}${devList("mkSup", "Unterstützend", devs.sup)}
+      ${devs.main.length + devs.sup.length ? "" : `<p class="card muted">Kein Gerät in der App für ${name}.</p>`}</section>
+  </div>`;
+};
+EXT.actions.muskelOpen = el => { if (MUSCLES[el.dataset.m]) { mkSel = el.dataset.m; go("muskel"); } };
+EXT.rows.lib.push(() => extRow("muskeln", "target", "red", "Muskeln"));
+Object.assign(EXT.test, { mkPlan, mkDays, mkLast, mkDevs, mkOpacity, mkAgo, mkRecovery: recovery });
 // @ext:muskeln:js:end
 // ── Abstand muskeln/js 1 ──
 // ── Abstand muskeln/js 2 ──
 // ── Abstand muskeln/js 3 ──
 // @ext:plaene:js:start
+// Meine Pläne (Plan → „Rund um den Plan“): mehrere Trainingspläne aufbewahren, zwischen ihnen wechseln, als Text teilen.
+// Speicher: state.x.plaene = { list: [{ id, name, saved: "JJJJ-MM-TT", plan }] }, neueste zuerst, höchstens 12 (Regel der App).
+// Jeder Plan läuft durch cleanPlan() – dieselbe Prüfung wie für state.plan. Verlauf, Gewichte und Notizen gehören nicht zum Plan.
+const PLN_MAX = 12, PLN_NAME = 40, PLN_CODE_MAX = 60000, PLN_ID = /^[A-Za-z0-9_-]{1,24}$/;
+const plnChars = s => [...s];                        // nach Zeichen zählen und kürzen, damit kein Emoji zerschnitten wird
+const plnTrim = s => plnChars(String(s).replace(/\s+/g, " ").trim()).slice(0, PLN_NAME).join("").trim();
+const plnDateOk = s => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s) && dkey(dateOf(s)) === s;
+const plnDay = s => dateOf(s).toLocaleDateString("de-DE", Object.assign({ day: "numeric", month: "long" }, s.slice(0, 4) === dkey().slice(0, 4) ? {} : { year: "numeric" }));
+// Kopie eines Plans in fester Form. Der Hinweis „Nicht ersetzt“ (gaps) gehört zum Erstellen, nicht zum Plan – er wird nicht mit aufbewahrt
+const plnCopy = p => { const c = cleanPlan(p); if (c) { c.gaps = []; if (!Object.keys(GOALS).includes(c.goal)) c.goal = "aufbau"; } return c; };
+EXT.clean.plaene = raw => {
+  const list = [], ids = new Set();
+  for (const e of isObj(raw) && Array.isArray(raw.list) ? raw.list : []) {
+    if (list.length >= PLN_MAX) break;
+    if (!isObj(e) || typeof e.name !== "string" || !plnDateOk(e.saved)) continue;
+    const name = e.name.trim(), plan = plnCopy(e.plan);
+    if (!plan || !name || plnChars(name).length > PLN_NAME) continue;
+    let id = typeof e.id === "string" && PLN_ID.test(e.id) ? e.id : uid(); while (ids.has(id)) id = uid(); ids.add(id);
+    list.push({ id, name, saved: e.saved, plan });
+  }
+  return { list };
+};
+const plnStore = () => { const s = state.x.plaene; return isObj(s) && Array.isArray(s.list) ? s : (state.x.plaene = { list: [] }); };
+// Zwei Pläne sind gleich, wenn Ziel, Tage, Geräte, Sätze, Wiederholungen und Pausen übereinstimmen
+const plnKey = p => JSON.stringify(plnCopy(p));
+// Kennzahlen: Trainingstage, verschiedene Geräte (ein Gerät an zwei Tagen zählt einmal), Sätze aller Tage zusammen
+function plnStats(p) { const ids = new Set(); let sets = 0; p.days.forEach(d => d.items.forEach(i => { ids.add(i.exId); sets += i.sets; })); return { days: p.days.length, ids: [...ids], sets }; }
+// Geräte, die es in dieser App nicht (mehr) gibt, fallen weg – ein Plan zeigt nie „Unbekanntes Gerät“
+function plnFit(p) {
+  const known = new Set(LIB.concat(state.custom).map(e => e.id)), c = plnCopy(p), gone = new Set();
+  c.days.forEach(d => { d.items = ssFix(d.items.filter(i => known.has(i.exId) || !gone.add(i.exId))); });
+  return { plan: c, dropped: gone.size };
+}
+// Kurzzeile eines gesicherten Plans – gezählt wird, was beim Laden ankommt
+const plnLine = p => { const s = plnStats(plnFit(p).plan); return `${s.days} ${s.days === 1 ? "Tag" : "Tage"} · ${nGer(s.ids.length)}`; };
+// Name, den es in der Liste noch nicht gibt („Plan vom 19. November“, „… 2“); der Zusatz bleibt auch bei langen Namen erhalten
+function plnFree(base, suffix = "") {
+  const L = plnStore().list; base = plnTrim(base) || "Plan";
+  for (let k = 1; ; k++) { const suf = suffix + (k > 1 ? ` ${k}` : ""), s = plnChars(base).slice(0, PLN_NAME - suf.length).join("").trim() + suf;
+    if (!L.some(e => e.name === s)) return s; }
+}
+function plnAdd(name, plan, at = 0) { const L = plnStore().list; if (L.length >= PLN_MAX || !plan) return null;
+  const e = { id: uid(), name, saved: dkey(), plan }; L.splice(at, 0, e); save(); return e; }
+// Plan als Text: „TP1:“ + Base64 von JSON (UTF-8). Enthält nur den Plan (so, wie er hier geladen würde), keine Trainings
+const plnB64 = s => { const b = new TextEncoder().encode(s); let bin = ""; for (let i = 0; i < b.length; i += 8192) bin += String.fromCharCode.apply(null, b.subarray(i, i + 8192)); return btoa(bin); };
+const plnUnB64 = s => { const bin = atob(s), b = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return new TextDecoder("utf-8", { fatal: true }).decode(b); };
+function plnCode(e) { const p = plnFit(e.plan).plan;
+  return "TP1:" + plnB64(JSON.stringify({ app: "trainingsplan", typ: "plan", v: 1, name: e.name, plan: { goal: p.goal, level: p.level, minutes: p.minutes, days: p.days } })); }
+// Fremder Text: Kennungen nur aus einfachen Zeichen und ohne Doppelte, sonst neu vergeben; Supersätze zeigen weiter auf das folgende Gerät
+function plnReId(plan) {
+  const seen = new Set(), fix = id => { let n = PLN_ID.test(id) ? id : uid(); while (seen.has(n)) n = uid(); seen.add(n); return n; };
+  plan.days.forEach(d => { d.id = fix(d.id); d.items.forEach(i => { i.id = fix(i.id); });
+    d.items.forEach((i, k) => { if (!i.ss) return; if (d.items[k + 1]) i.ss = d.items[k + 1].id; else delete i.ss; }); });
+  return plan;
+}
+// Streng prüfen: Länge, Anfang „TP1:“, Base64, JSON, Plan-Prüfung der App, nur Geräte, die es hier gibt. Ändert nichts am Zustand
+function plnParse(raw) {
+  const bad = err => ({ ok: false, err });
+  if (typeof raw !== "string" || !raw.trim()) return bad("Füge den Text ein. Er beginnt mit TP1:");
+  if (raw.length > PLN_CODE_MAX) return bad(`Der Text ist zu lang (mehr als ${fmtK(PLN_CODE_MAX)} Zeichen).`);
+  const txt = raw.replace(/\s+/g, "");
+  if (!txt.startsWith("TP1:")) return bad("Das ist kein Plan-Text. Ein Plan-Text beginnt mit TP1:");
+  const b = txt.slice(4); let data;
+  if (!b || b.length % 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b)) return bad("Der Text ist unvollständig oder beschädigt. Kopiere ihn noch einmal ganz.");
+  try { data = JSON.parse(plnUnB64(b)); } catch (e) { return bad("Der Text ist unvollständig oder beschädigt. Kopiere ihn noch einmal ganz."); }
+  if (isObj(data) && (Array.isArray(data.history) || isObj(data.data))) return bad("Das ist eine Sicherung der ganzen App, kein einzelner Plan. Sie gehört unter Einstellungen → „Sicherung wiederherstellen“.");
+  if (!isObj(data) || data.app !== "trainingsplan" || data.typ !== "plan" || data.v !== 1 || !isObj(data.plan) || !Array.isArray(data.plan.days)) return bad("Der Text enthält keinen Plan.");
+  const fit = plnFit(data.plan);
+  if (!fit.plan.days.length) return bad("Der Text enthält keinen Trainingstag.");
+  return { ok: true, name: plnTrim(typeof data.name === "string" ? data.name : "") || "Eingefügter Plan", plan: plnReId(fit.plan), dropped: fit.dropped };
+}
+// Laden: Der Plan wird ersetzt. Was auf Trainingstage des alten Plans zeigt, wird gelöst wie bei einem neuen Plan:
+// „Anderes Training wählen“, die Zeitanpassung, im Tagesplan gewählte Trainingstage und das „Rückgängig“ einer Planänderung
+function plnLoad(e) {
+  const fit = plnFit(e.plan), ids = new Set(fit.plan.days.map(d => d.id));
+  state.plan = fit.plan; state.selDay = null; state.timeplan = null; state.prevPlan = null; state.editDay = null;
+  for (const [k, o] of Object.entries(state.dayPlan)) if (o.train && o.train !== "rest" && !ids.has(o.train)) { delete o.train; if (!Object.keys(o).length) delete state.dayPlan[k]; }
+  save();
+}
+let plnCur = null, plnNote = "";
+const plnGet = () => plnStore().list.find(e => e.id === plnCur) || null;
+const plnIsNow = e => !!state.plan && plnKey(e.plan) === plnKey(state.plan);
+const plnBusy = () => actionSheet("Training läuft", "Erst das laufende Training beenden.", [], "OK");
+const plnFullTxt = `Alle ${PLN_MAX} Plätze sind belegt. Lösche zuerst einen Plan.`;
+const plnAuto = () => plnFree(`Plan vom ${fmtDay(new Date())}`);
+const plnNameField = v => `<div class="field"><label for="plnNameIn">Name</label><input id="plnNameIn" data-i="plnIn" maxlength="${PLN_NAME}" value="${esc(v)}" autocomplete="off" enterkeyhint="done"></div>
+  <p class="error" id="plnErr" hidden></p>`;
+// Nach einer Änderung: Fenster zu, Seite neu, Meldung oben sichtbar
+const plnDone = note => { closeSheet(); plnNote = note || ""; render(); window.scrollTo(0, 0); };
+const plnErr = msg => { const er = byId("plnErr"); if (er) { er.textContent = msg; er.hidden = false; } return null; };
+function plnReadName() { const el = byId("plnNameIn"), v = el.value.replace(/\s+/g, " ").trim();
+  if (!v) { el.focus(); return plnErr("Bitte einen Namen eingeben."); }
+  if (plnChars(v).length > PLN_NAME) { el.focus(); return plnErr(`Der Name darf höchstens ${PLN_NAME} Zeichen haben.`); }
+  return v; }
+EXT.nav.plaene = { back: "plan" };
+EXT.views.plaene = () => {
+  const p = state.plan, L = plnStore().list, st = p ? plnStats(p) : null, key = p ? plnKey(p) : null, now = L.filter(e => plnKey(e.plan) === key), same = now[0], full = L.length >= PLN_MAX;
+  const note = plnNote; plnNote = "";
+  const stat = (cap, n) => `<div class="stat"><div class="cap">${cap}</div><div class="num">${n}</div></div>`;
+  $app.innerHTML = `<div class="page">
+    ${extHead("Meine Pläne", "Pläne aufbewahren und zwischen ihnen wechseln.")}
+    ${note ? `<p class="note small" id="plnNote" role="status" style="margin:0">${esc(note)}</p>` : ""}
+    <section class="section" id="plnNow"><div class="section-head"><h2>Aktueller Plan</h2></div>
+      ${p ? `<div class="card">
+        <div class="grid3">${stat("Tage", st.days)}${stat("Geräte", st.ids.length)}${stat("Sätze", st.sets)}</div>
+        ${st.ids.length ? thumbStrip(st.ids, 5) + sr(st.ids.map(id => esc(ex(id).name)).join(" · ")) : ""}
+        <div class="small muted" id="plnState">${!st.days ? "Dein Plan hat noch keinen Trainingstag." : same ? `Gesichert als „${esc(same.name)}“.` : full ? plnFullTxt : "Noch nicht gesichert."}</div>
+        <button class="btn primary block" data-a="plnSaveOpen" id="plnSave" ${!st.days || full ? "disabled" : ""}>Aktuellen Plan sichern</button>
+      </div>` : `<div class="card empty" id="plnNoPlan">${sym("list")}<p class="small muted">Du hast gerade keinen Plan. Lade einen gesicherten Plan oder baue unter „Plan“ einen neuen.</p></div>`}
+    </section>
+    <section class="section" id="plnSaved"><div class="section-head"><h2>Gesicherte Pläne</h2>${L.length ? `<span class="small faint" id="plnCount">${L.length} von ${PLN_MAX}</span>` : ""}</div>
+      ${L.length ? `<div class="group" id="plnList">${L.map(e => `<button class="li" data-a="plnOpen" data-id="${esc(e.id)}"><div class="grow"><div class="t">${esc(e.name)}</div>
+        <div class="s">${plnLine(e.plan)}</div><div class="s">Gesichert am ${plnDay(e.saved)}</div></div>${now.includes(e) ? `<span class="badge">Aktuell</span>` : ""}<span class="chev">›</span></button>`).join("")}</div>`
+        : `<div class="card empty" id="plnEmpty">${sym("list")}<p class="small muted">Noch kein Plan gesichert. Sichere deinen Plan, bevor du etwas Neues ausprobierst – dann kannst du später zurückwechseln.</p></div>`}
+      <div class="group"><button class="li act" data-a="plnPasteOpen" id="plnPaste">Plan aus Text einfügen</button></div>
+      <p class="small foot">Höchstens ${PLN_MAX} Pläne (Regel der App). Verlauf, Gewichte und Notizen gehören nicht zum Plan – sie bleiben beim Wechseln erhalten.${state.session ? " Solange ein Training läuft, lässt sich kein Plan laden." : ""}</p>
+    </section>
+  </div>`;
+};
+EXT.inputs.plnIn = () => { const er = byId("plnErr"); if (er) er.hidden = true; };
+EXT.actions.plnSaveOpen = () => { if (!state.plan) return;
+  openSheet(`${sheetHead("Plan sichern", "", "closeSheet", true)}
+    ${plnNameField(plnAuto())}
+    <p class="small muted" style="margin:0">Gesichert wird eine Kopie: Tage, Geräte, Sätze, Wiederholungen und Pausen. Dein aktueller Plan bleibt, wie er ist.</p>
+    <button class="btn primary block" data-a="plnSaveDo">Speichern</button>`); };
+EXT.actions.plnSaveDo = () => { if (!state.plan) return closeSheet(); const name = plnReadName(); if (name === null) return;
+  if (!plnAdd(name, plnCopy(state.plan))) return plnErr(plnFullTxt);
+  plnDone(`„${name}“ gesichert.`); };
+EXT.actions.plnOpen = el => { plnCur = el.dataset.id; const e = plnGet(); if (!e) return;
+  actionSheet(esc(e.name), `${plnLine(e.plan)} · gesichert am ${plnDay(e.saved)}`, [{ l: "Laden", a: "plnLoadAsk" }, { l: "Umbenennen", a: "plnRenameOpen" },
+    { l: "Duplizieren", a: "plnDup" }, { l: "Als Text teilen", a: "plnShareOpen" }, { l: "Löschen", a: "plnDelAsk", danger: true }]); };
+// Rückfrage vor dem Laden: sagt, was ersetzt wird, und bietet an, den aktuellen Plan vorher zu sichern (wenn er nicht schon unverändert in der Liste steht)
+EXT.actions.plnLoadAsk = () => { const e = plnGet(); if (!e) return closeSheet(); if (state.session) return plnBusy();
+  const cur = state.plan, L = plnStore().list, key = cur ? plnKey(cur) : null, same = L.find(x => plnKey(x.plan) === key), n = plnFit(e.plan).dropped, title = `„${esc(e.name)}“ laden?`;
+  const lost = n ? ` ${n === 1 ? "Ein Gerät dieses Plans gibt es in der App nicht mehr – es fällt" : `${n} Geräte dieses Plans gibt es in der App nicht mehr – sie fallen`} beim Laden weg.` : "";
+  const keep = " Verlauf, Gewichte und Notizen bleiben erhalten.";
+  if (cur && plnKey(e.plan) === key) return actionSheet(esc(e.name), "Das ist schon dein aktueller Plan.", [], "OK");
+  if (!cur) return actionSheet(title, `Er wird dein aktueller Plan.${keep}${lost}`, [{ l: "Laden", a: "plnLoadDo", bold: true }]);
+  if (same) return actionSheet(title, `Dein aktueller Plan wird ersetzt. Er ist als „${esc(same.name)}“ gesichert.${keep}${lost}`, [{ l: "Laden", a: "plnLoadDo", bold: true }]);
+  if (L.length >= PLN_MAX) return actionSheet(title, `Dein aktueller Plan wird ersetzt. Er ist nicht gesichert und geht dabei verloren – alle ${PLN_MAX} Plätze sind belegt.${keep}${lost}`, [{ l: "Trotzdem laden", a: "plnLoadDo", danger: true }]);
+  actionSheet(title, `Dein aktueller Plan wird ersetzt. Er ist noch nicht gesichert.${keep}${lost}`, [{ l: "Vorher sichern und laden", a: "plnLoadKeep", bold: true }, { l: "Ohne Sichern laden", a: "plnLoadDo", danger: true }]); };
+EXT.actions.plnLoadDo = () => { const e = plnGet(); if (!e) return closeSheet(); if (state.session) return plnBusy();
+  plnLoad(e); closeSheet(); planNote = `Plan „${e.name}“ geladen.`; planUndo = null; go("plan"); };
+EXT.actions.plnLoadKeep = () => { const e = plnGet(); if (!e || !state.plan) return closeSheet(); if (state.session) return plnBusy();
+  const old = plnAdd(plnAuto(), plnCopy(state.plan)); if (!old) return actionSheet("Kein Platz mehr", plnFullTxt, [], "OK");
+  plnLoad(e); closeSheet(); planNote = `Plan „${e.name}“ geladen. Der vorige Plan ist als „${old.name}“ gesichert.`; planUndo = null; go("plan"); };
+EXT.actions.plnRenameOpen = () => { const e = plnGet(); if (!e) return closeSheet();
+  openSheet(`${sheetHead("Neuer Name", "", "closeSheet", true)}${plnNameField(e.name)}<button class="btn primary block" data-a="plnRenameDo">Speichern</button>`); };
+EXT.actions.plnRenameDo = () => { const e = plnGet(); if (!e) return closeSheet(); const name = plnReadName(); if (name === null) return;
+  e.name = name; save(); plnDone(`Umbenannt in „${name}“.`); };
+EXT.actions.plnDup = () => { const e = plnGet(), L = plnStore().list; if (!e) return closeSheet();
+  const c = plnAdd(plnFree(e.name, " (Kopie)"), plnCopy(e.plan), L.indexOf(e) + 1); if (!c) return actionSheet("Kein Platz mehr", plnFullTxt, [], "OK");
+  plnDone(`„${c.name}“ angelegt.`); };
+EXT.actions.plnDelAsk = () => { const e = plnGet(); if (!e) return closeSheet(); if (state.session && plnIsNow(e)) return plnBusy();
+  actionSheet("Plan löschen?", `„${esc(e.name)}“ wird aus deinen gesicherten Plänen entfernt. Dein aktueller Plan und dein Verlauf bleiben.`, [{ l: "Löschen", a: "plnDelDo", danger: true }]); };
+EXT.actions.plnDelDo = () => { const st = plnStore(), e = plnGet(); if (!e) return closeSheet(); if (state.session && plnIsNow(e)) return plnBusy();
+  st.list = st.list.filter(x => x !== e); save(); plnDone(`„${e.name}“ gelöscht.`); };
+EXT.actions.plnShareOpen = () => { const e = plnGet(); if (!e) return closeSheet();
+  const own = plnStats(e.plan).ids.filter(id => state.custom.some(c => c.id === id)).length;
+  openSheet(`${sheetHead("Plan teilen")}
+    <p class="small muted" style="margin:0">Der Text enthält „${esc(e.name)}“: Tage, Geräte, Sätze, Wiederholungen und Pausen – keine Trainings. Einfügen in der App: Plan → Meine Pläne → „Plan aus Text einfügen“.</p>
+    ${own ? `<p class="small muted" id="plnOwn" style="margin:0">${own === 1 ? "Ein selbst angelegtes Gerät ist dabei. Gibt es das" : `${own} selbst angelegte Geräte sind dabei. Gibt es die`} in der anderen App nicht, ${own === 1 ? "fällt es" : "fallen sie"} beim Einfügen weg.</p>` : ""}
+    <textarea id="plnCodeOut" readonly rows="5" aria-label="Plan als Text">${esc(plnCode(e))}</textarea>
+    <p class="small" id="plnShareMsg" role="status" style="margin:0" hidden></p>
+    <button class="btn primary block" data-a="plnCopy">Kopieren</button>
+    ${navigator.share ? `<button class="btn block" data-a="plnShare">Teilen …</button>` : ""}`); };
+EXT.actions.plnCopy = () => { const t = byId("plnCodeOut"), msg = byId("plnShareMsg"); if (!t || !msg) return;
+  const say = (txt, ok) => { msg.textContent = txt; msg.style.color = ok ? "var(--ok)" : ""; msg.hidden = false; };
+  const manual = () => { t.focus(); t.select(); try { t.setSelectionRange(0, t.value.length); } catch (e) {} say("Der Text ist markiert. Tippe auf „Kopieren“ im Menü."); };
+  try { navigator.clipboard.writeText(t.value).then(() => say("Kopiert.", true), manual); } catch (e) { manual(); } };
+EXT.actions.plnShare = () => { const t = byId("plnCodeOut"); if (!t) return;
+  try { const r = navigator.share({ text: t.value }); if (r && r.catch) r.catch(() => {}); } catch (e) {} };
+EXT.actions.plnPasteOpen = () => openSheet(`${sheetHead("Einfügen", "", "closeSheet", true)}
+  <div class="field"><label for="plnCodeIn">Text (beginnt mit TP1:)</label><textarea id="plnCodeIn" data-i="plnIn" rows="5" placeholder="TP1:…" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></div>
+  <p class="error" id="plnErr" hidden></p>
+  <p class="small muted" style="margin:0">Der Plan kommt zu deinen gesicherten Plänen. Dein aktueller Plan ändert sich nicht.</p>
+  <button class="btn primary block" data-a="plnPasteDo">Hinzufügen</button>`);
+EXT.actions.plnPasteDo = () => { const r = plnParse(byId("plnCodeIn").value); if (!r.ok) return plnErr(r.err);
+  const e = plnAdd(plnFree(r.name), r.plan); if (!e) return plnErr(plnFullTxt);
+  plnDone(`„${e.name}“ eingefügt: ${plnLine(e.plan)}.${r.dropped ? ` ${r.dropped === 1 ? "Ein Gerät gibt es in dieser App nicht – es wurde" : `${r.dropped} Geräte gibt es in dieser App nicht – sie wurden`} weggelassen.` : ""}`); };
+EXT.rows.plan.push(() => { const n = plnStore().list.length; return extRow("plaene", "list", "blue", "Meine Pläne", n ? String(n) : ""); });
+Object.assign(EXT.test, { PLN_MAX, plnParse, plnCode, plnStats, plnKey, plnFit, plnFree });
 // @ext:plaene:js:end
 // ── Abstand plaene/js 1 ──
 // ── Abstand plaene/js 2 ──
 // ── Abstand plaene/js 3 ──
 // @ext:aussehen:js:start
+// Aussehen: Hell/Dunkel und Akzentfarbe (Einstellungen → App → Aussehen). Speicher: state.x.aussehen = { modus, akzent }.
+// Modus:  Attribut data-theme an <html> ("light" | "dark"). Die Farb-Tokens am Anfang des style-Blocks hören darauf; bei
+//         „Automatisch“ fehlt das Attribut und das Design folgt dem Gerät (prefers-color-scheme).
+// Akzent: Attribut data-accent an <html>; die Werte stehen im CSS-Block dieser Erweiterung. Bei Blau fehlt es (= Standard der App).
+// Farben wählt die App nur über CSS-Variablen (auch Zeichnungen und die 3D-Ansicht lesen sie von dort) – deshalb folgt alles den beiden Attributen.
+const AUS_MODI = [["system", "Automatisch"], ["hell", "Hell"], ["dunkel", "Dunkel"]];
+const AUS_AKZ = [["blau", "Blau"], ["indigo", "Indigo"], ["gruen", "Grün"], ["orange", "Orange"], ["pink", "Pink"], ["rot", "Rot"]];
+const AUS_THEME = { hell: "light", dunkel: "dark" };
+const AUS_BAR = { hell: "#F2F2F7", dunkel: "#000000" };   // Statusleiste (theme-color) = Seitengrund --bg des jeweiligen Designs
+const ausClean = roh => { const r = isObj(roh) ? roh : {};
+  return { modus: AUS_MODI.some(m => m[0] === r.modus) ? r.modus : "system", akzent: AUS_AKZ.some(a => a[0] === r.akzent) ? r.akzent : "blau" }; };
+const ausGet = () => ausClean(isObj(state.x) ? state.x.aussehen : null);
+// Ausgangslage: was die Umgebung an <html> vorgibt (eingebettet kann data-theme schon gesetzt sein) und die Farben der Statusleiste aus dem Seitenkopf
+const AUS_ROOT = document.documentElement, AUS_HOST = AUS_ROOT.getAttribute("data-theme");
+const AUS_META = [...document.querySelectorAll('meta[name="theme-color"]')].map(m => [m, m.getAttribute("content")]);
+const ausAttr = (el, k, v) => { if (v == null) { if (el.hasAttribute(k)) el.removeAttribute(k); } else if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
+let ausForced = false;
+// Macht die Seite passend zum gespeicherten Stand. Schreibt nur, was sich ändert; bei „Automatisch“ bleibt data-theme unberührt
+// (nur nach „Hell“/„Dunkel“ wird die Ausgangslage wiederhergestellt).
+function ausApply() {
+  const a = ausGet(), t = AUS_THEME[a.modus] || null;
+  if (t) ausAttr(AUS_ROOT, "data-theme", t); else if (ausForced) ausAttr(AUS_ROOT, "data-theme", AUS_HOST);
+  ausForced = !!t;
+  ausAttr(AUS_ROOT, "data-accent", a.akzent === "blau" ? null : a.akzent);
+  AUS_META.forEach(([m, orig]) => ausAttr(m, "content", t ? AUS_BAR[a.modus] : orig));
+}
+function ausSet(patch, el) {
+  if (!isObj(state.x)) state.x = {};
+  state.x.aussehen = ausClean(Object.assign(ausGet(), patch)); save(); ausApply();
+  const foc = el && document.activeElement === el ? `[data-a="${el.dataset.a}"][data-v="${el.dataset.v}"]` : "";
+  render(); const b = foc && $app.querySelector(foc); if (b) b.focus({ preventScroll: true });
+}
+// Schon beim Laden anwenden – vor dem ersten Zeichnen, damit nichts aufblitzt. Danach nach jedem Zeichnen einer Ansicht abgleichen:
+// so stimmt das Aussehen auch, wenn der Zustand ersetzt wurde (Sicherung wiederhergestellt, Daten gelöscht).
+ausApply();
+new MutationObserver(ausApply).observe($app, { childList: true });
+EXT.clean.aussehen = ausClean;
+EXT.nav.aussehen = { back: "settings" };
+EXT.views.aussehen = () => {
+  const a = ausGet(), name = AUS_AKZ.find(x => x[0] === a.akzent)[1];
+  $app.innerHTML = `<div class="page">
+    ${extHead("Aussehen", "Hell oder dunkel und die Akzentfarbe.")}
+    <section class="section"><h2>Design</h2>
+      <div class="seg" id="ausModus">${AUS_MODI.map(([k, l]) => `<button data-a="ausModus" data-v="${k}" class="${a.modus === k ? "on" : ""}" aria-pressed="${a.modus === k}">${l}</button>`).join("")}</div>
+      <p class="small foot">„Automatisch“ folgt der Einstellung deines Geräts.</p></section>
+    <section class="section"><div class="section-head"><h2>Akzentfarbe</h2><span class="sub" id="ausAkzName">${name}</span></div>
+      <div class="card aus-sws" id="ausAkzent">${AUS_AKZ.map(([k, l]) => `<button class="aus-sw" data-a="ausAkzent" data-v="${k}" data-accent="${k}" aria-label="${l}" aria-pressed="${a.akzent === k}"><i>${a.akzent === k ? sym("check") : ""}</i></button>`).join("")}</div>
+      <p class="small foot">Gilt für Knöpfe, Links, Auswahl und Fortschritt.</p></section>
+    <section class="section"><h2>Vorschau</h2>
+      <div class="card aus-demo" id="ausDemo">
+        <div class="row">${ringSvg(.7, "var(--accent)", 48, 6)}<div class="grow"><div style="font-weight:600">Beispiel</div><div class="small aus-txt">Text in Akzentfarbe</div></div><span class="switch" aria-checked="true" aria-hidden="true"></span></div>
+        <span class="btn primary block">Knopf</span>
+      </div></section>
+  </div>`;
+};
+EXT.actions.ausModus = el => ausSet({ modus: el.dataset.v }, el);
+EXT.actions.ausAkzent = el => ausSet({ akzent: el.dataset.v }, el);
+EXT.rows.settings.push(() => extRow("aussehen", "moon", "indigo", "Aussehen", AUS_MODI.find(m => m[0] === ausGet().modus)[1]));
+Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 // @ext:aussehen:js:end
 // ── Abstand aussehen/js 1 ──
 // ── Abstand aussehen/js 2 ──
 // ── Abstand aussehen/js 3 ──
 // @ext:export:js:start
+// Als Tabelle exportieren (Einstellungen → „Plan und Daten“): die eigenen Daten als CSV-Dateien für Tabellenprogramme.
+// Format für Tabellenprogramme mit deutscher Einstellung: Semikolon, Dezimalkomma, Datum als TT.MM.JJJJ (Datum am Ort, nicht UTC),
+// UTF-8 mit BOM, Zeilenende CRLF. Die Erzeugung ist rein (Zustand → Text) und braucht keinen eigenen Speicher.
+// Die Datei geht denselben Weg wie die Sicherung: Teilen-Menü, sonst Download.
+{
+  const SEP = ";", EOL = "\r\n", BOM = "\uFEFF";   // BOM: daran erkennen Tabellenprogramme UTF-8 (Umlaute)
+  // Textfeld: Schutz vor Formeln (beginnt es mit = + - @ Tab oder CR, kommt ein Apostroph davor), danach bei Bedarf in Anführungszeichen
+  const cell = v => { let s = String(v ?? ""); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  // Zahlenfeld (von der App erzeugt, daher ohne Formel-Schutz): Dezimalkomma, kein Tausenderpunkt; fehlt der Wert, bleibt das Feld leer
+  const numCell = (v, dec = 2) => { if (typeof v !== "number" || !Number.isFinite(v)) return ""; const f = 10 ** dec; return String(Math.round(v * f) / f).replace(".", ","); };
+  const dateCell = d => `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;   // Datum am Ort des Nutzers
+  const timeCell = d => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  const dayCell = k => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(k)); return m ? `${m[3]}.${m[2]}.${m[1]}` : ""; };   // „JJJJ-MM-TT“ ist schon ein Datum am Ort
+  const table = (head, rows) => BOM + [head].concat(rows).map(r => r.join(SEP)).join(EOL) + EOL;
+  const byDay = (a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
+  const many = (n, one, more) => `${fmtK(n)} ${n === 1 ? one : more}`;
+
+  // Trainings: eine Zeile je gespeichertem Satz. „Bewegtes Gewicht“ wie überall in der App (setVol: bei „pro Seite“ zählen beide Seiten)
+  const trainSets = h => isObj(h) && Array.isArray(h.exercises) ? h.exercises.filter(x => isObj(x) && Array.isArray(x.sets)) : [];
+  const rowsTrainings = s => {
+    const out = [], ms = h => +new Date(h.date) || 0;
+    (Array.isArray(s && s.history) ? s.history : []).filter(isObj).slice().sort((a, b) => ms(a) - ms(b)).forEach(h => {
+      const d = new Date(h.date), okD = !isNaN(d);
+      trainSets(h).forEach(x => {
+        const dev = devFrom(s, String(x.exId)), u = ["s", "t", "b"].includes(x.u) ? x.u : unitOf(dev);
+        x.sets.filter(isObj).forEach((t, i) => out.push([okD ? dateCell(d) : "", okD ? timeCell(d) : "", cell(h.day), cell(x.name || dev.name), String(i + 1),
+          numCell(t.kg), u === "s" ? "pro Seite" : "gesamt", numCell(t.reps, 0), numCell(setVol({ u }, t))]));
+      });
+    });
+    return out;
+  };
+  const rowsGewicht = s => (Array.isArray(s && s.weights) ? s.weights : []).filter(w => isObj(w) && dayCell(w.d) && typeof w.kg === "number" && Number.isFinite(w.kg))
+    .slice().sort(byDay).map(w => [dayCell(w.d), numCell(w.kg)]);
+  // Essen: je Eintrag eine Zeile, Tage aufsteigend, innerhalb des Tages in der Reihenfolge der Mahlzeiten. Menge nur, wenn sie gespeichert ist
+  const rowsEssen = s => {
+    const F = isObj(s && s.food) ? s.food : {}, out = [], mi = e => { const i = MEALS.findIndex(x => x[0] === e.m); return i < 0 ? MEALS.length - 1 : i; };
+    Object.keys(F).filter(d => dayCell(d) && Array.isArray(F[d])).sort().forEach(d => {
+      F[d].filter(e => isObj(e) && (e.g === null ? isObj(e.abs) : typeof e.g === "number" && isObj(e.per))).slice().sort((a, b) => mi(a) - mi(b)).forEach(e => {
+        const v = entryVals(e);
+        out.push([dayCell(d), MEALS[mi(e)][1], cell(e.n), e.g === null ? "" : numCell(e.g, 1), numCell(v.k, 1), numCell(v.p, 1), numCell(v.c, 1), numCell(v.f, 1)]);
+      });
+    });
+    return out;
+  };
+  // Körpermaße: nur, wenn die Erweiterung „masse“ Daten abgelegt hat (state.x.masse = { e: [{ d, k, cm }] }); sonst gibt es die Zeile nicht.
+  // Die sechs Maße bekommen ihren deutschen Namen; ein unbekannter Schlüssel steht so in der Datei, wie er gespeichert ist
+  const MASS_NAME = new Map([["brust", "Brust"], ["taille", "Taille"], ["huefte", "Hüfte"], ["oberarm", "Oberarm"], ["oberschenkel", "Oberschenkel"], ["wade", "Wade"]]);
+  const rowsMasse = s => { const e = isObj(s && s.x) && isObj(s.x.masse) && Array.isArray(s.x.masse.e) ? s.x.masse.e : [];
+    return e.filter(m => isObj(m) && dayCell(m.d) && typeof m.k === "string" && m.k.trim() && typeof m.cm === "number" && Number.isFinite(m.cm))
+      .slice().sort(byDay).map(m => [dayCell(m.d), cell(MASS_NAME.get(m.k) || m.k), numCell(m.cm)]); };
+
+  // Die Dateiarten: k = Teil des Dateinamens, head = Kopfzeile, rows = reine Funktion (Zustand → Zeilen), info = Anzahl für die Liste,
+  // more = Zusatz in „Was steht in den Dateien?“, opt = Zeile erscheint nur, wenn es Einträge gibt
+  const KINDS = [
+    { k: "trainings", t: "Trainings", per: "eine Zeile je Satz", ic: "dumbbell", col: "blue", rows: rowsTrainings,
+      head: ["Datum", "Uhrzeit", "Trainingstag", "Gerät", "Satz", "Gewicht (kg)", "Gewichtsangabe", "Wiederholungen", "Bewegtes Gewicht (kg)"],
+      more: "Die Uhrzeit ist das Ende des Trainings.",
+      info: (s, r) => `${many(s.history.filter(h => trainSets(h).some(x => x.sets.some(isObj))).length, "Training", "Trainings")} · ${many(r.length, "Satz", "Sätze")}` },
+    { k: "koerpergewicht", t: "Körpergewicht", per: "eine Zeile je Eintrag", ic: "scale", col: "purple", rows: rowsGewicht, head: ["Datum", "Gewicht (kg)"],
+      info: (s, r) => many(r.length, "Eintrag", "Einträge") },
+    { k: "essen", t: "Essen", per: "eine Zeile je Eintrag", ic: "fork", col: "orange", rows: rowsEssen,
+      head: ["Datum", "Mahlzeit", "Lebensmittel", "Menge (g)", "Kalorien (kcal)", "Eiweiß (g)", "Kohlenhydrate (g)", "Fett (g)"],
+      more: "Einträge über „Nur kcal“ haben keine Menge. Nährwerte, die du dort leer lässt, stehen als 0 in der Datei.",
+      info: (s, r) => `${many(r.length, "Eintrag", "Einträge")} an ${many(new Set(r.map(x => x[0])).size, "Tag", "Tagen")}` },
+    { k: "koerpermasse", t: "Körpermaße", per: "eine Zeile je Eintrag", ic: "sliders", col: "teal", rows: rowsMasse, head: ["Datum", "Maß", "Wert (cm)"], opt: true,
+      info: (s, r) => many(r.length, "Eintrag", "Einträge") }
+  ];
+  const kindOf = k => KINDS.find(x => x.k === k);
+  const csvOf = (k, s) => { const kd = kindOf(k); return table(kd.head, kd.rows(s)); };
+  const fileName = (k, d = new Date()) => `trainingsplan-${k}-${dkey(d)}.csv`;   // Datum am Ort
+
+  EXT.nav.export = { back: "settings" };
+  EXT.views.export = () => {
+    const list = KINDS.map(kd => ({ kd, r: kd.rows(state) })).filter(x => !x.kd.opt || x.r.length);
+    $app.innerHTML = `<div class="page">
+      ${extHead("Als Tabelle exportieren", "CSV-Dateien für Tabellenprogramme.")}
+      <section class="section"><h2>Daten</h2>
+        <div class="group" id="expList">${list.map(({ kd, r }) => `<div class="li" id="exp-${kd.k}">${ico(kd.ic, kd.col)}
+          <div class="grow"><div class="t n">${kd.t}</div><div class="s">${r.length ? kd.info(state, r) : "Noch keine Einträge"}</div></div>
+          <button class="icon-btn" data-a="expCsv" data-k="${kd.k}" aria-label="${kd.t} exportieren"${r.length ? "" : " disabled"}>${sym("up")}</button></div>`).join("")}</div>
+        <p class="small foot">Die Dateien entstehen auf diesem Gerät. Die App lädt nichts hoch.</p>
+        <p class="note small" id="expMsg" role="status" hidden></p></section>
+      <section class="section"><h2>Zu den Dateien</h2>
+        <div class="gdets" id="expInfo">
+          <details class="gdet"><summary>Was steht in den Dateien?</summary><div class="gdet-in">${list.map(({ kd }) => `<p class="small muted" style="margin:0"><b>${kd.t}</b> – ${kd.per}: ${kd.head.join(", ")}.${kd.more ? " " + kd.more : ""}</p>`).join("")}</div></details>
+          <details class="gdet"><summary>Was heißt „bewegtes Gewicht“?</summary><div class="gdet-in"><p class="small muted" style="margin:0">Gewicht × Wiederholungen. Bei der Gewichtsangabe „pro Seite“ zählen beide Seiten, bei „gesamt“ zählt das Gewicht einmal. Ohne eingetragenes Gewicht steht dort 0.</p></div></details>
+          <details class="gdet"><summary>Wo landet die Datei?</summary><div class="gdet-in"><p class="small muted" style="margin:0">Auf dem iPhone öffnet sich das Teilen-Menü: „In Dateien sichern“ legt die Datei ab. Ohne Teilen-Menü lädt der Browser die Datei herunter.</p></div></details>
+          <details class="gdet"><summary>Welches Format haben die Dateien?</summary><div class="gdet-in"><p class="small muted" style="margin:0">CSV mit Semikolon als Trennzeichen, Dezimalkomma, Datum als TT.MM.JJJJ und Zeichensatz UTF-8. Das brauchst du nur, wenn dein Tabellenprogramm beim Öffnen danach fragt.</p></div></details>
+        </div></section>
+    </div>`;
+  };
+  EXT.actions.expCsv = async el => {
+    const kd = kindOf(el.dataset.k); if (!kd) return;
+    const rows = kd.rows(state); if (!rows.length) return;
+    const text = table(kd.head, rows), name = fileName(kd.k), type = "text/csv;charset=utf-8";
+    // Meldung unter der Liste; liegt sie auf einem kleinen Bildschirm hinter der Tab-Leiste, rückt die Seite so weit hoch, dass man sie sieht
+    const say = msg => { const m = byId("expMsg"); if (!m) return; m.textContent = msg; m.hidden = !msg; if (!msg) return;
+      const over = m.getBoundingClientRect().bottom + 12 - ($tabs.hidden ? innerHeight : $tabs.getBoundingClientRect().top);
+      if (over > 0) window.scrollBy({ top: over, behavior: animOK() ? "smooth" : "auto" }); };
+    say("");
+    let file = null; try { file = new File([text], name, { type: "text/csv" }); } catch (e) {}
+    if (file && navigator.canShare && navigator.share) {
+      let can = false; try { can = navigator.canShare({ files: [file] }); } catch (e) {}
+      if (can) {
+        try { await navigator.share({ files: [file] }); say(`Exportiert: ${name}`); }
+        catch (e) { if (!e || e.name !== "AbortError") { downloadText(text, name, type); say(`Heruntergeladen: ${name}`); } }
+        return;
+      }
+    }
+    downloadText(text, name, type); say(`Heruntergeladen: ${name}`);
+  };
+  EXT.rows.data.push(() => extRow("export", "list", "green", "Als Tabelle exportieren"));
+  EXT.test.csvExport = { trainings: s => csvOf("trainings", s), gewicht: s => csvOf("koerpergewicht", s), essen: s => csvOf("essen", s), masse: s => csvOf("koerpermasse", s),
+    cell, numCell, fileName, kinds: KINDS.map(x => x.k) };
+}
 // @ext:export:js:end
 // ── Abstand export/js 1 ──
 // ── Abstand export/js 2 ──

@@ -62,38 +62,47 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 <!-- Abstand hilfe 1 -->
 <!-- Abstand hilfe 2 -->
 <!-- @ext:meilensteine:readme:start -->
+- **Meilensteine (Fortschritt → Meilensteine):** Fünf Reihen mit festen Stufen (Stufen der App), nur aus dem Verlauf berechnet: Trainings insgesamt, Wochen in Folge mit erreichtem Wochenziel (Ziel wie auf „Heute“: Zahl der Trainingstage im Plan), bewegtes Gewicht in Tonnen („pro Seite“ zählt beide Seiten), Trainingszeit in Stunden, verschiedene Geräte. Je Reihe der Stand, ein Balken zur nächsten Stufe und die erreichten Stufen mit dem Datum des Trainings, das sie gebracht hat. Die Zusammenfassung nach dem Training zeigt „Neuer Meilenstein“, wenn dieses Training eine Stufe überschritten hat. Gespeichert wird nichts; korrigierte oder gelöschte Trainings wirken sofort
 <!-- @ext:meilensteine:readme:end -->
 <!-- Abstand meilensteine 1 -->
 <!-- Abstand meilensteine 2 -->
 <!-- @ext:masse:readme:start -->
+- **Körpermaße (Fortschritt → Körpermaße):** Umfänge in cm für Brust, Taille, Hüfte, Oberarm, Oberschenkel und Wade eintragen. Je Maß der letzte Wert mit Datum, die Veränderung seit dem ersten Eintrag und eine kleine Verlaufslinie; im Fenster eines Maßes das Liniendiagramm (ab zwei Einträgen), die Eingabe für heute und alle Einträge zum Löschen (mit Rückfrage). Ein Eintrag je Maß und Tag, 10–250 cm, höchstens 2000 Einträge (Regeln der App); die App bewertet die Werte nicht
 <!-- @ext:masse:readme:end -->
 <!-- Abstand masse 1 -->
 <!-- Abstand masse 2 -->
 <!-- @ext:rueckblick:readme:start -->
+- **Rückblick (Fortschritt → Monat und Jahr):** Umschalter „Monat | Jahr“ mit ‹ › vom Zeitraum des ersten Trainings bis heute. Trainings, Trainingszeit, bewegtes Gewicht und Trainings pro Woche, jeweils mit Vergleich zum Zeitraum davor (nur, wenn es dort Trainings gab); Wochentage, im Jahr die Trainings je Monat; neue Bestwerte (schwerster Satz je Gerät und Gewichtsangabe gegenüber allem davor, das erste Training an einem Gerät zählt nicht); die fünf häufigsten Geräte; Körpergewicht vom ersten zum letzten Eintrag. Monat und Jahr nach dem Datum am Ort. Nichts wird gespeichert
 <!-- @ext:rueckblick:readme:end -->
 <!-- Abstand rueckblick 1 -->
 <!-- Abstand rueckblick 2 -->
 <!-- @ext:werkzeuge:readme:start -->
+- **Rechner (Wissen → Nachschlagen → Rechner):** Scheiben je Seite für ein Gewicht („pro Seite“ oder „insgesamt“; dieselbe Funktion `platesOf` und dieselben Scheiben wie im Training, mit Hinweis und nächstem Gewicht darunter, wenn es nicht aufgeht), geschätztes Höchstgewicht für eine Wiederholung (Schätzung der App wie in „Kraft & Bestwerte“: Gewicht × (1 + Wdh. ÷ 30), 1–12 Wiederholungen, auf 0,5 kg gerundet; eine Wiederholung zählt als das Gewicht selbst) und Prozente davon (90–50 %, auf 2,5 kg gerundet). Nichts wird gespeichert
 <!-- @ext:werkzeuge:readme:end -->
 <!-- Abstand werkzeuge 1 -->
 <!-- Abstand werkzeuge 2 -->
 <!-- @ext:glossar:readme:start -->
+- **Begriffe (Wissen → Artikel → Nachschlagen → Begriffe):** kleines Lexikon mit rund 50 Begriffen aus Training und Ernährung – kurze Erklärung, wo es passt ein Satz „In der App: …“ (was die App mit dem Begriff macht; die Tests prüfen die genannten Zahlen und Bezeichnungen gegen die App) und „Siehe auch“ zu verwandten Begriffen. Suchfeld über Begriff und Erklärung (Groß-/Kleinschreibung egal, „ubung“ findet „Übung“), alphabetisch nach Anfangsbuchstaben in deutscher Sortierung. Kein gespeicherter Zustand
 <!-- @ext:glossar:readme:end -->
 <!-- Abstand glossar 1 -->
 <!-- Abstand glossar 2 -->
 <!-- @ext:muskeln:readme:start -->
+- **Muskeln (Wissen → Artikel → Nachschlagen → Muskeln):** Übersicht aller elf Muskelgruppen: Körperfigur, eingefärbt nach den Sätzen pro Woche im Plan (mehr Sätze = kräftiger), darunter je Muskel die Sätze pro Woche mit Balken gegen den Richtwert der App (gleiche Rechnung wie die Planprüfung, auch mit festen Terminen) und die Zahl der Geräte. Antippen öffnet die Detailseite: Figur mit nur diesem Muskel, „Im Plan“ (Trainingstage, Geräte mit Bild und Sätzen; mittrainiert zählt halb), „Zuletzt trainiert“ aus dem Verlauf mit der Erholungsschätzung der App, „Geräte in der App“ (hauptsächlich, dann unterstützend). Gerätezeilen führen zur Geräteseite und zurück. Nur Anzeige, kein gespeicherter Zustand
 <!-- @ext:muskeln:readme:end -->
 <!-- Abstand muskeln 1 -->
 <!-- Abstand muskeln 2 -->
 <!-- @ext:plaene:readme:start -->
+- **Meine Pläne (Plan → „Rund um den Plan“ → Meine Pläne):** bis zu 12 Trainingspläne aufbewahren und zwischen ihnen wechseln (Speicher `state.x.plaene`, jeder Plan läuft durch `cleanPlan()` wie der aktuelle). Karte „Aktueller Plan“ mit Tagen, Geräten und Sätzen und „Aktuellen Plan sichern“; Liste der gesicherten Pläne mit Laden, Umbenennen, Duplizieren, „Als Text teilen“ und Löschen. Laden fragt nach, bietet „Vorher sichern und laden“ an und lässt Verlauf, Gewichte und Notizen unberührt; Verweise auf Tage des alten Plans (gewähltes Training, Zeitanpassung, Tagesplan) werden gelöst. Während ein Training läuft oder pausiert, ist Laden gesperrt. Der Plan-Text ist „TP1:“ + Base64 von JSON (UTF-8) und enthält nur den Plan; „Plan aus Text einfügen“ prüft ihn streng (Anfang, Base64, JSON, Plan-Prüfung der App, höchstens 60 000 Zeichen), lässt Geräte weg, die es auf dem Gerät nicht gibt, und legt den Plan als gesicherten Plan an
 <!-- @ext:plaene:readme:end -->
 <!-- Abstand plaene 1 -->
 <!-- Abstand plaene 2 -->
 <!-- @ext:aussehen:readme:start -->
+- **Aussehen (Einstellungen → Aussehen):** „Automatisch | Hell | Dunkel“ (setzt `data-theme` an `<html>`, die Statusleiste folgt) und sechs Akzentfarben (Blau ist der Standard; je Farbe eigene Werte für hell und dunkel, Kontrast überall mindestens 4,5 : 1, im Test mit den vom Browser gerechneten Farben geprüft). Gilt schon beim Start, vor dem ersten Zeichnen. Speicher: `state.x.aussehen`
 <!-- @ext:aussehen:readme:end -->
 <!-- Abstand aussehen 1 -->
 <!-- Abstand aussehen 2 -->
 <!-- @ext:export:readme:start -->
+- **Als Tabelle exportieren (Einstellungen → Plan und Daten):** Trainings (eine Zeile je Satz mit bewegtem Gewicht), Körpergewicht und Essen als CSV-Dateien für Tabellenprogramme, Körpermaße nur, wenn es Einträge gibt. Format: Semikolon, Dezimalkomma, Datum als TT.MM.JJJJ am Ort des Nutzers, UTF-8 mit BOM, Zeilenende CRLF; Texte, die wie eine Formel beginnen, werden mit einem Apostroph entschärft. Die Datei geht denselben Weg wie die Sicherung (Teilen-Menü, sonst Download); nichts wird gespeichert oder hochgeladen
 <!-- @ext:export:readme:end -->
 <!-- Abstand export 1 -->
 <!-- Abstand export 2 -->

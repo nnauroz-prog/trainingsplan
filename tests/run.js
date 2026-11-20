@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v92)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v92")));
+      ok("Service Worker aktiv (Cache trainingsplan-v94)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v94")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -4824,7 +4824,7 @@ async function finishAllSets(page, kg, reps) {
     {
       // Körpergewicht: gespeichert wird das Datum am Ort des Nutzers, nicht das UTC-Datum.
       // Zeitzone so gewählt, dass sich beide Daten in diesem Moment sicher unterscheiden (unabhängig von der Uhrzeit des Testlaufs)
-      const tz = new Date().getUTCHours() >= 12 ? "Pacific/Kiritimati" : "Pacific/Pago_Pago";
+      const tz = new Date().getUTCHours() >= 11 ? "Pacific/Kiritimati" : "Pacific/Pago_Pago";
       const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, timezoneId: tz, serviceWorkers: "block" });
       await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-tabmem", "0"); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
       const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
@@ -4868,46 +4868,1725 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand hilfe/test 2 ──
     // ── Abstand hilfe/test 3 ──
     // @ext:meilensteine:test:start
+    section("E-meilensteine. Meilensteine (Fortschritt → Meilensteine)");
+    {
+      // Hilfen für diesen Abschnitt. Daten als Ortszeit 12 Uhr: Kalendertag und Woche stimmen in jeder Zeitzone des Testrechners
+      const at = (y, m, d, h = 12, min = 0) => new Date(y, m - 1, d, h, min).toISOString();
+      const tr = (date, exs, sec = 60, id) => ({ id: id || "ms" + Math.random(), dayId: "d1", day: "Test", date, durationSec: sec, exercises: exs.map(([exId, u, sets]) => ({ exId, name: exId, u, sets })) });
+      const S = (kg, reps, n = 1) => Array.from({ length: n }, () => ({ kg, reps }));
+      const de = iso => { const d = new Date(iso), p = x => String(x).padStart(2, "0"); return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()}`; };
+      // 26 Trainings an 26 Tagen in Folge ab Montag, 6. Januar 2025. Jedes: ein Satz 50 kg × 10 „pro Seite“ = 1.000 kg und genau 1 Stunde.
+      // Die ersten vier an je einem anderen Gerät, ab dem fünften immer am selben fünften Gerät.
+      const DEV = ["hs-chest", "hs-row", "hs-legpress", "hs-fly"];
+      const H26 = Array.from({ length: 26 }, (_, i) => tr(at(2025, 1, 6 + i), [[DEV[i] || "hs-pulldown", "s", S(50, 10)]], 3600, "m" + (i + 1)));
+      // k Wochen vor heute, gleicher Wochentag, 12 Uhr: liegt unabhängig von Wochentag und Uhrzeit des Testlaufs in der k-ten Woche vor der laufenden
+      const weeksAgo = k => { const d = new Date(); d.setDate(d.getDate() - 7 * k); d.setHours(12, 0, 0, 0); return d.toISOString(); };
+      const calc = (page, H, goal) => tp(page, ([h, g]) => { const r = window.__tp.meilensteine.calc(h, g), o = { v: r.v };
+        for (const k in r.got) o[k] = r.got[k].map(x => x.n + "@" + x.at).join(" "); return o; }, [H, goal]);
+      const marks = (H, list) => list.map(([n, i]) => n + "@" + H[i - 1].date).join(" ");   // Stufe n, erreicht mit dem i-ten Training
+      const card = (page, k) => tp(page, key => { const c = document.getElementById("ms-" + key), q = s => (c.querySelector(s) || { textContent: "" }).textContent.replace(/\s+/g, " ").trim();
+        return { num: q(".num"), sub: q(".sub"), cnt: q(".ms-cnt"), next: q(".ms-next"), more: q(".ms-more"), bar: c.querySelector(".mfill").style.width, aria: c.querySelector(".mtrack").getAttribute("aria-label"),
+          got: [...c.querySelectorAll(".ms-got .badge")].map(b => b.textContent).join(" | ") }; }, k);
+      const rowVal = page => page.textContent("#histMore #row-meilensteine .val");
+      const newRows = page => tp(page, () => { const s = document.getElementById("msNew"); return s ? s.querySelector("h2").textContent + ": " + [...s.querySelectorAll(".li")].map(l => l.querySelector(".t").textContent + " (" + l.querySelector(".s").textContent + ")").join(" | ") : ""; });
+      const train = async page => { await page.click("[data-a=start]"); await finishAllSets(page, 40, 10); };   // PLAN_SMALL: 2×40×10 pro Seite + 40×10 + 40×10 = 2.400 kg, 3 Geräte
+
+      {
+        // ---- Rechnung (ohne Oberfläche): von Hand nachgerechnete Verläufe ----
+        const { ctx, page } = await open({ plan: PLAN_SMALL });
+        const r = await calc(page, H26, 1);
+        ok("Stufen der App: Trainings 1–500, Wochen in Folge 2–52, Tonnen 10–1.000, Stunden 5–250, Geräte 5–40", await tp(page, () => window.__tp.meilensteine.MS.map(m => m.k + ":" + m.steps.join(",")).join(" ")) ===
+          "tr:1,5,10,25,50,100,150,200,300,500 wk:2,4,8,12,26,52 ton:10,25,50,100,250,500,1000 std:5,10,25,50,100,250 ger:5,10,20,30,40");
+        ok("26 Trainings: Stufen 1, 5, 10 und 25 erreicht – jede am Tag des Trainings, mit dem sie erreicht wurde (25 = Tag des 25. Trainings)", r.v.tr === 26 && r.tr === marks(H26, [[1, 1], [5, 5], [10, 10], [25, 25]]) && de(H26[24].date) === "30.01.2025", JSON.stringify(r.tr));
+        ok("Bewegtes Gewicht: 26 × 50 kg × 10 × 2 Seiten = 26,0 t („pro Seite“ zählt beide Seiten); 10 t mit dem 10., 25 t mit dem 25. Training", r.v.ton === 260 && r.ton === marks(H26, [[10, 10], [25, 25]]), JSON.stringify([r.v.ton, r.ton]));
+        ok("Trainingszeit: 26 × 1 Stunde = 26,0 Std.; 5, 10 und 25 Stunden mit dem 5., 10. und 25. Training", r.v.std === 260 && r.std === marks(H26, [[5, 5], [10, 10], [25, 25]]), JSON.stringify([r.v.std, r.std]));
+        ok("Geräte: 5 verschiedene, Stufe 5 mit dem 5. Training (dem ersten am fünften Gerät)", r.v.ger === 5 && r.ger === marks(H26, [[5, 5]]), JSON.stringify([r.v.ger, r.ger]));
+        ok("Wochen in Folge, Ziel 1: vier Wochen (6. bis 31. Januar) → beste Serie 4; Stufe 2 am Montag der 2. Woche (8. Training), Stufe 4 am Montag der 4. Woche (22. Training)", r.v.wk === 4 && r.wk === marks(H26, [[2, 8], [4, 22]]), JSON.stringify([r.v.wk, r.wk]));
+        const r7 = await calc(page, H26, 7), r8 = await calc(page, H26, 8);
+        ok("Ziel 7 je Woche: drei volle Wochen, die vierte hat nur 5 Trainings → beste Serie 3, Stufe 2 am Sonntag der 2. Woche (14. Training); Ziel 8: nie erreicht", r7.v.wk === 3 && r7.wk === marks(H26, [[2, 14]]) && r8.v.wk === 0 && r8.wk === "", JSON.stringify([r7.v.wk, r7.wk, r8.v.wk]));
+        const rr = await calc(page, H26.slice().reverse(), 1);
+        ok("Die Reihenfolge im Speicher spielt keine Rolle: gerechnet wird nach Datum", canon(rr) === canon(r));
+
+        // Tonnen: Gewichtsangabe je Gerät und die Schwelle. 3×60×10×2 Seiten = 3.600; 2×200×8 insgesamt = 3.200 (ungültige Sätze zählen nicht); 4×80×10 am Block = 3.200 → genau 10.000 kg
+        const T = last => [tr(at(2025, 3, 3), [["hs-chest", "s", S(60, 10, 3)], ["hs-row", "s", [{ kg: null, reps: 5 }]]]),
+          tr(at(2025, 3, 5), [["hs-legpress", "t", [...S(200, 8, 2), { kg: null, reps: 8 }, { kg: 100, reps: 0 }]]]),
+          tr(at(2025, 3, 7), [["hs-fly", "b", [...S(80, 10, 3), { kg: last, reps: 10 }]]])];
+        const t10 = await calc(page, T(80), 1), t99 = await calc(page, T(79), 1);
+        ok("3.600 kg (pro Seite, beide Seiten) + 3.200 kg (insgesamt) + 3.200 kg (am Block) = genau 10,0 t → Stufe 10 t mit dem dritten Training", t10.v.ton === 100 && t10.ton === "10@" + T(80)[2].date, JSON.stringify([t10.v.ton, t10.ton]));
+        ok("10 kg weniger (9.990 kg) → 9,9 t, die Stufe ist nicht erreicht (abgerundet, nie aufgerundet)", t99.v.ton === 99 && t99.ton === "");
+        ok("Ein Gerät ohne gültigen Satz zählt nicht als trainiert: 3 Geräte", t10.v.ger === 3 && t10.v.tr === 3);
+        // Stunden: 5 × 3.600 s = genau 5,0 Std.; eine Sekunde weniger → 4,9
+        const Z = sec => [1, 2, 3, 4, 5].map(i => tr(at(2025, 4, i), [["hs-chest", "s", S(40, 10)]], i === 5 ? sec : 3600));
+        const z5 = await calc(page, Z(3600), 1), z4 = await calc(page, Z(3599), 1);
+        ok("5 × 60 Minuten = genau 5,0 Std. → Stufe 5 Std. mit dem fünften Training; 1 Sekunde weniger → 4,9 Std., nicht erreicht", z5.v.std === 50 && z5.std === "5@" + Z(3600)[4].date && z4.v.std === 49 && z4.std === "", JSON.stringify([z5.v.std, z5.std, z4.v.std]));
+
+        // Wochen in Folge mit Ziel 2: Woche 1 (Mo 6.1., Do 9.1.), Woche 2 (13., 16.), Woche 3 nur ein Training (20.), Woche 4 (27., 30.), Woche 5 (3., 5., 7.2.), Woche 6 (10., 13.), Woche 7 (17., 20.)
+        const W = [[1, 6], [1, 9], [1, 13], [1, 16], [1, 20], [1, 27], [1, 30], [2, 3], [2, 5], [2, 7], [2, 10], [2, 13], [2, 17], [2, 20]].map(([m, d]) => tr(at(2025, m, d), [["hs-chest", "s", S(40, 10)]]));
+        const w2 = await calc(page, W, 2), w3 = await calc(page, W, 3), w1 = await calc(page, W, 1);
+        ok("Ziel 2: Serie 2 (Wochen 1–2), Lücke in Woche 3, dann Serie 4 (Wochen 4–7) → beste Serie 4; Stufe 2 am 16. Januar, Stufe 4 am 20. Februar (jeweils das zweite Training der Woche)",
+          w2.v.wk === 4 && w2.wk === "2@" + at(2025, 1, 16) + " 4@" + at(2025, 2, 20), JSON.stringify([w2.v.wk, w2.wk]));
+        ok("Ziel 3: nur Woche 5 erreicht es → beste Serie 1, keine Stufe; Ziel 1: sieben Wochen in Folge → Stufen 2 (13. Januar) und 4 (27. Januar)", w3.v.wk === 1 && w3.wk === "" && w1.v.wk === 7 && w1.wk === "2@" + at(2025, 1, 13) + " 4@" + at(2025, 1, 27), JSON.stringify([w3.v.wk, w1.v.wk, w1.wk]));
+        // Wochengrenze: Sonntag spätabends und Montag kurz nach Mitternacht sind zwei Wochen; Montag bis Sonntag ist eine
+        const g1 = await calc(page, [tr(at(2025, 1, 12, 23, 0), [["hs-chest", "s", S(40, 10)]]), tr(at(2025, 1, 13, 0, 30), [["hs-chest", "s", S(40, 10)]])], 1);
+        const g2 = await calc(page, [tr(at(2025, 1, 13, 0, 30), [["hs-chest", "s", S(40, 10)]]), tr(at(2025, 1, 19, 23, 0), [["hs-chest", "s", S(40, 10)]])], 1);
+        ok("Die Woche beginnt am Montag um 0 Uhr: So. 23:00 + Mo. 0:30 = zwei Wochen in Folge; Mo. 0:30 + So. 23:00 = eine Woche", g1.v.wk === 2 && g1.wk.startsWith("2@") && g2.v.wk === 1 && g2.wk === "", JSON.stringify([g1.v.wk, g2.v.wk]));
+        const e = await calc(page, [], 1);
+        ok("Leerer Verlauf: alle Reihen bei 0, keine Stufe", canon(e.v) === canon({ tr: 0, wk: 0, ton: 0, std: 0, ger: 0 }) && ["tr", "wk", "ton", "std", "ger"].every(k => e[k] === ""));
+        await ctx.close();
+      }
+      {
+        // ---- Zeile in „Fortschritt“ und Unterseite mit den 26 Trainings (PLAN_SMALL hat einen Trainingstag → Wochenziel 1) ----
+        const { ctx, page } = await open({ plan: PLAN_SMALL, history: H26 });
+        await page.click("nav.tabs [data-v=history]");
+        // 4 (Trainings) + 2 (Wochen) + 2 (Tonnen) + 3 (Stunden) + 1 (Geräte) = 12
+        ok("Fortschritt: Zeile „Meilensteine“ mit Symbol in der Liste oben, rechts „12 erreicht“", (await page.textContent("#histMore #row-meilensteine .t")) === "Meilensteine" && await page.isVisible("#histMore #row-meilensteine .ico") && (await rowVal(page)) === "12 erreicht", await rowVal(page));
+        await page.click("#row-meilensteine");
+        const h = await tp(page, () => ({ h1: [...document.querySelectorAll("#app h1")].map(x => x.textContent).join("|"), sub: document.querySelector("#app .head").textContent.replace(/\s+/g, " "), back: document.querySelector("#navbar .nb-back").textContent.trim(),
+          tab: document.querySelector("#tabs button.on").dataset.v, cards: [...document.querySelectorAll("#msList .card")].map(c => c.id).join(), foot: document.querySelector("#msList .foot").textContent }));
+        ok("Unterseite „Meilensteine“ mit „‹ Fortschritt“, genau einer Überschrift und „12 von 34 Stufen erreicht“; fünf Karten in fester Reihenfolge", h.h1 === "Meilensteine" && h.back === "Fortschritt" && h.tab === "history" && h.sub.includes("12 von 34 Stufen erreicht") && h.cards === "ms-tr,ms-wk,ms-ton,ms-std,ms-ger", JSON.stringify(h));
+        ok("Kennzeichnung „Stufen der App“; erklärt, was das Datum einer Stufe ist", h.foot.includes("Stufen der App") && h.foot.includes("Tag des Trainings, mit dem die Stufe erreicht wurde"));
+        const c = { tr: await card(page, "tr"), wk: await card(page, "wk"), ton: await card(page, "ton"), std: await card(page, "std"), ger: await card(page, "ger") };
+        ok("Trainings: 26, „Noch 24 Trainings bis 50“, Balken 26/50 = 52 %, 4 von 10 Stufen mit Datum (25 am 30.01.2025)", c.tr.num === "26" && c.tr.sub === "Trainings insgesamt" && c.tr.next === "Noch 24 Trainings bis 50" && c.tr.bar === "52%" && c.tr.aria === "26 von 50" && c.tr.cnt === "4 von 10 Stufen"
+          && c.tr.got === "1 · 06.01.2025 | 5 · 10.01.2025 | 10 · 15.01.2025 | 25 · 30.01.2025", JSON.stringify(c.tr));
+        ok("Bewegtes Gewicht: 26,0 Tonnen, „Noch 24,0 t bis 50 t“, Stufen 10 t (15.01.) und 25 t (30.01.); erklärt die Rechnung", c.ton.num === "26,0" && c.ton.sub === "Tonnen insgesamt" && c.ton.next === "Noch 24,0 t bis 50 t" && c.ton.bar === "52%" && c.ton.cnt === "2 von 7 Stufen"
+          && c.ton.got === "10 t · 15.01.2025 | 25 t · 30.01.2025" && c.ton.more.includes("Gewicht × Wiederholungen") && c.ton.more.includes("beide Seiten"), JSON.stringify(c.ton));
+        ok("Trainingszeit: 26,0 Stunden, „Noch 24,0 Std. bis 50 Std.“, Stufen 5, 10 und 25 Std.", c.std.num === "26,0" && c.std.sub === "Stunden insgesamt" && c.std.next === "Noch 24,0 Std. bis 50 Std." && c.std.cnt === "3 von 6 Stufen"
+          && c.std.got === "5 Std. · 10.01.2025 | 10 Std. · 15.01.2025 | 25 Std. · 30.01.2025", JSON.stringify(c.std));
+        ok("Geräte: 5 verschiedene, „Noch 5 Geräte bis 10“, Balken 50 %, Stufe 5 am 10.01.2025", c.ger.num === "5" && c.ger.sub === "verschiedene Geräte trainiert" && c.ger.next === "Noch 5 Geräte bis 10" && c.ger.bar === "50%" && c.ger.cnt === "1 von 5 Stufen" && c.ger.got === "5 · 10.01.2025", JSON.stringify(c.ger));
+        ok("Wochen in Folge: aktuell 0 (die Serie ist lange vorbei), beste Serie 4, nächste Stufe 8; Stufen 2 (13.01.) und 4 (27.01.); nennt das Wochenziel und woher es kommt", c.wk.num === "0" && c.wk.sub === "Wochen aktuell · beste Serie: 4" && c.wk.next === "Nächste Stufe: 8 Wochen in Folge" && c.wk.bar === "0%"
+          && c.wk.cnt === "2 von 6 Stufen" && c.wk.got === "2 · 13.01.2025 | 4 · 27.01.2025" && c.wk.more.includes("Wochenziel: 1 Training pro Woche") && c.wk.more.includes("Trainingstage in deinem Plan"), JSON.stringify(c.wk));
+        ok("Meilensteine: kein Text frei auf dem Seitengrund; bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+        await page.click("#navbar .nb-back");
+        ok("Zurück führt zu „Fortschritt“", (await page.textContent("#app h1")) === "Fortschritt");
+        // Zwischenspeicher: Zeile und Unterseite werden mehrfach gezeichnet, gerechnet wird einmal
+        await page.click("nav.tabs [data-v=home]"); await page.click("nav.tabs [data-v=history]");
+        ok("Die Zeile rechnet nicht bei jedem Zeichnen neu: Fortschritt dreimal und die Unterseite einmal gezeichnet, genau eine Berechnung", (await tp(page, () => window.__tp.meilensteine.runs())) === 1 && (await rowVal(page)) === "12 erreicht", String(await tp(page, () => window.__tp.meilensteine.runs())));
+        // Korrektur im Verlauf: Der Satz des 10. Trainings war 50 × 10 pro Seite (1.000 kg). Mit 40 × 10 (800 kg) sind es nach 10 Trainings nur 9,8 t –
+        // die Stufe 10 t fällt auf das 11. Training (10,8 t), die Stufe 25 t wird erst mit dem 26. erreicht (25,8 t); insgesamt 25,8 t
+        await page.click("#discLog summary"); await page.click("#discLog [data-a=histOpen][data-id=m10]"); await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="0"]');
+        await page.fill("#hsKg", "40"); await page.click("[data-a=histSetSave]"); await page.click(".sheet .sh-head [data-a=closeSheet]");
+        await page.click("#row-meilensteine");
+        const k = await card(page, "ton");
+        ok("Ein korrigierter Satz wirkt sofort (Zahl der Trainings unverändert): 25,8 t, Stufe 10 t jetzt am 16.01., Stufe 25 t am 31.01.", k.num === "25,8" && k.next === "Noch 24,2 t bis 50 t" && k.got === "10 t · 16.01.2025 | 25 t · 31.01.2025" && (await tp(page, () => window.__tp.meilensteine.runs())) === 2, JSON.stringify(k));
+        // Training löschen: ohne das 26. Training sind es 25 Trainings, 24,8 t (Stufe 25 t fällt weg) und 25 Stunden
+        await page.click("#navbar .nb-back"); if (!(await page.evaluate(() => document.getElementById("discLog").open))) await page.click("#discLog summary");
+        await page.click("#discLog [data-a=histOpen][data-id=m26]"); await page.click("[data-a=histDel]"); await page.click("[data-a=histDelDo]");
+        ok("Training gelöscht: Die Stufe 25 t ist nicht mehr erreicht → „11 erreicht“", (await rowVal(page)) === "11 erreicht", await rowVal(page));
+        await page.click("#row-meilensteine");
+        const d = { tr: await card(page, "tr"), ton: await card(page, "ton"), std: await card(page, "std") };
+        ok("Danach: 25 Trainings („Noch 25 Trainings bis 50“), 24,8 t („Noch 0,2 t bis 25 t“), 25,0 Std.", d.tr.num === "25" && d.tr.next === "Noch 25 Trainings bis 50" && d.tr.cnt === "4 von 10 Stufen" && d.ton.num === "24,8" && d.ton.next === "Noch 0,2 t bis 25 t" && d.ton.cnt === "1 von 7 Stufen"
+          && d.std.num === "25,0" && d.std.cnt === "3 von 6 Stufen", JSON.stringify(d));
+        await ctx.close();
+      }
+      {
+        // ---- Wochen in Folge, bezogen auf heute: je ein Training vor 9, 8, 7, 6, 5 Wochen (Serie 5), Lücke vor 4 Wochen, dann vor 3, 2, 1 Wochen (Serie 3, läuft noch) ----
+        const HW = [9, 8, 7, 6, 5, 3, 2, 1].map(k => tr(weeksAgo(k), [["hs-chest", "s", S(40, 10)]], 1800));
+        const { ctx, page } = await open({ plan: PLAN_SMALL, history: HW });
+        await page.click("nav.tabs [data-v=history]"); await page.click("#row-meilensteine");
+        const w = await card(page, "wk");
+        ok("Aktuell 3 Wochen in Folge, beste Serie 5 → Stufen 2 und 4 erreicht (Daten: Trainings vor 8 und vor 6 Wochen), „Noch 5 Wochen bis 8“, Balken 3/8 = 37,5 %", w.num === "3" && w.sub === "Wochen aktuell · beste Serie: 5" && w.next === "Noch 5 Wochen bis 8" && w.bar === "37.5%" && w.cnt === "2 von 6 Stufen"
+          && w.got === `2 · ${de(HW[1].date)} | 4 · ${de(HW[3].date)}`, JSON.stringify(w));
+        // 8 Trainings (Stufen 1 und 5), 8 × 800 kg = 6,4 t, 8 × 30 Min. = 4,0 Std., 1 Gerät
+        const o = { tr: await card(page, "tr"), ton: await card(page, "ton"), std: await card(page, "std"), ger: await card(page, "ger") };
+        ok("Dazu: 8 Trainings („Noch 2 Trainings bis 10“), 6,4 t („Noch 3,6 t bis 10 t“), 4,0 Std. („Noch 1,0 Std. bis 5 Std.“), 1 Gerät („Noch 4 Geräte bis 5“)", o.tr.num === "8" && o.tr.next === "Noch 2 Trainings bis 10" && o.ton.num === "6,4" && o.ton.next === "Noch 3,6 t bis 10 t"
+          && o.std.num === "4,0" && o.std.next === "Noch 1,0 Std. bis 5 Std." && o.ger.num === "1" && o.ger.sub === "Gerät trainiert" && o.ger.next === "Noch 4 Geräte bis 5" && o.ger.got === "", JSON.stringify(o));
+        // Zweiter Trainingstag im Plan → Wochenziel 2: Keine Woche hat zwei Trainings
+        await tp(page, () => { const s = window.__tp.state; s.plan.days.push({ id: "d2", name: "Zwei", items: [{ id: "j1", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }); });
+        await page.click("#navbar .nb-back"); await page.click("#row-meilensteine");
+        const w2 = await card(page, "wk");
+        ok("Wochenziel folgt dem Plan: mit zwei Trainingstagen gilt 2 pro Woche → keine Woche erreicht es, Stand 0, „Erste Stufe: 2 Wochen in Folge“", w2.num === "0" && w2.sub === "Wochen aktuell · beste Serie: 0" && w2.next === "Erste Stufe: 2 Wochen in Folge" && w2.got === "" && w2.cnt === "0 von 6 Stufen"
+          && w2.more.includes("Wochenziel: 2 Trainings pro Woche"), JSON.stringify(w2));
+        await ctx.close();
+      }
+      {
+        // ---- Leerer Zustand; ein kaputter gespeicherter Wert stört nicht (die Erweiterung speichert nichts) ----
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { meilensteine: "Unsinn" } });
+        await page.click("nav.tabs [data-v=history]");
+        ok("Ohne Training: Zeile „Meilensteine“ mit „0 erreicht“", (await rowVal(page)) === "0 erreicht");
+        await page.click("#row-meilensteine");
+        const e = await tp(page, () => ({ sub: document.querySelector("#app .head").textContent.replace(/\s+/g, " "), nums: [...document.querySelectorAll("#msList .num")].map(x => x.textContent).join(" "), next: [...document.querySelectorAll("#msList .ms-next")].map(x => x.textContent).join(" | "),
+          bars: [...document.querySelectorAll("#msList .mfill")].map(x => x.style.width).join(), got: document.querySelectorAll("#msList .ms-got").length, x: Object.keys(window.__tp.state.x).includes("meilensteine") }));
+        ok("Leerer Zustand: alle Reihen bei 0 mit der ersten Stufe als Ziel, keine Marken, kurzer freundlicher Hinweis", e.sub.includes("Noch kein Training. Dein erstes bringt die erste Stufe.") && e.nums === "0 0 0,0 0,0 0"
+          && e.next === "Erste Stufe: 1 Training | Erste Stufe: 2 Wochen in Folge | Erste Stufe: 10 Tonnen | Erste Stufe: 5 Stunden | Erste Stufe: 5 Geräte" && e.bars === "0%,0%,0%,0%,0%" && e.got === 0 && !e.x, JSON.stringify(e));
+        ok("Leerer Zustand: kein Text frei auf dem Seitengrund; bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+        // Das erste Training über die Oberfläche: bringt die Stufe „1 Training“ – und nur sie (2,4 t, 3 Geräte, erste Woche)
+        await page.click("nav.tabs [data-v=home]"); await train(page);
+        ok("Zusammenfassung nach dem ersten Training: Abschnitt „Neuer Meilenstein“ mit genau einer Zeile „1 Training“", (await newRows(page)) === "Neuer Meilenstein: 1 Training (insgesamt)" && await page.isVisible("#msNew .ico"), await newRows(page));
+        ok("Die Zeilen des Abschnitts liegen auf einer Karte (kein freier Text); die Zusammenfassung passt bei 320 px", !(await freeTextOn(page)).some(t => t.includes("1 Training") || t.includes("„insgesamt")) && await tp(page, () => !!document.querySelector("#msNew > .group > .li")) && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+        await page.click("[data-a=tab][data-v=home]");
+        await page.reload(); await page.click("nav.tabs [data-v=history]");
+        ok("Nach dem Neuladen: „1 erreicht“ (alles kommt aus dem gespeicherten Verlauf)", (await rowVal(page)) === "1 erreicht", await rowVal(page));
+        await page.click("#row-meilensteine");
+        const one = await card(page, "tr"), day = de((await stored(page)).history[0].date), ton = await card(page, "ton"), ger = await card(page, "ger");
+        ok("Unterseite: 1 Training, „Noch 4 Trainings bis 5“, Marke „1“ mit dem Datum dieses Trainings; 2,4 t; 3 Geräte", one.num === "1" && one.sub === "Training insgesamt" && one.next === "Noch 4 Trainings bis 5" && one.bar === "20%" && one.got === "1 · " + day
+          && ton.num === "2,4" && ton.next === "Noch 7,6 t bis 10 t" && ger.num === "3" && ger.next === "Noch 2 Geräte bis 5", JSON.stringify([one, ton, ger]));
+        await ctx.close();
+      }
+      {
+        // ---- Zusammenfassung: Abschnitt genau dann, wenn das gerade beendete Training eine Stufe überschreitet ----
+        // Vorher je Training 1.000 kg und 1 Minute am selben Gerät, alle im Januar 2025; das neue Training bringt 2.400 kg und zwei weitere Geräte
+        const old = n => H26.slice(0, n).map(h => Object.assign({}, h, { durationSec: 60, exercises: [{ exId: "hs-chest", name: "hs-chest", u: "s", sets: S(50, 10) }] }));
+        const after = async history => { const { ctx, page } = await open({ plan: PLAN_SMALL, history }); await train(page);
+          const r = { rows: await newRows(page), n: (await stored(page)).history.length, calc: await tp(page, () => window.__tp.meilensteine.neu(window.__tp.state.history.at(-1)).map(x => x.m.k + x.n).join()), fit: await noOverflow(page) }; await ctx.close(); return r; };
+        const a5 = await after(old(4));
+        ok("4 Trainings + 1: das fünfte bringt „5 Trainings“ – genau eine Zeile", a5.n === 5 && a5.rows === "Neuer Meilenstein: 5 Trainings (insgesamt)" && a5.calc === "tr5", JSON.stringify(a5));
+        const a6 = await after(old(5));
+        ok("5 Trainings + 1: das sechste überschreitet keine Stufe (6 Trainings, 7,4 t) → kein Abschnitt", a6.n === 6 && a6.rows === "" && a6.calc === "", JSON.stringify(a6));
+        const a10 = await after(old(9));
+        ok("9 Trainings mit 9,0 t + 1: das zehnte bringt „10 Trainings“ und mit 11,4 t auch „10 Tonnen“ → „Neue Meilensteine“ mit zwei Zeilen", a10.n === 10 && a10.rows === "Neue Meilensteine: 10 Trainings (insgesamt) | 10 Tonnen (Gewicht bewegt, insgesamt)" && a10.calc === "tr10,ton10" && a10.fit, JSON.stringify(a10));
+        const aw = await after([tr(weeksAgo(1), [["hs-chest", "s", S(50, 10)]])]);
+        ok("Ein Training in der letzten Woche + 1 heute (Wochenziel 1): „2 Wochen in Folge“ – 2 Trainings sind keine Stufe", aw.n === 2 && aw.rows === "Neuer Meilenstein: 2 Wochen in Folge (mit erreichtem Wochenziel)" && aw.calc === "wk2", JSON.stringify(aw));
+      }
+    }
     // @ext:meilensteine:test:end
     // ── Abstand meilensteine/test 1 ──
     // ── Abstand meilensteine/test 2 ──
     // ── Abstand meilensteine/test 3 ──
     // @ext:masse:test:start
+    section("E-masse. Körpermaße (Fortschritt → Körpermaße)");
+    {
+      // Hilfen dieses Abschnitts. Erwartete Datumstexte werden hier unabhängig von der App gebildet.
+      const p2 = n => String(n).padStart(2, "0");
+      const dAgo = n => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
+      const MONAT = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+      const tagTxt = iso => { const [y, m, d] = iso.split("-").map(Number); return `${d}. ${MONAT[m - 1]}${y === new Date().getFullYear() ? "" : " " + y}`; };
+      const zurSeite = async page => { await page.click("nav.tabs [data-v=history]"); await page.click("#row-masse"); };
+      // Zeilen der Liste: Name, Unterzeilen (geschützte Leerzeichen wie normale gelesen), Punkte der Verlaufslinie
+      const zeilen = page => tp(page, () => Object.fromEntries([...document.querySelectorAll("#masseList .li")].map(li => { const g = s => String(s || "").replace(/ /g, " ").replace(/\s+/g, " ").trim(), pl = li.querySelector("svg.masse-spark polyline");
+        return [li.dataset.k, { name: g(li.querySelector(".t").textContent), s: [...li.querySelectorAll(".s")].map(x => g(x.textContent)), svg: !!li.querySelector("svg.masse-spark"), pts: pl ? pl.getAttribute("points") : null, dots: li.querySelectorAll("svg.masse-spark circle").length }]; })));
+      const blatt = page => tp(page, () => { const g = s => String(s || "").replace(/ /g, " ").replace(/\s+/g, " ").trim(), q = s => document.querySelector("#sheet-root " + s), ch = q("svg.masse-chart");
+        return { open: !!q(".sheet"), as: !!q(".sheet.as"), title: q(".sh-head h2") ? g(q(".sh-head h2").textContent) : null, left: q(".sh-head .sh-l") ? g(q(".sh-head .sh-l").textContent) : null, right: q(".sh-head [data-a=masseSave]") ? g(q(".sh-head [data-a=masseSave]").textContent) : null,
+          label: q("label[for=masseIn]") ? g(q("label[for=masseIn]").textContent) : null, ph: q("#masseIn") ? g(q("#masseIn").getAttribute("placeholder")) : null, val: q("#masseIn") ? q("#masseIn").value : null, err: q("#masseErr") ? !q("#masseErr").hidden : null, errTxt: q("#masseErr") ? g(q("#masseErr").textContent) : null,
+          big: q("#masseCard .kpi") ? g(q("#masseCard .kpi .num").textContent) + " " + g(q("#masseCard .kpi .sub").textContent) : null, delta: q("#masseDelta") ? g(q("#masseDelta").textContent) : null, today: q("#masseToday") ? g(q("#masseToday").textContent) : null,
+          chart: ch ? { pts: ch.querySelector("polyline").getAttribute("points"), labels: [...ch.querySelectorAll("text")].map(t => t.textContent), dots: ch.querySelectorAll("circle").length, aria: g(ch.getAttribute("aria-label")) } : null,
+          rows: [...document.querySelectorAll("#masseEntries .li")].map(li => g(li.querySelector(".t").textContent) + " = " + g(li.querySelector(".val").textContent)),
+          delMin: Math.min(...[...document.querySelectorAll("#masseEntries [data-a=masseDel]")].map(b => Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height))),
+          delAria: q("#masseEntries [data-a=masseDel]") ? g(q("#masseEntries [data-a=masseDel]").getAttribute("aria-label")) : null, wide: q(".sheet") ? q(".sheet").scrollWidth <= q(".sheet").clientWidth : null,
+          asT: q(".as-t") ? g(q(".as-t").textContent) : null, asM: q(".as-m") ? g(q(".as-m").textContent) : null, asB: [...document.querySelectorAll("#sheet-root .as-btn")].map(b => g(b.textContent)).join("|") }; });
+      const masse = async page => (await tp(page, () => window.__tp.state.x.masse));
+
+      {
+        // Leerer Zustand: Zeile in Fortschritt, Unterseite, leeres Sheet, Zurück
+        const { ctx, page } = await open({ plan: PLAN_SMALL });
+        await page.click("nav.tabs [data-v=history]");
+        const r = await tp(page, () => { const el = document.querySelector("#histMore #row-masse"); return el && { t: el.querySelector(".t").textContent, val: !!el.querySelector(".val"), ico: !!el.querySelector(".ico svg") }; });
+        ok("Fortschritt: Zeile „Körpermaße“ mit Symbol in der Liste oben – ohne Wert, solange nichts eingetragen ist", !!r && r.t === "Körpermaße" && !r.val && r.ico, JSON.stringify(r));
+        await page.click("#row-masse");
+        const s = await tp(page, () => ({ h1: [...document.querySelectorAll("#app h1")].map(h => h.textContent).join("|"), back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v,
+          empty: document.querySelector("#masseEmpty") ? document.querySelector("#masseEmpty").textContent.trim() : "", emptySym: !!document.querySelector("#masseEmpty svg"), foot: document.querySelector("#app .foot").textContent, limit: !!document.querySelector("#masseLimit"),
+          minH: Math.min(...[...document.querySelectorAll("#masseList .li")].map(x => x.getBoundingClientRect().height)), store: JSON.stringify(window.__tp.state.x.masse) }));
+        const z = await zeilen(page);
+        ok("Unterseite „Körpermaße“ mit „‹ Fortschritt“, der Bereich bleibt Fortschritt; genau eine Überschrift", s.h1 === "Körpermaße" && s.back === "Fortschritt" && s.tab === "history", JSON.stringify(s));
+        ok("Leerer Zustand: Karte mit Symbol und Hinweis, darunter die sechs Maße ohne Werte und ohne Linien; Zeilen mindestens 44 px hoch",
+          s.empty.startsWith("Noch keine Maße eingetragen.") && s.emptySym && Object.keys(z).join() === "brust,taille,huefte,oberarm,oberschenkel,wade" && Object.values(z).map(x => x.name).join() === "Brust,Taille,Hüfte,Oberarm,Oberschenkel,Wade"
+          && Object.values(z).every(x => !x.s.length && !x.svg) && s.minH >= 44 && s.store === '{"e":[]}' && !s.limit, JSON.stringify([s, z]));
+        ok("Messhinweis als Beitext, ohne Aussagen über gesunde Werte", s.foot.includes("Immer an derselben Stelle und zur gleichen Tageszeit messen") && !/gesund|Risiko|normal|ideal|sollte/i.test(await page.textContent("#app .page")), s.foot);
+        ok("Leerer Zustand: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+        await page.setViewportSize({ width: 320, height: 640 });
+        ok("Leerer Zustand: 320 px ohne seitliches Scrollen", await noOverflow(page), await overflowers(page));
+        await page.click("#masse-huefte");
+        const b = await blatt(page);
+        ok("Maß antippen öffnet das Sheet: Titel „Hüfte“, Feld „Heute in cm“, links „Abbrechen“, rechts „Speichern“; ohne Einträge weder Karte noch Diagramm noch Liste",
+          b.open && b.title === "Hüfte" && b.label === "Heute in cm" && b.left === "Abbrechen" && b.right === "Speichern" && b.big === null && b.chart === null && !b.rows.length && b.err === false && b.val === "", JSON.stringify(b));
+        ok("Leeres Sheet: 320 px ohne seitliches Scrollen", b.wide && await noOverflow(page), await overflowers(page));
+        await page.click("#sheet-root .sh-head .sh-l");
+        ok("„Abbrechen“ schließt das Sheet, nichts ist gespeichert", !(await blatt(page)).open && (await masse(page)).e.length === 0);
+        await page.setViewportSize({ width: 360, height: 780 });
+        await page.click("#navbar .nb-back");
+        ok("Zurück führt zu „Fortschritt“", (await page.textContent("#app h1")) === "Fortschritt" && await page.isVisible("#row-masse"));
+        await ctx.close();
+      }
+      {
+        // Eintragen über die Oberfläche: Prüfung der Eingabe, Speichern, Neuladen, gleicher Tag ersetzt
+        const { ctx, page } = await open({ plan: PLAN_SMALL });
+        await zurSeite(page); await page.click("#masse-taille");
+        const bad = [];
+        for (const v of ["", "abc", "9,9", "250,1", "300", "84,5 cm", "-84", "8 4"]) {
+          await page.fill("#masseIn", v); await page.click("[data-a=masseSave]");
+          const b = await blatt(page); if (!(b.open && b.err && b.errTxt === "Bitte eine Zahl zwischen 10 und 250 eingeben." && (await masse(page)).e.length === 0)) bad.push(v);
+        }
+        ok("Ungültige Eingaben (leer, Text, 9,9, 250,1, 300, mit Einheit, negativ) zeigen den Fehlertext, das Sheet bleibt offen, nichts wird gespeichert", bad.length === 0, JSON.stringify(bad));
+        ok("Fehlertext ist sichtbar und steht im Sheet", await page.isVisible("#masseErr"));
+        await page.fill("#masseIn", "84");
+        ok("Beim Weitertippen verschwindet der Fehlertext", (await blatt(page)).err === false);
+        await page.fill("#masseIn", "84,5"); await page.click("[data-a=masseSave]");
+        const heute = await tp(page, () => window.__tp.dkey());
+        let e = (await stored(page)).x.masse.e;
+        ok("„84,5“ speichern: ein Eintrag { heute, taille, 84.5 }, das Sheet schließt", canon(e) === canon([{ d: heute, k: "taille", cm: 84.5 }]) && !(await blatt(page)).open, JSON.stringify(e));
+        let z = await zeilen(page);
+        ok("Liste: Taille zeigt „84,5 cm · <heute>“ ohne Veränderung, als Verlauf nur ein Punkt; die anderen Maße „Noch kein Eintrag“; die Karte für den leeren Zustand ist weg",
+          canon(z.taille.s) === canon([`84,5 cm · ${tagTxt(heute)}`]) && z.taille.svg && z.taille.pts === null && z.taille.dots === 1 && ["brust", "huefte", "oberarm", "oberschenkel", "wade"].every(k => canon(z[k].s) === canon(["Noch kein Eintrag"]) && !z[k].svg) && !(await page.$("#masseEmpty")), JSON.stringify(z));
+        await page.reload(); await page.click("nav.tabs [data-v=history]");
+        ok("Nach dem Neuladen: Fortschritt zeigt „1 Maß“", (await page.textContent("#row-masse .val")).replace(/ /g, " ") === "1 Maß", await page.textContent("#row-masse"));
+        await page.click("#row-masse"); z = await zeilen(page);
+        ok("Nach dem Neuladen ist der Eintrag noch da", canon(z.taille.s) === canon([`84,5 cm · ${tagTxt(heute)}`]) && canon((await masse(page)).e) === canon([{ d: heute, k: "taille", cm: 84.5 }]), JSON.stringify(z.taille));
+        await page.click("#masse-taille");
+        let b = await blatt(page);
+        ok("Sheet mit einem Eintrag: großer Wert „84,5 cm · <heute>“, Hinweis „Heute schon eingetragen“, noch kein Diagramm und keine Veränderung, ein Eintrag in der Liste",
+          b.big === `84,5 cm · ${tagTxt(heute)}` && b.today === "Heute schon eingetragen: 84,5 cm. Ein neuer Wert ersetzt ihn." && b.ph === "Heute: 84,5 cm" && b.chart === null && b.delta === null && canon(b.rows) === canon([`${tagTxt(heute)} = 84,5 cm`]), JSON.stringify(b));
+        await page.fill("#masseIn", "83.94"); await page.click("[data-a=masseSave]");
+        e = (await stored(page)).x.masse.e;
+        ok("Gleicher Tag: der neue Wert ersetzt den alten (weiter genau ein Eintrag); „83.94“ wird auf 83,9 gerundet", canon(e) === canon([{ d: heute, k: "taille", cm: 83.9 }]) && (await zeilen(page)).taille.s[0] === `83,9 cm · ${tagTxt(heute)}`, JSON.stringify(e));
+        await page.click("#masse-oberarm"); await page.fill("#masseIn", "36"); await page.click("[data-a=masseSave]");
+        await page.click("#masse-brust"); await page.fill("#masseIn", "102,5"); await page.click("[data-a=masseSave]");
+        e = (await stored(page)).x.masse.e;
+        ok("Andere Maße am selben Tag sind eigene Einträge, gespeichert in der Reihenfolge der Liste (Brust, Taille, Oberarm)", canon(e) === canon([{ d: heute, k: "brust", cm: 102.5 }, { d: heute, k: "taille", cm: 83.9 }, { d: heute, k: "oberarm", cm: 36 }]), JSON.stringify(e));
+        await page.click("#navbar .nb-back");
+        ok("Fortschritt zählt die Maße mit Einträgen: „3 Maße“", (await page.textContent("#row-masse .val")).replace(/ /g, " ") === "3 Maße", await page.textContent("#row-masse"));
+        await ctx.close();
+      }
+      {
+        // Zweiter und dritter Wert an anderen Tagen (vorbefüllt): Veränderung, Verlaufslinie, Diagramm, Löschen mit Rückfrage
+        // Von Hand gerechnet: 85,5 − 87 = −1,5; 84,5 − 87 = −2,5; 103,5 − 102 = +1,5; 58 − 58 = 0
+        const d40 = dAgo(40), d10 = dAgo(10), d5 = dAgo(5);
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { masse: { e: [{ d: d40, k: "taille", cm: 87 }, { d: d10, k: "taille", cm: 85.5 }, { d: d40, k: "brust", cm: 102 }, { d: d5, k: "brust", cm: 103.5 },
+          { d: d5, k: "wade", cm: 38.2 }, { d: "2020-10-03", k: "oberschenkel", cm: 58 }, { d: d10, k: "oberschenkel", cm: 58 }] } } });
+        await page.click("nav.tabs [data-v=history]");
+        ok("Fortschritt: Wert „4 Maße“ (Maße mit mindestens einem Eintrag)", (await page.textContent("#row-masse .val")).replace(/ /g, " ") === "4 Maße", await page.textContent("#row-masse"));
+        await page.click("#row-masse");
+        let z = await zeilen(page);
+        ok("Veränderung gegenüber dem ersten Eintrag mit deutschem Komma und Vorzeichen: Brust „+1,5 cm seit …“, Taille „−1,5 cm seit …“",
+          canon(z.brust.s) === canon([`103,5 cm · ${tagTxt(d5)}`, `+1,5 cm seit ${tagTxt(d40)}`]) && canon(z.taille.s) === canon([`85,5 cm · ${tagTxt(d10)}`, `−1,5 cm seit ${tagTxt(d40)}`]), JSON.stringify([z.brust, z.taille]));
+        ok("Gleicher Wert: „Unverändert seit 3. Oktober 2020“ (Datum aus einem anderen Jahr mit Jahreszahl); ein einzelner Eintrag ohne Veränderung; ohne Eintrag „Noch kein Eintrag“",
+          canon(z.oberschenkel.s) === canon([`58 cm · ${tagTxt(d10)}`, "Unverändert seit 3. Oktober 2020"]) && canon(z.wade.s) === canon([`38,2 cm · ${tagTxt(d5)}`]) && canon(z.huefte.s) === canon(["Noch kein Eintrag"]), JSON.stringify([z.oberschenkel, z.wade, z.huefte]));
+        // Verlaufslinie 52 × 26: links x = 4, rechts x = 48; größter Wert y = 5, kleinster y = 21
+        ok("Verlaufslinie in der Zeile: zwei Einträge = Linie von (4|5) nach (48|21), gleiche Werte = waagerecht in der Mitte, ein Eintrag = nur Punkt, kein Eintrag = nichts",
+          z.taille.pts === "4.0,5.0 48.0,21.0" && z.brust.pts === "4.0,21.0 48.0,5.0" && z.oberschenkel.pts === "4.0,13.0 48.0,13.0" && z.wade.pts === null && z.wade.dots === 1 && !z.huefte.svg, JSON.stringify(z));
+        ok("Gefüllte Seite: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+        await page.setViewportSize({ width: 320, height: 640 });
+        ok("Gefüllte Seite: 320 px ohne seitliches Scrollen", await noOverflow(page), await overflowers(page));
+        await page.setViewportSize({ width: 360, height: 780 });
+        await page.click("#masse-taille");
+        let b = await blatt(page);
+        ok("Sheet „Taille“ mit zwei Einträgen: „85,5 cm · …“, „−1,5 cm seit …“, Diagramm mit zwei Punkten, Platzhalter „Zuletzt: 85,5 cm“, Einträge neueste zuerst",
+          b.big === `85,5 cm · ${tagTxt(d10)}` && b.delta === `−1,5 cm seit ${tagTxt(d40)}` && !!b.chart && b.chart.pts === "38.0,12.0 310.0,106.0" && b.ph === "Zuletzt: 85,5 cm" && b.today === null
+          && canon(b.rows) === canon([`${tagTxt(d10)} = 85,5 cm`, `${tagTxt(d40)} = 87 cm`]), JSON.stringify(b));
+        await page.fill("#masseIn", "84,5"); await page.click("[data-a=masseSave]");
+        const heute = await tp(page, () => window.__tp.dkey());
+        z = await zeilen(page);
+        // 30 von 40 Tagen = 0,75 der Breite: x = 4 + 0,75 · 44 = 37; 85,5 liegt bei (85,5 − 84,5) / 2,5 = 0,4 der Höhe: y = 21 − 0,4 · 16 = 14,6
+        ok("Neuer Wert von heute (84,5): Veränderung „−2,5 cm seit …“ (84,5 − 87), Verlaufslinie mit drei Punkten nach Datum und Wert",
+          canon(z.taille.s) === canon([`84,5 cm · ${tagTxt(heute)}`, `−2,5 cm seit ${tagTxt(d40)}`]) && z.taille.pts === "4.0,5.0 37.0,14.6 48.0,21.0", JSON.stringify(z.taille));
+        ok("Gespeichert sind drei Einträge für die Taille, nach Datum geordnet", canon((await stored(page)).x.masse.e.filter(x => x.k === "taille")) === canon([{ d: d40, k: "taille", cm: 87 }, { d: d10, k: "taille", cm: 85.5 }, { d: heute, k: "taille", cm: 84.5 }]));
+        await page.click("#masse-taille");
+        b = await blatt(page);
+        // Diagramm 320 × 132: x von 38 bis 310 (0,75 · 272 = 204 → 242), y von 106 (kleinster) bis 12 (größter): 106 − 0,4 · 94 = 68,4
+        const kurz = iso => { const [y, m, d] = iso.split("-").map(Number); return `${d}.${m}.${y === new Date().getFullYear() ? "" : String(y).slice(-2)}`; };
+        ok("Liniendiagramm: Punkte (38|12), (242|68,4), (310|106); Beschriftung größter und kleinster Wert (87 und 84,5), erstes und letztes Datum",
+          !!b.chart && b.chart.pts === "38.0,12.0 242.0,68.4 310.0,106.0" && canon(b.chart.labels) === canon(["87", "84,5", kurz(d40), kurz(heute)]) && b.chart.dots === 3
+          && b.chart.aria === `Verlauf Taille: 87 cm am ${tagTxt(d40)}, 84,5 cm am ${tagTxt(heute)}`, JSON.stringify(b.chart));
+        ok("Löschknöpfe mindestens 44 × 44 px und mit Beschriftung", b.delMin >= 44 && b.delAria === `Eintrag vom ${tagTxt(heute)} löschen`, JSON.stringify([b.delMin, b.delAria]));
+        await page.setViewportSize({ width: 320, height: 640 });
+        ok("Gefülltes Sheet: 320 px ohne seitliches Scrollen", (await blatt(page)).wide && await noOverflow(page), await overflowers(page));
+        await page.setViewportSize({ width: 360, height: 780 });
+        // Löschen: erst Rückfrage, „Abbrechen“ ändert nichts
+        await page.fill("#masseIn", "90");
+        await page.click(`#masseEntries [data-a=masseDel][data-d="${d10}"]`);
+        b = await blatt(page);
+        ok("Löschen fragt nach: „Eintrag löschen?“ mit Maß, Wert und Datum, „Löschen“ und „Abbrechen“; noch ist nichts gelöscht",
+          b.as && b.asT === "Eintrag löschen?" && b.asM === `Taille: 85,5 cm vom ${tagTxt(d10)}.` && b.asB === "Löschen|Abbrechen" && (await masse(page)).e.length === 8, JSON.stringify(b));
+        await page.click("#sheet-root .as-cancel");
+        b = await blatt(page);
+        ok("„Abbrechen“ in der Rückfrage: zurück im Sheet, der Eintrag ist noch da, die begonnene Eingabe „90“ auch", b.open && !b.as && b.title === "Taille" && b.rows.length === 3 && b.val === "90" && (await masse(page)).e.length === 8, JSON.stringify(b));
+        await page.click(`#masseEntries [data-a=masseDel][data-d="${d10}"]`); await page.click("#sheet-root [data-a=masseDelDo]");
+        b = await blatt(page);
+        ok("„Löschen“ entfernt genau diesen Eintrag; das Sheet zeigt die übrigen zwei, Veränderung und Diagramm rechnen neu",
+          canon((await stored(page)).x.masse.e.filter(x => x.k === "taille")) === canon([{ d: d40, k: "taille", cm: 87 }, { d: heute, k: "taille", cm: 84.5 }]) && (await masse(page)).e.length === 7
+          && b.open && !b.as && canon(b.rows) === canon([`${tagTxt(heute)} = 84,5 cm`, `${tagTxt(d40)} = 87 cm`]) && b.delta === `−2,5 cm seit ${tagTxt(d40)}` && b.chart.pts === "38.0,12.0 310.0,106.0", JSON.stringify(b));
+        ok("Die Liste dahinter ist schon aktualisiert", (await zeilen(page)).taille.pts === "4.0,5.0 48.0,21.0");
+        await page.click(`#masseEntries [data-a=masseDel][data-d="${d40}"]`); await page.click("#sheet-root [data-a=masseDelDo]");
+        b = await blatt(page);
+        ok("Bleibt nur ein Eintrag, gibt es keine Veränderung und kein Diagramm mehr", b.rows.length === 1 && b.delta === null && b.chart === null && b.big === `84,5 cm · ${tagTxt(heute)}`, JSON.stringify(b));
+        await page.click(`#masseEntries [data-a=masseDel][data-d="${heute}"]`); await page.click("#sheet-root [data-a=masseDelDo]");
+        b = await blatt(page);
+        ok("Letzten Eintrag gelöscht: Sheet ohne Karte und Liste, die Zeile zeigt „Noch kein Eintrag“", b.open && b.big === null && !b.rows.length && canon((await zeilen(page)).taille.s) === canon(["Noch kein Eintrag"]), JSON.stringify(b));
+        await page.click("#sheet-root .sh-head .sh-l");
+        await page.reload(); await page.click("nav.tabs [data-v=history]");
+        ok("Löschen übersteht das Neuladen: keine Einträge für die Taille, Fortschritt zeigt „3 Maße“", (await masse(page)).e.every(x => x.k !== "taille") && (await masse(page)).e.length === 5 && (await page.textContent("#row-masse .val")).replace(/ /g, " ") === "3 Maße", JSON.stringify(await masse(page)));
+        await ctx.close();
+      }
+      {
+        // Kaputter Speicher stürzt nicht ab
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { masse: "Unsinn" } });
+        await zurSeite(page);
+        ok("Kaputter Speicher („Unsinn“): die Seite öffnet sich im leeren Zustand", (await page.textContent("#app h1")) === "Körpermaße" && await page.isVisible("#masseEmpty") && canon(await masse(page)) === canon({ e: [] }));
+        await page.click("#masse-wade"); await page.fill("#masseIn", "38"); await page.click("[data-a=masseSave]");
+        ok("… und Eintragen funktioniert danach", (await stored(page)).x.masse.e.length === 1 && (await stored(page)).x.masse.e[0].cm === 38);
+        await ctx.close();
+      }
+      {
+        // Strenge Prüfung des Speichers beim Start: nur gültige Einträge bleiben, sortiert, je Maß und Tag einer (der spätere), eine Nachkommastelle
+        const roh = { fremd: 1, e: [{ d: "2026-03-02", k: "taille", cm: 84.56 }, { d: "2026-03-01", k: "wade", cm: 38 }, { d: "2026-03-02", k: "brust", cm: 100, extra: "x" }, { d: "2026-03-02", k: "taille", cm: 83 },
+          { d: "2026-03-03", k: "huefte", cm: 95.25 }, { d: "2026-03-02", k: "bauch", cm: 80 }, { d: "2026-02-30", k: "taille", cm: 80 }, { d: "2.3.2026", k: "taille", cm: 80 }, { d: 20260304, k: "taille", cm: 80 },
+          { d: "2026-03-04", k: "taille", cm: 9.9 }, { d: "2026-03-04", k: "taille", cm: 250.1 }, { d: "2026-03-04", k: "taille", cm: "84" }, { d: "2026-03-04", k: "taille", cm: null }, { d: "2026-03-04", k: "taille" },
+          null, "x", 5, [], { d: "2026-03-05", k: "oberschenkel", cm: 250 }, { d: "2026-03-05", k: "oberarm", cm: 10 }] };
+        const soll = [{ d: "2026-03-01", k: "wade", cm: 38 }, { d: "2026-03-02", k: "brust", cm: 100 }, { d: "2026-03-02", k: "taille", cm: 83 }, { d: "2026-03-03", k: "huefte", cm: 95.3 }, { d: "2026-03-05", k: "oberarm", cm: 10 }, { d: "2026-03-05", k: "oberschenkel", cm: 250 }];
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { masse: roh } });
+        ok("Speicher wird beim Start streng geprüft: unbekannte Maße, falsche Daten, Werte außerhalb 10–250 und Fremdes fallen weg; doppelte Tage: der spätere Eintrag zählt; sortiert nach Datum", canon(await masse(page)) === canon({ e: soll }), JSON.stringify(await masse(page)));
+        const c = await tp(page, () => { const T = window.__tp.masse, C = x => JSON.stringify(T.clean(x));
+          const viele = []; for (let i = 0; i < T.LIMIT + 5; i++) { const d = new Date(2020, 0, 1 + Math.floor(i / 6), 12); viele.push({ d: window.__tp.dkey(d), k: T.MASSE[i % 6][0], cm: 50 + (i % 100) / 10 }); }
+          const big = T.clean({ e: viele.slice().reverse() }).e;
+          return { leer: [undefined, null, "Unsinn", 7, [], {}, { e: "x" }, { e: [NaN, Infinity] }, { e: [{ d: "2026-03-04", k: "taille", cm: NaN }, { d: "2026-03-04", k: "taille", cm: Infinity }] }].map(C).join(""),
+            limit: T.LIMIT, n: big.length, first: big[0], last: big[big.length - 1], sorted: big.every((x, i) => !i || big[i - 1].d <= x.d), keys: T.MASSE.map(m => m[0]).join() }; });
+        ok("clean: jeder unbrauchbare Wert ergibt { e: [] }", c.leer === '{"e":[]}'.repeat(9), c.leer);
+        ok("clean: höchstens 2000 Einträge – von 2005 fallen die fünf ältesten weg, die neuesten bleiben",
+          c.limit === 2000 && c.n === 2000 && canon(c.first) === canon({ d: "2020-01-01", k: "wade", cm: 50.5 }) && canon(c.last) === canon({ d: "2020-11-30", k: "brust", cm: 50.4 }) && c.sorted && c.keys === "brust,taille,huefte,oberarm,oberschenkel,wade", JSON.stringify(c));
+        // Eingabe lesen: Komma oder Punkt, kaufmännisch auf eine Nachkommastelle, nur 10–250
+        const P = await tp(page, v => v.map(x => window.__tp.masse.parse(x)), ["84,5", "84.5", "84", " 84,5 ", "84,55", "84,54", "84,549", "84,95", "10", "250", "250,0", "249,96", "84,", "084,5",
+          "9,99", "250,01", "0", "", "abc", "84,5 cm", "-84", "1e2", "84,5,1", ",5", "1000", null]);
+        ok("Eingabe lesen: „84,5“ und „84.5“ = 84,5; „84,55“ → 84,6; „84,54“ → 84,5; „84,95“ → 85; „249,96“ → 250; Grenzen 10 und 250 gelten; alles andere ist ungültig",
+          canon(P) === canon([84.5, 84.5, 84, 84.5, 84.6, 84.5, 84.5, 85, 10, 250, 250, 250, 84, 84.5, null, null, null, null, null, null, null, null, null, null, null, null]), JSON.stringify(P));
+        // Veränderung und Punkte mit festen Daten (unabhängig vom Tag des Testlaufs)
+        const R = await tp(page, () => { const T = window.__tp.masse, g = s => s.replace(/ /g, " "), y = new Date().getFullYear(), E = (d, cm) => ({ d, k: "taille", cm });
+          return { a: g(T.change([E("2020-10-03", 87), E("2020-11-14", 84.5)])), b: g(T.change([E(`${y}-01-01`, 35), E(`${y}-01-02`, 36.5)])), c: g(T.change([E("2020-10-03", 58), E("2021-10-03", 58)])), d: T.change([E("2020-10-03", 58)]), e: T.change([]),
+            f: g(T.change([E("2020-01-05", 86.8), E("2020-01-06", 85.9)])), h: g(T.change([E("2020-01-05", 80), E("2020-01-06", 99), E("2020-01-07", 81)])), i: g(T.change([E("2020-01-05", 84.1), E("2020-01-06", 84.4)])),
+            raw: T.change([E("2020-10-03", 87), E("2020-11-14", 84.5)]), day: g(T.day("2020-02-29")), dayNow: g(T.day(`${y}-03-01`)),
+            pts: T.pts([E("2024-01-01", 80), E("2024-01-11", 90), E("2024-01-21", 85)], 0, 100, 50, 10, 80, 90).map(q => q.join(",")).join(" "),
+            sommer: T.pts([E("2024-03-01", 80), E("2024-03-11", 90), E("2024-04-10", 85)], 0, 100, 50, 10, 80, 90).map(q => q[0]).join(" ") }; });
+        ok("Veränderung: „−2,5 cm seit 3. Oktober 2020“, „+1,5 cm seit 1. Januar“ (laufendes Jahr ohne Jahreszahl), gleich = „Unverändert seit …“, weniger als zwei Einträge = leer",
+          R.a === "−2,5 cm seit 3. Oktober 2020" && R.b === "+1,5 cm seit 1. Januar" && R.c === "Unverändert seit 3. Oktober 2020" && R.d === "" && R.e === "", JSON.stringify(R));
+        ok("Veränderung: ohne Rundungsreste (85,9 − 86,8 = „−0,9 cm“, 84,4 − 84,1 = „+0,3 cm“); es zählen nur erster und letzter Eintrag (80 … 81 = „+1 cm“)",
+          R.f === "−0,9 cm seit 5. Januar 2020" && R.i === "+0,3 cm seit 5. Januar 2020" && R.h === "+1 cm seit 5. Januar 2020", JSON.stringify(R));
+        ok("Zahl und Einheit sowie das Datum brechen nicht um (geschützte Leerzeichen); „29. Februar 2020“ und „1. März“", R.raw === "−2,5 cm seit 3. Oktober 2020" && R.day === "29. Februar 2020" && R.dayNow === "1. März", JSON.stringify(R));
+        ok("Punkte der Linie: waagerecht nach Tagen (0, 10, 20 Tage → 0, 50, 100), senkrecht nach Wert (80, 90, 85 → 50, 10, 30); Zeitumstellung verschiebt nichts (10 von 40 Tagen → 25)",
+          R.pts === "0.0,50.0 50.0,10.0 100.0,30.0" && R.sommer === "0.0 25.0 100.0", JSON.stringify(R));
+        await ctx.close();
+      }
+      {
+        // Obergrenze in der Oberfläche: Hinweis kurz vor der Grenze; ist sie erreicht, fällt für einen neuen Eintrag der älteste weg
+        const K = ["brust", "taille", "huefte", "oberarm", "oberschenkel", "wade"], e = [];
+        for (let i = 0; i < 2000; i++) e.push({ d: dAgo(400 - Math.floor(i / 6)), k: K[i % 6], cm: 60 + (i % 50) / 10 });
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { masse: { e } } });
+        await zurSeite(page);
+        const t = (await page.textContent("#masseLimit")).replace(/ /g, " ");
+        ok("Kurz vor und an der Obergrenze steht ein Hinweis: „2.000 von höchstens 2.000 Einträgen gespeichert (Regel der App)“", t.startsWith("2.000 von höchstens 2.000 Einträgen gespeichert (Regel der App).") && (await freeTextOn(page)).length === 0, t);
+        // Langes Sheet (334 Einträge für die Brust): nach der Rückfrage steht es wieder an derselben Stelle
+        await page.click("#masse-brust");
+        const top0 = await tp(page, () => { const sh = document.querySelector("#sheet-root .sheet"); sh.scrollTop = sh.scrollHeight; return sh.scrollTop; });
+        await page.click(`#masseEntries [data-a=masseDel][data-d="${dAgo(400)}"]`); await page.click("#sheet-root .as-cancel");
+        const top1 = await tp(page, () => ({ top: document.querySelector("#sheet-root .sheet").scrollTop, n: document.querySelectorAll("#masseEntries .li").length }));
+        ok("Langes Sheet: alle 334 Einträge in der Liste; nach „Abbrechen“ in der Rückfrage steht es wieder an derselben Stelle", top1.n === 334 && top0 > 5000 && Math.abs(top1.top - top0) <= 2, JSON.stringify([top0, top1]));
+        await page.click("#sheet-root .sh-head .sh-l");
+        await page.click("#masse-wade"); await page.fill("#masseIn", "40"); await page.click("[data-a=masseSave]");
+        const heute = await tp(page, () => window.__tp.dkey()), s = (await stored(page)).x.masse.e;
+        ok("An der Obergrenze: der neue Eintrag ist gespeichert, es bleiben 2000, der älteste (Brust vor 400 Tagen) ist weggefallen",
+          s.length === 2000 && canon(s[s.length - 1]) === canon({ d: heute, k: "wade", cm: 40 }) && canon(s[0]) === canon({ d: dAgo(400), k: "taille", cm: 60.1 }), JSON.stringify([s.length, s[0], s[s.length - 1]]));
+        await ctx.close();
+      }
+      {
+        // Datum am Ort des Nutzers, nicht UTC (Zeitzone so gewählt, dass sich beide Daten in diesem Moment sicher unterscheiden)
+        const tz = new Date().getUTCHours() >= 11 ? "Pacific/Kiritimati" : "Pacific/Pago_Pago";
+        const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, timezoneId: tz, serviceWorkers: "block" });
+        await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-tabmem", "0"); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
+        const page = await ctx.newPage(); page.on("pageerror", err => allErrors.push(err.message)); await page.goto(URL);
+        const d = await page.evaluate(() => { const n = new Date(), p = x => String(x).padStart(2, "0"); return { local: `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`, utc: n.toISOString().slice(0, 10) }; });
+        await zurSeite(page); await page.click("#masse-brust"); await page.fill("#masseIn", "101"); await page.click("[data-a=masseSave]");
+        const s = (await stored(page)).x.masse.e;
+        ok("Der Eintrag bekommt das Datum am Ort (hier weicht es vom UTC-Datum ab)", d.local !== d.utc && s.length === 1 && s[0].d === d.local && s[0].cm === 101, JSON.stringify([tz, d, s]));
+        await page.click("#masse-brust");
+        ok("Das Sheet erkennt den Eintrag von heute", ((await page.getAttribute("#masseIn", "placeholder")) || "").replace(/ /g, " ") === "Heute: 101 cm", await page.getAttribute("#masseIn", "placeholder"));
+        await ctx.close();
+      }
+    }
     // @ext:masse:test:end
     // ── Abstand masse/test 1 ──
     // ── Abstand masse/test 2 ──
     // ── Abstand masse/test 3 ──
     // @ext:rueckblick:test:start
+    section("E-rueckblick. Rückblick auf Monat und Jahr (Fortschritt → Monat und Jahr)");
+    {
+      // Fester Verlauf über einen Jahreswechsel; Zeiten ohne Zeitzone = Uhrzeit am Ort
+      const E = (exId, u, sets) => ({ exId, name: exId, u, planned: sets.length, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) });
+      const Hh = (id, date, sec, exs) => ({ id, dayId: "d1", day: "Test", date, durationSec: sec, exercises: exs });
+      const history = [
+        Hh("r1", "2025-11-03T12:00:00", 1800, [E("hs-chest", "s", [[40, 10], [40, 10]])]),
+        Hh("r2", "2025-11-12T12:00:00", 2400, [E("hs-chest", "s", [[40, 12]]), E("hs-row", "s", [[50, 10]])]),
+        Hh("r3", "2025-12-01T12:00:00", 3000, [E("hs-chest", "s", [[45, 8]]), E("hs-row", "s", [[50, 10]])]),
+        Hh("r4", "2025-12-15T12:00:00", 3600, [E("hs-chest", "s", [[45, 10]]), E("hs-legpress", "t", [[100, 10]])]),
+        Hh("r5", "2025-12-31T23:30:00", 1800, [E("hs-row", "s", [[55, 8]])]),
+        Hh("r6", "2026-01-01T00:30:00", 1200, [E("hs-legpress", "t", [[110, 10]])]),
+        Hh("r7", "2026-03-10T12:00:00", 1800, [E("hs-chest", "s", [[45, 10]])])];
+      const weights = [{ d: "2025-12-02", kg: 84 }, { d: "2025-12-20", kg: 83.2 }, { d: "2026-01-05", kg: 83 }];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history, weights }, { light: true });
+      const st = (mode, y, m) => tp(page, ([mode, y, m]) => { const T = window.__tp, s = T.rbStats(T.state.history, T.state.weights, mode, y, m, new Date(2026, 5, 15));
+        return { n: s.n, sec: s.sec, vol: s.vol, pw: s.perWeek, wd: s.wd.join(""), mon: s.mon.join(""), recs: s.recs.map(r => `${r.exId}:${r.from}>${r.to}${r.u}`).join(), top: s.top.map(t => `${t.exId}:${t.n}`).join(), w: s.weight ? `${s.weight.from}>${s.weight.to}:${s.weight.diff}` : "" }; }, [mode, y, m]);
+      const dez = await st("m", 2025, 11), nov = await st("m", 2025, 10), jan = await st("m", 2026, 0), feb = await st("m", 2026, 1), y25 = await st("y", 2025, 0), y26 = await st("y", 2026, 0);
+      ok("Dezember 2025: 3 Trainings, 140 Min., 4.500 kg bewegt („pro Seite“ zählt doppelt), 0,7 pro Woche; Silvester 23:30 gehört noch dazu", dez.n === 3 && dez.sec === 8400 && dez.vol === 4500 && dez.pw === .7 && dez.wd === "2010000", JSON.stringify(dez));
+      ok("November 2025: 2 Trainings, 70 Min., 3.560 kg, 0,5 pro Woche, Montag und Mittwoch", nov.n === 2 && nov.sec === 4200 && nov.vol === 3560 && nov.pw === .5 && nov.wd === "1010000", JSON.stringify(nov));
+      ok("Bestwerte im Dezember: Brustpresse 40 → 45, Rudern 50 → 55; das erste Training an der Beinpresse zählt nicht; im November keine", dez.recs === "hs-chest:40>45s,hs-row:50>55s" && nov.recs === "", JSON.stringify([dez.recs, nov.recs]));
+      ok("Am häufigsten im Dezember: Brustpresse 2, Rudern 2, Beinpresse 1", dez.top === "hs-chest:2,hs-row:2,hs-legpress:1", dez.top);
+      ok("Januar 2026: Neujahr 0:30 zählt zum Januar; Bestwert Beinpresse 100 → 110; Februar leer", jan.n === 1 && jan.sec === 1200 && jan.vol === 1100 && jan.wd === "0001000" && jan.recs === "hs-legpress:100>110t" && feb.n === 0 && feb.top === "", JSON.stringify([jan, feb]));
+      ok("Körpergewicht: Dezember 84 → 83,2 (−0,8); mit nur einem Eintrag im Januar keine Angabe", dez.w === "84>83.2:-0.8" && jan.w === "" && y25.w === "84>83.2:-0.8", JSON.stringify([dez.w, jan.w, y25.w]));
+      ok("Jahr 2025: 5 Trainings, 210 Min., 8.060 kg, November 2 und Dezember 3; ohne Vorjahr keine Bestwerte", y25.n === 5 && y25.sec === 12600 && y25.vol === 8060 && y25.mon === "000000000023" && y25.recs === "" && y25.pw === .1, JSON.stringify(y25));
+      ok("Laufendes Jahr (Stichtag 15. Juni): 2 Trainings in 166 Tagen = 0,1 pro Woche; Bestwert nur an der Beinpresse", y26.n === 2 && y26.pw === .1 && y26.mon === "101000000000" && y26.recs === "hs-legpress:100>110t", JSON.stringify(y26));
+      const fm = await tp(page, () => { const T = window.__tp; return [T.rbDur(8400), T.rbDur(1200), T.rbDur(3600), T.rbVol(4500), T.rbVol(940), T.rbVol(8060)].join("|"); });
+      ok("Schreibweise: „2 Std. 20 Min.“, „20 Min.“, „1 Std.“, „4,5 t“, unter einer Tonne „940 kg“, „8,1 t“", fm === "2 Std. 20 Min.|20 Min.|1 Std.|4,5 t|940 kg|8,1 t", fm);
+      // Oberfläche
+      await page.click("nav.tabs [data-v=history]");
+      ok("Fortschritt: Zeile „Monat und Jahr“", (await page.textContent("#histMore")).includes("Monat und Jahr") && await page.isVisible("#row-rueckblick .ico"));
+      await page.click("#row-rueckblick");
+      const v0 = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, back: document.querySelector("#navbar .nb-back").textContent.trim(), per: document.querySelector("#rbTitle").textContent, next: document.querySelector("#rbNav [data-v='1']").disabled, empty: !!document.querySelector("#rbEmpty") }));
+      const nowName = await page.evaluate(() => new Date().toLocaleDateString("de-DE", { month: "long", year: "numeric" }));
+      ok("Rückblick öffnet beim laufenden Monat (ohne Training: Hinweis-Karte); weiter in die Zukunft geht es nicht", v0.title === "Rückblick" && v0.back === "Fortschritt" && v0.per === nowName && v0.next && v0.empty, JSON.stringify([v0, nowName]));
+      await tp(page, () => window.__tp.rbGo("m", 2025, 11));
+      const v1 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, grid: [...document.querySelectorAll("#rbGrid .card")].map(c => c.textContent.replace(/\s+/g, " ").trim()),
+        wd: document.querySelector("#rbWd").getAttribute("aria-label"), recs: [...document.querySelectorAll("#rbRecs .li")].map(l => l.textContent.replace(/\s+/g, " ").trim()), top: [...document.querySelectorAll("#rbTop .li")].map(l => l.textContent.replace(/\s+/g, " ").trim()),
+        w: document.querySelector("#rbWeight").textContent.replace(/\s+/g, " ").trim(), thumbs: document.querySelectorAll("#rbTop svg").length }));
+      ok("Dezember 2025 mit Vergleich zum November: +1 Training, +1 Std. 10 Min., +940 kg, +0,2 pro Woche", v1.per === "Dezember 2025" && v1.grid[0].includes("3") && v1.grid[0].includes("+1 gegenüber November") && v1.grid[1].includes("2 Std. 20 Min.") && v1.grid[1].includes("+1 Std. 10 Min. gegenüber November") && v1.grid[2].includes("4,5 t") && v1.grid[2].includes("+940 kg gegenüber November") && v1.grid[3].includes("0,7") && v1.grid[3].includes("+0,2 gegenüber November"), JSON.stringify(v1.grid));
+      ok("Wochentage, Bestwerte („40 → 45 kg pro Seite“), häufigste Geräte mit Bild und Körpergewicht stehen da", v1.wd.startsWith("Montag: 2, Dienstag: 0, Mittwoch: 1") && v1.recs.length === 2 && v1.recs[0].includes("40 → 45 kg pro Seite") && v1.recs[1].includes("50 → 55 kg pro Seite") && v1.top.length === 3 && v1.top[0].includes("2 Trainings") && v1.top[2].includes("1 Training") && v1.thumbs === 3 && v1.w.includes("84 → 83,2 kg") && v1.w.includes("−0,8 kg"), JSON.stringify(v1));
+      await page.click("#rbNav [data-v='-1']");
+      const v2 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, cmp: document.querySelector("#rbGrid").textContent.includes("gegenüber"), recs: !!document.querySelector("#rbRecs") }));
+      ok("‹ führt zum November 2025: erster Zeitraum, davor geht es nicht weiter; ohne Vormonat kein Vergleich und keine Bestwerte", v2.per === "November 2025" && v2.prev && !v2.cmp && !v2.recs, JSON.stringify(v2));
+      await page.click("#rbNav [data-v='1']"); await page.click("#rbNav [data-v='1']");
+      const v3 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, grid: document.querySelector("#rbGrid").textContent.replace(/\s+/g, " ") }));
+      ok("› › führt über den Jahreswechsel zum Januar 2026: „−2 gegenüber Dezember“", v3.per === "Januar 2026" && v3.grid.includes("−2 gegenüber Dezember") && v3.grid.includes("20 Min."), JSON.stringify(v3));
+      await page.click("#rbNav [data-v='1']");
+      ok("Februar 2026: Hinweis-Karte statt leerer Diagramme", (await page.textContent("#rbTitle")) === "Februar 2026" && await page.isVisible("#rbEmpty") && !(await page.$("#rbGrid")) && !(await page.$("#rbWd")));
+      await page.click("#rbMode [data-v=y]");
+      const v4 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, on: document.querySelector("#rbMode [data-v=y]").classList.contains("on"), mon: document.querySelector("#rbMon").getAttribute("aria-label"), bars: document.querySelectorAll("#rbMon > div").length }));
+      ok("„Jahr“ zeigt 2026 mit zwölf Monatsbalken (Januar 1, März 1)", v4.per === "2026" && v4.on && v4.bars === 12 && v4.mon.startsWith("Januar: 1, Februar: 0, März: 1"), JSON.stringify(v4));
+      await page.click("#rbNav [data-v='-1']");
+      const v5 = await tp(page, () => ({ per: document.querySelector("#rbTitle").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, n: document.querySelector("#rbN").textContent, mon: document.querySelector("#rbMon").getAttribute("aria-label") }));
+      ok("2025: 5 Trainings, November 2 und Dezember 3; davor gibt es nichts", v5.per === "2025" && v5.prev && v5.n === "5" && v5.mon.endsWith("November: 2, Dezember: 3"), JSON.stringify(v5));
+      ok("Rückblick: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      const ov1 = await noOverflow(page) && (await overflowers(page)).length === 0;
+      await tp(page, () => window.__tp.rbGo("m", 2025, 11));
+      ok("Rückblick bei 320 px ohne seitliches Scrollen (Jahr und Monat)", ov1 && await noOverflow(page) && (await overflowers(page)).length === 0, JSON.stringify(await overflowers(page)));
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu Fortschritt", (await page.textContent("#app h1")) === "Fortschritt");
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      await page.click("nav.tabs [data-v=history]"); await page.click("#row-rueckblick");
+      const e = await tp(page, () => ({ txt: document.querySelector("#rbEmpty").textContent, prev: document.querySelector("#rbNav [data-v='-1']").disabled, next: document.querySelector("#rbNav [data-v='1']").disabled }));
+      ok("Ohne Verlauf: freundlicher Hinweis, beide Pfeile gesperrt", e.txt.includes("Nach deinem ersten Training") && e.prev && e.next, JSON.stringify(e));
+      await ctx.close();
+    }
     // @ext:rueckblick:test:end
     // ── Abstand rueckblick/test 1 ──
     // ── Abstand rueckblick/test 2 ──
     // ── Abstand rueckblick/test 3 ──
     // @ext:werkzeuge:test:start
+    section("E-werkzeuge. Rechner (Wissen → Nachschlagen → Rechner)");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { light: true });
+      // Rechenkern mit von Hand nachgerechneten Werten
+      const c = await tp(page, () => { const T = window.__tp, all = [25, 20, 15, 10, 5, 2.5, 1.25];
+        return { a: T.wzPlates(42.5, "s", all), b: T.wzPlates(42.5, "s", [20, 10, 5, 2.5, 1.25]), c: T.wzPlates(40, "t", all), d: T.wzPlates(43, "s", all), e: T.wzPlates(41, "t", [20, 10, 5]),
+          m5: T.wzMax(100, 5), m1: T.wzMax(100, 1), m12: T.wzMax(60, 12), m13: T.wzMax(60, 13), m0: T.wzMax(60, 0), mf: T.wzMax(60, 2.5), pct: T.wzPct(100), pct2: T.wzPct(116.5),
+          app: Math.round(T.e1rm({ kg: 100, reps: 5 }) * 2) / 2, app1: T.e1rm({ kg: 100, reps: 1 }) }; });
+      ok("Scheiben: 42,5 kg pro Seite = 25 + 15 + 2,5; ohne 25er und 15er = 20 + 20 + 2,5", c.a.plates.join() === "25,15,2.5" && c.a.rest === 0 && c.b.plates.join() === "20,20,2.5" && c.b.rest === 0, JSON.stringify([c.a, c.b]));
+      ok("Scheiben: 40 kg insgesamt = 20 je Seite", c.c.per === 20 && c.c.plates.join() === "20" && c.c.total === 40, JSON.stringify(c.c));
+      ok("Geht nicht auf: 43 kg pro Seite → 42,5 kg möglich, 0,5 kg übrig; 41 kg insgesamt mit 20/10/5 → 40 kg, 0,5 kg je Seite übrig", c.d.done === 42.5 && c.d.rest === .5 && c.d.total === 42.5 && c.e.done === 20 && c.e.rest === .5 && c.e.total === 40, JSON.stringify([c.d, c.e]));
+      ok("Höchstgewicht: 100 kg × 5 = 116,5 (100 × 7/6 = 116,67, auf 0,5 kg gerundet) wie in „Kraft & Bestwerte“; 1 Wiederholung = das Gewicht; 60 × 12 = 84", c.m5 === 116.5 && c.app === 116.5 && c.m1 === 100 && c.app1 === 100 && c.m12 === 84, JSON.stringify(c));
+      ok("Höchstgewicht nur für 1–12 ganze Wiederholungen", c.m13 === null && c.m0 === null && c.mf === null);
+      ok("Prozente von 100 kg: 90/80/70/60/50; von 116,5 kg auf 2,5 kg gerundet: 105/92,5/82,5/70/57,5", c.pct.map(x => x[1]).join() === "90,80,70,60,50" && c.pct2.map(x => x[1]).join() === "105,92.5,82.5,70,57.5", JSON.stringify([c.pct, c.pct2]));
+      // Oberfläche
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
+      ok("Wissen → Nachschlagen: Zeile „Rechner“", (await page.textContent("#libMore")).includes("Rechner") && await page.isVisible("#row-werkzeuge .ico"));
+      await page.click("#row-werkzeuge");
+      const h = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v, empty: document.querySelector("#wzPlatesOut").textContent, nan: document.querySelector("#app").textContent.includes("NaN") }));
+      ok("Rechner: eigene Unterseite mit „‹ Wissen“, leer mit Hinweis statt Zahlen", h.title === "Rechner" && h.back === "Wissen" && h.tab === "lib" && h.empty.includes("Gewicht eingeben") && !h.nan, JSON.stringify(h));
+      await page.fill("#wzKgIn", "42,5");
+      const chips = () => page.$$eval("#wzChips .pl", e => e.map(x => x.textContent).join(" "));
+      ok("Eingabe mit Komma: Scheiben erscheinen sofort, das Feld behält den Fokus", (await chips()) === "25 15 2,5" && await page.evaluate(() => document.activeElement.id === "wzKgIn"), await chips());
+      await page.click("#wzSeite [data-v=t]");
+      ok("„Insgesamt“ halbiert: 42,5 kg insgesamt = 21,25 je Seite = 20 + 1,25", (await chips()) === "20 1,25" && await page.$eval("#wzSeite [data-v=t]", b => b.classList.contains("on") && b.getAttribute("aria-pressed") === "true"), await chips());
+      await page.fill("#wzKgIn", "43");
+      ok("Geht nicht auf: Hinweis mit dem nächsten Gewicht darunter (42,5 kg insgesamt)", (await page.textContent("#wzRest")).includes("0,25 kg pro Seite bleiben übrig") && (await page.textContent("#wzRest")).includes("42,5 kg insgesamt"), await page.textContent("#wzPlatesOut"));
+      // dieselbe Rechnung wie die Anzeige im Training
+      const same = await tp(page, () => { const T = window.__tp; return [42.5, 61.25, 100, 7.5].every(kg => JSON.stringify(T.wzPlates(kg, "s").plates) === JSON.stringify(T.platesOf(kg, T.state.plates || [25, 20, 15, 10, 5, 2.5, 1.25]).plates)); });
+      ok("Scheiben wie im Training (dieselbe Funktion)", same);
+      await page.fill("#wzWIn", "100"); await page.fill("#wzRIn", "5");
+      ok("Höchstgewicht: „≈ 116,5 kg“; die Prozente nutzen die Schätzung", (await page.textContent("#wzMaxVal")) === "≈ 116,5 kg" && (await page.textContent("#wzPctFrom")).includes("116,5 kg (Schätzung oben)") && (await page.$$eval("#wzPctOut .wz-pct b", e => e.map(x => x.textContent).join())) === "105 kg,92,5 kg,82,5 kg,70 kg,57,5 kg", await page.textContent("#wzPctOut"));
+      await page.fill("#wzMaxIn", "100");
+      ok("Eigenes Höchstgewicht hat Vorrang: 90/80/70/60/50 kg", (await page.textContent("#wzPctFrom")).includes("100 kg (deine Eingabe)") && (await page.$$eval("#wzPctOut .wz-pct b", e => e.map(x => x.textContent).join())) === "90 kg,80 kg,70 kg,60 kg,50 kg");
+      await page.fill("#wzRIn", "20"); await page.fill("#wzKgIn", "abc"); await page.fill("#wzMaxIn", "-5");
+      const bad = await page.textContent("#app");
+      ok("Ungültige Eingaben: Hinweise statt Zahlen, kein NaN", !bad.includes("NaN") && !bad.includes("≈") && bad.includes("1 bis 12") && !(await page.$("#wzChips")) && !(await page.$(".wz-pct")), bad.slice(0, 300));
+      await page.fill("#wzKgIn", "42,5"); await page.fill("#wzRIn", "5"); await page.fill("#wzMaxIn", "");
+      ok("Rechner: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      ok("Rechner bei 320 px ohne seitliches Scrollen", await noOverflow(page) && (await overflowers(page)).length === 0);
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu Wissen", (await page.textContent("#app h1")) === "Wissen");
+      await ctx.close();
+    }
+    {
+      // Scheiben aus den Einstellungen gelten auch im Rechner
+      const { ctx, page } = await open({ plan: PLAN_SMALL, plates: [20, 10, 5, 2.5, 1.25] });
+      const ld = await tp(page, () => ({ days: window.__tp.state.plan ? window.__tp.state.plan.days.length : 0, plates: (window.__tp.state.plates || []).join() }));
+      ok("Gespeicherte Scheibenauswahl: Plan und Auswahl werden beim Start geladen (vorher startete die App dann leer)", ld.days === 1 && ld.plates === "20,10,5,2.5,1.25", JSON.stringify(ld));
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=plateToggle][data-v='1.25']");
+      await page.reload(); await page.waitForSelector("#app h1");
+      const ld2 = await tp(page, () => ({ days: window.__tp.state.plan ? window.__tp.state.plan.days.length : 0, plates: (window.__tp.state.plates || []).join(), raw: !!JSON.parse(localStorage.getItem("trainingsplan-v2")).plan }));
+      ok("Scheibe in den Einstellungen abwählen und neu laden: der Plan ist noch da", ld2.days === 1 && ld2.plates === "20,10,5,2.5" && ld2.raw, JSON.stringify(ld2));
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=plateToggle][data-v='1.25']");
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-werkzeuge");
+      await page.fill("#wzKgIn", "42,5");
+      ok("Ohne 25er und 15er im Studio: 20 + 20 + 2,5; die Fußzeile nennt die vorhandenen Scheiben", (await page.$$eval("#wzChips .pl", e => e.map(x => x.textContent).join(" "))) === "20 20 2,5" && (await page.textContent("#wzAvail")).includes("20 · 10 · 5 · 2,5 · 1,25 kg"), await page.textContent("#wzAvail"));
+      await ctx.close();
+    }
     // @ext:werkzeuge:test:end
     // ── Abstand werkzeuge/test 1 ──
     // ── Abstand werkzeuge/test 2 ──
     // ── Abstand werkzeuge/test 3 ──
     // @ext:glossar:test:start
+    section("E-glossar. Begriffe (Wissen → Artikel → Nachschlagen → Begriffe)");
+    {
+      // Inhalt: Anzahl, Eindeutigkeit, Längen, Verweise, Wortwahl, Sortierung, Suche
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const G = await tp(page, () => window.__tp.GLOSSAR);
+      const dup = a => a.filter((v, i) => a.indexOf(v) !== i);
+      const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
+      ok("Begriffe: mindestens 40 Einträge, jeder Schlüssel und jeder Begriff genau einmal", G.length >= 40 && !dup(G.map(x => x.k)).length && !dup(G.map(x => norm(x.t))).length && G.every(x => /^[a-z0-9]+$/.test(x.k) && x.t.trim()),
+        `${G.length} · ${dup(G.map(x => x.k)).concat(dup(G.map(x => norm(x.t)))).join()}`);
+      const badD = G.filter(x => typeof x.d !== "string" || x.d.trim().length < 20 || x.d.length > 240 || !/\.$/.test(x.d)).map(x => `${x.k}:${String(x.d).length}`);
+      ok("Jede Erklärung ist ein ganzer Satz mit höchstens 240 Zeichen; keine zwei Erklärungen sind gleich", !badD.length && !dup(G.map(x => norm(x.d))).length, badD.concat(dup(G.map(x => norm(x.d)))).join(" | "));
+      const badA = G.filter(x => typeof x.a !== "string" || x.a.length > 200 || (x.a && !/[.)]$/.test(x.a)) || /^in der app/i.test(x.a)).map(x => `${x.k}:${String(x.a).length}`);
+      ok("„In der App“: höchstens 200 Zeichen, kein Satz doppelt; mindestens 30 Begriffe haben einen", !badA.length && !dup(G.map(x => x.a).filter(Boolean)).length && G.filter(x => x.a).length >= 30, `${badA.join()} · ${G.filter(x => x.a).length}`);
+      const keys = new Set(G.map(x => x.k));
+      const badS = G.filter(x => !Array.isArray(x.s) || x.s.length > 3 || dup(x.s).length || x.s.some(k => !keys.has(k) || k === x.k)).map(x => x.k);
+      ok("„Siehe auch“: höchstens drei Verweise, jeder führt zu einem anderen vorhandenen Begriff", !badS.length && G.filter(x => x.s.length).length >= 40, badS.join());
+      const BAD = ["garantiert", "beweist", "bewiesen", "am besten", "optimal", "effektiv", "wirksam", "schneller", "stärker", "mehr muskeln", "wunder"];
+      const hitBad = G.flatMap(x => BAD.filter(w => `${x.t} ${x.d} ${x.a}`.toLowerCase().includes(w)).map(w => `${x.k}: ${w}`));
+      ok("Keine Erfolgsversprechen: Wörter wie „garantiert“, „beweist“, „am besten“ kommen in keinem Eintrag vor", !hitBad.length, hitBad.join(" | "));
+
+      // Sortierung von Hand: Ä steht bei A, Ö bei O, Ü bei U; reine Zeichenfolge-Sortierung würde Umlaute hinter Z stellen
+      const grp = await tp(page, () => window.__tp.glossarGroups(["Zebra", "Übung", "Öl", "Untergriff", "Ober", "Agonist", "Äpfel", "1RM"]));
+      ok("Deutsche Sortierung: Umlaute unter dem Grundbuchstaben (Ä bei A, Ö bei O, Ü bei U), Ziffern unter „#“",
+        JSON.stringify(grp) === JSON.stringify([["#", ["1RM"]], ["A", ["Agonist", "Äpfel"]], ["O", ["Ober", "Öl"]], ["U", ["Übung", "Untergriff"]], ["Z", ["Zebra"]]]), JSON.stringify(grp));
+
+      // Suche (Funktion): erwartete Treffer unabhängig von der App berechnet
+      const find = q => tp(page, q => window.__tp.glossarFind(q), q);
+      const expect = w => G.filter(x => norm(`${x.t} ${x.d} ${x.a}`).includes(w)).map(x => x.k);
+      const fSatz = await find("satz"), fUb = await find("ubung");
+      ok("Suche „satz“ findet mehrere Begriffe, darunter Satz, Arbeitssatz, Aufwärmsatz, Satzpause und Supersatz – und nur solche mit „satz“ im Text",
+        ["satz", "arbeitssatz", "aufwaermsatz", "satzpause", "supersatz"].every(k => fSatz.includes(k)) && fSatz.length < G.length && fSatz.join() === expect("satz").join(), fSatz.join());
+      ok("Suche „ubung“ findet Begriffe mit „Übung“ (Übung, Mehrgelenksübung, Eingelenksübung); „UBUNG“, „Übung“ und „uebung“ finden dasselbe",
+        ["uebung", "mehrgelenk", "eingelenk"].every(k => fUb.includes(k)) && fUb.join() === expect("ubung").join() && [await find("UBUNG"), await find("Übung"), await find("uebung"), await find("  ÜBUNG ")].every(r => r.join() === fUb.join()), fUb.join());
+      ok("Suche: „eiweiss“ findet „Eiweiß“, „1rm“ das Höchstgewicht, „protein“ das Eiweiß, „rir“ die Wiederholungen in Reserve",
+        (await find("eiweiss")).includes("eiweiss") && (await find("1rm")).includes("rm1") && (await find("protein")).includes("eiweiss") && (await find("rir")).includes("rir"));
+      const fTwo = await find("pro seite");
+      ok("Mehrere Wörter müssen alle vorkommen: „pro seite“ findet „Pro Seite und insgesamt“, aber weniger als „seite“ allein", fTwo.includes("proseite") && fTwo.length <= (await find("seite")).length && fTwo.every(k => expect("pro").includes(k) && expect("seite").includes(k)), fTwo.join());
+      ok("Suche „xyz123“ findet nichts; leere Suche und nur Leerzeichen zeigen alle Begriffe", (await find("xyz123")).length === 0 && (await find("")).length === G.length && (await find("   ")).length === G.length);
+      await ctx.close();
+    }
+    {
+      // Seite: Zeile am richtigen Platz, Liste, Aufklappen, Suchen, „Siehe auch“, Zurück
+      const { ctx, page } = await open({ plan: PLAN_SMALL });
+      const G = await tp(page, () => window.__tp.GLOSSAR), by = Object.fromEntries(G.map(x => [x.k, x]));
+      const norm = s => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/ß/g, "ss");
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
+      const row = await tp(page, () => { const r = document.querySelector("#libMore .group #row-glossar"); return r && { h: document.querySelector("#libMore h2").textContent, t: r.querySelector(".t").textContent, v: r.querySelector(".val").textContent, ico: !!r.querySelector(".ico") }; });
+      ok("Wissen → Artikel: unter „Nachschlagen“ steht die Zeile „Begriffe“ mit Symbol und Anzahl", !!row && row.h === "Nachschlagen" && row.t === "Begriffe" && row.v === String(G.length) && row.ico, JSON.stringify(row));
+      await page.click("#row-glossar");
+      const snap = () => tp(page, () => { const q = document.getElementById("glQ"), st = document.getElementById("glStatus");
+        return { title: document.querySelector("#app h1").textContent, h1: document.querySelectorAll("#app h1").length, back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v,
+          q: q.value, foc: document.activeElement === q, pos: q.selectionStart, same: q.__same === 1, status: st.hidden ? null : st.textContent, empty: !!document.getElementById("glEmpty"),
+          groups: [...document.querySelectorAll("#glList section")].map(s => [s.querySelector("h2").textContent, [...s.querySelectorAll("summary")].map(x => x.textContent)]),
+          open: [...document.querySelectorAll("#glList details[open]")].map(d => d.dataset.k) }; });
+      let v = await snap();
+      const terms = v.groups.flatMap(g => g[1]);
+      ok("Begriffe: eigene Unterseite mit „‹ Wissen“, genau einer Überschrift, leerem Suchfeld und allen Begriffen (zugeklappt); der Bereich bleibt „Wissen“",
+        v.title === "Begriffe" && v.h1 === 1 && v.back === "Wissen" && v.tab === "lib" && v.q === "" && v.status === null && terms.length === G.length && v.open.length === 0 && (await page.textContent("#app .sub")).startsWith(`${G.length} Wörter`), JSON.stringify({ ...v, groups: terms.length }));
+      const letters = v.groups.map(g => g[0]);
+      ok("Alphabetisch in Gruppen nach Anfangsbuchstaben: Buchstaben aufsteigend, jeder Begriff unter seinem Grundbuchstaben, Begriffe ohne Rücksicht auf Umlaute geordnet",
+        letters.every((l, i) => /^[A-Z]$/.test(l) && (!i || letters[i - 1] < l)) && v.groups.every(([l, a]) => a.every(t => norm(t).charAt(0).toUpperCase() === l)) && terms.every((t, i) => !i || norm(terms[i - 1]) < norm(t)), JSON.stringify(v.groups).slice(0, 300));
+      const U = (v.groups.find(g => g[0] === "U") || [])[1] || [], Hh = (v.groups.find(g => g[0] === "H") || [])[1] || [];
+      ok("Umlaute stehen beim Grundbuchstaben: „Übung“ unter U vor „Untergriff“, „Höchstgewicht …“ unter H vor „Hypertrophie“; erster Begriff „Agonist“, letzter „Wiederholungsbereich“",
+        U.join("|") === "Übung|Untergriff" && Hh.length === 2 && Hh[0].startsWith("Höchstgewicht") && Hh[1] === "Hypertrophie" && terms[0] === "Agonist" && terms[terms.length - 1] === "Wiederholungsbereich", JSON.stringify([U, Hh, terms[0], terms[terms.length - 1]]));
+      ok("Begriffe: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+
+      // Aufklappen zeigt Erklärung, „In der App“ und „Siehe auch“
+      await page.click("#gl-satz summary");
+      const it = await tp(page, () => { const d = document.getElementById("gl-satz"), p = [...d.querySelectorAll(".gdet-in p")]; return { open: d.open, vis: p[0].getBoundingClientRect().height > 0, d: p[0].textContent, a: p[1].textContent, see: [...d.querySelectorAll("[data-a=glossarGo]")].map(b => b.textContent), lab: d.querySelector(".gl-see .cap").textContent }; });
+      ok("Begriff antippen klappt die Erklärung auf: Erklärung, „In der App: …“ und „Siehe auch“ mit den Namen der verwandten Begriffe",
+        it.open && it.vis && it.d === by.satz.d && it.a === `In der App: ${by.satz.a}` && it.lab === "Siehe auch" && it.see.join("|") === by.satz.s.map(k => by[k].t).join("|"), JSON.stringify(it));
+      ok("Begriff ohne Bezug zur App zeigt keinen Satz „In der App“", await tp(page, () => !document.querySelector("#gl-konz .gl-app") && !!document.querySelector("#gl-satz .gl-app")) && by.konz.a === "");
+      await page.click("#gl-satz summary");
+      ok("Nochmal antippen klappt wieder zu", !(await page.$eval("#gl-satz", d => d.open)));
+      await page.click("#gl-satz summary");
+
+      // Suchen: nur die Liste wird neu gezeichnet – das Feld bleibt dasselbe Element, Fokus und Cursor bleiben
+      await page.click("#glQ"); await tp(page, () => { document.getElementById("glQ").__same = 1; });
+      await page.keyboard.type("satz");
+      v = await snap();
+      const exp = await tp(page, () => window.__tp.glossarFind("satz").length);
+      ok("Tippen im Suchfeld filtert sofort: „satz“ zeigt nur Treffer, darunter die Trefferzahl", exp >= 5 && v.groups.flatMap(g => g[1]).length === exp && v.status === `${exp} Treffer` && v.groups.flatMap(g => g[1]).includes("Supersatz") && !v.groups.flatMap(g => g[1]).includes("Agonist"), JSON.stringify([exp, v.status]));
+      ok("Das Suchfeld behält beim Tippen Fokus und Cursor (dasselbe Feld, nicht neu gezeichnet)", v.foc && v.same && v.q === "satz" && v.pos === 4, JSON.stringify([v.foc, v.same, v.q, v.pos]));
+      ok("Ein von Hand aufgeklappter Begriff bleibt beim Filtern offen", v.open.join() === "satz", v.open.join());
+      await page.keyboard.press("Home"); await page.keyboard.type("super");
+      v = await snap();
+      ok("Tippen mitten im Text: Der Cursor bleibt an seiner Stelle („super“ vor „satz“ → Cursor nach dem 5. Zeichen)", v.foc && v.same && v.q === "supersatz" && v.pos === 5 && v.groups.flatMap(g => g[1]).includes("Supersatz"), JSON.stringify([v.q, v.pos, v.foc]));
+      await page.fill("#glQ", "Muskelkater");
+      v = await snap();
+      ok("Bleibt genau ein Treffer, ist er gleich aufgeklappt („1 Treffer“)", v.groups.length === 1 && v.groups[0][1].join() === "Muskelkater" && v.open.join() === "kater" && v.status === "1 Treffer", JSON.stringify(v.groups) + v.status);
+      await page.fill("#glQ", "ubung");
+      v = await snap();
+      ok("„ubung“ im Suchfeld zeigt „Übung“, „Mehrgelenksübung“ und „Eingelenksübung“", ["Übung", "Mehrgelenksübung", "Eingelenksübung"].every(t => v.groups.flatMap(g => g[1]).includes(t)), JSON.stringify(v.groups));
+
+      // Kein Treffer
+      await page.fill("#glQ", "xyz123");
+      v = await snap();
+      const em = await tp(page, () => { const e = document.getElementById("glEmpty"), st = document.getElementById("glStatus"); return { txt: e.querySelector("p").textContent, btn: e.querySelector("button").textContent, card: e.classList.contains("card"), n: document.querySelectorAll("#glList details").length, sr: st.classList.contains("sr-only"), st: st.textContent }; });
+      ok("Kein Treffer („xyz123“): kurzer Hinweis auf einer Karte mit „Suche löschen“, keine Liste; zum Vorlesen „Kein Treffer“",
+        v.empty && em.card && em.n === 0 && em.txt.includes("„xyz123“") && em.txt.startsWith("Kein Begriff") && em.btn === "Suche löschen" && em.sr && em.st === "Kein Treffer", JSON.stringify(em));
+      ok("Kein Treffer: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+      await page.fill("#glQ", `<b id="glX">x</b>"`);
+      ok("Eingegebener Text wird nur als Text gezeigt (kein HTML)", await tp(page, () => !document.getElementById("glX") && document.querySelector("#glEmpty p").textContent.includes(`<b id="glX">x</b>"`)));
+      await page.click("#glEmpty [data-a=glossarClear]");
+      v = await snap();
+      ok("„Suche löschen“ leert das Feld, zeigt wieder alle Begriffe und setzt den Cursor ins Feld", v.q === "" && v.foc && v.status === null && !v.empty && v.groups.flatMap(g => g[1]).length === G.length, JSON.stringify([v.q, v.foc, v.status]));
+
+      // „Siehe auch“ springt zum Begriff und klappt ihn auf
+      await page.click("#gl-satz [data-a=glossarGo][data-k=arbeitssatz]"); await sleep(150);
+      const j = await tp(page, () => { const d = document.getElementById("gl-arbeitssatz"), r = d.getBoundingClientRect(), nb = document.getElementById("navbar").getBoundingClientRect().bottom; return { open: d.open, top: Math.round(r.top - nb), inView: r.top >= nb - 1 && r.top < innerHeight / 2, foc: document.activeElement === d.querySelector("summary"), from: document.getElementById("gl-satz").open }; });
+      ok("„Siehe auch“ → „Arbeitssatz“: Der Begriff ist aufgeklappt, steht oben im Bild unter der Leiste und hat den Fokus; der Ausgangsbegriff bleibt offen", j.open && j.inView && j.foc && j.from, JSON.stringify(j));
+      await page.fill("#glQ", "deload");
+      v = await snap();
+      ok("Suche „deload“: genau ein Treffer („Entlastungswoche (Deload)“)", v.groups.flatMap(g => g[1]).join() === "Entlastungswoche (Deload)" && v.open.join() === "deload", JSON.stringify(v.groups));
+      await page.click("#gl-deload [data-a=glossarGo][data-k=plateau]"); await sleep(150);
+      v = await snap();
+      ok("„Siehe auch“ zu einem Begriff außerhalb der Treffer leert die Suche und klappt ihn auf („Plateau“)", v.q === "" && v.status === null && v.groups.flatMap(g => g[1]).length === G.length && v.open.includes("plateau") && !v.open.includes("deload") && v.open.includes("satz") && v.open.includes("arbeitssatz"), JSON.stringify([v.q, v.open]));
+
+      // Neuzeichnen der Seite behält Suche und aufgeklappte Begriffe; Öffnen über die Zeile beginnt frisch
+      await page.fill("#glQ", "griff"); await page.click("#gl-obergriff summary");
+      await tp(page, () => window.__tp.EXT.views.glossar());
+      v = await snap();
+      ok("Wird die Seite neu gezeichnet, bleiben Suchtext und aufgeklappte Begriffe erhalten", v.q === "griff" && v.open.includes("obergriff") && v.status === `${v.groups.flatMap(g => g[1]).length} Treffer` && !v.groups.flatMap(g => g[1]).includes("Agonist"), JSON.stringify([v.q, v.open, v.status]));
+
+      // 320 px, alles aufgeklappt: kein seitliches Scrollen, Tippflächen groß genug, kein freier Text
+      await page.fill("#glQ", ""); await page.$$eval("#glList details", d => d.forEach(x => x.open = true));
+      await page.setViewportSize({ width: 320, height: 640 });
+      const small = await tp(page, () => ({ taps: [...document.querySelectorAll("#glList summary, #glList [data-a=glossarGo], #glQ")].filter(e => e.getBoundingClientRect().height < 44).length,
+        wide: [...document.querySelectorAll("#glList *")].filter(e => e.getBoundingClientRect().right > innerWidth + .5).length, n: document.querySelectorAll("#glList details[open]").length }));
+      ok("Begriffe bei 320 px, alle aufgeklappt: kein seitliches Scrollen, nichts ragt hinaus, alle Tippflächen mindestens 44 px hoch", await noOverflow(page) && small.taps === 0 && small.wide === 0 && small.n === G.length, JSON.stringify(small) + " " + await overflowers(page));
+      ok("Begriffe aufgeklappt: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+      await page.fill("#glQ", "xyz123");
+      ok("Kein Treffer bei 320 px: kein seitliches Scrollen", await noOverflow(page), await overflowers(page));
+      await page.setViewportSize({ width: 360, height: 780 });
+
+      // Zurück und frisch öffnen
+      await page.click("#navbar .nb-back");
+      ok("Zurück führt zu Wissen → Artikel", (await page.textContent("#app h1")) === "Wissen" && await page.isVisible("#row-glossar") && await page.$eval("#wissenSeg [data-v=wissen]", b => b.classList.contains("on")));
+      await page.click("#row-glossar");
+      v = await snap();
+      ok("Erneut über die Zeile geöffnet: leere Suche, alles zugeklappt, alle Begriffe", v.q === "" && v.open.length === 0 && v.groups.flatMap(g => g[1]).length === G.length, JSON.stringify([v.q, v.open]));
+      await ctx.close();
+    }
+    {
+      // Kein gespeicherter Zustand: Ein kaputter gespeicherter Wert stört nicht und fällt weg; die Seite funktioniert auch ganz ohne Daten, im hellen Design und nach dem Neuladen
+      const { ctx, page } = await open({ plan: PLAN_SMALL, x: { glossar: "Unsinn" } }, { light: true });
+      const n = await tp(page, () => window.__tp.GLOSSAR.length);
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-glossar");
+      await page.fill("#glQ", "split"); await page.click("#gl-split summary");
+      const mem = await tp(page, () => ({ x: Object.keys(window.__tp.state.x), clean: Object.keys(window.__tp.EXT.clean), ls: Object.keys(localStorage).filter(k => /gloss|begriff/i.test(k)) }));
+      ok("Kaputter gespeicherter Wert (x.glossar = „Unsinn“): Die Seite funktioniert; die Begriffe haben keinen Speicher, der Wert fällt weg, kein eigener Schlüssel",
+        (await page.textContent("#app h1")) === "Begriffe" && await page.$eval("#gl-split", d => d.open) && !mem.x.includes("glossar") && !mem.clean.includes("glossar") && !mem.ls.length, JSON.stringify(mem));
+      await page.reload();
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-glossar");
+      ok("Nach dem Neuladen: alle Begriffe, leere Suche, nichts aufgeklappt (helles Design)", await tp(page, n => document.querySelectorAll("#glList details").length === n && !document.querySelector("#glList details[open]") && document.getElementById("glQ").value === "", n) && (await freeTextOn(page)).length === 0);
+      await ctx.close();
+      const e = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [] } });
+      await e.page.click("nav.tabs [data-v=lib]"); await e.page.click("#wissenSeg [data-v=wissen]"); await e.page.click("#row-glossar");
+      await e.page.click("#gl-agonist summary");
+      ok("Leerer Plan ohne Trainingstage und ohne Verlauf: Zeile und Seite sind da, Begriffe lassen sich aufklappen (das Lexikon braucht keine Daten)",
+        await tp(e.page, n => document.querySelector("#app h1").textContent === "Begriffe" && document.querySelectorAll("#glList details").length === n && document.getElementById("gl-agonist").open, n));
+      await e.ctx.close();
+    }
+    {
+      // Was unter „In der App“ steht, stimmt: Bezeichnungen in „…“ kommen in der App vor, Zahlen folgen den Regeln der App (von Hand nachgerechnet)
+      const p = JSON.parse(JSON.stringify(PLAN_SMALL)); p.days[0].items[0].rest = 90;
+      const same = d => hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], d, "s");
+      const { ctx, page } = await open({ plan: p, history: [27, 22, 17, 13, 9, 6].map(same) });
+      const G = await tp(page, () => window.__tp.GLOSSAR), by = Object.fromEntries(G.map(x => [x.k, x]));
+      const src = require("fs").readFileSync(path.join(ROOT, "index.html"), "utf8"), a0 = src.indexOf("// @ext:glossar:js:start"), a1 = src.indexOf("// @ext:glossar:js:end");
+      const app = src.slice(0, a0) + src.slice(a1);
+      const quoted = [...new Set(G.flatMap(x => (x.a.match(/„[^“]+“/g) || []).map(q => q.slice(1, -1).replace(/ …$/, ""))))];
+      const missing = quoted.filter(q => !app.includes(q));
+      ok("Jede Bezeichnung in „…“ unter „In der App“ steht so auch in der App (außerhalb der Begriffe)", a0 > 0 && a1 > a0 && quoted.length >= 25 && !missing.length, `${quoted.length} · fehlt: ${missing.join(" | ")}`);
+      const has = (k, ...parts) => parts.every(s => by[k].a.includes(s));
+
+      const f = await tp(page, () => { const T = window.__tp, r = (g, id) => { const x = T.rangeFor(g, id); return `${x.rmin}–${x.rmax}`; }, all = T.allEx(), iso = all.filter(e => /Iso-Lateral/.test(e.label || ""));
+        const goals = (o, kg = 80) => T.calcGoals(Object.assign({ sex: "m", age: 30, cm: 180, pal: 1.55, goal: "halten", kcal: 2700 }, o), kg);
+        return { aufbau: r("aufbau", "hs-chest"), kraft: r("kraft", "hs-chest"), kraftIso: r("kraft", "hs-legext"), fit: r("fit", "hs-chest"), labels: ["aufbau", "kraft", "fit"].map(g => T.rangeFor(g, "hs-chest").label),
+          plans: [2, 3, 4].map(n => T.generatePlan("aufbau", n, "einsteiger", 60).days.map(d => d.name).join("|")), perRep: T.TIME.perRep,
+          vol: [T.setVol({ exId: "hs-chest", u: "s" }, { kg: 40, reps: 10 }), T.setVol({ exId: "hs-chest", u: "t" }, { kg: 40, reps: 10 })],
+          steps: [...new Set(all.map(e => e.step))].sort((a, b) => a - b), iso: iso.length, isoSide: iso.filter(e => e.type === "plate" && e.load === "side").length,
+          names: ["Latzug breit", "Latzug eng", "Rudern Untergriff", "Latzug Untergriff", "Brustpresse", "Beinstrecker"].filter(nm => !all.some(e => e.name === nm)),
+          g: goals({}), bmr: [goals({}).bmr, goals({ sex: "w" }).bmr, goals({ age: 31 }).bmr, goals({ cm: 190 }).bmr, goals({}, 90).bmr],
+          plateau: T.plateau("hs-chest"), entry: (e => ({ mode: e.mode, sets: e.sets.map(t => `${t.kg}×${t.reps}`).join() }))(T.makeEntry({ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 90 })) }; });
+      ok("Wiederholungsbereich: Startwerte der App wie genannt – Muskelaufbau 8–12, Kraft 4–6 (Grundübung), Fitness & Straffung 12–15; Kraft an einer Eingelenksübung 8–12",
+        f.aufbau === "8–12" && f.kraft === "4–6" && f.fit === "12–15" && f.kraftIso === "8–12" && f.labels.join("|") === "Muskelaufbau|Kraft|Fitness & Straffung"
+        && has("wdhbereich", "Muskelaufbau 8–12", "Kraft 4–6", "Fitness & Straffung 12–15") && has("eingelenk", "8–12 statt 4–6") && has("maxkraft", "4–6"), JSON.stringify(f));
+      ok("Split: Planvorschlag für 2 Tage Ganzkörper A/B, für 3 Tage Drücken/Ziehen/Beine, für 4 Tage Ober- und Unterkörper – wie in den Begriffen genannt",
+        f.plans.join(" · ") === "Ganzkörper A|Ganzkörper B · Drücken|Ziehen|Beine · Oberkörper A|Unterkörper A|Oberkörper B|Unterkörper B" && has("split", "2 Tage Ganzkörper", "3 Tage Drücken/Ziehen/Beine", "4 Tage Ober- und Unterkörper") && has("ganzkoerper", "2 Tage") && has("ppl", "3 Tage") && has("okuk", "4 Tage"), f.plans.join(" · "));
+      ok("Volumen: 40 kg × 10 zählt „pro Seite“ 800 kg (beide Seiten), „insgesamt“ 400 kg; Tempo: 3,5 Sekunden je Wiederholung", f.vol.join() === "800,400" && f.perRep === 3.5 && has("tempo", "3,5 Sekunden") && has("proseite", "das Doppelte"), JSON.stringify([f.vol, f.perRep]));
+      ok("Geräte: Gewichtsschritte nur 1,25, 2,5, 5 oder 10 kg; alle Geräte mit „Iso-Lateral“ sind auf „pro Seite“ eingestellt; die als Beispiel genannten Geräte gibt es",
+        f.steps.every(s => [1.25, 2.5, 5, 10].includes(s)) && f.iso >= 10 && f.isoSide === f.iso && !f.names.length && has("schritt", "1,25, 2,5, 5 oder 10 kg"), JSON.stringify([f.steps, f.iso, f.isoSide, f.names]));
+      // 80 kg, 2.700 kcal: Eiweiß 80 × 1,6 = 128 g; Fett 2.700 × 0,20 ÷ 9 = 60 g bis 2.700 × 0,35 ÷ 9 = 105 g; Kohlenhydrate (2.700 − 128 × 4 − 105 × 9) ÷ 4 = 310,75 → 311 g bis (2.700 − 512 − 540) ÷ 4 = 412 g
+      ok("Ernährung: 80 kg und 2.700 kcal ergeben 128 g Eiweiß (1,6 g je kg), 60–105 g Fett (20–35 %, 9 kcal je g) und 311–412 g Kohlenhydrate (der Rest, 4 kcal je g)",
+        f.g.prot === 128 && f.g.fatLo === 60 && f.g.fatHi === 105 && f.g.carbLo === 311 && f.g.carbHi === 412 && has("eiweiss", "1,6 g je kg", "4 kcal") && has("fett", "20–35 %", "9 kcal") && has("kh", "4 kcal"), JSON.stringify(f.g));
+      // Mann, 30 Jahre, 180 cm, 80 kg: 10 × 80 + 6,25 × 180 − 5 × 30 + 5 = 1.780 kcal; Frau −161 statt +5 = 1.614; 31 Jahre 1.775; 190 cm 1.842,5 → 1.843; 90 kg 1.880. Erhaltungsbedarf 1.780 × 1,55 = 2.759
+      ok("Grundumsatz hängt von Gewicht, Größe, Alter und Geschlecht ab (1.780 · Frau 1.614 · 31 Jahre 1.775 · 190 cm 1.843 · 90 kg 1.880); Erhaltungsbedarf = Grundumsatz × Aktivitätsfaktor (1.780 × 1,55 = 2.759)",
+        f.bmr.join() === "1780,1614,1775,1843,1880" && f.g.tdee === 2759 && has("grundumsatz", "Gewicht, Größe, Alter und Geschlecht") && has("gesamtumsatz", "Grundumsatz × Aktivitätsfaktor"), JSON.stringify([f.bmr, f.g.tdee]));
+      ok("Steigerung: Letztes Mal 40 kg × 10/10 bei Ziel 8–12 → gleiches Gewicht, Ziel 11 Wiederholungen (erst mehr Wiederholungen)", f.entry.mode === "keep" && f.entry.sets === "40×11,40×11", JSON.stringify(f.entry));
+      ok("Stillstand: 6 vollständige Einheiten über 3 Wochen ohne Fortschritt werden gemeldet", !!f.plateau && f.plateau.n === 6 && f.plateau.weeks === 3 && has("plateau", "mindestens 4 vollständigen Einheiten", "mindestens 3 Wochen"), JSON.stringify(f.plateau));
+
+      // Häufigkeit: 6 Trainings in den letzten 4 Wochen ÷ 4 = 1,5 pro Woche
+      await page.click("nav.tabs [data-v=history]");
+      ok("Häufigkeit: 6 Trainings in 4 Wochen → „1,5 Trainings pro Woche · letzte 4 Wochen“", (await page.textContent("#app .kpi")).replace(/\s+/g, " ").includes("1,5Trainings pro Woche · letzte 4 Wochen") && has("haeufigkeit", "letzten 4 Wochen"), await page.textContent("#app .kpi"));
+      // 1RM geschätzt: 40 × (1 + 10 ÷ 30) = 53,33 → auf halbe kg gerundet 53,5
+      const rm = async () => { await page.click("[data-a=showEx][data-id=hs-chest]"); const t = await tp(page, () => [...document.querySelectorAll("#sheet-root .stat")].map(s => s.textContent.replace(/\s+/g, " ").trim()).find(s => s.startsWith("1RM geschätzt")) || ""); await page.keyboard.press("Escape"); await sleep(350); return t; };
+      const rm1 = await rm();
+      ok("1RM geschätzt: 40 kg × 10 → 40 × (1 + 10 ÷ 30) = 53,3 → „≈53,5 kg“ (unter Kraft & Bestwerte → Gerät antippen)", rm1.includes("≈53,5 kg") && has("rm1", "Gewicht × (1 + Wiederholungen ÷ 30)", "höchstens 12"), rm1);
+
+      // Im Trainingstag: Pause 45 Sekunden bis 3 Minuten, „Wiederholungen ab/bis“, Supersatz mit dem Gerät direkt darunter
+      await page.click("nav.tabs [data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("#dayItems [data-a=editItem][data-i2='0']"); await sleep(100);
+      const sh = await tp(page, () => ({ rest: [...document.querySelectorAll(".sheet [data-a=draftRest]")].map(b => +b.dataset.s), txt: document.querySelector(".sheet").textContent, ss: (document.querySelector("#ssField .t") || {}).textContent, next: window.__tp.ex(window.__tp.state.plan.days[0].items[1].exId).name }));
+      ok("Gerät im Trainingstag: Pause von 45 Sekunden bis 3 Minuten, „Wiederholungen ab“ und „bis“, „Supersatz mit“ dem Gerät direkt darunter",
+        sh.rest[0] === 45 && sh.rest[sh.rest.length - 1] === 180 && sh.rest.every((s, i) => !i || s > sh.rest[i - 1]) && sh.txt.includes("Wiederholungen ab") && sh.txt.includes("Wiederholungen bis") && sh.ss === `Supersatz mit ${sh.next}` && has("satzpause", "45 Sekunden bis 3 Minuten"), JSON.stringify([sh.rest, sh.ss]));
+      await page.keyboard.press("Escape"); await sleep(350);
+
+      // Im Training: Aufwärmsätze etwa 50 % × 10 und 75 % × 5 (40 kg → 20 und 30), „Übung 1 von 3“, „Satz fertig“, Reserve 0 bis 4+
+      await page.click("nav.tabs [data-v=home]"); await page.click("[data-a=start]");
+      const tr = await tp(page, () => ({ warm: (document.getElementById("warmup") || {}).textContent || "", lab: document.querySelector("#app .ex-head .label").textContent, done: document.querySelector("[data-a=doneSet]").textContent, kg: document.getElementById("kgIn").value, plates: !!document.getElementById("platesTxt") }));
+      ok("Training: Vor dem ersten Satz mit 40 kg schlägt die App „20 × 10, dann 30 × 5“ zum Aufwärmen vor (50 % und 75 %), nicht einzutragen",
+        tr.kg === "40" && tr.warm.includes("20 × 10, dann 30 × 5") && tr.warm.includes("nicht eintragen") && has("aufwaermsatz", "50 % des Gewichts × 10", "75 % × 5"), JSON.stringify(tr));
+      ok("Training: „Übung 1 von 3“ über dem Gerät, Knopf „Satz fertig“, am Scheibengerät die Scheiben „Pro Seite“", tr.lab.startsWith("Übung 1 von 3") && tr.done === "Satz fertig" && tr.plates, JSON.stringify(tr));
+      await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      const link = await page.textContent("[data-a=openRir]");
+      await page.click("[data-a=openRir]");
+      const rir = await tp(page, () => [...document.querySelectorAll("#rirSeg button")].map(b => b.textContent).join(" "));
+      ok("Pause: „Reserve angeben“ bietet 0 bis 4+", link.trim() === "Reserve angeben" && rir === "0 1 2 3 4+" && has("rir", "0 bis 4+") && has("versagen", "der 0"), `${link} · ${rir}`);
+      await page.keyboard.press("Escape"); await sleep(350);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
+
+      // Regeln mit geänderten Werten: letztes Training 40 kg × 12/12 → ein Gewichtsschritt (2,5 kg) mehr, weiter am unteren Ende: 42,5 × 8
+      const up = await tp(page, () => { const T = window.__tp, H = T.state.history; H[H.length - 1].exercises[0].sets = [{ kg: 40, reps: 12 }, { kg: 40, reps: 12 }];
+        const e = T.makeEntry({ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 90 }); return { mode: e.mode, sets: e.sets.map(t => `${t.kg}×${t.reps}`).join(), step: T.ex("hs-chest").step }; });
+      ok("Doppelte Progression: In allen Sätzen das obere Ende (40 kg × 12/12) → ein Gewichtsschritt mehr und unten weiter: 42,5 kg × 8", up.mode === "up" && up.step === 2.5 && up.sets === "42.5×8,42.5×8" && has("doppelt", "in allen Sätzen das obere Ende", "einen Gewichtsschritt mehr"), JSON.stringify(up));
+      // 1RM mit mehr als 12 Wiederholungen: 40 kg × 15 → gerechnet mit 12: 40 × (1 + 12 ÷ 30) = 56 (ohne Grenze wären es 60)
+      await tp(page, () => { const H = window.__tp.state.history; H[H.length - 1].exercises[0].sets = [{ kg: 40, reps: 15 }, { kg: 40, reps: 15 }]; });
+      await page.click("nav.tabs [data-v=history]");
+      const rm2 = await rm();
+      ok("1RM geschätzt rechnet mit höchstens 12 Wiederholungen: 40 kg × 15 → 40 × (1 + 12 ÷ 30) = „≈56 kg“", rm2.includes("≈56 kg"), rm2);
+      // Stillstand: Grenzen 4 Einheiten und 3 Wochen (Tage vor heute)
+      const pl = await tp(page, () => { const T = window.__tp, now = Date.now(), one = JSON.stringify(T.state.history[0]);
+        const at = days => { T.state.history = days.map((d, i) => Object.assign(JSON.parse(one), { id: "p" + i, date: new Date(now - d * 864e5).toISOString() })); const r = T.plateau("hs-chest"); return r ? `${r.n}/${r.weeks}` : "–"; };
+        return [at([27, 20, 13, 6]), at([27, 13, 6]), at([26, 20, 13, 6]), at([20, 15, 10, 5])]; });
+      ok("Stillstand: 4 Einheiten über genau 3 Wochen werden gemeldet; 3 Einheiten oder weniger als 3 Wochen (20 und 15 Tage) nicht", pl.join(" ") === "4/3 – – –", pl.join(" "));
+      await ctx.close();
+    }
     // @ext:glossar:test:end
     // ── Abstand glossar/test 1 ──
     // ── Abstand glossar/test 2 ──
     // ── Abstand glossar/test 3 ──
     // @ext:muskeln:test:start
+    section("E-muskeln. Muskeln (Wissen → Artikel → Nachschlagen → Muskeln)");
+    {
+      // Fester Plan, von Hand nachgerechnet (Hauptmuskel voll, mittrainierte halb; ohne Termine jeder Tag einmal pro Woche):
+      //   Oberkörper:       Brustpresse 3 (Brust; Trizeps, Schultern) · Rudern 4 (Rücken; Bizeps, Schultern) · Schulterpresse 3 (Schultern; Trizeps) · Armbeuger 2 (Bizeps)
+      //   Beine:            Beinpresse 4 (Beine vorn; Po) · Beinbeuger sitzend 3 (Beine hinten) · Hüftheben 3 (Po; Beine hinten)
+      //   Brust und Rücken: Butterfly 3 (Brust; Schultern) · Schräge Brustpresse 4 (Brust; Schultern, Trizeps) · Latzug 5 (Rücken; Bizeps) · Trizepsdrücken 2 (Trizeps; Brust, Schultern)
+      //   Brust 3+3+4+1 = 11 · Rücken 4+5 = 9 · Schultern 1,5+2+3+1,5+2+1 = 11 · Bizeps 2+2+2,5 = 6,5 · Trizeps 1,5+1,5+2+2 = 7
+      //   Beine vorn 4 · Beine hinten 3+1,5 = 4,5 · Po 2+3 = 5 · Bauch, Beine innen, Waden 0
+      const mi = (id, exId, sets) => ({ id, exId, sets, rmin: 8, rmax: 12, rest: 90 });
+      const MK_PLAN = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "a", name: "Oberkörper", items: [mi("a1", "hs-chest", 3), mi("a2", "hs-row", 4), mi("a3", "hs-shoulder", 3), mi("a4", "hs-curl", 2)] },
+        { id: "b", name: "Beine", items: [mi("b1", "hs-legpress", 4), mi("b2", "hs-seatcurl", 3), mi("b3", "hs-hipthrust", 3)] },
+        { id: "c", name: "Brust und Rücken", items: [mi("c1", "hs-fly", 3), mi("c2", "hs-incline", 4), mi("c3", "hs-lat", 5), mi("c4", "hs-dip", 2)] }] };
+      const MK_SETS = { brust: "11", ruecken: "9", schultern: "11", bizeps: "6,5", trizeps: "7", bauch: "0", beinev: "4", beineh: "4,5", innen: "0", po: "5", waden: "0" };
+      // Geräte der App je Hauptmuskel, in der Geräteliste gezählt (zusammen 60)
+      const MK_DEVS = { brust: 8, ruecken: 11, schultern: 8, bizeps: 3, trizeps: 6, bauch: 2, beinev: 10, beineh: 5, innen: 2, po: 3, waden: 2 };
+      // Verlauf mit festen Abständen in Kalendertagen (12 Uhr am Ort – unabhängig von der Uhrzeit des Testlaufs):
+      // vor 9 Tagen Oberkörper, vor 4 Tagen Beine, vor 2 Tagen Brust und Rücken
+      const noonAgo = n => { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - n); return d; };
+      const mh = (n, dayId, day, exs) => ({ id: "mh" + n, dayId, day, date: noonAgo(n).toISOString(), durationSec: 1800, exercises: exs.map(([exId, name]) => ({ exId, name, sets: [{ kg: 20, reps: 10 }, { kg: 20, reps: 10 }] })) });
+      const MK_HIST = [mh(9, "a", "Oberkörper", [["hs-chest", "Brustpresse"], ["hs-row", "Rudern"]]), mh(4, "b", "Beine", [["hs-legpress", "Beinpresse"], ["hs-hipthrust", "Hüftheben"]]),
+        mh(2, "c", "Brust und Rücken", [["hs-lat", "Latzug"], ["hs-dip", "Trizepsdrücken"]])];
+      const dateTxt = n => { const d = noonAgo(n); return d.toLocaleDateString("de-DE", { day: "numeric", month: "long" }) + (d.getFullYear() === new Date().getFullYear() ? "" : " " + d.getFullYear()); };
+      const near = (a, b) => Math.abs(a - b) < 1e-6, pct = s => parseFloat((/width:\s*([\d.]+)%/.exec(s) || [])[1]), left = s => parseFloat((/left:\s*([\d.]+)%/.exec(s) || [])[1]);
+      // Übersicht auslesen: je Muskel Name, Zahl rechts, Unterzeile und die Balken-Stile
+      const readOverview = page => tp(page, () => { const T = window.__tp, q = s => document.querySelector(s), rows = {};
+        document.querySelectorAll("#mkList .li").forEach(l => { const v = l.querySelector(".val"), b = l.querySelector(".mband"), f = l.querySelector(".mfill");
+          rows[l.dataset.m] = { name: l.querySelector(".t").textContent, val: v ? v.firstChild.textContent : null, sr: v ? v.querySelector(".sr-only").textContent : null, sub: l.querySelector(".s").textContent.trim(), band: b ? b.getAttribute("style") : null, fill: f ? f.getAttribute("style") : null, h: l.getBoundingClientRect().height }; });
+        return { title: q("#app h1").textContent, h1: document.querySelectorAll("#app h1").length, back: q("#navbar .nb-back").textContent.trim(), tab: q("#tabs button.on").dataset.v, rows, order: [...document.querySelectorAll("#mkList .li")].map(l => l.dataset.m).join(),
+          keys: Object.keys(T.MUSCLES).join(), names: Object.values(T.MUSCLES).join(), ms: T.state.plan ? T.muscleSets(T.state.plan, T.planCheck().per) : null,
+          devs: Object.fromEntries(Object.keys(T.MUSCLES).map(m => [m, T.allEx().filter(e => e.muscle === m).length])), head: q("#mkList h2").textContent, foot: q("#mkListFoot").textContent,
+          topFoot: q("#mkTopFoot") ? q("#mkTopFoot").textContent : null, legend: q("#mkLegend") ? q("#mkLegend").textContent : null, empty: q("#mkEmpty") ? q("#mkEmpty").textContent : null, figLabel: q("#mkTop svg.fig").getAttribute("aria-label"),
+          shades: [...new Set([...document.querySelectorAll("#mkTop .fig .m")].map(e => e.style.fillOpacity ? `${e.style.fill} ${e.style.fillOpacity}` : "grau"))].sort().join(" | ") }; });
+      // Detailseite auslesen
+      const readDetail = page => tp(page, () => { const q = s => document.querySelector(s), txt = s => q(s) ? q(s).textContent.trim().replace(/\s+/g, " ") : null, ids = s => [...document.querySelectorAll(s)].map(l => l.dataset.id).join();
+        const hot = [...document.querySelectorAll("#mkOne .fig .m")].filter(e => e.getAttribute("style"));
+        return { title: txt("#app h1"), h1: document.querySelectorAll("#app h1").length, back: txt("#navbar .nb-back"), tab: q("#tabs button.on").dataset.v, sets: txt("#mkSets"), dayN: txt("#mkDayN"), stat: txt("#mkStat"), band: txt("#mkBand"),
+          bar: q("#mkStat .mfill") ? [q("#mkStat .mband").getAttribute("style"), q("#mkStat .mfill").getAttribute("style")] : null,
+          days: [...document.querySelectorAll("#mkInPlan .mk-day")].map(x => ({ id: x.dataset.day, cap: x.querySelector(".cap").textContent, rows: [...x.querySelectorAll(".li")].map(l => `${l.dataset.id}: ${l.querySelector(".t").textContent} – ${l.querySelector(".s").textContent}`), pics: [...x.querySelectorAll(".li")].every(l => l.dataset.a === "openEx" && l.querySelector(".thumbbox svg")) })),
+          rule: txt("#mkRule"), none: txt("#mkNone"), never: txt("#mkNever"), lastT: txt("#mkLastT"), lastS: txt("#mkLastS"), rec: txt("#mkRec"), recVal: q("#mkRec .val") ? parseInt(q("#mkRec .val").textContent, 10) : null, recW: q("#mkRec .mfill") ? q("#mkRec .mfill").getAttribute("style") : null,
+          main: ids("#mkMain .li"), sup: ids("#mkSup .li"), mainCap: txt("#mkMain .cap"), supCap: txt("#mkSup .cap"), hasSup: !!q("#mkSup"),
+          figLabel: q("#mkOne svg.fig").getAttribute("aria-label"), hot: hot.length, hotAll: hot.every(e => e.getAttribute("style") === "fill:var(--mhot)"), parts: document.querySelectorAll("#mkOne .fig .m").length }; });
+      const at320 = async page => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page), who = r ? "" : await overflowers(page); await page.setViewportSize({ width: 360, height: 780 }); return { r, who }; };
+
+      {
+        const { ctx, page } = await open({ plan: MK_PLAN, history: MK_HIST });
+        const state0 = await tp(page, () => JSON.stringify(window.__tp.state));
+        await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]");
+        const row = await tp(page, () => { const r = document.querySelector("#libMore #row-muskeln"); return r && { h: document.querySelector("#libMore h2").textContent, t: r.querySelector(".t").textContent, ico: !!r.querySelector(".ico svg"), hgt: r.getBoundingClientRect().height }; });
+        ok("Wissen → Artikel: unter „Nachschlagen“ steht die Zeile „Muskeln“ mit Symbolkachel", !!row && row.h === "Nachschlagen" && row.t === "Muskeln" && row.ico && row.hgt >= 44, JSON.stringify(row));
+        await page.click("#row-muskeln");
+        const ov = await readOverview(page);
+        ok("Muskeln: eigene Unterseite mit „‹ Wissen“, genau eine Überschrift, der Bereich bleibt „Wissen“", ov.title === "Muskeln" && ov.h1 === 1 && ov.back === "Wissen" && ov.tab === "lib", JSON.stringify([ov.title, ov.h1, ov.back, ov.tab]));
+        ok("Liste: alle elf Muskelgruppen in der Reihenfolge der App, jede Zeile mindestens 44 px hoch", ov.order === ov.keys && ov.order.split(",").length === 11 && Object.values(ov.rows).map(r => r.name).join() === ov.names && Object.values(ov.rows).every(r => r.h >= 44), ov.order);
+        ok("Sätze pro Woche von Hand nachgerechnet: Brust 11, Rücken 9, Schultern 11, Bizeps 6,5, Trizeps 7, Beine vorn 4, Beine hinten 4,5, Po 5; Bauch, Beine innen und Waden 0",
+          Object.keys(MK_SETS).every(m => ov.rows[m].val === MK_SETS[m]), JSON.stringify(Object.fromEntries(Object.keys(ov.rows).map(m => [m, ov.rows[m].val]))));
+        ok("… und gleich muscleSets der App; die Zahl hat einen Vorlesetext „Sätze pro Woche“", Object.keys(MK_SETS).every(m => String(ov.ms[m]).replace(".", ",") === ov.rows[m].val && ov.rows[m].sr.trim() === "Sätze pro Woche"), JSON.stringify(ov.ms));
+        ok("Zahl der Geräte je Muskel: von Hand gezählt (Brust 8, Rücken 11, … zusammen 60) und gleich der Geräteliste der App",
+          Object.keys(MK_DEVS).every(m => ov.devs[m] === MK_DEVS[m] && ov.rows[m].sub.endsWith(`${MK_DEVS[m]} Geräte`)) && Object.values(MK_DEVS).reduce((a, b) => a + b, 0) === 60, JSON.stringify(ov.devs));
+        ok("Muskel ohne Sätze im Plan: sachlich „Kommt im Plan nicht vor“ (Bauch, Beine innen, Waden) – bei den anderen nicht",
+          ["bauch", "innen", "waden"].every(m => ov.rows[m].sub === `Kommt im Plan nicht vor · ${MK_DEVS[m]} Geräte`) && ["brust", "ruecken", "po"].every(m => ov.rows[m].sub === `${MK_DEVS[m]} Geräte`), JSON.stringify([ov.rows.bauch.sub, ov.rows.brust.sub]));
+        // Richtwert der App für Muskelaufbau: 10–20 Sätze, Maßstab 26 (= 20 × 1,3). Heller Bereich von 10/26 = 38,46 % an, 38,46 % breit.
+        // Brust 11/26 = 42,31 % (im Richtwert: grün), Rücken 9/26 = 34,62 % (darunter: blau), Bauch 0 %
+        const R = ov.rows;
+        ok("Balken gegen den Richtwert: heller Bereich 10–20 von 26 (38,46 % + 38,46 %); Brust 42,31 % grün, Rücken 34,62 % blau, Bauch leer",
+          Object.values(R).every(r => near(left(r.band), 1000 / 26) && near(pct(r.band), 1000 / 26)) && near(pct(R.brust.fill), 1100 / 26) && R.brust.fill.includes("var(--ok)") && near(pct(R.ruecken.fill), 900 / 26) && R.ruecken.fill.includes("var(--accent)") && pct(R.bauch.fill) === 0,
+          JSON.stringify([R.brust.band, R.brust.fill, R.ruecken.fill, R.bauch.fill]));
+        ok("Überschrift und Beitext nennen Zählweise und „Richtwert der App“ wie die Planprüfung; die Gerätezahl ist erklärt",
+          ov.head === "Sätze pro Woche im Plan" && ov.foot.includes("Sätze pro Woche: Hauptmuskel voll, mittrainierte halb gezählt, jeder Tag einmal pro Woche.") && ov.foot.includes("Heller Bereich: Richtwert der App für Muskelaufbau, 10–20 Sätze.") && ov.foot.includes("Geräte: alle in der App mit diesem Hauptmuskel."), ov.foot);
+        // Figur: Deckkraft 25 % + 75 % × Sätze/20. 11 → 0,66 · 9 → 0,59 · 7 → 0,51 · 6,5 → 0,49 · 5 → 0,44 · 4,5 → 0,42 · 4 → 0,4; ohne Sätze grau
+        ok("Figur: mehr Sätze = kräftiger (11 → 0,66 · 9 → 0,59 · 7 → 0,51 · 6,5 → 0,49 · 5 → 0,44 · 4,5 → 0,42 · 4 → 0,4), Muskeln ohne Sätze bleiben grau",
+          ov.shades === ["grau"].concat(["0.4", "0.42", "0.44", "0.49", "0.51", "0.59", "0.66"].map(o => `var(--mhot) ${o}`)).join(" | "), ov.shades);
+        ok("Figur hat Legende, Beitext („volle Farbe ab 20 Sätzen“) und einen Vorlesetext mit den Zahlen",
+          ov.legend.includes("Nicht im Plan") && ov.legend.includes("Kräftiger = mehr Sätze") && ov.topFoot === "Farbe: Sätze pro Woche im Plan. Volle Farbe ab 20 Sätzen." && ov.figLabel.startsWith("Sätze pro Woche im Plan: Brust 11, Rücken 9, Schultern 11, Bizeps 6,5"), JSON.stringify([ov.legend, ov.topFoot, ov.figLabel]));
+        const free1 = await freeTextOn(page), w1 = await at320(page);
+        ok("Übersicht: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", free1.length === 0 && w1.r, free1.join(" | ") + w1.who);
+
+        // Detailseite Brust: Oberkörper (Brustpresse 3) = 3 Sätze; Brust und Rücken (Butterfly 3 + Schräge Brustpresse 4 + Trizepsdrücken 2 halb = 1) = 8 Sätze; „Beine“ fehlt
+        await page.click("#mk-brust");
+        const d = await readDetail(page);
+        ok("Muskel antippen öffnet die Detailseite: Titel „Brust“, „‹ Zurück“, Bereich „Wissen“, nur die Brust ist in der Figur hervorgehoben",
+          d.title === "Brust" && d.h1 === 1 && d.back === "Zurück" && d.tab === "lib" && d.figLabel === "Brust an der Figur hervorgehoben" && d.hot >= 1 && d.hot < d.parts && d.hotAll, JSON.stringify([d.title, d.back, d.tab, d.figLabel, d.hot, d.parts]));
+        ok("Im Plan: 11 Sätze pro Woche an 2 von 3 Trainingstagen, Richtwert 10–20 als „Richtwert der App“ gekennzeichnet, Balken wie in der Übersicht",
+          d.sets === "11" && d.dayN === "2" && d.stat.includes("Richtwert 10–20") && d.stat.includes("von 3") && d.band === "Heller Bereich: Richtwert der App für Muskelaufbau." && d.bar[0] === R.brust.band && d.bar[1] === R.brust.fill, JSON.stringify([d.stat, d.bar]));
+        ok("Im Plan: die richtigen Tage und Geräte – Oberkörper 3 Sätze (Brustpresse), Brust und Rücken 8 Sätze (Butterfly 3, Schräge Brustpresse 4, Trizepsdrücken 2 zählt halb); „Beine“ fehlt",
+          d.days.length === 2 && d.days[0].id === "a" && d.days[0].cap === "Oberkörper · 3 Sätze" && d.days[0].rows.join(" | ") === "hs-chest: Brustpresse – 3 Sätze · Hauptmuskel"
+          && d.days[1].id === "c" && d.days[1].cap === "Brust und Rücken · 8 Sätze" && d.days[1].rows.join(" | ") === "hs-fly: Butterfly – 3 Sätze · Hauptmuskel | hs-incline: Schräge Brustpresse – 4 Sätze · Hauptmuskel | hs-dip: Trizepsdrücken – 2 Sätze · mittrainiert, zählt halb", JSON.stringify(d.days));
+        ok("Jede Zeile zeigt das Gerätebild und führt zum Gerät; die Zählweise steht darunter", d.days.every(x => x.pics) && d.rule === "Sätze pro Woche: Hauptmuskel voll, mittrainierte halb gezählt, jeder Tag einmal pro Woche.", d.rule);
+        // Zuletzt trainiert: Brust war vor 9 Tagen Hauptmuskel (Brustpresse) und vor 2 Tagen mittrainiert (Trizepsdrücken) → das jüngste Training zählt
+        const recB = await tp(page, () => window.__tp.mkRecovery().brust);
+        ok("Zuletzt trainiert (Brust): das jüngste Training zählt – vor 2 Tagen, „Brust und Rücken“, Trizepsdrücken, als „mittrainiert“ benannt",
+          d.lastT === `${dateTxt(2)} · vor 2 Tagen` && d.lastS === "Training „Brust und Rücken“ · Trizepsdrücken · mittrainiert", JSON.stringify([d.lastT, d.lastS]));
+        ok("Erholung: der Wert aus recovery() der App, als „Schätzung der App“ gekennzeichnet", Math.abs(d.recVal - recB) <= 1 && d.rec.includes("Schätzung der App") && d.rec.startsWith("Erholung"), JSON.stringify([d.rec, recB]));
+        ok("Geräte in der App: erst „Hauptsächlich“ (8, Geräte im Studio zuerst), dann „Unterstützend“ (2) – benannt wie auf der Geräteseite",
+          d.mainCap === "Hauptsächlich · 8" && d.main === "hs-chest,hs-incline,hs-decline,hs-widechest,hs-fly,lf-chest,lf-fly,lf-cablefly" && d.supCap === "Unterstützend · 2" && d.sup === "hs-dip,lf-tripress", JSON.stringify([d.mainCap, d.main, d.supCap, d.sup]));
+        const marks = await tp(page, () => Object.fromEntries(["hs-chest", "hs-decline", "lf-chest", "hs-dip"].map(id => [id, document.querySelector(`#mkDevs .li[data-id="${id}"] .s`).textContent])));
+        ok("Geräte aus dem Plan sind mit „Im Plan“ markiert, abgewählte mit „nicht im Studio“", marks["hs-chest"].startsWith("Im Plan · ") && marks["hs-dip"].startsWith("Im Plan · ") && !marks["hs-decline"].includes("Im Plan") && marks["lf-chest"].endsWith("· nicht im Studio") && !marks["lf-chest"].includes("Im Plan"), JSON.stringify(marks));
+        const free2 = await freeTextOn(page), w2 = await at320(page);
+        ok("Detailseite: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", free2.length === 0 && w2.r, free2.join(" | ") + w2.who);
+
+        // Erholung öffnet das Erholungs-Fenster der App
+        await page.click("#mkRec");
+        ok("Die Zeile „Erholung“ öffnet das Erholungs-Fenster der App", (await page.textContent(".sheet h2")) === "Erholung");
+        await page.click(".sheet .sh-head [data-a=closeSheet]");
+        // Zum Gerät und zurück zur Muskel-Seite
+        await page.click("#mkInPlan .li[data-id=hs-fly]");
+        const g = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, tab: document.querySelector("#tabs button.on").dataset.v }));
+        await page.click("#navbar .nb-back");
+        ok("Gerätezeile öffnet die Geräteseite (Butterfly); Zurück führt wieder zur Muskel-Seite „Brust“", g.title === "Butterfly" && g.tab === "lib" && (await page.textContent("#app h1")) === "Brust" && await page.isVisible("#mkInPlan"), JSON.stringify(g));
+
+        // Rücken: vor 2 Tagen Hauptmuskel am Latzug. 12 Uhr vor zwei Tagen liegt 36–60 Stunden zurück → 50–83 % von 72 Stunden → immer „Teilweise“
+        await page.click("#navbar .nb-back");
+        ok("Zurück führt zur Übersicht „Muskeln“", (await page.textContent("#app h1")) === "Muskeln" && await page.isVisible("#mkList"));
+        await page.click("#mk-ruecken");
+        const dr = await readDetail(page);
+        ok("Zuletzt trainiert (Rücken): vor 2 Tagen am Latzug als Hauptmuskel; Erholung 50–83 % → „Teilweise“",
+          dr.title === "Rücken" && dr.lastT === `${dateTxt(2)} · vor 2 Tagen` && dr.lastS === "Training „Brust und Rücken“ · Latzug" && dr.recVal >= 48 && dr.recVal <= 85 && dr.rec.includes("Teilweise · Schätzung der App"), JSON.stringify([dr.lastT, dr.lastS, dr.rec]));
+        ok("Rücken im Plan: 9 Sätze an 2 Tagen – Oberkörper 4 (Rudern), Brust und Rücken 5 (Latzug)",
+          dr.sets === "9" && dr.dayN === "2" && dr.days.map(x => `${x.cap}: ${x.rows.join(" | ")}`).join(" || ") === "Oberkörper · 4 Sätze: hs-row: Rudern – 4 Sätze · Hauptmuskel || Brust und Rücken · 5 Sätze: hs-lat: Latzug – 5 Sätze · Hauptmuskel", JSON.stringify(dr.days));
+        // Beine vorn: vor 4 Tagen an der Beinpresse → länger als 72 Stunden her → 100 %, „Erholt“
+        await page.click("#navbar .nb-back"); await page.click("#mk-beinev");
+        const dv = await readDetail(page);
+        ok("Zuletzt trainiert (Beine vorn): vor 4 Tagen, Training „Beine“, Beinpresse; Erholung 100 % → „Erholt“",
+          dv.lastT === `${dateTxt(4)} · vor 4 Tagen` && dv.lastS === "Training „Beine“ · Beinpresse" && dv.recVal === 100 && /width:\s*100%/.test(dv.recW) && dv.rec.includes("Erholt · Schätzung der App"), JSON.stringify([dv.lastT, dv.lastS, dv.rec, dv.recW]));
+        // Schultern: nur halbe Sätze an zwei Tagen – Oberkörper 1,5 + 2 + 3 = 6,5; Brust und Rücken 1,5 + 2 + 1 = 4,5
+        await page.click("#navbar .nb-back"); await page.click("#mk-schultern");
+        const ds = await readDetail(page);
+        ok("Schultern im Plan: Oberkörper 6,5 Sätze (Brustpresse und Rudern halb, Schulterpresse voll), Brust und Rücken 4,5 Sätze (alles halb) – zusammen 11",
+          ds.sets === "11" && ds.days.map(x => x.cap).join(" | ") === "Oberkörper · 6,5 Sätze | Brust und Rücken · 4,5 Sätze" && ds.days[0].rows.join(" | ") === "hs-chest: Brustpresse – 3 Sätze · mittrainiert, zählt halb | hs-row: Rudern – 4 Sätze · mittrainiert, zählt halb | hs-shoulder: Schulterpresse – 3 Sätze · Hauptmuskel", JSON.stringify(ds.days));
+        // Muskel ohne Sätze und ohne Training: Waden
+        await page.click("#navbar .nb-back"); await page.click("#mk-waden");
+        const dw = await readDetail(page), freeW = await freeTextOn(page);
+        ok("Muskel ohne Sätze (Waden): „Kommt im Plan nicht vor.“ – ohne Wertung, ohne Kennzahlen und ohne Aufforderung", dw.none === "Kommt im Plan nicht vor." && dw.sets === null && dw.days.length === 0 && dw.rule === null && !(await page.$("#mkInPlan button")), JSON.stringify([dw.none, dw.sets]));
+        ok("… ohne Training im Verlauf: Hinweis statt Datum, keine Erholungszeile; Geräte: Wadenheben stehend und sitzend, kein Abschnitt „Unterstützend“",
+          dw.never === "Im Verlauf steht noch kein Training für Waden." && dw.lastT === null && dw.rec === null && dw.main === "hs-calf,hs-seatcalf" && dw.mainCap === "Hauptsächlich · 2" && !dw.hasSup && freeW.length === 0, JSON.stringify([dw.never, dw.main, freeW]));
+        // Zurück: Detailseite → Übersicht → Wissen (Artikel)
+        await page.click("#navbar .nb-back");
+        const b1 = await page.textContent("#app h1");
+        await page.click("#navbar .nb-back");
+        const b2 = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, seg: document.querySelector("#wissenSeg .on").textContent, row: !!document.querySelector("#row-muskeln") }));
+        ok("Zurück führt von der Detailseite zur Übersicht und von dort zu Wissen → Artikel", b1 === "Muskeln" && b2.title === "Wissen" && b2.seg === "Artikel" && b2.row, JSON.stringify([b1, b2]));
+        // Die Geräteseite der App behält ihren üblichen Rückweg
+        await page.click("#wissenSeg [data-v=lib]"); await page.click("#libList .li[data-id=hs-chest]"); await page.click("#navbar .nb-back");
+        ok("Geräteseite aus der Geräteliste: Zurück führt weiter zur Geräteliste", await page.isVisible("#libList") && (await page.textContent("#app h1")) === "Wissen");
+        // Balken wie in der Planprüfung: dieselben Stile und Zahlen für die sechs großen Muskelgruppen
+        await page.click("nav.tabs [data-v=plan]");
+        const pb = await tp(page, () => Object.fromEntries([...document.querySelectorAll("#planBars .mrow")].map(r => [r.dataset.m, { band: r.querySelector(".mband").getAttribute("style"), fill: r.querySelector(".mfill").getAttribute("style"), val: r.querySelector(".num").textContent }])));
+        ok("Richtwert-Balken wie in der Planprüfung: gleicher heller Bereich, gleiche Länge, gleiche Farbe und gleiche Zahl (Brust, Rücken, Schultern, Beine vorn, Beine hinten, Po)",
+          Object.keys(pb).join() === "brust,ruecken,schultern,beinev,beineh,po" && Object.keys(pb).every(m => pb[m].band === R[m].band && pb[m].fill === R[m].fill && pb[m].val === R[m].val), JSON.stringify([pb.brust, R.brust]));
+        ok("Nur Anzeige: Plan, Verlauf und alle anderen Daten bleiben unverändert; die Erweiterung speichert nichts", (await tp(page, () => JSON.stringify(window.__tp.state))) === state0 && !("muskeln" in (await tp(page, () => window.__tp.state.x))));
+        await ctx.close();
+      }
+      {
+        // Mit festen Terminen zählt die Planprüfung Termine pro Woche: 6 Termine bei 3 Trainingstagen = jeder Tag zweimal.
+        // Brust 22 (über 20: orange, 22/26 = 84,62 %), Rücken 18 (im Richtwert), Beine vorn 8 (darunter), Bizeps 13
+        const { ctx, page } = await open({ plan: MK_PLAN, history: [], sched: { days: [0, 1, 2, 3, 4, 5], time: "18:00", planB: "next" } });
+        const openMk = async () => { await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-muskeln"); };
+        await openMk();
+        const ov = await readOverview(page), R = ov.rows;
+        ok("Feste Termine (6 pro Woche, 3 Trainingstage): alle Werte doppelt – Brust 22, Rücken 18, Bizeps 13, Beine vorn 8",
+          R.brust.val === "22" && R.ruecken.val === "18" && R.bizeps.val === "13" && R.beinev.val === "8" && R.bauch.val === "0" && ov.foot.includes("6 Termine pro Woche"), JSON.stringify([R.brust.val, R.ruecken.val, R.bizeps.val, R.beinev.val, ov.foot]));
+        ok("Über dem Richtwert: Balken orange (Brust 22/26 = 84,62 %), im Richtwert grün (Rücken 18), darunter blau (Beine vorn 8); Brust in der Figur mit voller Farbe",
+          near(pct(R.brust.fill), 2200 / 26) && R.brust.fill.includes("var(--warn)") && R.ruecken.fill.includes("var(--ok)") && R.beinev.fill.includes("var(--accent)") && ov.shades.includes("var(--mhot) 1"), JSON.stringify([R.brust.fill, R.ruecken.fill, R.beinev.fill, ov.shades]));
+        await page.click("#mk-brust");
+        const d = await readDetail(page);
+        ok("Detailseite erklärt die Rechnung: Tage zusammen 11 Sätze, bei 6 Terminen und 3 Trainingstagen 22 pro Woche",
+          d.sets === "22" && d.days.map(x => x.cap).join(" | ") === "Oberkörper · 3 Sätze | Brust und Rücken · 8 Sätze" && d.rule === "Sätze pro Woche: Hauptmuskel voll, mittrainierte halb gezählt, 6 Termine pro Woche. Die Tage zusammen ergeben 11 Sätze. Bei 6 Terminen pro Woche und 3 Trainingstagen sind das 22 pro Woche.", d.rule);
+        await page.click("nav.tabs [data-v=plan]");
+        const pb = await tp(page, () => Object.fromEntries([...document.querySelectorAll("#planBars .mrow")].map(r => [r.dataset.m, { band: r.querySelector(".mband").getAttribute("style"), fill: r.querySelector(".mfill").getAttribute("style"), val: r.querySelector(".num").textContent }])));
+        ok("… und die Balken stimmen auch mit Terminen mit der Planprüfung überein", Object.keys(pb).length === 6 && Object.keys(pb).every(m => pb[m].band === R[m].band && pb[m].fill === R[m].fill && pb[m].val === R[m].val), JSON.stringify([pb.brust, R.brust]));
+        // 4 Termine bei 3 Trainingstagen: Brust 11 × 4/3 = 14,67 → auf halbe Sätze 14,5 („rund“); Rücken 9 × 4/3 = 12 (glatt)
+        await tp(page, () => { window.__tp.state.sched.days = [0, 1, 3, 5]; });
+        await openMk();
+        const ov4 = await readOverview(page);
+        await page.click("#mk-brust");
+        const d4 = await readDetail(page);
+        await page.click("#navbar .nb-back"); await page.click("#mk-ruecken");
+        const d4r = await readDetail(page);
+        ok("4 Termine bei 3 Trainingstagen: Brust 11 × 4/3 = 14,67 → „14,5“ und im Text „rund 14,5“; Rücken 9 × 4/3 = 12 ohne „rund“",
+          ov4.rows.brust.val === "14,5" && ov4.rows.ruecken.val === "12" && d4.sets === "14,5" && d4.rule.endsWith("Die Tage zusammen ergeben 11 Sätze. Bei 4 Terminen pro Woche und 3 Trainingstagen sind das rund 14,5 pro Woche.")
+          && d4r.sets === "12" && d4r.rule.endsWith("Die Tage zusammen ergeben 9 Sätze. Bei 4 Terminen pro Woche und 3 Trainingstagen sind das 12 pro Woche."), JSON.stringify([ov4.rows.brust.val, d4.rule, d4r.rule]));
+        // Ziel „Kraft“ ohne Termine: Richtwert der App 6–12, Maßstab 15,6. Brust 11/15,6 = 70,51 % (im Richtwert), Beine vorn 4 (darunter); volle Farbe ab 12 → Brust 25 + 75 × 11/12 = 93,75 → 0,94
+        await tp(page, () => { window.__tp.state.sched = null; window.__tp.state.plan.goal = "kraft"; });
+        await openMk();
+        const ovK = await readOverview(page);
+        ok("Ziel „Kraft“: Richtwert der App 6–12 wie in der Planprüfung – heller Bereich 6/15,6 = 38,46 %, Brust 11/15,6 = 70,51 % grün, Beine vorn 4 blau; Figur mit voller Farbe ab 12",
+          near(left(ovK.rows.brust.band), 600 / 15.6) && near(pct(ovK.rows.brust.fill), 1100 / 15.6) && ovK.rows.brust.fill.includes("var(--ok)") && ovK.rows.beinev.fill.includes("var(--accent)")
+          && ovK.foot.includes("Richtwert der App für Kraft, 6–12 Sätze.") && ovK.topFoot === "Farbe: Sätze pro Woche im Plan. Volle Farbe ab 12 Sätzen." && ovK.shades.includes("var(--mhot) 0.94"), JSON.stringify([ovK.rows.brust, ovK.foot, ovK.shades]));
+        await ctx.close();
+      }
+      {
+        // Leerer Plan (ein Tag ohne Übungen), kaputter gespeicherter Wert, eigenes Gerät mit Sonderzeichen, Verlauf nur mit einem gelöschten Gerät
+        const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Leer", items: [] }] }, x: { muskeln: "Unsinn" },
+          custom: [{ id: "c-mk1", name: "Wade <b>X</b> & Co", muscle: "waden", sec: ["bauch"], type: "plate" }], history: [mh(1, "a", "Alt", [["c-geloescht", "Gelöschtes Gerät"]])] });
+        await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-muskeln");
+        const ov = await readOverview(page), free1 = await freeTextOn(page), w1 = await at320(page);
+        ok("Leerer Plan: Die Übersicht öffnet sich trotz kaputtem gespeichertem Wert; Hinweis statt Legende, graue Figur, keine Balken und keine Zahlen",
+          ov.title === "Muskeln" && ov.empty === "Dein Plan hat noch keine Übungen. Mit Übungen im Plan zeigt die Figur die Sätze pro Woche je Muskel." && ov.legend === null && ov.topFoot === null && ov.shades === "grau" && Object.values(ov.rows).every(r => r.val === null && r.band === null), JSON.stringify([ov.empty, ov.legend, ov.shades]));
+        ok("Leerer Plan: Liste „Muskelgruppen“ mit der Zahl der Geräte (Waden mit dem eigenen Gerät 3), ohne „Kommt im Plan nicht vor“",
+          ov.head === "Muskelgruppen" && ov.order.split(",").length === 11 && ov.rows.brust.sub === "8 Geräte" && ov.rows.waden.sub === "3 Geräte" && ov.foot === "Geräte: alle in der App mit diesem Hauptmuskel.", JSON.stringify([ov.head, ov.rows.waden.sub, ov.foot]));
+        ok("Leerer Plan: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", free1.length === 0 && w1.r, free1.join(" | ") + w1.who);
+        await page.click("#mk-bauch");
+        const d = await readDetail(page), free2 = await freeTextOn(page), w2 = await at320(page);
+        const cust = await tp(page, () => { const l = document.querySelector('#mkSup .li[data-id="c-mk1"]'); return l && { t: l.querySelector(".t").textContent, b: !!l.querySelector(".t b"), ph: !!l.querySelector(".thumbbox.mk-noth svg") }; });
+        ok("Detailseite bei leerem Plan (Bauch): „Kommt im Plan nicht vor.“, kein Training im Verlauf, Geräte der App bleiben sichtbar",
+          d.title === "Bauch" && d.none === "Kommt im Plan nicht vor." && d.never === "Im Verlauf steht noch kein Training für Bauch." && d.main === "hs-ab,lf-ab" && d.sup === "c-mk1" && d.supCap === "Unterstützend · 1", JSON.stringify([d.none, d.never, d.main, d.sup]));
+        ok("Eigenes Gerät: Name wird als Text gezeigt (kein HTML), ohne Bild steht ein Platzhalter", !!cust && cust.t === "Wade <b>X</b> & Co" && !cust.b && cust.ph, JSON.stringify(cust));
+        ok("Detailseite bei leerem Plan: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", free2.length === 0 && w2.r, free2.join(" | ") + w2.who);
+        // Gelöschtes eigenes Gerät im Verlauf: sein Muskel ist nicht mehr bekannt → zählt für keinen Muskel als „zuletzt trainiert“
+        const lasts = await tp(page, () => Object.keys(window.__tp.MUSCLES).filter(m => window.__tp.mkLast(m)).join());
+        ok("Ein gelöschtes Gerät im Verlauf zählt für keinen Muskel als „zuletzt trainiert“", lasts === "", lasts);
+        ok("Kaputter gespeicherter Wert: Die Erweiterung legt keinen Speicherbereich an", !("muskeln" in (await tp(page, () => window.__tp.state.x))));
+        // Neu laden: nichts gespeichert, die Seite öffnet sich wieder
+        await page.reload();
+        await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#row-muskeln"); await page.click("#mk-waden");
+        const dr = await readDetail(page);
+        ok("Nach dem Neuladen öffnen sich Übersicht und Detailseite wieder (Waden: eigenes Gerät unter „Hauptsächlich“)", dr.title === "Waden" && dr.main === "hs-calf,hs-seatcalf,c-mk1" && dr.mainCap === "Hauptsächlich · 3", JSON.stringify([dr.title, dr.main]));
+        // Ganz ohne Plan (die App zeigt dann sonst die Planerstellung): beide Ansichten zeichnen ohne Fehler
+        const np = await tp(page, () => { const T = window.__tp; T.state.plan = null; T.EXT.views.muskeln(); const a = document.querySelector("#mkEmpty").textContent, rows = document.querySelectorAll("#mkList .li").length;
+          T.EXT.views.muskel(); return { a, rows, b: document.querySelector("#mkNone").textContent, h: document.querySelector("#app h1").textContent }; });
+        ok("Ohne Plan: Übersicht und Detailseite zeigen „Du hast noch keinen Plan.“", np.a.startsWith("Du hast noch keinen Plan.") && np.rows === 11 && np.b === "Du hast noch keinen Plan." && np.h === "Waden", JSON.stringify(np));
+        await ctx.close();
+      }
+      {
+        // Abstand in Kalendertagen über die Zeitumstellung hinweg (Berlin, 29. März 2026: der Tag hat 23 Stunden) und über den Jahreswechsel
+        const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, timezoneId: "Europe/Berlin", serviceWorkers: "block" });
+        await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-tabmem", "0"); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL })]);
+        const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message)); await page.goto(URL);
+        const a = await tp(page, () => { const f = window.__tp.mkAgo; return [f("2026-03-27T12:00:00+01:00", new Date("2026-03-30T08:00:00+02:00")), f("2026-03-29T01:30:00+01:00", new Date("2026-03-30T08:00:00+02:00")),
+          f("2026-03-30T06:00:00+02:00", new Date("2026-03-30T23:30:00+02:00")), f("2025-12-31T23:30:00+01:00", new Date("2026-01-01T00:10:00+01:00")), f("2026-10-23T12:00:00+02:00", new Date("2026-10-26T08:00:00+01:00"))]; });
+        ok("Abstand in Kalendertagen stimmt über die Zeitumstellung: 27. → 30. März „vor 3 Tagen“, 29. → 30. März „gestern“, gleicher Tag „heute“, Silvester → Neujahr „gestern“, 23. → 26. Oktober „vor 3 Tagen“",
+          a.join(" | ") === "vor 3 Tagen | gestern | heute | gestern | vor 3 Tagen", a.join(" | "));
+        await ctx.close();
+      }
+    }
     // @ext:muskeln:test:end
     // ── Abstand muskeln/test 1 ──
     // ── Abstand muskeln/test 2 ──
     // ── Abstand muskeln/test 3 ──
     // @ext:plaene:test:start
+    section("E-plaene. Meine Pläne (Plan → Meine Pläne)");
+    {
+      const it = (id, exId, sets, extra) => Object.assign({ id, exId, sets, rmin: 8, rmax: 12, rest: 90 }, extra || {});
+      // Von Hand gezählt: 2 Tage · hs-chest, hs-row, hs-legpress = 3 verschiedene Geräte (hs-chest an beiden Tagen zählt einmal) · 3 + 2 + 4 + 1 = 10 Sätze
+      const P2 = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [
+        { id: "da", name: "Oben", items: [it("a1", "hs-chest", 3), it("a2", "hs-row", 2)] },
+        { id: "db", name: "Unten", items: [it("b1", "hs-legpress", 4), it("b2", "hs-chest", 1)] }], gaps: [] };
+      // Geänderter Stand: 3 Tage (einer leer) · hs-chest, hs-fly = 2 Geräte · 5 + 2 = 7 Sätze
+      const P3 = { goal: "kraft", level: "einsteiger", minutes: 45, days: [
+        { id: "da", name: "Oben neu", items: [it("a1", "hs-chest", 5)] }, { id: "db", name: "Unten", items: [] }, { id: "neu", name: "Neu", items: [it("n1", "hs-fly", 2)] }], gaps: [] };
+      const IDOK = /^[A-Za-z0-9_-]{1,24}$/;
+      const plnGo = async page => { await page.click("nav.tabs [data-v=plan]"); await page.click("#row-plaene"); };
+      const today = page => tp(page, () => ({ key: window.__tp.dkey(), txt: new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long" }) }));
+      const mem = page => tp(page, () => JSON.parse(JSON.stringify(window.__tp.state)));
+      const lst = async page => (await mem(page)).x.plaene.list;
+      const at320 = async page => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; };
+      const code = o => "TP1:" + Buffer.from(JSON.stringify(o), "utf8").toString("base64");
+      // Kopf eines Formular-Fensters bei 320 px: kleinster Abstand zwischen den Texten „Abbrechen“, Titel und Aktion (unter 0 = sie überlappen)
+      const headGap = async page => { await page.setViewportSize({ width: 320, height: 640 });
+        const g = await tp(page, () => { const h = document.querySelector(".sheet .sh-head"), box = el => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+          const l = box(h.querySelector(".sh-l")), t = box(h.querySelector("h2")), b = box(h.querySelector(".btn:not(.sh-l)")); return Math.min(t.left - l.right, b.left - t.right); });
+        await page.setViewportSize({ width: 360, height: 780 }); return g; };
+      // Aktionsblatt: Titel, Text und Knöpfe (rote mit „!“)
+      const asheet = page => tp(page, () => { const s = document.querySelector(".sheet.as"); return s ? { t: s.querySelector(".as-t").textContent, m: (s.querySelector(".as-m") || {}).textContent || "",
+        btn: [...s.querySelectorAll(".as-btn")].map(b => b.textContent + (b.classList.contains("danger") ? "!" : "")).join("|") } : { t: "", m: "", btn: "" }; });
+      {
+        // Zeile, Unterseite, leerer Zustand, sichern, Neuladen
+        const { ctx, page } = await open({ plan: P2, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 9 }], 3, "s")], weights: [{ d: "2026-10-01", kg: 80 }], notes: { "hs-chest": "Sitz 4" } });
+        await page.click("nav.tabs [data-v=plan]");
+        const row = await tp(page, () => { const r = document.querySelector("#planMore .group #row-plaene"); return r && { t: r.querySelector(".t").textContent, val: !!r.querySelector(".val"), ico: !!r.querySelector(".ico svg") }; });
+        ok("Plan → „Rund um den Plan“: Zeile „Meine Pläne“ mit Symbol, ohne Zahl, solange nichts gesichert ist", !!row && row.t === "Meine Pläne" && !row.val && row.ico, JSON.stringify(row));
+        await page.click("#row-plaene");
+        const v = await tp(page, () => ({ title: document.querySelector("#app h1").textContent, h1: document.querySelectorAll("#app h1").length, back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v,
+          nums: [...document.querySelectorAll("#plnNow .stat")].map(s => s.querySelector(".cap").textContent + " " + s.querySelector(".num").textContent).join(), thumbs: document.querySelectorAll("#plnNow .tstrip svg").length,
+          state: document.getElementById("plnState").textContent, empty: !!document.getElementById("plnEmpty"), list: !!document.getElementById("plnList"), paste: document.getElementById("plnPaste").textContent, prim: document.querySelectorAll("#app .btn.primary").length }));
+        ok("Unterseite „Meine Pläne“ mit „‹ Plan“ und einer Überschrift; der Bereich bleibt „Plan“", v.title === "Meine Pläne" && v.h1 === 1 && v.back === "Plan" && v.tab === "plan", JSON.stringify(v));
+        ok("Karte „Aktueller Plan“: 2 Tage, 3 verschiedene Geräte, 10 Sätze (von Hand gezählt), dazu drei Gerätebilder", v.nums === "Tage 2,Geräte 3,Sätze 10" && v.thumbs === 3 && v.prim === 1, JSON.stringify(v));
+        ok("Leerer Zustand: Hinweiskarte statt Liste, „Noch nicht gesichert.“, Einfügen bleibt erreichbar", v.empty && !v.list && v.state === "Noch nicht gesichert." && v.paste === "Plan aus Text einfügen", JSON.stringify(v));
+        ok("Leere Seite: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await at320(page), (await freeTextOn(page)).join(" | "));
+        const d = await today(page);
+        await page.click("#plnSave");
+        const sh = await tp(page, () => ({ title: document.querySelector(".sheet h2").textContent, cancel: (document.querySelector(".sheet .sh-l") || {}).textContent, val: document.getElementById("plnNameIn").value,
+          okTxt: (document.querySelector(".sheet .sh-head [data-a=plnSaveDo]") || {}).textContent }));
+        ok("„Aktuellen Plan sichern“ fragt nach dem Namen, Vorschlag „Plan vom <heute>“", sh.title === "Plan sichern" && sh.cancel === "Abbrechen" && sh.okTxt === "Speichern" && sh.val === `Plan vom ${d.txt}`, JSON.stringify(sh));
+        const g1 = await headGap(page);
+        ok("Fenster „Plan sichern“ bei 320 px: Titel und Knöpfe überlappen nicht, kein seitliches Scrollen", g1 >= 4 && await at320(page), String(g1));
+        await page.fill("#plnNameIn", "   "); await page.click("[data-a=plnSaveDo]");
+        ok("Leerer Name: Fehlertext, nichts wird gesichert", await page.isVisible("#plnErr") && (await lst(page)).length === 0 && !!(await page.$(".sheet")));
+        await page.fill("#plnNameIn", "Sommer");
+        ok("Weitertippen blendet den Fehlertext aus", await page.isHidden("#plnErr"));
+        await page.click("[data-a=plnSaveDo]");
+        const L1 = (await stored(page)).x.plaene.list;
+        ok("Sichern legt eine Kopie des Plans an: Name, Datum von heute, Tage und Geräte wie im Plan", L1.length === 1 && L1[0].name === "Sommer" && L1[0].saved === d.key && IDOK.test(L1[0].id) && canon(L1[0].plan) === canon(P2) && !(await page.$(".sheet")), JSON.stringify(L1));
+        const li = await tp(page, () => { const r = document.querySelector("#plnList .li"); return { n: document.querySelectorAll("#plnList .li").length, t: r.querySelector(".t").textContent, s: [...r.querySelectorAll(".s")].map(x => x.textContent).join("|"),
+          badge: (r.querySelector(".badge") || {}).textContent, state: document.getElementById("plnState").textContent, note: (document.getElementById("plnNote") || {}).textContent, count: document.getElementById("plnCount").textContent }; });
+        ok("Der Plan erscheint in der Liste: Name, „2 Tage · 3 Geräte“, gesichert am heutigen Tag, Marke „Aktuell“", li.n === 1 && li.t === "Sommer" && li.s === `2 Tage · 3 Geräte|Gesichert am ${d.txt}` && li.badge === "Aktuell" && li.count === "1 von 12", JSON.stringify(li));
+        ok("Die Karte nennt den Stand („Gesichert als „Sommer“.“), oben steht die Meldung", li.state === "Gesichert als „Sommer“." && li.note === "„Sommer“ gesichert.", JSON.stringify(li));
+        await page.reload();
+        await page.click("nav.tabs [data-v=plan]");
+        ok("Nach dem Neuladen zeigt die Zeile die Anzahl 1", (await page.textContent("#row-plaene .val")) === "1");
+        await page.click("#row-plaene");
+        const L2 = await lst(page);
+        ok("Der gesicherte Plan übersteht das Neuladen", L2.length === 1 && canon(L2) === canon(L1) && (await page.textContent("#plnList .li .t")) === "Sommer" && !(await page.$("#plnNote")), JSON.stringify(L2));
+        ok("Gefüllte Seite: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await at320(page), (await freeTextOn(page)).join(" | "));
+        await page.click("#navbar .nb-back");
+        ok("Zurück führt zum Plan", (await page.textContent("#app h1")) === "Mein Plan");
+        await ctx.close();
+      }
+      {
+        // Plan ändern → Laden stellt den gesicherten Stand her; Rückfrage; „vorher sichern“; Verlauf bleibt
+        const { ctx, page } = await open({ plan: P3, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s"), hist("hs-row", [{ kg: 30, reps: 8 }], 1, "s")], weights: [{ d: "2026-10-01", kg: 80 }], notes: { "hs-chest": "Sitz 4" },
+          selDay: "neu", timeplan: { dayId: "neu", date: "2026-01-01", minutes: 30, keep: { n1: 1 }, replace: {} }, prevPlan: { at: "2026-10-01T10:00:00.000Z", why: "Test", plan: P2 },
+          sched: { id: "t1", days: [0, 2, 4], time: "18:00", planB: "next", since: "2026-01-01T10:00:00.000Z" },
+          dayPlan: { "2099-01-05": { train: "neu" }, "2099-01-06": { train: "rest" }, "2099-01-07": { train: "da", steps: 5000 } },
+          x: { plaene: { list: [{ id: "s1", name: "Alt", saved: "2001-03-04", plan: P2 }] } } });
+        const before = await mem(page), d = await today(page);
+        await plnGo(page);
+        const li = await tp(page, () => { const r = document.querySelector("#plnList .li"); return { s: [...r.querySelectorAll(".s")].map(x => x.textContent).join("|"), badge: !!r.querySelector(".badge"), state: document.getElementById("plnState").textContent,
+          nums: [...document.querySelectorAll("#plnNow .stat .num")].map(x => x.textContent).join() }; });
+        ok("Geänderter Plan: 3 Tage, 2 Geräte, 7 Sätze; „Noch nicht gesichert.“; der gesicherte Plan ist nicht „Aktuell“ und zeigt sein Datum mit Jahr", li.nums === "3,2,7" && li.state === "Noch nicht gesichert." && !li.badge && li.s === "2 Tage · 3 Geräte|Gesichert am 4. März 2001", JSON.stringify(li));
+        await page.click("#plnList [data-id=s1]");
+        const as = await asheet(page);
+        ok("Antippen öffnet das Aktionsblatt: Laden, Umbenennen, Duplizieren, Als Text teilen, Löschen (rot), Abbrechen", as.t === "Alt" && as.m.includes("2 Tage · 3 Geräte") && as.btn === "Laden|Umbenennen|Duplizieren|Als Text teilen|Löschen!|Abbrechen", JSON.stringify(as));
+        await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q = await asheet(page);
+        ok("„Laden“ fragt nach und sagt, was passiert: Der aktuelle Plan wird ersetzt; Verlauf, Gewichte und Notizen bleiben", q.t === "„Alt“ laden?" && q.m.includes("Dein aktueller Plan wird ersetzt") && q.m.includes("noch nicht gesichert") && q.m.includes("Verlauf, Gewichte und Notizen bleiben erhalten"), JSON.stringify(q));
+        ok("Angeboten wird „Vorher sichern und laden“, daneben „Ohne Sichern laden“ (rot) und „Abbrechen“", q.btn === "Vorher sichern und laden|Ohne Sichern laden!|Abbrechen", q.btn);
+        await page.click(".sheet.as .as-cancel");
+        ok("Abbrechen ändert nichts", canon((await mem(page)).plan) === canon(P3) && (await lst(page)).length === 1 && !(await page.$(".sheet")));
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnLoadAsk]"); await page.click(".sheet.as [data-a=plnLoadKeep]");
+        const st = await stored(page), L = st.x.plaene.list;
+        ok("Laden stellt den gesicherten Stand her: Tage, Geräte, Sätze, Wiederholungen und Pausen wie gesichert", canon(st.plan) === canon(P2), JSON.stringify(st.plan));
+        ok("„Vorher sichern“ legt einen zweiten Eintrag mit dem bisherigen Plan an (oben, „Plan vom <heute>“)", L.length === 2 && L[0].name === `Plan vom ${d.txt}` && L[0].saved === d.key && canon(L[0].plan) === canon(P3) && L[1].id === "s1" && canon(L[1].plan) === canon(P2), JSON.stringify(L.map(e => [e.id, e.name, e.saved])));
+        ok("Verlauf, Gewichte und Notizen bleiben unverändert", st.history.length === 2 && canon(st.history) === canon(before.history) && canon(st.weights) === canon(before.weights) && canon(st.notes) === canon(before.notes) && st.notes["hs-chest"] === "Sitz 4");
+        ok("Was auf Tage des alten Plans zeigte, ist gelöst: gewähltes Training, Zeitanpassung, „Rückgängig“ einer Planänderung", before.selDay === "neu" && !!before.timeplan && !!before.prevPlan && st.selDay === null && st.timeplan === null && st.prevPlan === null, JSON.stringify([st.selDay, st.timeplan, st.prevPlan]));
+        ok("Tagesplan: Der Verweis auf den entfallenen Tag ist weg; Ruhetag, ein weiter vorhandener Tag und die Termine bleiben", !st.dayPlan["2099-01-05"] && st.dayPlan["2099-01-06"].train === "rest" && st.dayPlan["2099-01-07"].train === "da" && st.dayPlan["2099-01-07"].steps === 5000 && canon(st.sched) === canon(before.sched), JSON.stringify(st.dayPlan));
+        const pv = await tp(page, () => ({ h1: document.querySelector("#app h1").textContent, note: (document.getElementById("planNote") || {}).textContent || "", undo: !!document.querySelector("#planNote [data-a=dayCopyUndo]"), sheet: !!document.querySelector(".sheet"),
+          days: [...document.querySelectorAll("#planDays .day-row .t")].map(x => x.textContent).join() }));
+        ok("Danach steht man auf der Plan-Seite: geladener Plan und eine Meldung, die beide Schritte nennt", pv.h1 === "Mein Plan" && pv.days === "Oben,Unten" && pv.note.includes("Plan „Alt“ geladen.") && pv.note.includes(`als „Plan vom ${d.txt}“ gesichert`) && !pv.undo && !pv.sheet, JSON.stringify(pv));
+        await page.click("#row-plaene");
+        const a2 = await tp(page, () => ({ rows: [...document.querySelectorAll("#plnList .li")].map(r => r.querySelector(".t").textContent + ":" + ((r.querySelector(".badge") || {}).textContent || "")).join("|"), state: document.getElementById("plnState").textContent }));
+        ok("Der geladene Plan ist in der Liste als „Aktuell“ markiert, die Karte nennt ihn", a2.rows === `Plan vom ${d.txt}:|Alt:Aktuell` && a2.state === "Gesichert als „Alt“.", JSON.stringify(a2));
+        await page.click("#plnSave");
+        ok("Der Namensvorschlag weicht aus, wenn es ihn schon gibt („… 2“)", (await page.inputValue("#plnNameIn")) === `Plan vom ${d.txt} 2`, await page.inputValue("#plnNameIn"));
+        await page.click(".sheet .sh-l");
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q2 = await asheet(page);
+        ok("Den aktuellen Plan noch einmal laden: Hinweis statt Rückfrage", q2.m === "Das ist schon dein aktueller Plan." && q2.btn === "OK", JSON.stringify(q2));
+        await page.click(".sheet.as .as-cancel");
+        await page.click("#plnList .li >> nth=0"); await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q3 = await asheet(page);
+        ok("Steht der aktuelle Plan schon unverändert in der Liste, wird nur „Laden“ angeboten", q3.m.includes("Er ist als „Alt“ gesichert.") && q3.btn === "Laden|Abbrechen", JSON.stringify(q3));
+        await page.click(".sheet.as [data-a=plnLoadDo]");
+        const st2 = await stored(page);
+        ok("Zurückwechseln: Der vorher gesicherte Stand ist wieder da, die Liste bleibt bei zwei Einträgen, der Verlauf bleibt", canon(st2.plan) === canon(P3) && st2.x.plaene.list.length === 2 && canon(st2.history) === canon(before.history), JSON.stringify(st2.plan));
+        await ctx.close();
+      }
+      {
+        // Umbenennen, Duplizieren, Löschen
+        const { ctx, page } = await open({ plan: P3, x: { plaene: { list: [{ id: "s1", name: "Alt", saved: "2001-03-04", plan: P2 }, { id: "s2", name: "Zweiter", saved: "2001-03-05", plan: PLAN_SMALL }] } } });
+        const d = await today(page);
+        await plnGo(page);
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnRenameOpen]");
+        const g2 = await headGap(page);
+        ok("Umbenennen: Fenster mit dem bisherigen Namen im Feld; bei 320 px überlappt im Kopf nichts", (await page.inputValue("#plnNameIn")) === "Alt" && (await page.textContent(".sheet h2")) === "Neuer Name" && g2 >= 4, String(g2));
+        await page.fill("#plnNameIn", ""); await page.click("[data-a=plnRenameDo]");
+        ok("Leerer Name wird abgelehnt, der alte bleibt", await page.isVisible("#plnErr") && (await lst(page))[0].name === "Alt");
+        await page.fill("#plnNameIn", "  Größe & Kraft 💪  "); await page.click("[data-a=plnRenameDo]");
+        const r1 = (await stored(page)).x.plaene.list;
+        ok("Umbenennen speichert den neuen Namen (Umlaute, Emoji, ohne Leerzeichen am Rand); sonst ändert sich nichts", r1.length === 2 && r1[0].name === "Größe & Kraft 💪" && r1[0].id === "s1" && r1[0].saved === "2001-03-04" && canon(r1[0].plan) === canon(P2)
+          && (await page.textContent("#plnList [data-id=s1] .t")) === "Größe & Kraft 💪" && !(await page.$(".sheet")), JSON.stringify(r1[0]));
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnDup]");
+        const r2 = (await stored(page)).x.plaene.list;
+        ok("Duplizieren legt direkt darunter eine Kopie an: „… (Kopie)“, gleicher Plan, eigenes Kürzel, Datum von heute", r2.length === 3 && r2[1].name === "Größe & Kraft 💪 (Kopie)" && r2[1].id !== "s1" && IDOK.test(r2[1].id) && r2[1].saved === d.key && canon(r2[1].plan) === canon(P2) && r2[2].id === "s2"
+          && (await page.$$eval("#plnList .li .t", x => x.map(e => e.textContent).join("|"))) === "Größe & Kraft 💪|Größe & Kraft 💪 (Kopie)|Zweiter", JSON.stringify(r2.map(e => e.name)));
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnDup]");
+        ok("Eine zweite Kopie bekommt einen eigenen Namen („… (Kopie) 2“)", (await lst(page))[1].name === "Größe & Kraft 💪 (Kopie) 2");
+        const fr = await tp(page, () => [window.__tp.plnFree("x".repeat(40), " (Kopie)"), window.__tp.plnFree("💪".repeat(50))]);
+        ok("Lange Namen werden für den Zusatz gekürzt (32 + 8 = 40 Zeichen); gekürzt wird nach Zeichen, kein Emoji wird zerschnitten", fr[0] === "x".repeat(32) + " (Kopie)" && fr[1] === "💪".repeat(40), JSON.stringify(fr));
+        await page.click("#plnList [data-id=s2]"); await page.click(".sheet.as [data-a=plnDelAsk]");
+        const q = await asheet(page);
+        ok("Löschen fragt nach und nennt den Plan", q.t === "Plan löschen?" && q.m.includes("„Zweiter“") && q.btn === "Löschen!|Abbrechen", JSON.stringify(q));
+        await page.click(".sheet.as .as-cancel");
+        ok("Abbrechen löscht nichts", (await lst(page)).length === 4 && !(await page.$(".sheet")));
+        await page.click("#plnList [data-id=s2]"); await page.click(".sheet.as [data-a=plnDelAsk]"); await page.click(".sheet.as [data-a=plnDelDo]");
+        const st3 = await stored(page), r3 = st3.x.plaene.list;
+        ok("Bestätigen entfernt genau diesen Plan; der aktuelle Plan bleibt", r3.length === 3 && !r3.some(e => e.id === "s2") && canon(st3.plan) === canon(P3) && !(await page.$("#plnList [data-id=s2]")) && (await page.textContent("#plnNote")) === "„Zweiter“ gelöscht.", JSON.stringify(r3.map(e => e.name)));
+        await page.reload();
+        ok("Gelöscht bleibt gelöscht, umbenannt bleibt umbenannt (nach dem Neuladen)", (await lst(page)).map(e => e.name).join("|") === "Größe & Kraft 💪|Größe & Kraft 💪 (Kopie) 2|Größe & Kraft 💪 (Kopie)");
+        await ctx.close();
+      }
+      {
+        // Grenze: höchstens 12 Pläne
+        const many = Array.from({ length: 14 }, (_, i) => ({ id: "m" + i, name: "Plan " + (i + 1), saved: "2001-03-04", plan: PLAN_SMALL }));
+        const { ctx, page } = await open({ plan: P2, x: { plaene: { list: many } } });
+        await plnGo(page);
+        const f = await tp(page, () => ({ n: window.__tp.state.x.plaene.list.length, last: window.__tp.state.x.plaene.list[11].name, max: window.__tp.PLN_MAX, rows: document.querySelectorAll("#plnList .li").length, count: document.getElementById("plnCount").textContent,
+          dis: document.getElementById("plnSave").disabled, state: document.getElementById("plnState").textContent }));
+        ok("Grenze 12: Von 14 gespeicherten Einträgen bleiben die ersten 12", f.n === 12 && f.max === 12 && f.last === "Plan 12" && f.rows === 12 && f.count === "12 von 12", JSON.stringify(f));
+        ok("Volle Liste: „Aktuellen Plan sichern“ ist gesperrt, die Karte sagt, warum", f.dis && f.state === "Alle 12 Plätze sind belegt. Lösche zuerst einen Plan.", JSON.stringify(f));
+        await page.click("#plnList [data-id=m0]"); await page.click(".sheet.as [data-a=plnDup]");
+        const q = await asheet(page);
+        ok("Duplizieren bei voller Liste: Hinweis, nichts kommt dazu", q.t === "Kein Platz mehr" && q.m.includes("Alle 12 Plätze sind belegt") && q.btn === "OK" && (await lst(page)).length === 12, JSON.stringify(q));
+        await page.click(".sheet.as .as-cancel");
+        await page.click("#plnPaste"); await page.fill("#plnCodeIn", code({ app: "trainingsplan", typ: "plan", v: 1, name: "Neu", plan: P3 })); await page.click("[data-a=plnPasteDo]");
+        ok("Einfügen bei voller Liste: Fehlertext im Fenster, nichts kommt dazu", await page.isVisible("#plnErr") && (await page.textContent("#plnErr")).includes("Alle 12 Plätze sind belegt") && (await lst(page)).length === 12 && !!(await page.$(".sheet #plnCodeIn")));
+        await page.click(".sheet .sh-l");
+        await page.click("#plnList [data-id=m0]"); await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q2 = await asheet(page);
+        ok("Laden bei voller Liste und ungesichertem Plan: klare Warnung statt „vorher sichern“", q2.m.includes("Er ist nicht gesichert und geht dabei verloren") && q2.m.includes("alle 12 Plätze sind belegt") && q2.btn === "Trotzdem laden!|Abbrechen", JSON.stringify(q2));
+        await page.click(".sheet.as [data-a=plnLoadDo]");
+        const st = await stored(page);
+        ok("„Trotzdem laden“ lädt den Plan, die Liste bleibt bei 12", canon(st.plan.days) === canon(PLAN_SMALL.days) && st.x.plaene.list.length === 12 && (await page.textContent("#row-plaene .val")) === "12", JSON.stringify(st.plan.days));
+        await ctx.close();
+      }
+      {
+        // Läuft oder pausiert ein Training, bleibt der Plan, wie er ist
+        const ses = { dayId: "da", dayName: "Oben", start: Date.now() - 300000, paused: Date.now() - 60000, idx: 0, phase: "set",
+          list: [{ key: "k1", itemId: "a1", exId: "hs-chest", u: "s", rmin: 8, rmax: 12, rest: 90, sets: [{ kg: 40, reps: 10, done: true }, { kg: 40, reps: 10, done: false }] }] };
+        const { ctx, page } = await open({ plan: P2, session: ses, x: { plaene: { list: [{ id: "s1", name: "Alt", saved: "2001-03-04", plan: P2 }, { id: "s2", name: "Zweiter", saved: "2001-03-05", plan: PLAN_SMALL }] } } });
+        await plnGo(page);
+        ok("Während eines Trainings sagt die Seite, dass sich kein Plan laden lässt", !!(await mem(page)).session && (await page.textContent("#plnSaved .foot")).includes("Solange ein Training läuft, lässt sich kein Plan laden."));
+        await page.click("#plnList [data-id=s2]"); await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q = await asheet(page);
+        ok("„Laden“ ist gesperrt: „Erst das laufende Training beenden.“", q.t === "Training läuft" && q.m === "Erst das laufende Training beenden." && q.btn === "OK", JSON.stringify(q));
+        await tp(page, () => { window.__tp.EXT.actions.plnLoadDo(); window.__tp.EXT.actions.plnLoadKeep(); });
+        const m1 = await mem(page);
+        ok("Auch ein direkter Aufruf lädt nichts: Plan, Liste und Training unverändert", canon(m1.plan) === canon(P2) && m1.x.plaene.list.length === 2 && !!m1.session && (await page.textContent("#app h1")) === "Meine Pläne");
+        await page.click(".sheet.as .as-cancel");
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnDelAsk]");
+        const q2 = await asheet(page);
+        await tp(page, () => window.__tp.EXT.actions.plnDelDo());
+        ok("Der gesicherte Stand des aktuellen Plans lässt sich währenddessen nicht löschen", q2.m === "Erst das laufende Training beenden." && q2.btn === "OK" && (await lst(page)).length === 2, JSON.stringify(q2));
+        await page.click(".sheet.as .as-cancel");
+        await page.click("#plnList [data-id=s2]"); await page.click(".sheet.as [data-a=plnDelAsk]"); await page.click(".sheet.as [data-a=plnDelDo]");
+        ok("Ein anderer gesicherter Plan lässt sich löschen, Sichern bleibt möglich", (await lst(page)).map(e => e.id).join() === "s1" && !(await page.$eval("#plnSave", b => b.disabled)));
+        await ctx.close();
+      }
+      {
+        // Als Text teilen und wieder einfügen (Rundreise), kaputte Texte
+        const PX = { goal: "kraft", level: "fortgeschritten", minutes: 90, days: [
+          { id: "r1", name: "Rücken & Füße 🦵", items: [it("x1", "hs-row", 4, { ss: "x2" }), it("x2", "hs-chest", 3), it("x3", "c-eig", 2)] },
+          { id: "r2", name: "Öl „süß“ <b>fett</b>", items: [it("y1", "hs-legpress", 5, { rmin: 4, rmax: 6, rest: 180, ss: "y2" }), it("y2", "c-eig", 1)] }], gaps: [] };
+        const NAME = "Übung macht den Meister 💪 – Größe";
+        const { ctx, page } = await open({ plan: P2, custom: [{ id: "c-eig", name: "Eigenes Gerät", muscle: "brust", sec: [], type: "plate" }], x: { plaene: { list: [{ id: "s1", name: NAME, saved: "2001-03-04", plan: PX }] } } });
+        await plnGo(page);
+        // Zwischenablage und Teilen-Menü für den Test ersetzen (unabhängig von der Umgebung)
+        await tp(page, () => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+          Object.defineProperty(navigator, "clipboard", { value: { writeText: t => { window.__clip = t; return Promise.resolve(); } }, configurable: true }); });
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnShareOpen]");
+        const sh = await tp(page, () => ({ title: document.querySelector(".sheet h2").textContent, ro: document.getElementById("plnCodeOut").readOnly, code: document.getElementById("plnCodeOut").value, share: !!document.querySelector(".sheet [data-a=plnShare]"),
+          own: (document.getElementById("plnOwn") || {}).textContent || "", txt: document.querySelector(".sheet").textContent }));
+        const payload = JSON.parse(Buffer.from(sh.code.slice(4), "base64").toString("utf8"));
+        ok("„Als Text teilen“ zeigt „TP1:“ + Base64 von JSON (UTF-8): Name und Plan, kein Verlauf", sh.title === "Plan teilen" && sh.ro && sh.code.startsWith("TP1:") && /^[A-Za-z0-9+/]+={0,2}$/.test(sh.code.slice(4)) && payload.name === NAME && payload.typ === "plan"
+          && canon(payload.plan.days) === canon(PX.days) && Object.keys(payload).sort().join() === "app,name,plan,typ,v" && sh.txt.includes("keine Trainings"), JSON.stringify(Object.keys(payload)));
+        ok("Hinweis auf das selbst angelegte Gerät im Plan; ohne Teilen-Menü des Geräts gibt es nur „Kopieren“", sh.own.startsWith("Ein selbst angelegtes Gerät ist dabei.") && !sh.share, sh.own);
+        await page.click(".sheet [data-a=plnCopy]"); await sleep(60);
+        ok("„Kopieren“ legt den Text in die Zwischenablage und meldet es", (await tp(page, () => window.__clip)) === sh.code && (await page.textContent("#plnShareMsg")) === "Kopiert." && await page.isVisible("#plnShareMsg"));
+        await tp(page, () => Object.defineProperty(navigator, "clipboard", { value: { writeText: () => Promise.reject(new Error("nein")) }, configurable: true }));
+        await page.click(".sheet [data-a=plnCopy]"); await sleep(60);
+        const sel = await tp(page, () => { const t = document.getElementById("plnCodeOut"); return { act: document.activeElement === t, a: t.selectionStart, b: t.selectionEnd, n: t.value.length, msg: document.getElementById("plnShareMsg").textContent }; });
+        ok("Verweigert der Browser die Zwischenablage, wird der Text markiert und die Meldung sagt es", sel.act && sel.a === 0 && sel.b === sel.n && sel.msg.includes("Der Text ist markiert"), JSON.stringify(sel));
+        await tp(page, () => Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true }));
+        await page.click(".sheet [data-a=plnCopy]"); await sleep(60);
+        ok("Auch ganz ohne Zwischenablage: markieren statt Fehler", (await page.textContent("#plnShareMsg")).includes("Der Text ist markiert"));
+        await page.click(".sheet .sh-head [data-a=closeSheet]");
+        await tp(page, () => Object.defineProperty(navigator, "share", { value: d => { window.__shared = d; return Promise.resolve(); }, configurable: true }));
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnShareOpen]"); await page.click(".sheet [data-a=plnShare]"); await sleep(60);
+        ok("Gibt es das Teilen-Menü, reicht „Teilen …“ denselben Text weiter", canon(await tp(page, () => window.__shared)) === canon({ text: sh.code }));
+        await page.click(".sheet .sh-head [data-a=closeSheet]");
+        await page.click("#plnPaste");
+        const g3 = await headGap(page);
+        ok("„Plan aus Text einfügen“ öffnet ein Fenster mit Textfeld und „Hinzufügen“; bei 320 px überlappt im Kopf nichts", (await page.textContent(".sheet h2")) === "Einfügen" && await page.isVisible("#plnCodeIn") && (await page.textContent(".sheet .sh-head [data-a=plnPasteDo]")) === "Hinzufügen" && g3 >= 4 && await at320(page), String(g3));
+        await page.fill("#plnCodeIn", "  " + sh.code.slice(0, 40) + "\n" + sh.code.slice(40) + " \n"); await page.click("[data-a=plnPasteDo]");
+        const st = await stored(page), L = st.x.plaene.list;
+        ok("Rundreise: Einfügen ergibt denselben Plan (Umlaute, Emoji, Supersatz, eigenes Gerät) – auch mit Zeilenumbruch im Text", L.length === 2 && L[0].name === NAME + " 2" && L[0].id !== "s1" && canon(L[0].plan) === canon(PX) && canon(L[1].plan) === canon(PX), JSON.stringify(L[0]));
+        ok("Eingefügt heißt nicht geladen: Der aktuelle Plan bleibt; die Meldung nennt 2 Tage und 4 Geräte", canon(st.plan) === canon(P2) && (await page.textContent("#plnNote")) === `„${NAME} 2“ eingefügt: 2 Tage · 4 Geräte.` && !(await page.$(".sheet")), await page.textContent("#plnNote"));
+        // Auf einem anderen Gerät gibt es das eigene Gerät nicht
+        const { ctx: c2, page: p2 } = await open({ plan: PLAN_SMALL });
+        await plnGo(p2); await p2.click("#plnPaste"); await p2.fill("#plnCodeIn", sh.code); await p2.click("[data-a=plnPasteDo]");
+        const m2 = await mem(p2), e2 = m2.x.plaene.list[0];
+        const want = [{ id: "r1", name: PX.days[0].name, items: [PX.days[0].items[0], PX.days[0].items[1]] }, { id: "r2", name: PX.days[1].name, items: [it("y1", "hs-legpress", 5, { rmin: 4, rmax: 6, rest: 180 })] }];
+        ok("Auf einem anderen Gerät: gleicher Name, gleiche Tage; das dort unbekannte Gerät fällt weg, der Supersatz mit ihm löst sich", m2.x.plaene.list.length === 1 && e2.name === NAME && e2.plan.goal === "kraft" && e2.plan.level === "fortgeschritten" && e2.plan.minutes === 90 && canon(e2.plan.days) === canon(want), JSON.stringify(e2.plan.days));
+        ok("Die Meldung nennt, was ankam (2 Tage · 3 Geräte) und was weggelassen wurde; der Plan dort bleibt", (await p2.textContent("#plnNote")) === `„${NAME}“ eingefügt: 2 Tage · 3 Geräte. Ein Gerät gibt es in dieser App nicht – es wurde weggelassen.` && canon(m2.plan.days) === canon(PLAN_SMALL.days), await p2.textContent("#plnNote"));
+        await c2.close();
+        // Kaputte Texte
+        const bad = { "falscher Anfang": "XP1:" + sh.code.slice(4), "ohne Anfang": sh.code.slice(4), "kaputtes Base64": "TP1:@@@@", "abgeschnitten": sh.code.slice(0, -7), "abgeschnitten (Viererblock)": sh.code.slice(0, -8),
+          "kein JSON": "TP1:" + Buffer.from("kein json").toString("base64"), "JSON ohne days": code({ app: "trainingsplan", typ: "plan", v: 1, name: "x", plan: { goal: "aufbau" } }), "JSON ohne Plan": code({ app: "trainingsplan", typ: "plan", v: 1, name: "x" }),
+          "andere Art": code({ app: "trainingsplan", typ: "sonstwas", v: 1, plan: P2 }), "andere App": code({ app: "fremd", typ: "plan", v: 1, plan: P2 }), "andere Version": code({ app: "trainingsplan", typ: "plan", v: 2, plan: P2 }),
+          "ohne Trainingstag": code({ app: "trainingsplan", typ: "plan", v: 1, name: "x", plan: { days: [] } }), "nur unbrauchbare Tage": code({ app: "trainingsplan", typ: "plan", v: 1, plan: { days: [5, { items: "x" }] } }), "Liste statt Objekt": code([1, 2]),
+          "zu groß": "TP1:" + "A".repeat(60000), "leer": "   ", "Sicherung der App": code({ plan: P2, history: [] }) };
+        const res = await tp(page, bad => Object.fromEntries(Object.entries(bad).map(([k, v]) => { const r = window.__tp.plnParse(v); return [k, r.ok ? "ok" : r.err]; })), bad);
+        ok("Kaputte Texte werden abgelehnt, jeder mit einem Fehlertext", Object.keys(res).length === 17 && Object.values(res).every(v => v !== "ok" && v.length > 15), JSON.stringify(res));
+        ok("Die Fehlertexte nennen den Grund: Anfang, beschädigt, kein Plan, kein Trainingstag, zu lang, Sicherung", res["falscher Anfang"].includes("beginnt mit TP1:") && res["ohne Anfang"].includes("beginnt mit TP1:") && res["kaputtes Base64"].includes("beschädigt") && res["abgeschnitten"].includes("beschädigt")
+          && res["abgeschnitten (Viererblock)"].includes("beschädigt") && res["kein JSON"].includes("beschädigt") && res["JSON ohne days"] === "Der Text enthält keinen Plan." && res["JSON ohne Plan"] === "Der Text enthält keinen Plan." && res["andere Art"] === "Der Text enthält keinen Plan."
+          && res["ohne Trainingstag"] === "Der Text enthält keinen Trainingstag." && res["nur unbrauchbare Tage"] === "Der Text enthält keinen Trainingstag." && res["zu groß"].includes("zu lang (mehr als 60.000 Zeichen)") && res["Sicherung der App"].includes("Sicherung der ganzen App"), JSON.stringify(res));
+        await page.click("#plnPaste"); await page.fill("#plnCodeIn", bad["JSON ohne days"]); await page.click("[data-a=plnPasteDo]");
+        const m3 = await mem(page);
+        ok("Im Fenster: Fehlertext erscheint, das Fenster bleibt offen, nichts wird verändert", await page.isVisible("#plnErr") && (await page.textContent("#plnErr")) === "Der Text enthält keinen Plan." && !!(await page.$(".sheet #plnCodeIn")) && m3.x.plaene.list.length === 2 && canon(m3.plan) === canon(P2));
+        await page.fill("#plnCodeIn", bad["zu groß"]); await page.click("[data-a=plnPasteDo]");
+        ok("Zu großer Text (über 60 000 Zeichen): abgelehnt, nichts wird verändert", (await page.textContent("#plnErr")).includes("zu lang") && (await lst(page)).length === 2);
+        // Fremder Text mit Unsinn und HTML: Werte werden begrenzt, Kennungen neu vergeben, nichts wird als HTML ausgeführt
+        const evil = code({ app: "trainingsplan", typ: "plan", v: 1, name: "<img src=x onerror=window.__pwn=1>" + "N".repeat(66), plan: { goal: "constructor", level: "x", minutes: 99999, gaps: [{ day: "<img>", name: "<img>" }], days: [
+          { id: "\"><img src=x onerror=window.__pwn=1>", name: "<img src=x onerror=window.__pwn=1>", items: [{ id: "a b", exId: "hs-chest", sets: 99, rmin: 0, rmax: -3, rest: 9999, ss: "dup" }, { id: "dup", exId: "hs-row" }, { id: "dup", exId: "gibt-es-nicht", sets: 3 }, { exId: "__proto__" }, "x", null] },
+          { id: "zweiter", name: 5, items: "nein" }, 7] } });
+        const ev = await tp(page, c => window.__tp.plnParse(c), evil);
+        const ei = ev.ok ? ev.plan.days[0].items : [];
+        // Von Hand: Sätze 99 → 10, Wiederholungen 0/−3 → 1–1, Pause 9999 → 600; zweites Gerät ohne Angaben → 3 Sätze, 8–8, 90 s; Minuten 99999 → 300
+        ok("Fremder Text: Name auf 40 Zeichen gekürzt, Ziel und Werte auf erlaubte Bereiche begrenzt, unbekannte Geräte weggelassen", ev.ok && [...ev.name].length === 40 && ev.plan.goal === "aufbau" && ev.plan.level === "einsteiger" && ev.plan.minutes === 300 && ev.plan.gaps.length === 0 && ev.plan.days.length === 1 && ev.dropped === 2
+          && ei.length === 2 && canon(ei.map(i => [i.exId, i.sets, i.rmin, i.rmax, i.rest])) === canon([["hs-chest", 10, 1, 1, 600], ["hs-row", 3, 8, 8, 90]]), JSON.stringify(ev));
+        ok("Fremder Text: Kennungen mit unerlaubten Zeichen werden neu vergeben, der Supersatz zeigt weiter auf das folgende Gerät", ev.ok && IDOK.test(ev.plan.days[0].id) && ei.every(i => IDOK.test(i.id)) && ei[0].id !== "a b" && ei[1].id === "dup" && ei[0].ss === "dup" && !ei[1].ss, JSON.stringify(ei));
+        await page.fill("#plnCodeIn", evil); await page.click("[data-a=plnPasteDo]");
+        await page.click("#plnList .li >> nth=0");
+        const t1 = (await asheet(page)).t;
+        await page.click(".sheet.as [data-a=plnLoadAsk]"); await page.click(".sheet.as [data-a=plnLoadDo]");
+        const pw = await tp(page, () => ({ pwn: window.__pwn, img: document.querySelectorAll("#app img, #sheet img").length, day: document.querySelector("#planDays .day-row .t").textContent, note: document.getElementById("planNote").textContent }));
+        ok("Namen aus fremdem Text erscheinen als Text, nicht als HTML (Liste, Aktionsblatt, Plan-Seite)", t1.startsWith("<img src=x") && pw.pwn === undefined && pw.img === 0 && pw.day === "<img src=x onerror=window.__pwn=1>" && pw.note.includes("<img src=x"), JSON.stringify(pw));
+        await ctx.close();
+      }
+      {
+        // Kaputter Speicher
+        const { ctx, page } = await open({ plan: PLAN_SMALL, x: { plaene: "Unsinn" } });
+        await plnGo(page);
+        ok("Kaputter Speicher („Unsinn“): leere Liste, die Seite funktioniert", (await tp(page, () => JSON.stringify(window.__tp.state.x.plaene))) === "{\"list\":[]}" && await page.isVisible("#plnEmpty") && (await page.textContent("#app h1")) === "Meine Pläne");
+        await ctx.close();
+        const junk = [null, 5, "x", [], { name: "Ohne Plan", saved: "2001-03-04" }, { name: "Plan ist Text", saved: "2001-03-04", plan: "x" }, { name: "Ohne days", saved: "2001-03-04", plan: { goal: "aufbau" } }, { name: "", saved: "2001-03-04", plan: P2 },
+          { name: "   ", saved: "2001-03-04", plan: P2 }, { name: "x".repeat(41), saved: "2001-03-04", plan: P2 }, { name: 7, saved: "2001-03-04", plan: P2 }, { name: "Datum falsch", saved: "2001-02-31", plan: P2 }, { name: "Datum fehlt", plan: P2 },
+          { id: "gut", name: "  Gut  ", saved: "2001-03-04", plan: P2, mehr: 1 }, { id: "gut", name: "x".repeat(40), saved: "2001-03-05", plan: { days: [{ id: "z", name: "Z", items: [{ exId: "hs-chest" }, "kaputt"] }] } }, { id: "<b>", name: "Drei", saved: "2001-03-06", plan: P3 }];
+        const { ctx: c2, page: p2 } = await open({ plan: PLAN_SMALL, x: { plaene: { list: junk, sonst: 1 } } });
+        const J = (await mem(p2)).x.plaene, jl = J.list;
+        ok("Kaputte Einträge fallen weg (13 von 16): ohne Plan, ohne Tage-Liste, Name leer oder über 40 Zeichen, Datum ungültig", Object.keys(J).join() === "list" && jl.length === 3 && jl.map(e => e.name).join("|") === `Gut|${"x".repeat(40)}|Drei`, JSON.stringify(jl.map(e => [e.id, e.name])));
+        ok("Gültige Einträge bleiben: Name ohne Leerzeichen am Rand, nur bekannte Felder, eindeutiges Kürzel, Plan durch die Prüfung der App", jl.length === 3 && Object.keys(jl[0]).join() === "id,name,saved,plan" && jl[0].id === "gut" && canon(jl[0].plan) === canon(P2) && jl[1].id !== "gut" && IDOK.test(jl[1].id) && IDOK.test(jl[2].id)
+          && jl[1].plan.goal === "aufbau" && jl[1].plan.days[0].items.length === 1 && jl[1].plan.days[0].items[0].sets === 3 && canon(jl[2].plan) === canon(P3), JSON.stringify(jl.map(e => e.id)));
+        await plnGo(p2);
+        ok("Die Seite zeigt die drei gültigen Pläne, kein Text frei auf dem Seitengrund, 320 px ohne seitliches Scrollen", (await p2.$$eval("#plnList .li", r => r.length)) === 3 && (await freeTextOn(p2)).length === 0 && await at320(p2), (await freeTextOn(p2)).join(" | "));
+        await c2.close();
+        // Plan ohne Trainingstag: nichts zu sichern
+        const { ctx: c3, page: p3 } = await open({ plan: { goal: "aufbau", level: "einsteiger", days: [] } });
+        await plnGo(p3);
+        const z = await tp(p3, () => ({ nums: [...document.querySelectorAll("#plnNow .stat .num")].map(x => x.textContent).join(), state: document.getElementById("plnState").textContent, dis: document.getElementById("plnSave").disabled, strip: !!document.querySelector("#plnNow .tstrip") }));
+        ok("Plan ohne Trainingstag: 0 · 0 · 0, „Aktuellen Plan sichern“ ist gesperrt und die Karte sagt, warum", z.nums === "0,0,0" && z.dis && !z.strip && z.state === "Dein Plan hat noch keinen Trainingstag.", JSON.stringify(z));
+        await c3.close();
+      }
+      {
+        // Sicherung der App nimmt die Pläne mit
+        const list = [{ id: "s1", name: "Größe 💪", saved: "2001-03-04", plan: P2 }, { id: "s2", name: "Zweiter", saved: "2001-03-05", plan: P3 }];
+        const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s")], x: { plaene: { list } } });
+        const before = (await mem(page)).x.plaene;
+        await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]"); await page.click("[data-a=exportData]");
+        const bk = await page.inputValue("#expTxt"); await page.click(".sheet >> text=Schließen");
+        ok("Die Sicherung der App enthält die gesicherten Pläne", before.list.length === 2 && canon(before.list) === canon(list) && canon(JSON.parse(Buffer.from(bk.slice(4), "base64").toString("utf8")).x.plaene) === canon(before));
+        await page.evaluate(() => localStorage.clear()); await page.reload();
+        await page.click("[data-a=createPlan]");
+        ok("Nach dem Löschen aller Daten ist die Liste leer", (await lst(page)).length === 0);
+        await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=openSettings]");
+        await page.click("[data-a=importOpen]"); await page.fill("#impTxt", bk); await page.click("[data-a=importDo]");
+        const after = await stored(page);
+        ok("„Sicherung wiederherstellen“ bringt die Pläne zurück (Rundreise)", canon(after.x.plaene) === canon(before) && canon(after.plan.days) === canon(PLAN_SMALL.days) && after.history.length === 1, JSON.stringify(after.x));
+        await plnGo(page);
+        ok("… und sie stehen wieder in der Liste", (await page.$$eval("#plnList .li .t", x => x.map(e => e.textContent).join("|"))) === "Größe 💪|Zweiter");
+        // Ein Plan-Text ist keine Sicherung: „Sicherung wiederherstellen“ nimmt ihn nicht an
+        const pc = await tp(page, () => window.__tp.plnCode(window.__tp.state.x.plaene.list[0]));
+        await page.click("#navbar .nb-back"); await page.click("[data-a=openSettings]"); await page.click("[data-a=importOpen]"); await page.fill("#impTxt", pc); await page.click("[data-a=importDo]");
+        ok("Ein Plan-Text wird unter „Sicherung wiederherstellen“ abgelehnt, nichts geht verloren", (await page.textContent("#impMsg")).includes("ungültig") && canon((await mem(page)).x.plaene) === canon(before) && (await mem(page)).history.length === 1);
+        await ctx.close();
+      }
+      {
+        // Ohne aktuellen Plan (die Seite ist dann nur über einen direkten Aufruf erreichbar): kein Absturz, Laden macht den Plan zum aktuellen
+        const { ctx, page } = await open({ plan: null, x: { plaene: { list: [{ id: "s1", name: "Alt", saved: "2001-03-04", plan: P2 }] } } });
+        await tp(page, () => { document.body.insertAdjacentHTML("beforeend", "<button id=\"tOpen\" data-a=\"openExt\" data-v=\"plaene\" hidden>x</button>"); document.getElementById("tOpen").click(); });
+        ok("Ohne aktuellen Plan: Hinweiskarte statt Kennzahlen, die Liste ist da", await page.isVisible("#plnNoPlan") && !(await page.$("#plnSave")) && (await page.$$eval("#plnList .li", r => r.length)) === 1 && (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+        await page.click("#plnList [data-id=s1]"); await page.click(".sheet.as [data-a=plnLoadAsk]");
+        const q = await asheet(page);
+        await page.click(".sheet.as [data-a=plnLoadDo]");
+        ok("Laden ohne aktuellen Plan: Rückfrage ohne „wird ersetzt“, danach ist der Plan da", q.m.startsWith("Er wird dein aktueller Plan.") && q.btn === "Laden|Abbrechen" && canon((await stored(page)).plan) === canon(P2) && (await page.textContent("#app h1")) === "Mein Plan", JSON.stringify(q));
+        await ctx.close();
+      }
+    }
     // @ext:plaene:test:end
     // ── Abstand plaene/test 1 ──
     // ── Abstand plaene/test 2 ──
     // ── Abstand plaene/test 3 ──
     // @ext:aussehen:test:start
+    section("E-aussehen. Aussehen (Einstellungen → Aussehen)");
+    {
+      // Farben, wie der Browser sie wirklich rechnet: Hilfselement mit der Variable, daraus Kontrast nach WCAG
+      const probe = page => tp(page, () => { const T = window.__tp, R = document.documentElement;
+        const col = v => { const d = document.createElement("div"); d.style.color = v; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c.match(/[\d.]+/g).slice(0, 3).map(Number); };
+        const lum = c => { const [r, g, b] = c.map(x => x / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * r + .7152 * g + .0722 * b; };
+        const con = (a, b) => { const x = lum(col(a)), y = lum(col(b)); return Math.round((Math.max(x, y) + .05) / (Math.min(x, y) + .05) * 100) / 100; };
+        return { theme: R.getAttribute("data-theme"), accent: R.getAttribute("data-accent"), bg: col("var(--bg)").join(), acc: col("var(--accent)").join(),
+          inkBg: con("var(--accent-ink)", "var(--bg)"), inkCard: con("var(--accent-ink)", "var(--raise)"), inkSheet: con("var(--accent-ink)", "var(--raise-2)"), onAcc: con("var(--on-accent)", "var(--accent)"),
+          metas: [...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content).join(), saved: JSON.stringify(T.state.x.aussehen) }; });
+      const LIGHT = "242,242,247", DARK = "0,0,0";
+      const { ctx, page } = await open({ plan: PLAN_SMALL }, { light: true });
+      await page.click("#navbar [data-a=openSettings]");
+      ok("Einstellungen: Zeile „Aussehen“ zeigt „Automatisch“", (await page.textContent("#row-aussehen")).includes("Aussehen") && (await page.textContent("#row-aussehen")).includes("Automatisch"));
+      await page.click("#row-aussehen");
+      const p0 = await probe(page);
+      ok("Standard: kein Attribut gesetzt, Akzent #0071E3, Seite folgt dem Gerät (hell)", (await page.textContent("#app h1")) === "Aussehen" && p0.theme === null && p0.accent === null && p0.acc === "0,113,227" && p0.bg === LIGHT && p0.metas === "#F2F2F7,#000000", JSON.stringify(p0));
+      await page.click("#ausModus [data-v=dunkel]");
+      const p1 = await probe(page);
+      ok("„Dunkel“ bei hellem Gerät: dunkler Seitengrund, Statusleiste schwarz, Auswahl markiert und gespeichert", p1.theme === "dark" && p1.bg === DARK && p1.metas === "#000000,#000000" && p1.saved === '{"modus":"dunkel","akzent":"blau"}' && await page.$eval("#ausModus [data-v=dunkel]", b => b.classList.contains("on") && b.getAttribute("aria-pressed") === "true"), JSON.stringify(p1));
+      await page.reload(); await page.waitForSelector("#app h1");
+      const p2 = await probe(page);
+      await page.click("#navbar [data-a=openSettings]");
+      ok("Nach dem Neuladen gilt „Dunkel“ sofort; die Zeile zeigt „Dunkel“", p2.theme === "dark" && p2.bg === DARK && (await page.textContent("#row-aussehen")).includes("Dunkel"), JSON.stringify(p2));
+      await page.click("#row-aussehen");
+      await page.emulateMedia({ colorScheme: "dark" });
+      await page.click("#ausModus [data-v=hell]");
+      const p3 = await probe(page);
+      ok("„Hell“ bei dunklem Gerät: heller Seitengrund, Statusleiste hell", p3.theme === "light" && p3.bg === LIGHT && p3.metas === "#F2F2F7,#F2F2F7", JSON.stringify(p3));
+      await page.click("#ausModus [data-v=system]");
+      const p4 = await probe(page);
+      await page.emulateMedia({ colorScheme: "light" });
+      const p5 = await probe(page);
+      ok("„Automatisch“ folgt wieder dem Gerät (dunkel, dann hell); die Statusleiste hat ihre Ausgangswerte", p4.theme === null && p4.bg === DARK && p5.bg === LIGHT && p5.metas === "#F2F2F7,#000000", JSON.stringify([p4, p5]));
+      // Jede Akzentfarbe in beiden Designs: Schrift in Akzentfarbe auf Seitengrund, Karte und Sheet sowie weiße Schrift auf dem gefüllten Knopf
+      const bad = [];
+      for (const [k] of await tp(page, () => window.__tp.AUS_AKZ)) for (const m of ["hell", "dunkel"]) {
+        await tp(page, a => window.__tp.ausSet(a), { akzent: k, modus: m });
+        const p = await probe(page);
+        if (!(p.inkBg >= 4.5 && p.inkCard >= 4.5 && p.inkSheet >= 4.5 && p.onAcc >= 4.5) || (k === "blau") !== (p.accent === null)) bad.push([k, m, p.inkBg, p.inkCard, p.inkSheet, p.onAcc, p.accent]);
+      }
+      ok("Sechs Akzentfarben, hell und dunkel: Kontrast überall mindestens 4,5 : 1; Blau bleibt der Standard ohne Attribut", bad.length === 0 && (await tp(page, () => window.__tp.AUS_AKZ.length)) === 6, JSON.stringify(bad));
+      await tp(page, () => window.__tp.ausSet({ akzent: "blau", modus: "system" }));
+      await page.click("#ausAkzent [data-v=gruen]");
+      const p6 = await probe(page);
+      ok("Farbfeld antippen: Grün ist gewählt, benannt und gespeichert; die Vorschau zeigt die Farbe", p6.accent === "gruen" && p6.acc === "28,129,57" && p6.saved === '{"modus":"system","akzent":"gruen"}' && (await page.textContent("#ausAkzName")) === "Grün" && await page.$eval("#ausAkzent [data-v=gruen]", b => b.getAttribute("aria-pressed") === "true") && await page.isVisible("#ausDemo .btn"), JSON.stringify(p6));
+      ok("Aussehen: kein Text frei auf dem Seitengrund", (await freeTextOn(page)).length === 0, JSON.stringify(await freeTextOn(page)));
+      await page.setViewportSize({ width: 320, height: 640 });
+      ok("Aussehen bei 320 px ohne seitliches Scrollen, Farbfelder mindestens 44 px breit", await noOverflow(page) && await page.$$eval("#ausAkzent .aus-sw", b => b.every(x => x.getBoundingClientRect().width >= 44 && x.getBoundingClientRect().height >= 44)));
+      // Zustand wird ersetzt (z. B. Sicherung, Daten gelöscht): das Aussehen passt sich beim nächsten Zeichnen an
+      await tp(page, () => { const T = window.__tp; T.state.x = {}; T.extClean(); });
+      await page.click("#navbar .nb-back");
+      await page.waitForFunction(() => document.documentElement.getAttribute("data-accent") === null);
+      ok("Ohne gespeicherte Wahl gilt wieder der Standard", (await probe(page)).acc === "0,113,227" && (await page.textContent("#app h1")) === "Einstellungen");
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, x: { aussehen: { modus: "lila", akzent: 7 } } });
+      const s = await tp(page, () => ({ saved: JSON.stringify(window.__tp.state.x.aussehen), theme: document.documentElement.getAttribute("data-theme"), accent: document.documentElement.getAttribute("data-accent") }));
+      ok("Kaputter Speicher: Standard „Automatisch“ und Blau", s.saved === '{"modus":"system","akzent":"blau"}' && s.theme === null && s.accent === null, JSON.stringify(s));
+      await ctx.close();
+    }
     // @ext:aussehen:test:end
     // ── Abstand aussehen/test 1 ──
     // ── Abstand aussehen/test 2 ──
     // ── Abstand aussehen/test 3 ──
     // @ext:export:test:start
+    section("E-export. Als Tabelle exportieren (Einstellungen → Plan und Daten)");
+    {
+      // Feste Daten, feste Zeitzone und – wo der heutige Tag in den Dateinamen eingeht – feste Uhr:
+      // Die erwarteten Zeilen sind von Hand gerechnet und hängen weder von Tag und Uhrzeit noch vom Ort des Testlaufs ab
+      const NOW = "2026-12-31T23:30:00.000Z", TODAY = "2027-01-01";   // in Berlin (Winterzeit, +1 h) ist es dann schon der 01.01.2027, 00:30 Uhr
+      const BOM = "\uFEFF", fsx = require("fs");
+      const expOpen = async (data, tz = "Europe/Berlin", at = null) => {
+        const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, colorScheme: "dark", timezoneId: tz, serviceWorkers: "block" });
+        if (at) await ctx.clock.install({ time: new Date(at) });   // die Uhr der Seite beginnt bei „at“ und läuft von dort normal weiter
+        await ctx.addInitScript(([k, v]) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem(k, v); localStorage.setItem("tp-3d", "0"); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-tabmem", "0"); sessionStorage.setItem("seeded", "1"); } }, [KEY, JSON.stringify(data)]);
+        const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push(e.message));
+        page.on("console", m => { if (m.type() === "error" && !(m.text().startsWith("Failed to load resource") && /openfoodfacts\.org|\/api\/food/.test(m.location().url || ""))) allErrors.push(m.text()); });
+        await page.goto(URL); return { ctx, page };
+      };
+      const toExport = async page => { await page.click("nav.tabs [data-v=plan]"); await page.click("#navbar [data-a=openSettings]"); await page.click("#row-export"); };
+      const fileOf = async dl => fsx.readFileSync(await dl.path());
+      // Kleiner CSV-Leser (Semikolon, Anführungszeichen verdoppelt, Zeilenende CRLF) – liest, was ein Tabellenprogramm lesen würde
+      const csvRead = txt => { const rows = []; let row = [], f = "", q = false; txt = txt.replace(/^\uFEFF/, "");
+        for (let i = 0; i < txt.length; i++) { const c = txt[i];
+          if (q) { if (c === '"' && txt[i + 1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c; }
+          else if (c === '"' && f === "") q = true;
+          else if (c === ";") { row.push(f); f = ""; }
+          else if (c === "\r" && txt[i + 1] === "\n") { row.push(f); rows.push(row); row = []; f = ""; i++; }
+          else f += c; }
+        if (f !== "" || row.length) { row.push(f); rows.push(row); }
+        return rows; };
+      const T1 = { id: "t1", dayId: "d1", day: "Oberkörper", date: "2026-03-01T23:30:00.000Z", durationSec: 1800, exercises: [
+        { exId: "hs-chest", name: "Brustpresse", u: "s", sets: [{ kg: 42.5, reps: 10 }, { kg: 45, reps: 8 }, { kg: 41.25, reps: 3 }] }] };
+      const T2 = { id: "t2", dayId: "d2", day: "Beine", date: "2026-07-15T16:05:00.000Z", durationSec: 1500, exercises: [
+        { exId: "hs-legpress", name: "Beinpresse", u: "t", sets: [{ kg: 160, reps: 9 }, { kg: 41.25, reps: 3 }] },
+        { exId: "c-beuger", name: "Beinbeuger", u: "b", sets: [{ kg: 37.5, reps: 12 }, { kg: null, reps: 5 }] }] };
+      const HEAD_T = "Datum;Uhrzeit;Trainingstag;Gerät;Satz;Gewicht (kg);Gewichtsangabe;Wiederholungen;Bewegtes Gewicht (kg)";
+      // Europe/Berlin: 01.03. 23:30 UTC = 02.03. 00:30 (Winterzeit, +1 h) · 15.07. 16:05 UTC = 15.07. 18:05 (Sommerzeit, +2 h)
+      // Bewegtes Gewicht: pro Seite ×2 → 42,5×10×2 = 850 · 45×8×2 = 720 · 41,25×3×2 = 247,5; gesamt ×1 → 160×9 = 1440 · 41,25×3 = 123,75 · 37,5×12 = 450; ohne Gewicht 0
+      const rowsT = (chest, leg) => [
+        `02.03.2026;00:30;Oberkörper;${chest};1;42,5;pro Seite;10;850`,
+        `02.03.2026;00:30;Oberkörper;${chest};2;45;pro Seite;8;720`,
+        `02.03.2026;00:30;Oberkörper;${chest};3;41,25;pro Seite;3;247,5`,
+        `15.07.2026;18:05;Beine;${leg};1;160;gesamt;9;1440`,
+        `15.07.2026;18:05;Beine;${leg};2;41,25;gesamt;3;123,75`,
+        "15.07.2026;18:05;Beine;Beinbeuger;1;37,5;gesamt;12;450",
+        "15.07.2026;18:05;Beine;Beinbeuger;2;;gesamt;5;0"];
+      const WEIGHTS = [{ d: "2026-11-08", kg: 81.9 }, { d: "2026-11-01", kg: 82.4 }, { d: "2026-11-15", kg: 81 }];
+      const CSV_W = BOM + ["Datum;Gewicht (kg)", "01.11.2026;82,4", "08.11.2026;81,9", "15.11.2026;81"].join("\r\n") + "\r\n";
+      // Haferflocken 80 g: 372×0,8 = 297,6 kcal · 13,5×0,8 = 10,8 · 58,7×0,8 = 46,96 → 47 · 7×0,8 = 5,6;  Reis 250 g: 130×2,5 = 325 · 2,6×2,5 = 6,5 · 28×2,5 = 70 · 0,4×2,5 = 1
+      const FOOD = { "2026-11-18": [{ id: "f3", m: "m", n: "Reis; gekocht", src: "", g: 250, per: { k: 130, p: 2.6, c: 28, f: 0.4 } }],
+        "2026-11-17": [{ id: "f2", m: "a", n: "Pizza", src: "", g: null, abs: { k: 850, p: 30, c: 100, f: 35 } },
+          { id: "f1", m: "f", n: "Haferflocken", src: "", g: 80, per: { k: 372, p: 13.5, c: 58.7, f: 7 } }] };
+      const CSV_F = BOM + ["Datum;Mahlzeit;Lebensmittel;Menge (g);Kalorien (kcal);Eiweiß (g);Kohlenhydrate (g);Fett (g)",
+        "17.11.2026;Frühstück;Haferflocken;80;297,6;10,8;47;5,6", "17.11.2026;Abendessen;Pizza;;850;30;100;35", '18.11.2026;Mittagessen;"Reis; gekocht";250;325;6,5;70;1'].join("\r\n") + "\r\n";
+      {
+        // Reine Funktionen (Zustand → Text), ohne Download
+        const { ctx, page } = await expOpen({ plan: PLAN_SMALL });
+        const csv = await tp(page, s => window.__tp.csvExport.trainings(s), { history: [T2, T1] });
+        const lines = csv.slice(1).split("\r\n");
+        ok("Trainings: Kopfzeile auf Deutsch mit Semikolon", lines[0] === HEAD_T, lines[0]);
+        const want = rowsT("Brustpresse", "Beinpresse");
+        ok("Trainings: eine Zeile je Satz, Zeile für Zeile (älteste zuerst, Dezimalkomma, Datum und Uhrzeit am Ort)", lines.length === 9 && lines[8] === "" && want.every((w, i) => lines[i + 1] === w), JSON.stringify(lines));
+        const vol = await tp(page, () => [window.__tp.setVol({ u: "s" }, { kg: 42.5, reps: 10 }), window.__tp.setVol({ u: "t" }, { kg: 160, reps: 9 }), window.__tp.setVol({ u: "b" }, { kg: 37.5, reps: 12 }), window.__tp.setVol({ u: "b" }, { kg: null, reps: 5 })]);
+        ok("„pro Seite“ zählt beim bewegten Gewicht doppelt – dieselben Werte wie setVol", vol.join() === "850,1440,450,0" && lines[1].endsWith(";pro Seite;10;850") && lines[4].endsWith(";gesamt;9;1440"), vol.join());
+        ok("Datei beginnt mit BOM, jede Zeile endet mit CRLF, kein einzelnes LF", csv.charCodeAt(0) === 0xFEFF && csv.endsWith("\r\n") && !/[^\r]\n/.test(csv) && csv.split("\r\n").length === 9 && !csv.slice(1).includes(BOM));
+        ok("Datum am Ort, nicht UTC: 01.03. 23:30 UTC steht in Berlin unter dem 02.03.", lines[1].startsWith("02.03.2026;00:30;") && !csv.includes("01.03.2026"));
+        // Escaping
+        const esc1 = { history: [{ id: "e1", day: "Brust; Rücken", date: "2026-03-01T23:30:00.000Z", exercises: [
+          { exId: "c-1", name: 'Presse "neu"', u: "t", sets: [{ kg: 50, reps: 5 }] }, { exId: "c-2", name: "Zug\noben", u: "t", sets: [{ kg: 20, reps: 10 }] }] }] };
+        const e = await tp(page, s => window.__tp.csvExport.trainings(s), esc1), er = csvRead(e);
+        ok("Semikolon, Anführungszeichen und Zeilenumbruch stehen in Anführungszeichen, Anführungszeichen verdoppelt",
+          e === BOM + [HEAD_T, '02.03.2026;00:30;"Brust; Rücken";"Presse ""neu""";1;50;gesamt;5;250', '02.03.2026;00:30;"Brust; Rücken";"Zug\noben";1;20;gesamt;10;200'].join("\r\n") + "\r\n", JSON.stringify(e));
+        ok("Zurückgelesen: je Zeile 9 Felder, Texte unverändert", er.length === 3 && er.every(r => r.length === 9) && er[1][2] === "Brust; Rücken" && er[1][3] === 'Presse "neu"' && er[2][3] === "Zug\noben" && er[2][8] === "200", JSON.stringify(er));
+        // Formel-Schutz
+        const f = await tp(page, () => { const c = window.__tp.csvExport.cell; return ["=1+1", "+49 Zug", "-Zug", "@heim", "\tTab", "\rX", "=A1;B", "Zug - eng", "1=1", "", null].map(c); });
+        ok("Formel-Schutz: Text, der mit = + - @ Tab oder CR beginnt, bekommt einen Apostroph davor", canon(f) === canon(["'=1+1", "'+49 Zug", "'-Zug", "'@heim", "'\tTab", "\"'\rX\"", "\"'=A1;B\"", "Zug - eng", "1=1", "", ""]), JSON.stringify(f));
+        const fx = await tp(page, () => { const x = window.__tp.csvExport;
+          return { t: x.trainings({ history: [{ day: "=1+1", date: "2026-03-01T23:30:00.000Z", exercises: [{ exId: "c-1", name: "@SUMME(A1)", u: "s", sets: [{ kg: 10, reps: 5 }] }] }] }),
+            f: x.essen({ food: { "2026-01-05": [{ m: "f", n: "=HYPERLINK(A1)", g: null, abs: { k: 1, p: 0, c: 0, f: 0 } }] } }),
+            n: [x.numCell(-2.5), x.numCell(1234.5), x.numCell(0.126), x.numCell(7), x.numCell(null), x.numCell(NaN)], w: x.gewicht({ weights: [{ d: "2026-01-05", kg: -1.5 }] }) }; });
+        ok("Trainingstag „=1+1“ und Gerät „@SUMME(A1)“ kommen entschärft in die Datei", fx.t.split("\r\n")[1] === "02.03.2026;00:30;'=1+1;'@SUMME(A1);1;10;pro Seite;5;100" && fx.f.split("\r\n")[1] === "05.01.2026;Frühstück;'=HYPERLINK(A1);;1;0;0;0", JSON.stringify([fx.t, fx.f]));
+        ok("Zahlen der App bleiben Zahlen: negativ ohne Apostroph, Dezimalkomma, kein Tausenderpunkt, leer bei fehlendem Wert", canon(fx.n) === canon(["-2,5", "1234,5", "0,13", "7", "", ""]) && fx.w.split("\r\n")[1] === "05.01.2026;-1,5", JSON.stringify(fx));
+        // Körpergewicht und Essen
+        const w = await tp(page, s => window.__tp.csvExport.gewicht(s), { weights: WEIGHTS });
+        ok("Körpergewicht: Datum und kg, nach Datum sortiert", w === CSV_W, JSON.stringify(w));
+        const fd = await tp(page, s => window.__tp.csvExport.essen(s), { food: FOOD });
+        ok("Essen: Tage aufsteigend, Mahlzeiten in ihrer Reihenfolge, Werte aus Menge × Angabe je 100 g; ohne gespeicherte Menge bleibt das Feld leer", fd === CSV_F, JSON.stringify(fd));
+        // Körpermaße (Erweiterung „masse“): nur gültige Einträge, defensiv gelesen
+        const m = await tp(page, () => { const x = window.__tp.csvExport;
+          return [x.masse({ x: { masse: { e: [{ d: "2026-11-17", k: "taille", cm: 88 }, { d: "2026-11-10", k: "=taille", cm: 88.5 }, { d: "kaputt", k: "x", cm: 1 }, { d: "2026-11-11", k: "x", cm: "viel" }, null] } } }),
+            x.masse({ x: { masse: "Unsinn" } }), x.masse({}), x.masse(null)]; });
+        ok("Körpermaße: Datum, Maß, cm; kaputte Einträge fallen weg, fehlende Erweiterung ergibt nur die Kopfzeile",
+          m[0] === BOM + ["Datum;Maß;Wert (cm)", "10.11.2026;'=taille;88,5", "17.11.2026;Taille;88"].join("\r\n") + "\r\n" && m.slice(1).every(x => x === BOM + "Datum;Maß;Wert (cm)\r\n"), JSON.stringify(m));
+        const mn = await tp(page, () => window.__tp.csvExport.masse({ x: { masse: { e: [["brust", 101], ["taille", 84.5], ["huefte", 98], ["oberarm", 36.5], ["oberschenkel", 58], ["wade", 38.25], ["hals", 40], ["constructor", 50]].map(([k, cm]) => ({ d: "2026-10-03", k, cm })) } } }));
+        ok("Körpermaße: die sechs Maße mit deutschem Namen (Hüfte mit Umlaut); ein unbekannter Schlüssel bleibt, wie er gespeichert ist",
+          mn === BOM + ["Datum;Maß;Wert (cm)", "03.10.2026;Brust;101", "03.10.2026;Taille;84,5", "03.10.2026;Hüfte;98", "03.10.2026;Oberarm;36,5", "03.10.2026;Oberschenkel;58", "03.10.2026;Wade;38,25", "03.10.2026;hals;40", "03.10.2026;constructor;50"].join("\r\n") + "\r\n", JSON.stringify(mn));
+        const bad = await tp(page, () => { const x = window.__tp.csvExport; return [x.trainings(null), x.trainings({ history: "x" }), x.trainings({ history: [null, { exercises: "x" }, { date: "kaputt", day: "A", exercises: [{ exId: "c-9", sets: [{ kg: 5, reps: 2 }] }] }] }), x.gewicht({ weights: [null, { d: "x", kg: 80 }, { d: "2026-01-05", kg: "80" }] }), x.essen({ food: { "2026-01-05": "x", x: [], "2026-01-06": [null, { g: 5 }, { g: null }] } })].map(t => t.split("\r\n").length - 2); });
+        ok("Kaputte Eingaben stürzen nicht ab: nur Kopfzeile bzw. nur gültige Zeilen", bad.join() === "0,0,1,0,0", bad.join());
+        ok("Dateiname „trainingsplan-<art>-JJJJ-MM-TT.csv“ mit dem Datum am Ort (Berlin: 01.03. 23:30 UTC → 02.03.)", await tp(page, () => window.__tp.csvExport.kinds.map(k => window.__tp.csvExport.fileName(k, new Date("2026-03-01T23:30:00.000Z"))).join()) ===
+          "trainingsplan-trainings-2026-03-02.csv,trainingsplan-koerpergewicht-2026-03-02.csv,trainingsplan-essen-2026-03-02.csv,trainingsplan-koerpermasse-2026-03-02.csv");
+        await ctx.close();
+      }
+      {
+        // Anderer Ort, anderes Datum: Kiritimati liegt 14 Stunden vor UTC
+        const { ctx, page } = await expOpen({ plan: PLAN_SMALL }, "Pacific/Kiritimati");
+        const r = await tp(page, s => ({ csv: window.__tp.csvExport.trainings(s), name: window.__tp.csvExport.fileName("essen", new Date("2026-07-15T16:05:00.000Z")) }), { history: [T1, T2] });
+        const l = r.csv.split("\r\n");
+        ok("Kiritimati (+14 h): 02.03. 13:30 und 16.07. 06:05 statt der UTC-Daten; Dateiname mit dem 16.07.", l[1].startsWith("02.03.2026;13:30;") && l[4].startsWith("16.07.2026;06:05;") && r.name === "trainingsplan-essen-2026-07-16.csv", JSON.stringify([l[1], l[4], r.name]));
+        await ctx.close();
+      }
+      {
+        // Oberfläche mit Daten: Zeile in den Einstellungen, Unterseite, Download der drei Dateien, Teilen-Menü.
+        // Die Uhr der Seite steht auf Silvester 23:30 UTC: In Berlin ist schon der 01.01.2027 – dieses Datum (am Ort) gehört in die Dateinamen, nicht das UTC-Datum
+        const { ctx, page } = await expOpen({ plan: PLAN_SMALL, custom: [{ id: "c-beuger", name: "Beinbeuger", muscle: "beineh", sec: [], type: "stack" }], history: [T1, T2], weights: WEIGHTS, food: FOOD }, "Europe/Berlin", NOW);
+        const clk = await page.evaluate(() => ({ utc: new Date().toISOString().slice(0, 10), local: window.__tp.dkey() }));
+        ok("Uhr der Seite: am Ort der 01.01.2027, nach UTC noch der 31.12.2026", clk.local === TODAY && clk.utc === "2026-12-31", JSON.stringify(clk));
+        await page.click("nav.tabs [data-v=plan]"); await page.click("#navbar [data-a=openSettings]");
+        const row = await tp(page, () => { const r = document.getElementById("row-export"), sib = [...r.parentElement.children];
+          return { sec: r.closest("section").querySelector("h2").textContent, t: r.querySelector(".t").textContent, ico: !!r.querySelector(".ico svg"), after: sib.indexOf(r) > sib.findIndex(x => x.textContent.includes("Sicherung wiederherstellen")), rows: document.querySelectorAll("[id=row-export]").length }; });
+        ok("Einstellungen → „Plan und Daten“: genau eine Zeile „Als Tabelle exportieren“ mit Symbol, nach den Sicherungen", row.sec === "Plan und Daten" && row.t === "Als Tabelle exportieren" && row.ico && row.after && row.rows === 1, JSON.stringify(row));
+        const before = await page.evaluate(k => localStorage.getItem(k), KEY);
+        await page.click("#row-export");
+        const v = await tp(page, () => ({ h1: [...document.querySelectorAll("#app h1")].map(x => x.textContent).join("|"), back: document.querySelector("#navbar .nb-back").textContent.trim(), tab: document.querySelector("#tabs button.on").dataset.v,
+          rows: [...document.querySelectorAll("#expList .li")].map(l => { const b = l.querySelector("button"), r = b.getBoundingClientRect(); return [l.querySelector(".t").textContent, l.querySelector(".s").textContent, b.disabled, b.getAttribute("aria-label"), r.width >= 44 && r.height >= 44].join("/"); }),
+          foot: document.querySelector("#expList + .foot").textContent, msgHidden: document.getElementById("expMsg").hidden, primary: document.querySelectorAll("#app .btn.primary").length }));
+        ok("Unterseite „Als Tabelle exportieren“ mit „‹ Einstellungen“, genau einer Überschrift; der Bereich bleibt „Plan“", v.h1 === "Als Tabelle exportieren" && v.back === "Einstellungen" && v.tab === "plan", JSON.stringify(v));
+        ok("Drei Zeilen mit Anzahl und je einem Knopf (mind. 44 px, mit Namen für die Sprachausgabe)", canon(v.rows) === canon(["Trainings/2 Trainings · 7 Sätze/false/Trainings exportieren/true", "Körpergewicht/3 Einträge/false/Körpergewicht exportieren/true", "Essen/3 Einträge an 2 Tagen/false/Essen exportieren/true"]), JSON.stringify(v.rows));
+        ok("Beitext: Die Dateien entstehen auf dem Gerät, die App lädt nichts hoch; noch keine Meldung", v.foot === "Die Dateien entstehen auf diesem Gerät. Die App lädt nichts hoch." && v.msgHidden, v.foot);
+        const nm = await tp(page, () => ({ chest: window.__tp.ex("hs-chest").name, leg: window.__tp.ex("hs-legpress").name }));
+        // Ohne Teilen-Menü (Desktop-Chromium): Download
+        const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#exp-trainings [data-a=expCsv]")]);
+        const buf = await fileOf(dl), txt = buf.toString("utf8");
+        ok("Trainings: Download „trainingsplan-trainings-2027-01-01.csv“ – das Datum am Ort, nicht das UTC-Datum", dl.suggestedFilename() === "trainingsplan-trainings-2027-01-01.csv", dl.suggestedFilename());
+        ok("Die Datei beginnt mit den BOM-Bytes EF BB BF und enthält Kopfzeile und alle 7 Sätze, Zeile für Zeile", buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF && txt === BOM + [HEAD_T].concat(rowsT(nm.chest, nm.leg)).join("\r\n") + "\r\n", JSON.stringify(txt));
+        ok("Meldung nennt die Datei; sie ist ohne Scrollen zu sehen, die Seite bleibt stehen", await page.isVisible("#expMsg") && (await page.textContent("#expMsg")) === `Heruntergeladen: trainingsplan-trainings-${TODAY}.csv` && (await page.evaluate(() => scrollY)) === 0, await page.textContent("#expMsg"));
+        const [dlW] = await Promise.all([page.waitForEvent("download"), page.click("#exp-koerpergewicht [data-a=expCsv]")]);
+        ok("Körpergewicht: Datei „trainingsplan-koerpergewicht-…csv“ mit den drei Einträgen", dlW.suggestedFilename() === `trainingsplan-koerpergewicht-${TODAY}.csv` && (await fileOf(dlW)).toString("utf8") === CSV_W);
+        const [dlF] = await Promise.all([page.waitForEvent("download"), page.click("#exp-essen [data-a=expCsv]")]);
+        ok("Essen: Datei „trainingsplan-essen-…csv“ mit den drei Einträgen", dlF.suggestedFilename() === `trainingsplan-essen-${TODAY}.csv` && (await fileOf(dlF)).toString("utf8") === CSV_F, (await fileOf(dlF)).toString("utf8"));
+        ok("Der Export speichert nichts: Zustand unverändert, kein eigener Speicherbereich", (await page.evaluate(k => localStorage.getItem(k), KEY)) === before && !(await tp(page, () => "export" in window.__tp.state.x)));
+        await page.$$eval("#expInfo details", d => d.forEach(x => x.open = true));
+        const info = await page.textContent("#expInfo");
+        ok("„Zu den Dateien“: Spalten je Datei, bewegtes Gewicht, Format", info.includes(HEAD_T.split(";").join(", ")) && info.includes("Gewicht × Wiederholungen") && info.includes("Semikolon") && info.includes("UTF-8") && !info.includes("Körpermaße"), info);
+        ok("„Zu den Dateien“: Uhrzeit = Ende des Trainings, Einträge über „Nur kcal“, Weg der Datei (Teilen-Menü, sonst Download)", (await page.$$("#expInfo details")).length === 4 && info.includes("Die Uhrzeit ist das Ende des Trainings.")
+          && info.includes("Einträge über „Nur kcal“ haben keine Menge.") && info.includes("stehen als 0 in der Datei") && info.includes("Ohne eingetragenes Gewicht steht dort 0.") && info.includes("„In Dateien sichern“") && info.includes("Ohne Teilen-Menü lädt der Browser die Datei herunter."), info);
+        ok("Kein Text frei auf dem Seitengrund (mit Meldung und aufgeklappten Fragen)", (await freeTextOn(page)).length === 0, (await freeTextOn(page)).join(" | "));
+        await page.setViewportSize({ width: 320, height: 640 });
+        ok("320 px: ohne seitliches Scrollen, kein Text abgeschnitten", await noOverflow(page) && await tp(page, () => [...document.querySelectorAll("#app .t, #app .s, #expMsg")].every(x => x.scrollWidth <= x.clientWidth + 1)), await overflowers(page));
+        // Navigationsleiste beim Scrollen: Der lange Titel und „‹ Einstellungen“ haben nebeneinander keinen Platz
+        const navState = () => tp(page, () => { const n = document.getElementById("navbar"), t = n.querySelector(".nb-t"), r = document.createRange(); r.selectNodeContents(t);
+          return { scrolled: n.classList.contains("scrolled"), title: t.textContent, cut: t.scrollWidth > t.clientWidth + 1, label: getComputedStyle(n.querySelector(".nb-back span")).opacity,
+            free: r.getBoundingClientRect().left >= n.querySelector(".nb-chev").getBoundingClientRect().right, back: n.querySelector(".nb-back").textContent.trim() }; });
+        await page.evaluate(() => window.scrollTo(0, 400)); await page.waitForTimeout(400);
+        const nb1 = await navState();
+        ok("320 px, gescrollt: Der kleine Titel steht ungekürzt in der Navigationsleiste, vom Zurück-Knopf bleibt nur der Pfeil – nichts überdeckt sich", nb1.scrolled && nb1.title === "Als Tabelle exportieren" && !nb1.cut && nb1.label === "0" && nb1.free && nb1.back === "Einstellungen", JSON.stringify(nb1));
+        await page.evaluate(() => window.scrollTo(0, 0)); await page.waitForTimeout(400);
+        const nb0 = await navState();
+        ok("Wieder oben: „‹ Einstellungen“ steht ausgeschrieben da", !nb0.scrolled && nb0.label === "1" && nb0.back === "Einstellungen", JSON.stringify(nb0));
+        await page.setViewportSize({ width: 360, height: 780 });
+        // Teilen-Menü (iPhone): abgebrochen → nichts; geteilt → Datei an das Menü; Fehler → Download als Rückfall
+        let dls = 0; page.on("download", () => dls++);
+        await page.evaluate(() => { navigator.canShare = () => true; navigator.share = () => Promise.reject(new DOMException("abgebrochen", "AbortError")); });
+        await page.click("#exp-koerpergewicht [data-a=expCsv]"); await page.waitForTimeout(200);
+        ok("Teilen abgebrochen: keine Datei, keine Meldung", dls === 0 && await page.isHidden("#expMsg"));
+        await page.evaluate(() => { navigator.share = async d => { const f = d.files[0]; window.__tp.sharedCsv = { n: d.files.length, name: f.name, type: f.type, bytes: [...new Uint8Array(await f.arrayBuffer())] }; }; });
+        await page.click("#exp-koerpergewicht [data-a=expCsv]"); await page.waitForTimeout(200);
+        const sh = await tp(page, () => window.__tp.sharedCsv);
+        ok("Teilen-Menü bekommt genau die CSV-Datei (mit BOM), danach „Exportiert: …“ – kein Download", sh.n === 1 && sh.name === `trainingsplan-koerpergewicht-${TODAY}.csv` && sh.type === "text/csv" && Buffer.from(sh.bytes).equals(Buffer.from(CSV_W, "utf8")) && sh.bytes.slice(0, 3).join() === "239,187,191"
+          && (await page.textContent("#expMsg")) === `Exportiert: trainingsplan-koerpergewicht-${TODAY}.csv` && dls === 0, JSON.stringify([sh.name, sh.type, dls]));
+        await page.evaluate(() => { navigator.share = () => Promise.reject(new Error("geht nicht")); });
+        const [dlR] = await Promise.all([page.waitForEvent("download"), page.click("#exp-essen [data-a=expCsv]")]);
+        await page.waitForTimeout(100);
+        ok("Teilen schlägt fehl: Rückfall auf den Download", dlR.suggestedFilename() === `trainingsplan-essen-${TODAY}.csv` && (await fileOf(dlR)).toString("utf8") === CSV_F && (await page.textContent("#expMsg")).startsWith("Heruntergeladen: "));
+        await page.evaluate(() => { navigator.canShare = () => false; });
+        const [dlN] = await Promise.all([page.waitForEvent("download"), page.click("#exp-trainings [data-a=expCsv]")]);
+        ok("Teilen-Menü nimmt keine Dateien: Download", dlN.suggestedFilename() === `trainingsplan-trainings-${TODAY}.csv`);
+        await page.click("#navbar .nb-back");
+        ok("Zurück führt zu den Einstellungen", (await page.textContent("#app h1")) === "Einstellungen");
+        await page.click("#row-export");
+        ok("Wieder geöffnet: die alte Meldung ist weg", await page.isHidden("#expMsg"));
+        await ctx.close();
+      }
+      {
+        // Leerer Zustand: nichts zu exportieren
+        const { ctx, page } = await open({ plan: PLAN_SMALL }, { light: true });
+        await toExport(page);
+        const e = await tp(page, () => [...document.querySelectorAll("#expList .li")].map(l => [l.querySelector(".t").textContent, l.querySelector(".s").textContent, l.querySelector("button").disabled, !!l.querySelector(".ico svg")].join("/")));
+        ok("Ohne Daten: drei Zeilen mit „Noch keine Einträge“, jeder Knopf deaktiviert", canon(e) === canon(["Trainings/Noch keine Einträge/true/true", "Körpergewicht/Noch keine Einträge/true/true", "Essen/Noch keine Einträge/true/true"]), JSON.stringify(e));
+        let dls = 0; page.on("download", () => dls++);
+        await tp(page, () => { const b = document.querySelector("#exp-trainings button"); b.click(); return window.__tp.EXT.actions.expCsv(b); });
+        await page.waitForTimeout(200);
+        ok("Ohne Daten entsteht keine Datei und keine Meldung", dls === 0 && await page.isHidden("#expMsg"));
+        await page.$$eval("#expInfo details", d => d.forEach(x => x.open = true));
+        ok("Leer: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+        await ctx.close();
+      }
+      {
+        // Körpermaße erscheinen nur, wenn die Erweiterung „masse“ Daten abgelegt hat (hier zur Laufzeit eingesetzt)
+        const { ctx, page } = await expOpen({ plan: PLAN_SMALL }, "Europe/Berlin", NOW);
+        await toExport(page);
+        ok("Ohne Körpermaße gibt es die Zeile nicht", !(await page.$("#exp-koerpermasse")) && (await page.$$("#expList .li")).length === 3);
+        await page.click("#navbar .nb-back");
+        await tp(page, () => { window.__tp.state.x.masse = { e: [{ d: "2026-11-17", k: "taille", cm: 88 }, { d: "2026-11-10", k: "huefte", cm: 101.5 }] }; });
+        await page.click("#row-export");
+        ok("Mit Körpermaßen: vierte Zeile „Körpermaße“ mit Anzahl", (await page.$$("#expList .li")).length === 4 && (await page.textContent("#exp-koerpermasse .s")) === "2 Einträge" && !(await page.$eval("#exp-koerpermasse button", b => b.disabled)));
+        await page.$$eval("#expInfo details", d => d.forEach(x => x.open = true));
+        ok("Mit Körpermaßen nennt „Was steht in den Dateien?“ auch deren Spalten", (await page.textContent("#expInfo")).includes("Körpermaße – eine Zeile je Eintrag: Datum, Maß, Wert (cm)."), await page.textContent("#expInfo"));
+        // Kleiner Bildschirm (320 × 568), Fragen wieder zugeklappt: Die vierte Zeile und die Meldung liegen zunächst unter der Tab-Leiste
+        await page.$$eval("#expInfo details", d => d.forEach(x => x.open = false));
+        await page.setViewportSize({ width: 320, height: 568 }); await page.evaluate(() => window.scrollTo(0, 0));
+        const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#exp-koerpermasse [data-a=expCsv]")]);
+        ok("Körpermaße: Datei „trainingsplan-koerpermasse-2027-01-01.csv“ mit Datum, Maß (deutscher Name) und cm", dl.suggestedFilename() === `trainingsplan-koerpermasse-${TODAY}.csv` && (await fileOf(dl)).toString("utf8") === BOM + ["Datum;Maß;Wert (cm)", "10.11.2026;Hüfte;101,5", "17.11.2026;Taille;88"].join("\r\n") + "\r\n", (await fileOf(dl)).toString("utf8"));
+        await page.waitForTimeout(150);
+        const vis = await tp(page, () => { const r = id => document.getElementById(id).getBoundingClientRect(), m = r("expMsg");
+          return { txt: document.getElementById("expMsg").textContent, top: Math.round(m.top), bottom: Math.round(m.bottom), tabs: Math.round(r("tabs").top), nav: Math.round(r("navbar").bottom), y: Math.round(scrollY) }; });
+        ok("320 × 568: Die Meldung ist nach dem Export zu sehen – die Seite rückt so weit hoch, dass sie über der Tab-Leiste liegt", vis.txt === `Heruntergeladen: trainingsplan-koerpermasse-${TODAY}.csv` && vis.y > 0 && vis.bottom <= vis.tabs && vis.top >= vis.nav, JSON.stringify(vis));
+        await page.setViewportSize({ width: 360, height: 780 });
+        await page.$$eval("#expInfo details", d => d.forEach(x => x.open = true));
+        ok("Körpermaße: kein Text frei auf dem Seitengrund, bei 320 px ohne seitliches Scrollen", (await freeTextOn(page)).length === 0 && await (async () => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page); await page.setViewportSize({ width: 360, height: 780 }); return r; })(), (await freeTextOn(page)).join(" | "));
+        await ctx.close();
+      }
+      {
+        // Kaputte Speicherbereiche: Der Export hat keinen eigenen Speicher und liest fremde Bereiche defensiv
+        const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 3, "s")], x: { export: "Unsinn", masse: "Unsinn" } });
+        await toExport(page);
+        ok("Kaputter Speicher stürzt nicht ab: Seite öffnet sich, Trainings sind exportierbar", (await page.textContent("#app h1")) === "Als Tabelle exportieren" && (await page.textContent("#exp-trainings .s")) === "1 Training · 1 Satz" && !(await page.$("#exp-koerpermasse")) && !(await tp(page, () => "export" in window.__tp.state.x)));
+        await ctx.close();
+      }
+      {
+        // Echter Ablauf mit fester Uhr (Berlin, 01.01.2027 ab 00:30 Uhr): Gewicht, „Nur kcal“-Eintrag und Training entstehen über die Oberfläche –
+        // so, wie die App sie wirklich speichert – und stehen danach in den Dateien. Nach UTC wäre es noch der 31.12.2026.
+        const { ctx, page } = await expOpen({ plan: PLAN_SMALL }, "Europe/Berlin", NOW);
+        await page.click("nav.tabs [data-v=history]"); await page.click("#discWeight summary"); await page.fill("#bwIn", "81,5"); await page.click("[data-a=addWeight]");
+        await page.click("nav.tabs [data-v=food]"); await page.click("[data-a=foodAdd][data-m=a]"); await page.click("[data-a=quickOpen]"); await page.fill("#qkK", "700"); await page.click("[data-a=quickSave]");
+        await page.click("nav.tabs [data-v=home]"); await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+        await finishAllSets(page, 40, 10);
+        await page.click("[data-a=tab][data-v=home]");
+        const nm = await tp(page, () => ({ chest: window.__tp.ex("hs-chest").name, leg: window.__tp.ex("hs-legpress").name, fly: window.__tp.ex("hs-fly").name }));
+        await toExport(page);
+        const subs = await page.$$eval("#expList .li .s", l => l.map(x => x.textContent));
+        ok("Nach echtem Training, Gewicht und Essen: Anzahl je Zeile (Einzahl)", canon(subs) === canon(["1 Training · 4 Sätze", "1 Eintrag", "1 Eintrag an 1 Tag"]), JSON.stringify(subs));
+        const [dlT] = await Promise.all([page.waitForEvent("download"), page.click("#exp-trainings [data-a=expCsv]")]);
+        const tl = (await fileOf(dlT)).toString("utf8").split("\r\n");
+        // Brustpresse zählt pro Seite: 40 × 10 × 2 = 800; Beinpresse (insgesamt) und Butterfly (Gewichtsblock): 40 × 10 = 400. Die Minute läuft mit, daher 00:3x
+        ok("Echtes Training in der Datei: Datum am Ort (01.01.2027), Uhrzeit des Endes, Einheit je Gerät, bewegtes Gewicht",
+          tl.length === 6 && tl[0] === BOM + HEAD_T && tl[5] === "" && canon(tl.slice(1, 5).map(l => l.replace(/^(01\.01\.2027;00:3)\d;/, "$1x;"))) === canon([
+            `01.01.2027;00:3x;Test;${nm.chest};1;40;pro Seite;10;800`, `01.01.2027;00:3x;Test;${nm.chest};2;40;pro Seite;10;800`,
+            `01.01.2027;00:3x;Test;${nm.leg};1;40;gesamt;10;400`, `01.01.2027;00:3x;Test;${nm.fly};1;40;gesamt;10;400`]), JSON.stringify(tl));
+        const [dlW] = await Promise.all([page.waitForEvent("download"), page.click("#exp-koerpergewicht [data-a=expCsv]")]);
+        ok("Eingetragenes Gewicht in der Datei unter dem Datum am Ort", dlW.suggestedFilename() === `trainingsplan-koerpergewicht-${TODAY}.csv` && (await fileOf(dlW)).toString("utf8") === BOM + "Datum;Gewicht (kg)\r\n01.01.2027;81,5\r\n", (await fileOf(dlW)).toString("utf8"));
+        const [dlF] = await Promise.all([page.waitForEvent("download"), page.click("#exp-essen [data-a=expCsv]")]);
+        ok("„Nur kcal“-Eintrag in der Datei: ohne Menge, leer gelassene Nährwerte als 0 – wie im Beitext beschrieben", (await fileOf(dlF)).toString("utf8") === BOM + CSV_F.slice(1).split("\r\n")[0] + "\r\n01.01.2027;Abendessen;Schnell eingetragen;;700;0;0;0\r\n", (await fileOf(dlF)).toString("utf8"));
+        await ctx.close();
+      }
+    }
     // @ext:export:test:end
     // ── Abstand export/test 1 ──
     // ── Abstand export/test 2 ──
