@@ -1892,7 +1892,10 @@ function normalize(raw) {
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
       planned: Number.isInteger(x.planned) && x.planned >= 1 && x.planned <= 20 ? x.planned : undefined,
       rmin: Number.isInteger(x.rmin) && x.rmin >= 1 ? x.rmin : undefined, rmax: Number.isInteger(x.rmax) && x.rmax >= 1 ? x.rmax : undefined,
-      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [], adv: x.adv === true ? true : undefined })) })) : [];
+      sets: Array.isArray(x.sets) ? x.sets.filter(isObj).map(cleanSet) : [], adv: x.adv === true ? true : undefined })) }))
+    // Immer nach Datum geordnet (alt → neu): Vorschlag, „Letztes Mal“, nächster Trainingstag und Kurven nehmen das letzte Element als jüngstes Training.
+    // Eine Sicherung oder alte Daten können ungeordnet sein; gleiche Zeitpunkte behalten ihre Reihenfolge.
+    .sort((a, b) => new Date(a.date) - new Date(b.date)) : [];
   s.weights = Array.isArray(raw.weights) ? raw.weights.filter(w => isObj(w) && /^\d{4}-\d{2}-\d{2}$/.test(w.d) && +w.kg >= 30 && +w.kg <= 300).map(w => Object.assign({ d: w.d, kg: +w.kg }, w.hk === true ? { hk: true } : {})) : [];
   if (isObj(raw.session) && Array.isArray(raw.session.list) && raw.session.list.length) {
     const r = raw.session;
@@ -4944,6 +4947,25 @@ function vIntro() {
       <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
   </div>`;
 }
+// Bevor ein vorhandener Plan ersetzt wird (neuer Vorschlag oder leerer Plan): unter „Meine Pläne“ sichern, wenn er dort noch nicht
+// unverändert liegt. Ist dort kein Platz mehr, fragt die App nach. Ein altes „Rückgängig“ aus den Hinweisen gilt danach nicht mehr.
+const planOver = { ok: false, again: "" };
+const planHasItems = p => !!p && p.days.some(d => d.items.length);
+const planIsKept = p => plnStore().list.some(e => plnKey(e.plan) === plnKey(p));
+function planReplaceOk(again) {
+  const p = state.plan;
+  if (planHasItems(p) && !planIsKept(p) && !planOver.ok && !plnAdd(plnAuto(), plnCopy(p))) {
+    planOver.again = again;
+    actionSheet("Plan ersetzen?", `Dein aktueller Plan ist nicht gesichert und geht dabei verloren: Alle ${PLN_MAX} Plätze unter „Meine Pläne“ sind belegt. Dein Verlauf bleibt erhalten.`, [{ l: "Trotzdem ersetzen", a: "planOverDo", danger: true }], "Abbrechen");
+    return false;
+  }
+  planOver.ok = false; state.prevPlan = null; state.timeplan = null;
+  return true;
+}
+const planKeepNote = () => { const p = state.plan; if (!planHasItems(p)) return "";
+  return `<div class="card" id="setupKeep"><p class="small muted" style="margin:0">${planIsKept(p) ? "Dein bisheriger Plan liegt schon unter Plan → „Meine Pläne“ und bleibt dort."
+    : plnStore().list.length >= PLN_MAX ? "Achtung: Dein bisheriger Plan wird ersetzt. Unter „Meine Pläne“ ist kein Platz mehr, um ihn zu sichern."
+    : "Dein bisheriger Plan wird vorher unter Plan → „Meine Pläne“ gesichert."}</p></div>`; };
 function vSetup() {
   if (!state.plan && setupStep === "intro" && introOn()) return vIntro();
   const seg = (key, opts) => `<div class="seg">${opts.map(([v, l]) =>
@@ -4963,6 +4985,7 @@ function vSetup() {
     <div class="section"><h3>Erfahrung</h3>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="group"><button class="li" data-a="openDevs">
       <div class="grow"><div class="t">Geräte in deinem Studio</div><div class="s">${av} von ${all.length} vorhanden${fav ? ` · ${fav} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
+    ${planKeepNote()}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="createPlan">Plan erstellen</button>
       ${introOn() && !state.plan ? "" : `<button class="btn quiet block sm" data-a="emptyPlan">Lieber selbst zusammenstellen</button>`}</div></div>
@@ -7994,6 +8017,7 @@ const A = {
   createPlan: () => { const tm = byId("setupTime"); if (tm && /^\d{2}:\d{2}$/.test(tm.value)) setup.time = tm.value;
     if (!TEMPLATES[setup.wd.length]) { const x = byId("setupDaysTxt"); if (x) { x.textContent = "Bitte 2 bis 4 Tage wählen."; x.style.color = "var(--bad)"; } return; }
     setup.days = setup.wd.length;
+    if (!planReplaceOk("createPlan")) return;
     state.plan = generatePlan(setup.goal, setup.days, setup.level, setup.minutes); state.selDay = null;
     state.sched = cleanSched({ id: uid(), days: setup.wd.slice(), time: setup.time, planB: state.sched ? state.sched.planB : "next", since: new Date().toISOString() });
     save(); go("home");
@@ -8050,7 +8074,9 @@ const A = {
   },
   setupForm: () => { setupStep = "form"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
   setupIntro: () => { setupStep = "intro"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
-  emptyPlan: () => { state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
+  emptyPlan: () => { if (!planReplaceOk("emptyPlan")) return;
+    state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
+  planOverDo: () => { const a = planOver.again; planOver.ok = true; closeSheet(); if (A[a]) A[a](); },
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
   pickDay: () => openSheet(dayPickSheet()),
@@ -9947,7 +9973,9 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
       const rec = { id: uid(), dayId: day.id, day: day.name, date: new Date(ntAt(dr.d)).toISOString(), durationSec: m ? m * 60 : 0, exercises: exs, nt: true };
       if (skip.length) rec.skip = skip;
       summary = commitTraining(rec);
-      state.x.nachtrag = null; if (state.selDay === day.id) state.selDay = null; save(); askPersist(); go("summary"); }
+      state.x.nachtrag = null;
+      if (dr.d === dkey()) { if (state.selDay === day.id) state.selDay = null; if (state.timeplan && state.timeplan.dayId === day.id) state.timeplan = null; }
+      save(); askPersist(); go("summary"); }
   });
   EXT.inputs.ntDate = el => { const dr = ntGet(), d = el.value; if (!dr || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
     if (d > dkey()) { el.value = dr.d; const e = byId("ntErr"); if (e) { e.textContent = "Das Datum liegt in der Zukunft."; e.hidden = false; } return; }

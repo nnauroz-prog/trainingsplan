@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v95)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v95")));
+      ok("Service Worker aktiv (Cache trainingsplan-v96)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v96")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -6264,6 +6264,31 @@ async function finishAllSets(page, kg, reps) {
         await ctx.close();
       }
     }
+    {
+      // Neuer Plan ersetzt einen vorhandenen nie ohne Sicherung
+      const days = [{ id: "m1", name: "Mein Tag A", items: [{ id: "i1", exId: "hs-chest", sets: 5, rmin: 6, rmax: 8, rest: 150 }] }, { id: "m2", name: "Mein Tag B", items: [{ id: "i2", exId: "hs-row", sets: 4, rmin: 8, rmax: 12, rest: 90 }] }];
+      const { ctx, page } = await open({ plan: { goal: "kraft", level: "fortgeschritten", minutes: 60, days }, history: [hist("hs-chest", [[60, 6]], 2)], prevPlan: { at: new Date().toISOString(), why: "x", plan: { goal: "aufbau", level: "einsteiger", days: [{ id: "o", name: "Alt", items: [] }] } } });
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=newPlan]");
+      ok("Plan vorschlagen bei vorhandenem Plan: Hinweis, dass der bisherige unter „Meine Pläne“ gesichert wird", (await page.textContent("#setupKeep")).includes("wird vorher unter Plan → „Meine Pläne“ gesichert"));
+      await page.click("[data-a=createPlan]");
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const a1 = await tp(page, () => { const T = window.__tp, L = T.state.x.plaene.list; return { now: T.state.plan.days.map(d => d.name).join(), kept: L.map(e => e.plan.days.map(d => `${d.name}:${d.items.map(i => i.exId + "x" + i.sets).join("+")}`).join("|")).join(" / "), name: L[0] && L[0].name, prev: T.state.prevPlan, hist: T.state.history.length }; });
+      ok("„Plan erstellen“: neuer Plan steht, der bisherige liegt vollständig unter „Meine Pläne“, altes „Rückgängig“ ist weg, Verlauf unverändert", !a1.now.includes("Mein Tag") && a1.kept === "Mein Tag A:hs-chestx5|Mein Tag B:hs-rowx4" && a1.name.startsWith("Plan vom ") && a1.prev === null && a1.hist === 1, JSON.stringify(a1));
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=newPlan]"); await page.click("[data-a=emptyPlan]");
+      const a2 = await tp(page, () => { const T = window.__tp; return { now: T.state.plan.days.map(d => d.name + ":" + d.items.length).join(), n: T.state.x.plaene.list.length }; });
+      ok("„Lieber selbst zusammenstellen“: auch der Vorschlag wird vorher gesichert (jetzt 2 gesicherte Pläne), dann leerer „Tag 1“", a2.now === "Tag 1:0" && a2.n === 2, JSON.stringify(a2));
+      // Kein Platz mehr: Rückfrage statt stillem Verlust
+      await tp(page, () => { const T = window.__tp; T.state.plan = JSON.parse(JSON.stringify(T.state.x.plaene.list[1].plan)); T.state.plan.days[0].name = "Unikat";
+        while (T.state.x.plaene.list.length < T.PLN_MAX) T.state.x.plaene.list.push({ id: "f" + T.state.x.plaene.list.length, name: "Voll " + T.state.x.plaene.list.length, saved: "2026-01-01", plan: JSON.parse(JSON.stringify(T.state.x.plaene.list[0].plan)) }); });
+      await page.click("nav.tabs [data-v=home]"); await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=newPlan]");
+      const note = await page.textContent("#setupKeep");
+      await page.click("[data-a=emptyPlan]");
+      const q = await tp(page, () => ({ sheet: document.querySelector(".sheet") ? document.querySelector(".sheet").textContent : "", plan: window.__tp.state.plan.days[0].name }));
+      ok("Alle 12 Plätze belegt: Hinweis auf der Seite und Rückfrage „Plan ersetzen?“; ohne Bestätigung bleibt der Plan", note.includes("kein Platz mehr") && q.sheet.includes("Plan ersetzen?") && q.sheet.includes("Trotzdem ersetzen") && q.plan === "Unikat", JSON.stringify(q).slice(0, 200));
+      await page.click("[data-a=planOverDo]");
+      ok("„Trotzdem ersetzen“ ersetzt dann", (await tp(page, () => window.__tp.state.plan.days.map(d => d.name + ":" + d.items.length).join())) === "Tag 1:0");
+      await ctx.close();
+    }
     // @ext:plaene:test:end
     // ── Abstand plaene/test 1 ──
     // ── Abstand plaene/test 2 ──
@@ -6716,6 +6741,15 @@ async function finishAllSets(page, kg, reps) {
       const none = !(await page.$("#ntHome"));
       await page.click("nav.tabs [data-v=history]");
       ok("Ohne Trainingstag mit Geräten gibt es keinen Nachtrag (weder auf „Heute“ noch unter Fortschritt)", none && !(await page.$("#row-nachtrag")));
+      await ctx.close();
+    }
+    {
+      // Ungeordnet gespeicherter Verlauf (z. B. aus einer Sicherung): beim Laden nach Datum geordnet, das jüngste Training ist maßgeblich
+      const iso = n => new Date(Date.now() - n * 864e5).toISOString();
+      const X = (id, n, sets) => ({ id, dayId: "d1", day: "Test", date: iso(n), durationSec: 1800, exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 3, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) }] });
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [X("neu", 2, [[45, 8], [45, 8], [45, 7]]), X("alt", 20, [[40, 12], [40, 12], [40, 12]])] });
+      const o = await tp(page, () => { const T = window.__tp, e = T.makeEntry(T.state.plan.days[0].items[0]); return { ids: T.state.history.map(h => h.id).join(), sets: e.sets.map(s => s.kg + "x" + s.reps).join(" "), why: e.why }; });
+      ok("Ungeordneter Verlauf wird beim Laden nach Datum geordnet; der Vorschlag kommt aus dem jüngsten Training (45 kg, je 1 Wdh. mehr), nicht aus dem zuletzt gespeicherten (40 kg)", o.ids === "alt,neu" && o.sets.startsWith("45x9 45x9") && !o.sets.includes("40x") && o.why.includes("45 kg"), JSON.stringify(o));
       await ctx.close();
     }
     {
