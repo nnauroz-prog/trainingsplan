@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v97)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v97")));
+      ok("Service Worker aktiv (Cache trainingsplan-v98)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v98")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -5971,6 +5971,11 @@ async function finishAllSets(page, kg, reps) {
           okTxt: (document.querySelector(".sheet .sh-head [data-a=plnSaveDo]") || {}).textContent }));
         ok("„Aktuellen Plan sichern“ fragt nach dem Namen, Vorschlag „Plan vom <heute>“", sh.title === "Plan sichern" && sh.cancel === "Abbrechen" && sh.okTxt === "Speichern" && sh.val === `Plan vom ${d.txt}`, JSON.stringify(sh));
         const g1 = await headGap(page);
+        // Breitere Schrift (andere Geräte, andere Systemschrift): Titel und Knöpfe dürfen sich auch dann nicht überlappen
+        await page.addStyleTag({ content: ".sheet .sh-head .btn{letter-spacing:.09em} .sheet .sh-head h2{letter-spacing:.07em}" });
+        const g1w = await headGap(page);
+        ok("Fensterkopf bei 320 px auch mit deutlich breiterer Schrift ohne Überlappung", g1w >= 4, String(g1w));
+        await page.evaluate(() => document.head.lastElementChild.remove());
         ok("Fenster „Plan sichern“ bei 320 px: Titel und Knöpfe überlappen nicht, kein seitliches Scrollen", g1 >= 4 && await at320(page), String(g1));
         await page.fill("#plnNameIn", "   "); await page.click("[data-a=plnSaveDo]");
         ok("Leerer Name: Fehlertext, nichts wird gesichert", await page.isVisible("#plnErr") && (await lst(page)).length === 0 && !!(await page.$(".sheet")));
