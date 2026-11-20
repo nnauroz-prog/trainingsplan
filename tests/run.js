@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v96)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v96")));
+      ok("Service Worker aktiv (Cache trainingsplan-v97)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v97")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -6267,7 +6267,7 @@ async function finishAllSets(page, kg, reps) {
     {
       // Neuer Plan ersetzt einen vorhandenen nie ohne Sicherung
       const days = [{ id: "m1", name: "Mein Tag A", items: [{ id: "i1", exId: "hs-chest", sets: 5, rmin: 6, rmax: 8, rest: 150 }] }, { id: "m2", name: "Mein Tag B", items: [{ id: "i2", exId: "hs-row", sets: 4, rmin: 8, rmax: 12, rest: 90 }] }];
-      const { ctx, page } = await open({ plan: { goal: "kraft", level: "fortgeschritten", minutes: 60, days }, history: [hist("hs-chest", [[60, 6]], 2)], prevPlan: { at: new Date().toISOString(), why: "x", plan: { goal: "aufbau", level: "einsteiger", days: [{ id: "o", name: "Alt", items: [] }] } } });
+      const { ctx, page } = await open({ plan: { goal: "kraft", level: "fortgeschritten", minutes: 60, days }, history: [hist("hs-chest", [{ kg: 60, reps: 6 }], 2)], prevPlan: { at: new Date().toISOString(), why: "x", plan: { goal: "aufbau", level: "einsteiger", days: [{ id: "o", name: "Alt", items: [] }] } } });
       await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=newPlan]");
       ok("Plan vorschlagen bei vorhandenem Plan: Hinweis, dass der bisherige unter „Meine Pläne“ gesichert wird", (await page.textContent("#setupKeep")).includes("wird vorher unter Plan → „Meine Pläne“ gesichert"));
       await page.click("[data-a=createPlan]");
@@ -6621,6 +6621,65 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand artikel/test 1 ──
     // ── Abstand artikel/test 2 ──
     // ── Abstand artikel/test 3 ──
+    // @ext:sicherheit:test:start
+    section("E-sicherheit. Datensicherheit: unlesbarer Speicher, Wiederherstellen");
+    {
+      const raw = (store, extra = {}) => browser.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: "block", acceptDownloads: true }).then(async ctx => {
+        await ctx.addInitScript(([st, ex]) => { if (!sessionStorage.getItem("seeded")) { for (const k in st) localStorage.setItem(k, st[k]); for (const k in ex) localStorage.setItem(k, ex[k]); sessionStorage.setItem("seeded", "1"); } }, [store, Object.assign({ "tp-intro": "0", "tp-3d": "0", "tp-tabmem": "0" }, extra)]);
+        const page = await ctx.newPage(); page.on("pageerror", e => allErrors.push("sicherheit: " + e.message)); await page.goto(URL); await page.waitForSelector("#app h1"); return { ctx, page }; });
+      const good = JSON.stringify({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3)], session: null });
+      const broken = good.slice(0, good.length - 40);   // abgeschnittenes JSON
+      // 1. Unlesbarer Speicher: Kopie bleibt, Hinweis sichtbar, Weiterarbeiten überschreibt sie nicht
+      const a = await raw({ [KEY]: broken });
+      const a1 = await tp(a.page, k => ({ warn: !document.getElementById("loadWarn").hidden, txt: document.getElementById("loadWarnTxt").textContent, copy: localStorage.getItem(k + "-unlesbar"), n: window.__tp.state.history.length, drop: document.getElementById("badDropBtn").hidden }), KEY);
+      ok("Unlesbarer Speicher: Hinweis sichtbar („nicht gelöscht“), der Rohtext liegt unverändert als Kopie auf dem Gerät", a1.warn && a1.txt.includes("nicht gelöscht") && a1.copy === broken && a1.n === 0 && a1.drop, JSON.stringify({ warn: a1.warn, n: a1.n }));
+      await a.page.click("[data-a=createPlan]");
+      if (await a.page.$(".sheet [data-a=closeSheet]")) await a.page.click(".sheet [data-a=closeSheet]");
+      const a2 = await tp(a.page, k => ({ copy: localStorage.getItem(k + "-unlesbar"), now: JSON.parse(localStorage.getItem(k)).plan.days.length }), KEY);
+      ok("Danach einen Plan erstellen: die neuen Daten werden gespeichert, die Kopie der alten bleibt unangetastet", a2.copy === broken && a2.now >= 2);
+      const [dl] = await Promise.all([a.page.waitForEvent("download"), a.page.click("#loadWarn [data-a=badSave]")]);
+      const fs = require("fs"), file = fs.readFileSync(await dl.path(), "utf8");
+      ok("„Kopie als Datei sichern“ lädt genau den Rohtext herunter", file === broken && /^trainingsplan-kopie-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+      await a.ctx.close();
+      // 2. Kopie ist wieder lesbar und es gibt nichts Eigenes: wird übernommen
+      const b = await raw({ [KEY + "-unlesbar"]: good });
+      const b1 = await tp(b.page, k => ({ n: window.__tp.state.history.length, plan: !!window.__tp.state.plan, copy: localStorage.getItem(k + "-unlesbar"), saved: JSON.parse(localStorage.getItem(k) || "{}").history, warn: !document.getElementById("loadWarn").hidden, note: (document.getElementById("homeNote") || {}).textContent || "" }), KEY);
+      ok("Wieder lesbare Kopie ohne eigene neue Daten: wird beim Start übernommen und gespeichert, die Kopie verschwindet, Meldung „wieder da“", b1.n === 1 && b1.plan && b1.copy === null && b1.saved.length === 1 && !b1.warn && b1.note.includes("wieder da"), JSON.stringify(b1).slice(0, 200));
+      await b.ctx.close();
+      // 3. Es gibt inzwischen eigene Daten: nichts wird ersetzt, die Kopie bleibt bis zum Löschen
+      const mine = JSON.stringify({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 50, reps: 8 }], 1), hist("hs-chest", [{ kg: 50, reps: 9 }], 0)], session: null });
+      const c = await raw({ [KEY]: mine, [KEY + "-unlesbar"]: good });
+      const c1 = await tp(c.page, k => ({ n: window.__tp.state.history.length, copy: !!localStorage.getItem(k + "-unlesbar"), warn: !document.getElementById("loadWarn").hidden, txt: document.getElementById("loadWarnTxt").textContent, drop: !document.getElementById("badDropBtn").hidden }), KEY);
+      ok("Eigene Daten vorhanden: sie bleiben (2 Trainings), die Kopie wird nicht eingespielt, Hinweis mit „Kopie löschen“", c1.n === 2 && c1.copy && c1.warn && c1.txt.includes("Kopie älterer Daten") && c1.drop, JSON.stringify(c1).slice(0, 200));
+      await c.page.click("#loadWarn [data-a=badDrop]"); await c.page.click("[data-a=badDropDo]");
+      const c2 = await tp(c.page, k => ({ copy: localStorage.getItem(k + "-unlesbar"), warn: !document.getElementById("loadWarn").hidden, n: window.__tp.state.history.length }), KEY);
+      ok("„Kopie löschen“ fragt nach und entfernt nur die Kopie", c2.copy === null && !c2.warn && c2.n === 2);
+      await c.ctx.close();
+    }
+    {
+      // Wiederherstellen: laufendes Training und neuere Trainings sind geschützt
+      const old = { plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 30, reps: 10 }], 90), hist("hs-chest", [{ kg: 30, reps: 11 }], 80)], session: null };
+      const code = "TP1:" + Buffer.from(unescape(encodeURIComponent(JSON.stringify(old))), "binary").toString("base64");
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 5), hist("hs-chest", [{ kg: 40, reps: 11 }], 1)] });
+      await page.click("[data-a=start]");
+      await page.fill("#kgIn", "40"); await page.fill("#repsIn", "12"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=importOpen]"); await page.fill("#impTxt", code); await page.click("[data-a=importDo]");
+      const r1 = await tp(page, () => ({ msg: document.getElementById("impMsg").textContent, ses: !!window.__tp.state.session, done: window.__tp.state.session.list[0].sets.filter(s => s.done).length, n: window.__tp.state.history.length, btn: !!document.querySelector("[data-a=restoreConfirm]") }));
+      ok("Sicherung einspielen bei pausiertem Training: gesperrt mit Hinweis, das Training und sein erledigter Satz bleiben", r1.msg.includes("Erst das laufende Training beenden") && r1.ses && r1.done === 1 && r1.n === 2 && !r1.btn, JSON.stringify(r1));
+      await ctx.close();
+      const two = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }], 5), hist("hs-chest", [{ kg: 40, reps: 11 }], 1)] });
+      await two.page.click("#navbar [data-a=openSettings]"); await two.page.click("[data-a=importOpen]"); await two.page.fill("#impTxt", code); await two.page.click("[data-a=importDo]");
+      const r2 = await tp(two.page, () => ({ msg: document.getElementById("impMsg").textContent, n: window.__tp.state.history.map(h => h.exercises[0].sets[0].kg).join(), btn: !!document.querySelector("[data-a=restoreConfirm]") }));
+      ok("Gleich viele Trainings, aber auf dem Gerät neuere: Rückfrage statt stillem Ersetzen", r2.msg.includes("neuere Trainings") && r2.n === "40,40" && r2.btn, JSON.stringify(r2));
+      await two.page.click("[data-a=restoreConfirm]");
+      ok("„Trotzdem ersetzen“ spielt die Sicherung dann ein", (await tp(two.page, () => window.__tp.state.history.map(h => h.exercises[0].sets[0].kg).join())) === "30,30");
+      await two.ctx.close();
+    }
+    // @ext:sicherheit:test:end
+    // ── Abstand sicherheit/test 1 ──
+    // ── Abstand sicherheit/test 2 ──
+    // ── Abstand sicherheit/test 3 ──
     // @ext:nachtrag:test:start
     section("E-nachtrag. Training nachtragen (ohne Live-Modus)");
     {
@@ -6754,7 +6813,7 @@ async function finishAllSets(page, kg, reps) {
     }
     {
       // Live-Training und Nachtrag nutzen dieselbe Speicherstelle: ein Live-Training landet weiter am Ende des Verlaufs
-      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [[40, 10], [40, 10]], 3)] });
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3)] });
       await page.click("[data-a=start]");
       await finishAllSets(page, 40, 10);
       const li = await tp(page, () => { const H = window.__tp.state.history; return { n: H.length, last: !H[H.length - 1].nt && H[H.length - 1].exercises[0].sets.length, first: H[0].exercises[0].sets.length, sorted: new Date(H[0].date) <= new Date(H[1].date) }; });

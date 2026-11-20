@@ -769,6 +769,7 @@
     .sheet,.scrim{animation:none}.bar>div,.fig .m,details.disc>summary .chev{transition:none}.btn{transition:none}}
 </style>
 
+<div id="loadWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px"><p id="loadWarnTxt" style="margin:0 0 8px"></p><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="badSave">Kopie als Datei sichern</button><button class="btn sm quiet" data-a="badDrop" id="badDropBtn" hidden>Kopie löschen</button></div></div>
 <p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Plan → Einstellungen eine Sicherung erstellen.</p>
 <header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
@@ -1946,8 +1947,19 @@ function normalize(raw) {
   try { s.x = isObj(raw.x) ? JSON.parse(JSON.stringify(raw.x)) : {}; } catch (e) { s.x = {}; }
   return s;
 }
+// Gespeicherte Daten, die sich nicht lesen ließen, bleiben als Kopie unter KEY_BAD liegen – das nächste Speichern überschreibt sie nicht.
+// Beim nächsten Start wird die Kopie erneut versucht (z. B. nach einer korrigierten Fassung) und übernommen, wenn seitdem nichts Eigenes entstanden ist.
+const KEY_BAD = KEY + "-unlesbar";
+let loadFailed = false, loadRescued = false;
+const badCopy = () => { try { return localStorage.getItem(KEY_BAD); } catch (e) { return null; } };
 function load() {
-  try { const raw = localStorage.getItem(KEY); if (raw) return normalize(JSON.parse(raw)); } catch (e) {}
+  let raw = null, cur = null;
+  try { raw = localStorage.getItem(KEY); if (raw) cur = normalize(JSON.parse(raw)); }
+  catch (e) { if (raw) { loadFailed = true; try { if (!localStorage.getItem(KEY_BAD)) localStorage.setItem(KEY_BAD, raw); } catch (e2) {} } }
+  try { const bad = badCopy();
+    if (bad && (!cur || (!cur.history.length && !(cur.plan && cur.plan.days.some(d => d.items.length))))) {
+      const old = normalize(JSON.parse(bad)); localStorage.removeItem(KEY_BAD); loadFailed = false; loadRescued = true; return old; } } catch (e) {}
+  if (cur) return cur;
   const s = blank();
   try { // Version 1 übernehmen
     const old = JSON.parse(localStorage.getItem("trainingsplan-v1") || "null");
@@ -1971,6 +1983,15 @@ function backupData(at) { const { session, ...rest } = state; return Object.assi
 function sinceBackup() { const b = state.backupAt; return state.history.filter(h => !b || h.date > b).length; }
 function askPersist() { try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {} }
 function markBackup(at) { state.backupAt = at; save(); askPersist(); }
+// Hinweis auf eine Kopie unlesbarer Daten: sichtbar, solange die Kopie existiert
+function badWarn() {
+  const box = document.getElementById("loadWarn"), has = !!badCopy(); if (!box) return;
+  box.hidden = !has; if (!has) return;
+  document.getElementById("loadWarnTxt").textContent = loadFailed
+    ? "Deine gespeicherten Daten ließen sich nicht lesen. Sie sind nicht gelöscht: Eine Kopie liegt auf diesem Gerät und wird übernommen, sobald sie wieder lesbar ist. Sichere sie am besten zusätzlich als Datei."
+    : "Auf diesem Gerät liegt eine Kopie älterer Daten, die sich zeitweise nicht lesen ließen. Du kannst sie als Datei sichern und unter Einstellungen → „Sicherung wiederherstellen“ einspielen.";
+  document.getElementById("badDropBtn").hidden = loadFailed;
+}
 function parseBackup(raw) {
   raw = String(raw || "").trim();
   let data = raw.startsWith("TP1:") ? JSON.parse(decodeURIComponent(escape(atob(raw.slice(4))))) : JSON.parse(raw);
@@ -5292,10 +5313,15 @@ function tryRestore(raw, bad) {
   const msg = byId("impMsg"), box = byId("impConfirm"); let data;
   try { data = parseBackup(raw); } catch (e) { if (msg) { msg.textContent = bad; msg.style.color = "var(--bad)"; } if (box) box.innerHTML = ""; return; }
   const n = data.history.length, cur = state.history.length;
-  // Weniger Trainings als auf dem Gerät: erst nachfragen, damit nichts aus Versehen verloren geht
-  if (n < cur) {
+  // Laufendes oder pausiertes Training: erst beenden oder verwerfen – die erledigten Sätze gingen sonst ohne Hinweis verloren
+  if (state.session) { if (msg) { msg.textContent = "Erst das laufende Training beenden oder verwerfen. Sonst gingen seine erledigten Sätze verloren."; msg.style.color = "var(--warn)"; } if (box) box.innerHTML = ""; return; }
+  // Weniger Trainings als auf dem Gerät oder auf dem Gerät gibt es neuere: erst nachfragen, damit nichts aus Versehen verloren geht
+  const newest = H => H.reduce((m, h) => Math.max(m, +new Date(h.date) || 0), 0), devNew = newest(state.history), bakNew = newest(data.history.filter(isObj));
+  if (n < cur || (cur && devNew > bakNew)) {
     pendingRestore = data;
-    msg.textContent = `Die Sicherung enthält ${nTr(n)}, auf diesem Gerät sind ${cur}. Beim Ersetzen gehen ${cur - n} verloren.`; msg.style.color = "var(--warn)";
+    msg.textContent = n < cur ? `Die Sicherung enthält ${nTr(n)}, auf diesem Gerät sind ${cur}. Beim Ersetzen gehen ${cur - n} verloren.`
+      : `Auf diesem Gerät gibt es neuere Trainings (zuletzt ${fmtDay(new Date(devNew))}) als in der Sicherung (${bakNew ? `zuletzt ${fmtDay(new Date(bakNew))}` : "keine"}). Beim Ersetzen gehen sie verloren.`;
+    msg.style.color = "var(--warn)";
     box.innerHTML = `<button class="btn block" data-a="restoreConfirm" style="color:var(--bad)">Trotzdem ersetzen</button>`;
     return;
   }
@@ -8058,6 +8084,9 @@ const A = {
   setupIntro: () => { setupStep = "intro"; vSetup(); iosChrome(); window.scrollTo(0, 0); },
   emptyPlan: () => { if (!planReplaceOk("emptyPlan")) return;
     state.plan = { goal: setup.goal, level: setup.level, days: [{ id: uid(), name: "Tag 1", items: [] }] }; save(); state.editDay = state.plan.days[0].id; go("day"); },
+  badSave: () => { const raw = badCopy(); if (raw) downloadText(raw, `trainingsplan-kopie-${dkey()}.json`, "application/json"); },
+  badDrop: () => actionSheet("Kopie löschen?", "Die Kopie der älteren Daten wird von diesem Gerät entfernt. Deine aktuellen Daten bleiben unverändert.", [{ l: "Kopie löschen", a: "badDropDo", danger: true }], "Abbrechen"),
+  badDropDo: () => { try { localStorage.removeItem(KEY_BAD); } catch (e) {} closeSheet(); badWarn(); },
   planOverDo: () => { const a = planOver.again; planOver.ok = true; closeSheet(); if (A[a]) A[a](); },
   newPlan: () => { if (state.sched && TEMPLATES[state.sched.days.length]) { setup.wd = state.sched.days.slice(); setup.time = state.sched.time; setup.days = setup.wd.length; } go("setup"); },
   selDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); closeSheet(); vHome(); },
@@ -9974,7 +10003,8 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
-extClean();
+extClean(); badWarn();
+if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
 go(view);
 if (state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
