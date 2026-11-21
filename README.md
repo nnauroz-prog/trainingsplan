@@ -129,9 +129,9 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
   - Vorschläge: ab 28 Tagen Pause auch bei uneinheitlichen Sätzen je Satz ein Schritt leichter (Regel der App); die Begründung nennt die tatsächlichen Ziele; ohne gespeicherte Satzzahl keine Aussage über eine unvollständige Einheit
   - Zusammenfassung: „Wie war der letzte Satz?“ – nach dem letzten Satz gibt es keine Pause mit dieser Frage; die Antwort fließt sofort in „Nächstes Mal“ ein
   - Erholung (Schätzung der App): drei Stufen „Erholt / Teilweise / Belastet“ statt Prozent; ein Muskel gilt erst ab 2 gültigen Sätzen in einem Training als belastet (mittrainiert halb gezählt, `REC_MIN`); Begründung auf „Heute“ („Nach Schätzung der App …“) und Plan-Zeile gekennzeichnet
-  - Stillstand: nicht, wenn die letzten beiden Einheiten jeweils besser waren als die davor (z. B. nach einer bewussten Reduktion)
-  - Sicherungszeile: „aktuell“ nur, wenn ein Fingerabdruck der gespeicherten Daten (`dataSig`, ohne Bedienzustand) seit der Sicherung unverändert ist; sonst „seitdem geändert“. Trainings zählen nach dem Eintragszeitpunkt (`at`), ein nachgetragenes Training für einen früheren Tag also mit
-  - Kalorienbilanz im Tagesplan: alle Trainings des Tages zählen; ohne erfasste Dauer wird nichts geschätzt; Bilanz mit ≈ und auf 10 kcal gerundet
+  - Stillstand: nach einer bewussten Reduktion nicht, solange das Gewicht unter dem bisherigen Bestwert liegt und zweimal in Folge gestiegen ist; schwankende Wiederholungen oder die Rückkehr aufs alte Gewicht zählen nicht als Fortschritt
+  - Sicherungszeile: „aktuell“ nur, wenn ein Fingerabdruck der gespeicherten Daten (`dataSig`: Rohdaten ohne Bedienzustand, Quittungen wie „Nicht jetzt“ und Health-Übergabe, abgeleitete Gerätenamen und Standardwerte von Erweiterungen – damit unabhängig von App-Updates) seit der Sicherung unverändert ist; sonst „seitdem geändert“. Trainings zählen nach dem Eintragszeitpunkt (`at`), ein nachgetragenes Training für einen früheren Tag also mit
+  - Kalorienbilanz im Tagesplan: alle Trainings des Tages zählen; ohne erfasste Dauer wird nichts geschätzt („ohne Dauer“, bei mehreren Trainings „(1 von 2 mit Dauer)“); Bilanzen, Abstand zum Tagesziel, Ausgleich und der Ring auf „Heute“ mit ≈ und auf 10 kcal gerundet (`kcal10`); der Rechenweg bleibt genau
 
 - **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
 

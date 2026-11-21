@@ -2002,11 +2002,18 @@ function save() {
 // ob er zusagt, entscheidet er selbst (Storage Standard: ohne Zusage darf er die Daten bei Speichermangel löschen).
 const BACKUP_N = 5, BACKUP_DAYS = 14;              // Erinnerung: Regel der App
 // Fingerabdruck der gespeicherten Daten (ohne Bedienzustand wie laufendes Training, gewählter Tag, Entwürfe): gleich = seit der Sicherung unverändert
-const SIG_SKIP = ["session", "backupAt", "backupSig", "selDay", "timeplan", "hints", "coachOff"];
-const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : (JSON.stringify(v) ?? "null");
+const SIG_SKIP = ["v", "session", "backupAt", "backupSig", "selDay", "timeplan", "hints", "coachOff", "missSkip", "editDay"];
+const sigEmpty = v => v == null || (Array.isArray(v) && !v.length) || (isObj(v) && !Object.keys(v).length);
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).filter(k => !sigEmpty(v[k])).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}" : (JSON.stringify(v) ?? "null");
 function dataSig() {
-  let n; try { n = normalize(JSON.parse(JSON.stringify(state))); } catch (e) { return ""; }
-  SIG_SKIP.forEach(k => delete n[k]); if (isObj(n.x)) { n.x = Object.assign({}, n.x); delete n.x.nachtrag; }
+  let n; try { n = JSON.parse(JSON.stringify(state)); } catch (e) { return ""; }
+  SIG_SKIP.forEach(k => delete n[k]);
+  (n.history || []).forEach(h => { delete h.hk; (h.exercises || []).forEach(x => { delete x.name; }); });   // Name kommt aus der Bibliothek, hk = an Health übergeben
+  (n.weights || []).forEach(w => { delete w.hk; });
+  if (isObj(n.x)) { const x = {};
+    for (const k in n.x) { if (k === "nachtrag") continue; let def; try { def = EXT.clean[k] ? canon(EXT.clean[k](undefined)) : undefined; } catch (e) {}
+      if (canon(n.x[k]) !== def) x[k] = n.x[k]; }   // Standardwerte einer Erweiterung zählen nicht als Daten
+    n.x = x; }
   let h = 2166136261; const t = canon(n); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); }
   return (h >>> 0).toString(16);
 }
@@ -2483,8 +2490,8 @@ function baseDay() {
   if (sr < 50) {
     const alt = days.filter(d => d !== rot && d.items.length).map(d => [d, score(d)]).sort((a, b) => b[1] - a[1])[0];
     if (alt && alt[1] >= 55 && alt[1] - sr >= 25) {
-      const tiredM = [...new Set(rot.items.map(it => ex(it.exId).muscle))].filter(m => rec[m] < 60).map(m => MUSCLES[m]);
-      nextReason = `Nach Schätzung der App ${tiredM.length > 1 ? "sind" : "ist"} ${tiredM.slice(0, 2).join(" und ")} noch nicht erholt. Heute lieber ${alt[0].name}, ${rot.name} danach.`;
+      const tiredM = [...new Set(rot.items.map(it => ex(it.exId).muscle))].filter(m => rec[m] < 60).slice(0, 2);
+      nextReason = `Nach Schätzung der App ${recPlural(tiredM) ? "sind" : "ist"} ${tiredM.map(m => MUSCLES[m]).join(" und ")} noch nicht erholt. Heute lieber ${alt[0].name}, ${rot.name} danach.`;
       return alt[0];
     }
   }
@@ -2507,9 +2514,10 @@ function plateau(exId) {
     if (s.kg > best.kg || (s.kg === best.kg && avgReps(s) > avgReps(best) + 0.5)) { progressed = true; best = s; }
   }
   if (progressed) return null;
-  // Nach einer bewussten Reduktion wieder steigend (z. B. 50 → 40 → 42,5 → 45): kein Stillstand
-  const better = (a, b) => a.kg > b.kg || (a.kg === b.kg && avgReps(a) > avgReps(b) + 0.5), k = win.length;
-  if (better(win[k - 1], win[k - 2]) && better(win[k - 2], win[k - 3])) return null;
+  // Nach einer bewussten Reduktion wieder steigend (z. B. 50 → 40 → 42,5 → 45): kein Stillstand – nur solange das Gewicht unter dem
+  // bisherigen Bestwert liegt und zweimal in Folge gestiegen ist. Schwankende Wiederholungen oder die Rückkehr aufs alte Niveau zählen nicht.
+  const k = win.length;
+  if (win[k - 1].kg < best.kg && win[k - 1].kg > win[k - 2].kg && win[k - 2].kg > win[k - 3].kg) return null;
   const lastS = win[win.length - 1];
   return { weeks: Math.round(days / 7), n: win.length, reserve: lastS.sets.some(t => t.rir != null && t.rir >= 3) };
 }
@@ -2611,6 +2619,9 @@ function recovery() {
   });
   return r;
 }
+// Muskelnamen, die selbst Plural sind („Schultern sind …“)
+const MUSCLE_PL = new Set(["schultern", "beinev", "beineh", "innen", "waden"]);
+const recPlural = ids => ids.length > 1 || (ids.length === 1 && MUSCLE_PL.has(ids[0]));
 const recColor = p => p >= 85 ? "var(--ok)" : p >= 45 ? "var(--warn)" : "var(--bad)";
 // Drei Stufen statt Prozent: die Schätzung ist zu grob für eine Zahl. Balkenlänge je Stufe, nicht je Prozent.
 const recStage = p => p >= 85 ? { w: "Erholt", col: "var(--ok)", bar: 100 } : p >= 45 ? { w: "Teilweise", col: "var(--warn)", bar: 60 } : { w: "Belastet", col: "var(--bad)", bar: 25 };
@@ -4729,7 +4740,7 @@ function clearTrainOvr(dk) { const e = state.dayPlan[dk]; if (!e || !e.train) re
 function plannedOn(dk) {
   const hs = state.history.filter(x => dkey(new Date(x.date)) === dk), h = hs[0];
   // Alle Trainings des Tages zählen; ohne erfasste Dauer (z. B. nachgetragen) wird nichts geschätzt
-  if (h) return { name: hs.map(x => x.day).join(" + "), done: true, min: hs.reduce((a, x) => a + (x.durationSec > 0 ? Math.max(1, Math.round(x.durationSec / 60)) : 0), 0), dayId: h.dayId, n: hs.length };
+  if (h) return { name: hs.map(x => x.day).join(" + "), done: true, min: hs.reduce((a, x) => a + (x.durationSec > 0 ? Math.max(1, Math.round(x.durationSec / 60)) : 0), 0), dayId: h.dayId, n: hs.length, timed: hs.filter(x => x.durationSec > 0).length };
   const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
   const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
   if (!days.length || !s || dk < dkey(today)) return null;
@@ -4785,6 +4796,7 @@ function tagWeek(dk) {
   }).join("");
 }
 // Bilanz der Woche: nur Tage mit Essen, ohne heute (heute ist noch nicht vorbei)
+const kcal10 = v => fmtK(Math.round(Math.abs(v) / 10) * 10);   // geschätzte Bilanzen: auf 10 kcal gerundet
 function tagWeekSum(dk) {
   const today = dkey(), mon = mondayOf(dk); let n = 0, bal = 0, tgt = 0, hasToday = false;
   for (let i = 0; i < 7; i++) { const d = new Date(mon); d.setDate(mon.getDate() + i); const k = dkey(d);
@@ -4792,7 +4804,7 @@ function tagWeekSum(dk) {
     if (!(state.food[k] || []).length) continue;
     const E = dayEnergy(k); if (!E) return ""; n++; bal += E.balance; tgt += E.goalDiff; }
   if (!n) return "";
-  return `<span class="muted">Woche${hasToday ? " ohne heute" : ""} · ${n} ${n === 1 ? "Tag" : "Tage"} mit Essen:</span> <b>${bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${fmtK(Math.abs(bal))} kcal</b>${tgt ? `<span class="muted"> · Ziel ≈ ${fmtK(Math.abs(tgt))} kcal ${tgt < 0 ? "Defizit" : "Überschuss"}</span>` : ""}`;
+  return `<span class="muted">Woche${hasToday ? " ohne heute" : ""} · ${n} ${n === 1 ? "Tag" : "Tage"} mit Essen:</span> <b>${bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${kcal10(bal)} kcal</b>${tgt ? `<span class="muted"> · Ziel ≈ ${kcal10(tgt)} kcal ${tgt < 0 ? "Defizit" : "Überschuss"}</span>` : ""}`;
 }
 // Woche als Liste: je Tag Training, Schritte, Essen und Bilanz; Antippen öffnet den Tag
 function tagWeekList(dk) {
@@ -4805,7 +4817,7 @@ function tagWeekList(dk) {
       cardioOn(k).length ? `Cardio ${cardioOn(k).reduce((a, c) => a + c.min, 0)} Min.` : "",
       st != null ? `${fmtK(st)} Schritte${ac != null ? " gegangen" : ""}` : "",
       nf ? `${fmtK(dayTotals(k).k)} kcal ${k > today ? "geplant" : "gegessen"}` : k > today ? "Essen nicht geplant" : "kein Essen eingetragen",
-      E && nf ? `${E.balance <= 0 ? "Defizit" : "Überschuss"}${k === today ? " bisher" : ""} ≈ ${fmtK(Math.abs(E.balance))} kcal` : ""].filter(Boolean);
+      E && nf ? `${E.balance <= 0 ? "Defizit" : "Überschuss"}${k === today ? " bisher" : ""} ≈ ${kcal10(E.balance)} kcal` : ""].filter(Boolean);
     const right = tr ? esc(tr.name) : state.sched && !off && k >= today ? "Ruhetag" : "";
     return `<button class="li" data-a="tagOpen" data-d="${k}" ${off ? "disabled" : ""}><div class="grow"><div class="t">${d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}${k === today ? " · Heute" : ""}</div><div class="s">${sub.join(" · ")}</div></div>${right ? `<span class="small muted" style="text-align:right">${right}</span>` : ""}<span class="chev">›</span></button>`;
   }).join("");
@@ -4859,16 +4871,17 @@ function tagStepInfo(dk) {
 // Tagesziel = geschätzter Verbrauch + Zielabstand aus den Ernährungszielen (z. B. −15 % beim Abnehmen).
 // Liegt das Essen darüber, nennt die App für heute und künftige Tage beim Ziel „Abnehmen“, was es ausgleicht (reine Rechnung, Regel der App).
 function tagGoalLine(dk, E) {
-  const today = dkey(), Z = E.total + E.goalDiff, rest = Z - E.intake, n = fmtK(Math.abs(rest)), has = (state.food[dk] || []).length > 0;
-  const main = dk === today ? (rest >= 0 ? `Noch <b>${n} kcal</b> bis zu deinem Tagesziel.` : `<b>${n} kcal</b> über deinem Tagesziel.`)
-    : !has ? (dk > today ? `Zu deinem Ziel passen an diesem Tag <b>${fmtK(Z)} kcal</b>.` : "")
+  const today = dkey(), Z = E.total + E.goalDiff, rest = Z - E.intake, n = "≈ " + kcal10(rest), has = (state.food[dk] || []).length > 0;
+  const near = Math.abs(rest) < 5;   // gerundet 0: „ungefähr auf dem Ziel“ statt „noch ≈ 0 kcal“
+  const main = near && (has || dk === today) ? `${dk > today ? "Geplant: " : "Du liegst "}ungefähr auf deinem Tagesziel.` : dk === today ? (rest >= 0 ? `Noch <b>${n} kcal</b> bis zu deinem Tagesziel.` : `<b>${n} kcal</b> über deinem Tagesziel.`)
+    : !has ? (dk > today ? `Zu deinem Ziel passen an diesem Tag <b>≈ ${kcal10(Z)} kcal</b>.` : "")
     : `${dk > today ? "Geplant: " : ""}<b>${n} kcal</b> ${rest >= 0 ? "unter" : "über"} deinem Tagesziel.`;
   let comp = "";
   if (rest < 0 && E.goalDiff < 0 && dk >= today && E.low) {
     const over = -rest, kg = E.G.kg, alt = [];
     if (E.steps != null && E.sl) { const s = Math.ceil((Math.max(0, 5000 - E.steps) + over / (E.walk * kg * E.sl / 100000)) / 100) * 100; if (s <= 15000) alt.push(`≈ ${fmtK(s)} Schritte mehr`); }
     const m = Math.ceil(over / ((CARDIO.cross.lv.m.met - 1) * kg / 60) / 5) * 5; if (m <= 90) alt.push(`≈ ${m} Min. Crosstrainer (mäßig)`);
-    comp = `<p class="small muted" id="tagComp" style="margin:0">Ausgleich: ${fmtK(over)} kcal weniger essen${alt.length ? ` oder ${alt.join(" oder ")}` : ""}.</p>`;
+    comp = `<p class="small muted" id="tagComp" style="margin:0">Ausgleich: ≈ ${kcal10(over)} kcal weniger essen${alt.length ? ` oder ${alt.join(" oder ")}` : ""}.</p>`;
   }
   return `${main ? `<p class="small" id="tagGoal" style="margin:0">${main}</p>` : ""}${comp}
     <p class="small faint" id="tagGoalHow" style="margin:0">Tagesziel ${fmtK(Z)} kcal = Verbrauch ${fmtK(E.total)}${E.goalDiff ? ` ${E.goalDiff < 0 ? "−" : "+"} ${fmtK(Math.abs(E.goalDiff))}` : ""} kcal („${NGOAL[state.nutr.goal].label}“).</p>`;
@@ -4883,7 +4896,7 @@ function tagBalInner(dk) {
         : `<p class="small faint" style="margin:0">Training, Cardio und Schritte sind in deinem Aktivitätsfaktor schon enthalten.</p>`}
       ${row("Verbrauch geschätzt", "", `${fmtK(E.total)} kcal`)}
       ${(state.food[dk] || []).length ? `${row(dk > today ? "Essen geplant" : dk === today ? "Gegessen bisher" : "Gegessen", "", `${fmtK(E.intake)} kcal`)}
-      <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">≈ ${fmtK(Math.round(Math.abs(E.balance) / 10) * 10)}<span class="small muted"> kcal</span></span></div>`
+      <div class="row between" style="margin-top:4px"><span style="font-weight:600">${E.balance <= 0 ? "Defizit" : "Überschuss"}${dk > today ? " geplant" : dk === today ? " bisher" : ""}</span><span class="num" id="tagBalNum" style="font-size:28px">≈ ${kcal10(E.balance)}<span class="small muted"> kcal</span></span></div>`
         : `<p class="small muted" id="tagNoFood" style="margin:0">${dk > today ? "Noch kein Essen geplant." : dk === today ? "Noch nichts eingetragen." : "Kein Essen eingetragen – keine Bilanz."}</p>`}
       ${tagGoalLine(dk, E)}</div>`;
 }
@@ -4919,8 +4932,8 @@ function vTag() {
       <p class="small" id="tagWeekSum" style="margin:0">${tagWeekSum(dk)}</p>
     </section>
     <section class="section" id="tagTrain"><h2>Training</h2><div class="card">
-      ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt${tr.min ? ` · ${tr.min} Min.` : " · ohne Dauer"}` : `geplant · ≈ ${tr.min} Min.${tr.ovr ? " · geändert" : ""}`}</div></div>
-          ${E ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
+      ${tr ? `<div class="row between"><div><div class="t" style="font-weight:600">${esc(tr.name)}</div><div class="small muted">${tr.done ? `erledigt${tr.min ? ` · ${tr.min} Min.${tr.timed < tr.n ? ` (${tr.timed} von ${tr.n} mit Dauer)` : ""}` : " · ohne Dauer"}` : `geplant · ≈ ${tr.min} Min.${tr.ovr ? " · geändert" : ""}`}</div></div>
+          ${E && tr.min ? `<span class="small muted">≈ ${fmtK(E.trainKcal)} kcal</span>` : ""}</div>`
         : `<p class="small muted" style="margin:0">${state.sched ? (trainOvr(dk) === "rest" ? "Ruhetag – von dir geplant." : "Kein Training geplant – Ruhetag.") : "Ohne feste Termine. Unter Plan → Termine legst du fest, an welchen Tagen du trainierst."}</p>`}
       ${(() => { const days = state.plan ? state.plan.days.filter(x => x.items.length) : [];
         if (!state.sched || !days.length || dk < today || (tr && tr.done)) return "";
@@ -5128,10 +5141,10 @@ function vHome() {
     ${(() => { const E = dayEnergy(dkey()), ac = actOn(dkey()), st = stepsOn(dkey()), G = nutrGoals(), tt = dayTotals(dkey()), has = (state.food[dkey()] || []).length;
       // Vorlesetext = der frühere Satz; sichtbar: Ringe mit je einer Zahl
       const Z = E ? E.total + E.goalDiff : 0, rest = Z - (E ? E.intake : 0);
-      const txt = (E ? (!has ? `Tagesziel ≈ ${fmtK(Z)} kcal` : rest >= 0 ? `Noch ≈ ${fmtK(rest)} kcal bis zum Tagesziel` : `≈ ${fmtK(-rest)} kcal über dem Tagesziel`) : "Training, Schritte und Essen")
+      const txt = (E ? (!has ? `Tagesziel ≈ ${kcal10(Z)} kcal` : rest >= 0 ? `Noch ≈ ${kcal10(rest)} kcal bis zum Tagesziel` : `≈ ${kcal10(rest)} kcal über dem Tagesziel`) : "Training, Schritte und Essen")
         + (ac != null ? ` · ${fmtK(ac)} Schritte gegangen` : st != null ? ` · Ziel ${fmtK(st)} Schritte` : "");
       const R = [];
-      if (E) R.push(`<span class="rb" data-r="kcal">${ringSvg(has ? E.intake / Z : 0, rest < 0 ? "var(--warn)" : "var(--accent)")}<b>${fmtK(has ? Math.abs(rest) : Z)}</b><small>kcal ${!has ? "Tagesziel" : rest >= 0 ? "übrig" : "drüber"}</small></span>`);
+      if (E) R.push(`<span class="rb" data-r="kcal">${ringSvg(has ? E.intake / Z : 0, rest < 0 ? "var(--warn)" : "var(--accent)")}<b>≈ ${kcal10(has ? rest : Z)}</b><small>kcal ${!has ? "Tagesziel" : rest >= 0 ? "übrig" : "drüber"}</small></span>`);
       if (G) R.push(`<span class="rb" data-r="prot">${ringSvg(tt.p / G.prot, tt.p >= G.prot ? "var(--ok)" : IOS.orange)}<b>${fmtK(tt.p)}</b><small>von ${G.prot} g Eiweiß</small></span>`);
       if (ac != null || st != null) R.push(`<span class="rb" data-r="steps">${ringSvg(ac != null && st ? ac / st : 0, ac != null && st && ac >= st ? "var(--ok)" : IOS.purple)}<b>${fmtK(ac != null ? ac : st)}</b><small>${ac != null ? "Schritte" : "Schritte Ziel"}</small></span>`);
       return R.length ? `<button class="card rings" data-a="openTag" data-d="${dkey()}" id="homeTag" aria-label="Tagesplan">${R.join("")}<span class="chev" aria-hidden="true">›</span>${sr("Tagesplan: " + txt)}</button>`
@@ -5282,7 +5295,7 @@ function vPlan() {
       <button class="li" data-a="openDevs" id="devsRow">${ico("dumbbell", "gray")}<div class="grow"><div class="t n">Geräte${sr(" in deinem Studio")}</div></div>
         <span class="val">${allEx().filter(e => !e.off).length} von ${allEx().length}${allEx().some(e => e.fav) ? sr(` · ${allEx().filter(e => e.fav).length} bevorzugt`) : ""}</span><span class="chev">›</span></button>
       ${(() => { const tired = Object.entries(recovery()).filter(([, q]) => q < 85).sort((x, y) => x[1] - y[1]); if (!tired.length) return "";
-      return `<button class="li" data-a="showRec">${ico("moon", "indigo")}<div class="grow"><div class="t n">Erholung</div><div class="s">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${tired.length > 1 ? "erholen" : "erholt"} sich noch (Schätzung der App)` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button>`; })()}
+      return `<button class="li" data-a="showRec">${ico("moon", "indigo")}<div class="grow"><div class="t n">Erholung</div><div class="s">${tired.length ? `${tired.slice(0, 2).map(([m]) => MUSCLES[m]).join(" und ")} ${recPlural(tired.slice(0, 2).map(([m]) => m)) ? "erholen" : "erholt"} sich noch (Schätzung der App)` : "Alle Muskeln erholt"}</div></div><span class="chev">›</span></button>`; })()}
       ${extRows("plan")}
     </div></section>
     ${planCheckHtml()}
@@ -10103,7 +10116,7 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
-Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey });
+Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey, plateau });
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
 extClean(); badWarn();
 // Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern

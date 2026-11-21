@@ -608,7 +608,7 @@ async function finishAllSets(page, kg, reps) {
     }
     {
       const p2 = JSON.parse(JSON.stringify(PLAN_SMALL)); p2.days.push({ id: "d2", name: "Zweiter Tag", items: [{ id: "x1", exId: "hs-row", sets: 2, rmin: 8, rmax: 12, rest: 60 }] });
-      const { ctx, page } = await open({ plan: p2, history: [hist("hs-legpress", [{ kg: 100, reps: 10 }], 0.5, "t")] }, { light: true });
+      const { ctx, page } = await open({ plan: p2, history: [hist("hs-legpress", [{ kg: 100, reps: 10 }, { kg: 100, reps: 10 }], 0.5, "t")] }, { light: true });   // 2 Sätze: ab da gilt der Muskel als belastet
       await page.click("[data-a=pickDay]");
       const bg = await page.$eval(".sheet", e => getComputedStyle(e).backgroundColor);
       ok("Hellmodus: Bottom-Sheet ist hell", isLightBg(bg), bg);
@@ -1771,7 +1771,7 @@ async function finishAllSets(page, kg, reps) {
 
     section("31. Aufbau der App: ein Zweck, klare Bereiche");
     {
-      const pr = [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }], 2, "s")];
+      const pr = [hist("hs-chest", [{ kg: 40, reps: 10 }], 9, "s"), hist("hs-chest", [{ kg: 42.5, reps: 10 }, { kg: 42.5, reps: 10 }], 2, "s")];   // 2 Sätze: Brust gilt als belastet
       const { ctx, page } = await open({ plan: PLAN_SMALL, history: pr, hints: { units: true } });
       const tabs = await page.$$eval("#tabs button", b => b.map(x => [x.dataset.v, x.textContent.trim()]));
       ok("Fünf Bereiche: Heute, Plan, Wissen, Essen, Fortschritt", JSON.stringify(tabs) === JSON.stringify([["home", "Heute"], ["plan", "Plan"], ["lib", "Wissen"], ["food", "Essen"], ["history", "Fortschritt"]]), JSON.stringify(tabs));
@@ -3775,14 +3775,14 @@ async function finishAllSets(page, kg, reps) {
         food: { [dk(0)]: e("f0", 2700), [dk(1)]: e("f1", 1500), [dk(-1)]: e("f2", 2600) } });
       const txt = async id => (await page.$(id)) ? (await page.textContent(id)).replace(/\s+/g, " ").trim() : null;
       const rerender = async () => { await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='-1']"); };
-      ok("Startseite: Zeile „Tagesplan“ nennt den Abstand zum Tagesziel statt „Defizit bisher“", (await page.textContent("#homeTag")).includes("≈ 241 kcal über dem Tagesziel") && !(await page.textContent("#homeTag")).includes("Defizit"), await page.textContent("#homeTag"));
+      ok("Startseite: Zeile „Tagesplan“ nennt den Abstand zum Tagesziel statt „Defizit bisher“", (await page.textContent("#homeTag")).includes("≈ 240 kcal über dem Tagesziel") && !(await page.textContent("#homeTag")).includes("Defizit"), await page.textContent("#homeTag"));
       await page.click("#homeTag");
       // Verbrauch 2.759 + 109 (Schritte) = 2.868, Tagesziel 2.868 − 409 = 2.459, gegessen 2.700 → 241 darüber
-      ok("Heute über dem Ziel: 241 kcal über dem Tagesziel, Rechenweg dabei", (await txt("#tagGoal")) === "241 kcal über deinem Tagesziel." && (await txt("#tagGoalHow")) === "Tagesziel 2.459 kcal = Verbrauch 2.868 − 409 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      ok("Heute über dem Ziel: ≈ 240 kcal über dem Tagesziel (geschätzt, auf 10 kcal gerundet), Rechenweg genau dabei", (await txt("#tagGoal")) === "≈ 240 kcal über deinem Tagesziel." && (await txt("#tagGoalHow")) === "Tagesziel 2.459 kcal = Verbrauch 2.868 − 409 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
       // 241 kcal: 241 / (0,6061 × 80 × 0,75 m / 1000) ≈ 6.627 → 6.700 Schritte; 241 / (4 × 80 / 60) ≈ 45,2 → 50 Min.
-      ok("Ausgleich: weniger essen, ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer", (await txt("#tagComp")) === "Ausgleich: 241 kcal weniger essen oder ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer (mäßig).", await txt("#tagComp"));
+      ok("Ausgleich: weniger essen, ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer", (await txt("#tagComp")) === "Ausgleich: ≈ 240 kcal weniger essen oder ≈ 6.700 Schritte mehr oder ≈ 50 Min. Crosstrainer (mäßig).", await txt("#tagComp"));
       await page.fill("#tagAct", "14.700"); // 9.700 Schritte über 5.000 → + 353 kcal, Tagesziel 2.703
-      ok("Gegangene Schritte eingetragen: Zeile rechnet sofort neu (noch 3 kcal), Ausgleich weg", (await txt("#tagGoal")) === "Noch 3 kcal bis zu deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
+      ok("Gegangene Schritte eingetragen: Zeile rechnet sofort neu (noch 3 kcal: „ungefähr auf deinem Tagesziel“), Ausgleich weg", (await txt("#tagGoal")) === "Du liegst ungefähr auf deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
       await page.fill("#tagAct", "");
       await page.click("[data-a=tagDay][data-d='1']");
       ok("Morgen geplant 1.500 kcal: 959 kcal unter dem Tagesziel", (await txt("#tagGoal")) === "Geplant: 959 kcal unter deinem Tagesziel.", await txt("#tagGoal"));
@@ -6997,6 +6997,53 @@ async function finishAllSets(page, kg, reps) {
       const e = await tp(page, () => { const T = window.__tp, x = T.dayEnergy(T.dkey()); return x ? { min: x.tr.min, kcal: x.trainKcal, n: x.tr.n } : null; });
       ok("Kalorienbilanz: zwei Trainings am Tag (30 + 45 Min.) zählen zusammen 75 Min., 250 kcal (2,5 × 80 kg × 75/60)", e && e.min === 75 && e.kcal === 250 && e.n === 2, JSON.stringify(e));
       await ctx.close();
+    }
+    {
+      // Nachbesserung Ehrlichkeit: Stillstand-Ausnahme nur nach einer Reduktion
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const S3 = (kg, r) => r.map(x => [kg, x]);
+      const mk = rows => rows.map((sets, k) => R2H("q" + k, (rows.length - k) * 7, "d1", [R2E("hs-chest", "s", sets)]));
+      const cases = { schwankt: mk([S3(50, [10, 10, 10]), S3(50, [9, 9, 8]), S3(50, [10, 9, 9]), S3(50, [10, 10, 10])]), zurueck: mk([S3(50, [10, 10, 10]), S3(50, [10, 10, 10]), S3(47.5, [10, 10, 10]), S3(50, [8, 8, 8]), S3(50, [9, 9, 9])]) };
+      const res = {};
+      for (const [k, history] of Object.entries(cases)) { const { ctx, page } = await open({ plan, history }); res[k] = await tp(page, () => !!window.__tp.insights().find(x => x.id === "plateau:hs-chest")); await ctx.close(); }
+      ok("Stillstand bleibt erkannt bei schwankenden Wiederholungen (50 kg: 10/9/10/10) und bei Rückkehr aufs alte Gewicht ohne es zu übertreffen", res.schwankt && res.zurueck, JSON.stringify(res));
+    }
+    {
+      // Nachbesserung Ehrlichkeit: Fingerabdruck unabhängig von Fassung und Bedien-Quittungen
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [R2H("z1", 3, "d1", [R2E("hs-chest", "s", [[40, 10], [40, 10]])])], weights: [{ d: "2026-11-01", kg: 80 }] });
+      const z = await tp(page, () => { const T = window.__tp, a = T.dataSig();
+        T.EXT.clean.neuTest = () => ({ an: false, liste: [] }); T.extClean(); const b = T.dataSig();   // „Update“: neue Erweiterung mit Standardwerten
+        T.state.missSkip = "2026-11-20"; T.state.history[0].hk = true; T.state.weights[0].hk = true; T.state.history[0].exercises[0].name = "Anderer Name"; const c = T.dataSig();
+        T.state.weights.push({ d: "2026-11-02", kg: 79 }); const d = T.dataSig(); delete T.EXT.clean.neuTest; return { same1: a === b, same2: a === c, diff: a !== d }; });
+      ok("Fingerabdruck: gleich nach einer neuen Erweiterung mit Standardwerten, nach „Nicht jetzt“, Übergabe an Health und anderem Gerätenamen; anders nach einem neuen Gewicht", z.same1 && z.same2 && z.diff, JSON.stringify(z));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung Ehrlichkeit: Plural bei Muskelnamen
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Schultertag", items: [{ id: "a1", exId: "hs-shoulder", sets: 4, rmin: 8, rmax: 12, rest: 90 }] }, { id: "b", name: "Beine", items: [{ id: "b1", exId: "hs-legpress", sets: 4, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const history = [Object.assign(R2H("p1", 4, "b", [R2E("hs-legpress", "t", [[100, 10], [100, 10]])]), { day: "Beine" }), Object.assign(R2H("p2", 3, "a", [R2E("hs-shoulder", "s", [[20, 10], [20, 10], [20, 10]])]), { day: "Schultertag" }), Object.assign(R2H("p3", 3.5, "b", [R2E("hs-legpress", "t", [[100, 10], [100, 10]])]), { day: "Beine" }), Object.assign(R2H("p4", 1 / 24, "a", [R2E("hs-shoulder", "s", [[20, 10], [20, 10], [20, 10]])]), { day: "Schultertag" })];
+      const { ctx, page } = await open({ plan, history: history.slice(0, 3).concat([Object.assign(R2H("p5", 1 / 24, "b", [R2E("hs-shoulder", "s", [[20, 10], [20, 10], [20, 10]])]), { day: "Beine" })]) });   // nur Schultern belastet
+      const g = await tp(page, () => { window.__tp.nextDay(); return document.querySelector(".hero") ? document.querySelector(".hero").textContent.replace(/\s+/g, " ") : ""; });
+      await page.click("nav.tabs [data-v=plan]");
+      const row = await page.textContent("[data-a=showRec]");
+      ok("Muskelnamen im Plural: „Schultern erholen sich noch“ bzw. „sind … nicht erholt“, nie „Schultern erholt sich“ oder „ist Schultern“", row.includes("Schultern erholen sich noch") && g.includes("sind Schultern noch nicht erholt"), JSON.stringify({ row, g: g.slice(0, 200) }));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung Ehrlichkeit: Tagesplan – ohne Dauer keine kcal; zwei Trainings, eines ohne Dauer
+      const d0 = new Date(); d0.setHours(9, 0, 0, 0); const d1 = new Date(); d1.setHours(10, 0, 0, 0);
+      const two = [Object.assign(R2H("t1", 0, "d1", [R2E("hs-chest", "s", [[40, 10]])]), { day: "Oberkörper", durationSec: 3000, date: d0.toISOString() }), Object.assign(R2H("t2", 0, "d1", [R2E("hs-row", "s", [[40, 10]])]), { day: "Beine", durationSec: 0, nt: true, date: d1.toISOString() })];
+      const today = (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date());
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: two, nutr: { cm: 180, age: 35, sex: "m", pal: 1.55, goal: "halten" }, weights: [{ d: today, kg: 80 }] });
+      await page.click("#homeTag");
+      const tt = (await page.textContent("#tagTrain")).replace(/\s+/g, " ");
+      ok("Tagesplan: zwei Trainings, eines ohne Dauer – „50 Min. (1 von 2 mit Dauer)“ statt die Minuten beiden zuzuschreiben", tt.includes("Oberkörper + Beine") && tt.includes("50 Min. (1 von 2 mit Dauer)"), tt.slice(0, 200));
+      await ctx.close();
+      const one = await open({ plan: PLAN_SMALL, history: [Object.assign(R2H("t3", 0, "d1", [R2E("hs-chest", "s", [[40, 10]])]), { durationSec: 0, nt: true, date: d0.toISOString() })], nutr: { cm: 180, age: 35, sex: "m", pal: 1.55, goal: "halten" }, weights: [{ d: today, kg: 80 }] });
+      await one.page.click("#homeTag");
+      const t1 = (await one.page.textContent("#tagTrain")).replace(/\s+/g, " ");
+      ok("Tagesplan: Training ohne Dauer zeigt „ohne Dauer“ und keine kcal-Schätzung", t1.includes("ohne Dauer") && !t1.includes("kcal"), t1.slice(0, 160));
+      await one.ctx.close();
     }
     // @ext:runde2:test:end
     // ── Abstand runde2/test 1 ──
