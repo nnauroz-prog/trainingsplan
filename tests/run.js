@@ -6835,6 +6835,114 @@ async function finishAllSets(page, kg, reps) {
       ok("„Schwer“ wird am letzten Satz gespeichert und der Vorschlag fürs nächste Mal sofort angepasst (keine Steigerung)", k2.f.endsWith("h") && k2.on && !k2.next.includes("+2,5") && k2.next.toLowerCase().includes("halten"), JSON.stringify(k2).slice(0, 240));
       await ctx.close();
     }
+    {
+      // Nachbesserung: „Auf Standard zurücksetzen“ im Training – Sperre nach dem ersten Satz, sonst Neuberechnung
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const seed = { plan, dev: { "hs-chest": { load: "total" } }, history: [R2H("r1", 5, "d1", [R2E("hs-chest", "t", [[80, 10], [80, 10], [80, 9]])])] };
+      const reset = async page => { await page.click("[data-a=openDevInfo]"); await page.click(".sheet [data-a=editDev]"); await page.click(".sheet [data-a=devReset]"); };
+      let { ctx, page } = await open(seed);
+      await page.click("[data-a=start]"); await reset(page);
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const r1 = await tp(page, () => { const T = window.__tp, x = T.state.session.list[0]; return { dev: T.unitOf(T.ex("hs-chest")), u: x.u, kg: x.sets.map(s => s.kg).join("/") }; });
+      ok("Zurücksetzen vor dem ersten Satz: die heutige Übung folgt der Standard-Angabe „pro Seite“, ohne Gewicht aus den „insgesamt“-Einträgen", r1.dev === "s" && r1.u === "s" && !r1.kg.includes("80"), JSON.stringify(r1));
+      await ctx.close();
+      ({ ctx, page } = await open(seed));
+      await page.click("[data-a=start]"); await page.fill("#kgIn", "80"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]");
+      await reset(page);
+      const r2 = await tp(page, () => { const T = window.__tp; return { dev: T.unitOf(T.ex("hs-chest")), u: T.state.session.list[0].u, err: (document.getElementById("devErr") || {}).textContent || "" }; });
+      ok("Zurücksetzen nach dem ersten Satz: gesperrt mit Erklärung, Gewichtsangabe bleibt „insgesamt“", r2.dev === "t" && r2.u === "t" && r2.err.includes("erst, wenn das heutige Training"), JSON.stringify(r2));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung: Gewichtsangabe umstellen nach „Zeit anpassen“ – gekürzte Sätze bleiben gekürzt und kommen zurück
+      const items = [["hs-chest", 5], ["hs-row", 5], ["hs-shoulder", 5], ["hs-pulldown", 5], ["hs-curl", 5]].map(([e, n], i) => ({ id: "t" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "fortgeschritten", minutes: 90, days: [{ id: "d1", name: "Lang", items }] } });
+      await page.click("[data-a=start]");
+      await page.click("[data-a=openJump]"); await page.click("[data-a=openTimeLive]"); await page.click(`[data-a=liveTimePick][data-m="30"]`); await page.click("[data-a=liveTimeApply]");
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const before = await tp(page, () => { const x = window.__tp.state.session.list.find(l => l.exId === "hs-chest"); return x.sets.length + "+" + (x.trim || []).length; });
+      await page.click("[data-a=openDevInfo]"); await page.click(".sheet [data-a=editDev]"); await page.click(".sheet [data-a=devSet][data-k=load][data-v=total]"); await page.click(".sheet [data-a=devSave]");
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const after = await tp(page, () => { const x = window.__tp.state.session.list.find(l => l.exId === "hs-chest"); return { n: x.sets.length + "+" + (x.trim || []).length, u: x.u }; });
+      ok("Umstellen nach „Zeit anpassen“: die gekürzten Sätze bleiben erhalten (vorher fielen sie weg)", before.endsWith("+0") === false && after.n === before && after.u === "t", JSON.stringify({ before, after }));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung: zwei Fenster – offenes Fenster (Sheet), Tag-Bearbeitung und Zusammenfassung bleiben
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: "block" });
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [{ id: "i1", exId: "hs-chest", sets: 1, rmin: 8, rmax: 12, rest: 0 }, { id: "i2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      await ctx.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-3d", "0"); localStorage.setItem("tp-tabmem", "0"); } }, [KEY, JSON.stringify({ plan, history: [R2H("w1", 3, "d1", [R2E("hs-chest", "s", [[40, 10]])])], session: null })]);
+      const pa = await ctx.newPage(), pb = await ctx.newPage();
+      for (const pg of [pa, pb]) { pg.on("pageerror", e => allErrors.push("runde2-tabs2: " + e.message)); await pg.goto(URL); await pg.waitForSelector("#app h1"); }
+      await pa.click("nav.tabs [data-v=plan]"); await pa.click("[data-a=editDay][data-id=d1]"); await pa.click("[data-a=editItem][data-i2='1']");
+      await pa.click(".sheet [data-a=draft][data-k=sets][data-d='1']");
+      await tp(pb, () => { window.__tp.state.stepGoal = 8000; window.__tp.save(); });
+      await pa.waitForFunction(() => window.__tp.state.stepGoal === 8000, null, { timeout: 5000 }).catch(() => {});
+      const w1 = await tp(pa, () => ({ sheet: !!document.querySelector(".sheet [data-a=saveItem]"), nav: document.querySelector("#navbar") ? document.querySelector("#navbar").textContent : "", day: window.__tp.state.editDay }));
+      await pa.click(".sheet [data-a=saveItem]");
+      const w2 = await tp(pa, k => ({ sets: JSON.parse(localStorage.getItem(k)).plan.days[0].items[1].sets, goal: JSON.parse(localStorage.getItem(k)).stepGoal }), KEY);
+      ok("Zweites Fenster speichert, während hier ein Gerät bearbeitet wird: das Fenster bleibt offen, die Tag-Bearbeitung bleibt, „Fertig“ speichert die Änderung zusammen mit der von dort", w1.sheet && w1.day === "d1" && w2.sets === 4 && w2.goal === 8000, JSON.stringify({ w1, w2 }));
+      await pa.click("nav.tabs [data-v=home]"); await pa.click("[data-a=start]"); await finishAllSets(pa, 42.5, 12);
+      await tp(pb, () => { window.__tp.state.stepGoal = 9000; window.__tp.save(); });
+      await pa.waitForFunction(() => window.__tp.state.stepGoal === 9000, null, { timeout: 5000 }).catch(() => {});
+      const w3 = await tp(pa, () => ({ last: !!document.getElementById("lastFeel"), h1: document.querySelector("#app h1").textContent }));
+      await pa.click("#lastFeel [data-f=h]").catch(() => {});
+      const w4 = await tp(pa, k => { const H = JSON.parse(localStorage.getItem(k)).history; return H[H.length - 1].exercises.map(x => x.sets.map(s => s.f || "-").join("")).join("|"); }, KEY);
+      ok("Zweites Fenster speichert, während hier die Zusammenfassung offen ist: sie bleibt, und die Bewertung des letzten Satzes wird gespeichert", w3.last && w3.h1 === "Tag A" && w4.endsWith("h"), JSON.stringify({ w3, w4 }));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung: Gerät zweimal im Tag – die Frage nach dem letzten Satz meint den wirklich letzten
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [{ id: "a", exId: "hs-chest", sets: 1, rmin: 6, rmax: 12, rest: 0 }, { id: "b", exId: "hs-row", sets: 1, rmin: 6, rmax: 12, rest: 0 }, { id: "c", exId: "hs-chest", sets: 1, rmin: 6, rmax: 12, rest: 0 }] }] };
+      const { ctx, page } = await open({ plan });
+      await page.click("[data-a=start]");
+      for (const [kg, r] of [["40", "10"], ["30", "10"], ["55", "6"]]) { await page.fill("#kgIn", kg); await page.fill("#repsIn", r); await page.click("[data-a=doneSet]"); if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]"); }
+      const d1 = await page.textContent("#lastFeel");
+      await page.click("#lastFeel [data-f=h]");
+      const d2 = await tp(page, () => { const H = window.__tp.state.history; return H[H.length - 1].exercises.map(x => x.exId + ":" + x.sets.map(s => s.kg + "x" + s.reps + (s.f || "")).join("/")).join(" | "); });
+      ok("Gerät zweimal im Tag: die Frage nennt 55 × 6 und „Schwer“ landet an diesem Satz", d1.includes("55 × 6") && d2 === "hs-chest:40x10 | hs-row:30x10 | hs-chest:55x6h", JSON.stringify({ d1: d1.slice(0, 80), d2 }));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung: nach einem „Nur heute“-Tausch ist das geplante Gerät wieder wählbar
+      const items = [["hs-legpress", 3], ["hs-legext", 3]].map(([e, n], i) => ({ id: "q" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "L", name: "Beine", items }] } });
+      await page.click("[data-a=start]"); await page.click(".actions3 [data-a=openSwap]");
+      const first = await page.getAttribute(".sheet #swapDirect [data-a=swap]", "data-id");
+      await page.click(`.sheet [data-a=swap][data-id="${first}"]`);
+      await page.click(".actions3 [data-a=openSwap]");
+      const alts = await page.$$eval(".sheet [data-a=swap]", a => a.map(x => x.dataset.id));
+      ok("Nach einem Tausch „Nur heute“ lässt sich zum geplanten Gerät zurücktauschen; ein anderes Gerät des Tages wird nicht angeboten", alts.includes("hs-legpress") && !alts.includes("hs-legext") && !alts.includes(first), JSON.stringify({ first, alts }));
+      await ctx.close();
+    }
+    {
+      // Nachbesserung: Texte – Planprüfung, Ziel-Begründung, Pausenregel, älteres „Rückgängig“, Bewertung
+      const it = { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 };
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [it] }] };
+      const run = async history => { const { ctx, page } = await open({ plan, history }); const e = await tp(page, i => { const x = window.__tp.makeEntry(i); return { mode: x.mode, sets: x.sets.map(s => s.kg + "x" + s.reps).join(" "), why: x.why, short: x.short }; }, it); await ctx.close(); return e; };
+      const n1 = await run([R2H("x", 3, "d1", [R2E("hs-chest", "s", [[40, 10], [40, 9], [40, 6]])])]);
+      ok("Ziel unter dem unteren Wert angehoben (10/9/6 → 11/10/8): neutral „im Bereich 8–12“ statt „je 1 mehr“", n1.why.includes("Ziel heute 11/10/8 Wdh. (im Bereich 8–12)") && !n1.why.includes("je 1 mehr"), n1.why);
+      const n2 = await run([R2H("x", 3, "d1", [R2E("hs-chest", "s", [[40, 10], [40, 9], [40, 9]])])]);
+      ok("Echt je eine Wiederholung mehr (10/9/9 → 11/10/10): „je 1 mehr als zuletzt“ ohne „höchstens“", n2.why.includes("Ziel heute 11/10/10 Wdh.: je 1 mehr als zuletzt.") && !n2.why.includes("höchstens"), n2.why);
+      const n3 = await run([R2H("x", 30, "d1", [R2E("hs-chest", "s", [[2.5, 12], [5, 10], [5, 9]])])]);
+      ok("Pause nach uneinheitlichen Sätzen, ein Satz schon am kleinsten Gewicht: „in 2 von 3 Sätzen“ statt „je Satz“", n3.mode === "down" && n3.sets.startsWith("2.5x") && n3.short.includes("in 2 von 3 Sätzen") && n3.why.includes("in 2 von 3 Sätzen"), JSON.stringify(n3));
+      const n4 = await run([R2H("x", 30, "d1", [R2E("hs-chest", "s", [[1.25, 12], [2.5, 10]])])]);
+      ok("Alle Sätze schon am kleinsten Gewicht: keine Reduktion behauptet, Gewicht halten", n4.mode === "hold" && n4.short.includes("Gewicht halten") && !n4.why.includes("leichter zum"), JSON.stringify(n4));
+      const old = await open({ plan, prevPlan: { at: new Date().toISOString(), why: "alt", plan: { goal: "aufbau", level: "einsteiger", days: [{ id: "o", name: "Alt", items: [{ id: "o1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] } } });
+      await old.page.click("nav.tabs [data-v=lib]"); await old.page.click("#wissenSeg [data-v=wissen]"); await old.page.click("#wissenCoach");
+      const ot = await old.page.textContent("#undoStale");
+      ok("Älteres „Rückgängig“ ohne Vergleichswert: die Karte behauptet nicht, der Plan sei geändert worden", ot.includes("älteren Version der App") && !ot.includes("Du hast den Plan seitdem geändert"), ot);
+      await old.ctx.close();
+      const items = [["hs-chest", 3], ["hs-row", 3], ["hs-shoulder", 3], ["hs-legpress", 3], ["hs-seatcurl", 3], ["hs-hipthrust", 3]].map(([e, n], i) => ({ id: "h" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const pc = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 90, days: [{ id: "d1", name: "Ganzkörper", items }] } });
+      await tp(pc.page, k => { const T = window.__tp, e = T.estimateSec(T.state.plan.days[0].items) / 60; T.state.plan.minutes = Math.ceil(e) - 1; localStorage.setItem(k, JSON.stringify(T.state)); }, KEY);
+      await pc.page.reload(); await pc.page.waitForSelector("#app h1"); await pc.page.click("nav.tabs [data-v=plan]");
+      const note = await pc.page.textContent("#planTimeNote");
+      const mins = await tp(pc.page, () => window.__tp.state.plan.minutes);
+      ok("Zeitbudget-Hinweis knapp darüber: genannte Minuten liegen über dem Budget, kein doppelter Punkt", note.startsWith("Etwas über") && note.includes(`Ganzkörper ≈ ${mins + 1} Min.`) && !note.includes(".."), note);
+      await pc.ctx.close();
+    }
     // @ext:runde2:test:end
     // ── Abstand runde2/test 1 ──
     // ── Abstand runde2/test 2 ──

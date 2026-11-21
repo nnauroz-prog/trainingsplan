@@ -5641,7 +5641,8 @@ function makeEntry(it, ctx) {
     const rangeChanged = !!(L.rmin && L.rmax && (L.rmin !== it.rmin || L.rmax !== it.rmax));
     const ref = L.planned || n;
     const incomplete = !!L.planned && done < L.planned;   // ohne gespeicherte Planung ist unbekannt, ob die letzte Einheit unvollständig war
-    const tgTxt = () => `Ziel heute ${sets.map(t => t.reps).join("/")} Wdh.: je 1 mehr als zuletzt, höchstens ${it.rmax}`;
+    const tgTxt = () => { const plus1 = sets.every((t, i) => i < L.sets.length && t.reps === Math.min(it.rmax, L.sets[i].reps + 1)), cap = sets.some((t, i) => i < L.sets.length && L.sets[i].reps + 1 > it.rmax);
+      return `Ziel heute ${sets.map(t => t.reps).join("/")} Wdh.${plus1 ? `: je 1 mehr als zuletzt${cap ? `, höchstens ${it.rmax}` : ""}` : ` (im Bereich ${it.rmin}–${it.rmax})`}`; };
     const moreSets = !incomplete && done < n;
     const allTop = reps.every(r => r >= it.rmax);
     const below = reps.every(r => r < it.rmin);
@@ -5704,9 +5705,12 @@ function makeEntry(it, ctx) {
       mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
     } else if (gap >= 28 && !L.uniform) {
-      sets = fromLast(0).map(t => ({ kg: t.kg - step > 0 ? t.kg - step : t.kg, reps: t.reps, done: false })); mode = "down";
-      short = `−${kgTxt(step)} kg je Satz · ${gap} Tage Pause`;
-      why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause je Satz ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
+      const base = fromLast(0), k = base.filter(t => t.kg - step > 0).length;
+      sets = base.map(t => ({ kg: t.kg - step > 0 ? t.kg - step : t.kg, reps: t.reps, done: false }));
+      if (!k) { mode = "hold"; short = `Gewicht halten · ${gap} Tage Pause`;
+        why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause ohne Steigerung; leichter geht es an diesem Gerät nicht (Regel der App).`; }
+      else { mode = "down"; short = `−${kgTxt(step)} kg ${k === base.length ? "je Satz" : `in ${k} von ${base.length} Sätzen`} · ${gap} Tage Pause`;
+        why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause ${k === base.length ? "je Satz" : `in ${k} von ${base.length} Sätzen`} ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`; }
     } else if (mode === "up" && gap >= 21) {
       mode = "hold"; sets = fromLast(0); short = `Gewicht halten · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
@@ -5720,8 +5724,9 @@ const S = () => state.session;
 // (auch zeitbedingt ausgeblendete) – sonst würden die heutigen Sätze mit der alten Gewichtsangabe gespeichert
 function sesUnitRemap(id, oldU) {
   const ses = state.session; if (!ses || unitOf(ex(id)) === oldU) return;
-  const re = x => x.exId === id && !x.sets.some(t => t.done)
-    ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss }), { ord: x.ord }) : x;
+  const re = x => { if (x.exId !== id || x.sets.some(t => t.done)) return x;
+    const n = x.sets.length, tr = (x.trim || []).length, e = makeEntry({ id: x.itemId, exId: x.exId, sets: n + tr, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss });
+    e.trim = e.sets.splice(n); e.ord = x.ord; return e; };   // gekürzte Sätze bleiben gekürzt („Ursprüngliche Einheit fortsetzen“ holt sie zurück)
   ses.list = ses.list.map(re); if (Array.isArray(ses.timeHidden)) ses.timeHidden = ses.timeHidden.map(re);
 }
 // Supersatz-Partner in der laufenden Einheit: {p: Eintrag, first: x ist die erste Übung des Paars}
@@ -5844,7 +5849,7 @@ function finish(saveIt) {
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       summary = commitTraining(rec);
       // Der zuletzt erledigte Satz hatte keine Pause mit „Wie war Satz …?“ – die Frage kommt in der Zusammenfassung
-      const ld = s.lastDone, lx = ld && s.list.find(l => l.key === ld.key), xi = lx ? exs.findIndex(e => e.exId === lx.exId) : -1;
+      const ld = s.lastDone, lx = ld && s.list.find(l => l.key === ld.key), xi = lx ? s.list.filter(l => l.sets.some(t => t.done)).indexOf(lx) : -1;   // exs hat genau diese Reihenfolge
       if (xi >= 0) { const i = lx.sets.slice(0, ld.si).filter(t => t.done).length, t = exs[xi].sets[i]; if (t && t.f == null && t.rir == null) summary.last = { xi, i }; }
       const { prs, repPrs } = summary;
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]); askPersist();
@@ -6028,8 +6033,9 @@ function rankAlternatives(curId, used) {
 function swapSheet() {
   const s = S(), x = s.list[s.idx], cur = ex(x.exId);
   const pd = state.plan && state.plan.days.find(d => d.id === s.dayId);
-  const used = new Set([...s.list, ...(s.timeHidden || [])].map(l => l.exId).concat(pd ? pd.items.map(i => i.exId) : []));
-  const { direct, other } = rankAlternatives(cur.id, used);
+  const used = new Set([...s.list, ...(s.timeHidden || [])].map(l => l.exId).concat(pd ? pd.items.filter(i => i.id !== x.itemId).map(i => i.exId) : []));
+  const { direct, other } = rankAlternatives(cur.id, used), anyAlt = rankAlternatives(cur.id, new Set());
+  const allUsed = !direct.length && !other.length && (anyAlt.direct.length || anyAlt.other.length);   // es gäbe Geräte, sie stehen aber schon im Training oder im Tag
   const row = (a, kind) => { const e = a.e, lp = lastPerf(e.id);
     return `<button class="li swap-row" data-a="swap" data-id="${e.id}" data-kind="${kind}">
       <span class="thumbbox" aria-hidden="true">${motionSvg(e.id, { cls: "thumb", anim: kind === "direct" })}</span>
@@ -6041,9 +6047,11 @@ function swapSheet() {
     <div class="stack-sm"><div class="cap">Direkte Alternative${cur.pattern ? " · " + PATTERNS[cur.pattern].label : ""}</div>
     ${direct.length ? `<p class="small faint" style="margin:0">Gleiches Bewegungsmuster; der Widerstandsverlauf kann sich unterscheiden – Gewichte werden nicht übertragen.</p>` : ""}
     ${direct.length ? `<div class="group" id="swapDirect">${direct.map(a => row(a, "direct")).join("")}</div>`
-      : `<p class="small muted" id="swapNoDirect">Für ${cur.pattern ? "„" + PATTERNS[cur.pattern].label + "“" : "dieses Gerät"} gibt es in deinem Studio keine direkte Alternative.</p>`}</div>
+      : allUsed ? "" : `<p class="small muted" id="swapNoDirect">${anyAlt.direct.length ? "Die direkten Alternativen stehen heute schon in deinem Training oder in diesem Trainingstag." : `Für ${cur.pattern ? "„" + PATTERNS[cur.pattern].label + "“" : "dieses Gerät"} gibt es in deinem Studio keine direkte Alternative.`}</p>`}</div>
     ${other.length ? `<div class="stack-sm"><div class="cap">Andere Übung für ${MUSCLES[cur.muscle]}</div><div class="group" id="swapOther">${other.map(a => row(a, "other")).join("")}</div></div>` : ""}
-    ${!direct.length && !other.length ? `<p class="small muted">Kein anderes verfügbares Gerät für ${MUSCLES[cur.muscle]}. Überspringe die Übung über „Übungen“.</p>` : ""}`;
+    ${!direct.length && !other.length ? (() => allUsed
+      ? `<p class="small muted" id="swapAllUsed">Die passenden Geräte stehen heute schon in deinem Training oder in diesem Trainingstag (auch zeitbedingt ausgeblendete). Überspringe die Übung über „Übungen“.</p>`
+      : `<p class="small muted">Kein anderes verfügbares Gerät für ${MUSCLES[cur.muscle]}. Überspringe die Übung über „Übungen“.</p>`)() : ""}`;
 }
 let rirTarget = null;
 const RIR_OPTS = [[0, "0"], [1, "1"], [2, "2"], [3, "3"], [4, "4+"]];
@@ -7424,7 +7432,8 @@ function planCheckHtml() {
   const c = planCheck(), p = state.plan, f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
   const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
   // Tage über dem Budget, die (noch) nicht als Punkt zählen: werden genannt statt als „passt“ beschrieben
-  const over = p.minutes ? p.days.filter(d => d.items.length && estimateSec(d.items) / 60 > p.minutes && !time.some(x => x.d === d)) : [];
+  const overMin = d => Math.ceil(estimateSec(d.items) / 60);
+  const over = p.minutes ? p.days.filter(d => d.items.length && overMin(d) > p.minutes && !time.some(x => x.d === d)) : [];
   const rows = [
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
     ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
@@ -7444,7 +7453,7 @@ function planCheckHtml() {
     <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
     <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes && !over.length ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
-    ${over.length ? `<p class="small muted" id="planTimeNote" style="margin:0">Etwas über dem Zeitbudget von ${p.minutes} Min. (Schätzung der App): ${over.map(d => `${esc(d.name)} ≈ ${Math.round(estimateSec(d.items) / 60)} Min.`).join(", ")}.</p>` : ""}
+    ${over.length ? `<p class="small muted" id="planTimeNote" style="margin:0">${over.every(d => overMin(d) - p.minutes <= 5) ? "Etwas über" : "Über"} dem Zeitbudget von ${p.minutes} Min. (Schätzung der App): ${over.map(d => `${esc(d.name)} ≈ ${overMin(d)} Min.`).join(", ")}</p>` : ""}
     ${(() => { const ms = muscleSets(p, c.per), scale = c.tmax * 1.3;
       return `<div class="mlist" id="planBars" role="img" aria-label="Sätze pro Woche je Muskel: ${MAJOR.map(m => `${MUSCLES[m]} ${f(ms[m] || 0)}`).join(", ")}">${MAJOR.map(m => { const v = ms[m] || 0, col = v >= c.tmin && v <= c.tmax ? "var(--ok)" : v > c.tmax ? "var(--warn)" : "var(--accent)";
         return `<div class="mrow" data-m="${m}"><span class="small">${MUSCLES[m]}</span><div class="mtrack"><div class="mband" style="left:${c.tmin / scale * 100}%;width:${(c.tmax - c.tmin) / scale * 100}%"></div><div class="mfill" style="width:${Math.min(100, v / scale * 100)}%;background:${col}"></div></div><span class="small num" style="font-size:15px;text-align:right">${f(v)}</span></div>`; }).join("")}</div>`; })()}
@@ -7692,7 +7701,8 @@ function vCoach() {
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><h1 class="title">Hinweise</h1></div>
     ${pv ? `<div class="note" id="undoPlan"><div class="cap">Plan geändert · ${fmtDay(pv.at)}</div><p class="small">${esc(pv.why)}</p>
-      ${prevPlanStale() ? `<p class="small muted" id="undoStale">Du hast den Plan seitdem geändert. Rückgängig würde diese Änderungen verwerfen und ist deshalb nicht mehr möglich.</p>
+      ${prevPlanStale() ? `<p class="small muted" id="undoStale">${pv.after ? "Du hast den Plan seitdem geändert. Rückgängig würde diese Änderungen verwerfen und ist deshalb nicht mehr möglich."
+        : "Diese Änderung stammt aus einer älteren Version der App. Ob der Plan seitdem geändert wurde, lässt sich nicht prüfen – deshalb ist Rückgängig nicht mehr möglich."}</p>
       <div class="row wrap" style="gap:8px"><button class="btn sm quiet" data-a="coachKeep">Ausblenden</button></div>`
       : `<div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div>`}</div>` : ""}
     <section class="section" id="coachTips"><h2>Vorschläge</h2>
@@ -7803,7 +7813,7 @@ function vSummary() {
     ${sm.last && r.exercises[sm.last.xi] && r.exercises[sm.last.xi].sets[sm.last.i] ? (() => { const x = r.exercises[sm.last.xi], t = x.sets[sm.last.i];
       return `<section class="section" id="lastFeel"><div class="card stack-sm"><div class="row between"><h2 class="h3">Wie war der letzte Satz?</h2><span class="small faint">${esc(x.name)} · ${kgTxt(t.kg)} × ${t.reps}</span></div>
         <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="sumFeel" data-f="${k}" class="${t.f === k ? "on" : ""}" aria-pressed="${t.f === k}">${l}</button>`).join("")}</div>
-        <p class="small muted" style="margin:0">Fließt in den Vorschlag fürs nächste Mal ein (siehe unten).</p></div></section>`; })() : ""}
+        <p class="small muted" style="margin:0">„Schwer“ heißt beim nächsten Mal: keine Steigerung (Regel der App, siehe „Nächstes Mal“).</p></div></section>`; })() : ""}
     ${nextTimeHtml(r)}
     ${EXT.summary.map(f => { try { return f(sm) || ""; } catch (e) { return ""; } }).join("")}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
@@ -8629,7 +8639,11 @@ const A = {
     sesUnitRemap(d.id, oldU); save(); openSheet(devSheetHtml()); },
   hintUnitsDone: () => { state.hints.units = true; save(); render(); },
   hintUnitsOpen: () => { state.hints.units = true; save(); devFilter = "alle"; openSheet(devListHtml()); },
-  devReset: () => { delete state.dev[devDraft.id]; save(); devBack(null); },
+  devReset: () => { const id = devDraft.id, oldU = unitOf(ex(id)), keep = state.dev[id];
+    delete state.dev[id]; const defU = unitOf(ex(id));
+    // Heute schon Sätze an diesem Gerät: die Gewichtsangabe darf sich nicht ändern (wie beim Bearbeiten gesperrt)
+    if (defU !== oldU && unitLocked(id)) { state.dev[id] = keep; const er = byId("devErr"); if (er) { er.textContent = "Zurücksetzen würde die Gewichtsangabe ändern. Das geht erst, wenn das heutige Training an diesem Gerät beendet ist."; er.hidden = false; } return; }
+    sesUnitRemap(id, oldU); save(); devBack(null); },
   devDelete: () => { const id = devDraft.id;
     if (state.plan?.days.some(d => d.items.some(i => i.exId === id))) { const er = byId("devErr"); er.textContent = "Das Gerät ist noch in deinem Plan. Entferne es dort zuerst."; er.hidden = false; return; }
     state.custom = state.custom.filter(c => c.id !== id); delete state.dev[id]; save(); devBack(null); },
@@ -8743,7 +8757,7 @@ const A = {
 };
 function addToDay(exId) {
   const d = curDay(), g = rangeFor(state.plan.goal, exId);
-  d.items.push({ id: uid(), exId, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest }); save(); vDay();
+  d.items.push({ id: uid(), exId, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest }); tpRefresh(d); save(); vDay();
 }
 document.addEventListener("click", ev => {
   const el = ev.target.closest("[data-a]"); if (!el || el.disabled) return;
@@ -10050,12 +10064,17 @@ if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean }
 extClean(); badWarn();
 // Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern
 // hier den neueren Stand von dort (z. B. ein dort beendetes Training).
+// Offene Fenster (Sheets) bleiben offen: ihre Entwürfe sind Kopien und werden beim Speichern über die ID in den neuen Stand geschrieben.
 window.addEventListener("storage", ev => {
   if (ev.key !== KEY || ev.newValue == null) return;
   let next; try { next = normalize(JSON.parse(ev.newValue)); } catch (e) { return; }
-  state = next; extClean(); closeSheet();
+  for (const k of Object.keys(state)) if (!(k in next)) next[k] = state[k];   // nicht gespeicherter Zustand der Oberfläche (z. B. welcher Tag bearbeitet wird)
+  state = next; extClean();
+  if (lastSummary && lastSummary.rec) { const r = state.history.find(h => h.id === lastSummary.rec.id); if (r) lastSummary.rec = r; else lastSummary = null; }
   homeNote = "In einem anderen Fenster der App wurde etwas geändert. Dieser Stand gilt jetzt auch hier.";
-  if (view === "train" && (!state.session || state.session.paused)) { stopTick(); go("home"); } else render();
+  if (view === "train" && (!state.session || state.session.paused)) { closeSheet(); stopTick(); awake(false); go("home"); return; }
+  if (view === "summary" && lastSummary) summary = lastSummary;
+  render();
 });
 if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
 go(view);
