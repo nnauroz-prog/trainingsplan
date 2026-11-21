@@ -128,6 +128,10 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
   - Planprüfung: „jeder Tag passt in dein Zeitbudget“ nur, wenn die Schätzung im Budget liegt; knapp darüber wird der Tag mit seiner Schätzung genannt
   - Vorschläge: ab 28 Tagen Pause auch bei uneinheitlichen Sätzen je Satz ein Schritt leichter (Regel der App); die Begründung nennt die tatsächlichen Ziele; ohne gespeicherte Satzzahl keine Aussage über eine unvollständige Einheit
   - Zusammenfassung: „Wie war der letzte Satz?“ – nach dem letzten Satz gibt es keine Pause mit dieser Frage; die Antwort fließt sofort in „Nächstes Mal“ ein
+  - Erholung (Schätzung der App): drei Stufen „Erholt / Teilweise / Belastet“ statt Prozent; ein Muskel gilt erst ab 2 gültigen Sätzen in einem Training als belastet (mittrainiert halb gezählt, `REC_MIN`); Begründung auf „Heute“ („Nach Schätzung der App …“) und Plan-Zeile gekennzeichnet
+  - Stillstand: nicht, wenn die letzten beiden Einheiten jeweils besser waren als die davor (z. B. nach einer bewussten Reduktion)
+  - Sicherungszeile: „aktuell“ nur, wenn ein Fingerabdruck der gespeicherten Daten (`dataSig`, ohne Bedienzustand) seit der Sicherung unverändert ist; sonst „seitdem geändert“. Trainings zählen nach dem Eintragszeitpunkt (`at`), ein nachgetragenes Training für einen früheren Tag also mit
+  - Kalorienbilanz im Tagesplan: alle Trainings des Tages zählen; ohne erfasste Dauer wird nichts geschätzt; Bilanz mit ≈ und auf 10 kcal gerundet
 
 - **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
 

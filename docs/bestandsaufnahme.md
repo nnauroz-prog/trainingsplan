@@ -9,7 +9,7 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
   - **bestätigt** – mit einem Versuch nachgestellt, das falsche Ergebnis wurde beobachtet
   - **Designschwäche** – der Code tut, was er soll, aber das Verhalten ist riskant oder irreführend
   - **vermutet** – nicht nachgewiesen
-- Ergebnis: 32 Befunde, davon 24 bestätigt, 7 Designschwächen, 1 vermutet. Behoben sind 16, teilweise behoben 3 (Pull Requests #76 und #77).
+- Ergebnis: 32 Befunde, davon 24 bestätigt, 7 Designschwächen, 1 vermutet. Behoben sind 20, teilweise behoben 3 (Pull Requests #76 und #77).
 - Grenzen der Prüfung:
   - Geprüft wurde im Chromium-Testbrowser, nicht auf einem echten iPhone.
   - Die Prüfer haben eigene Versuche gefahren, die ganze Testsuite lief dabei nicht. Aussagen zur Testabdeckung stammen aus dem Lesen von `tests/run.js`.
@@ -24,7 +24,7 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
 | 2 | Nutzt die Progression nur bestätigte Leistungen? | Ja. Unbestätigte, übersprungene und ungültige Sätze zählen nicht. Schwäche: Ein Tipp auf „Satz fertig“ bestätigt den vorbefüllten Vorschlag der App und kann sofort einen Bestwert melden. |
 | 3 | Wird der Verlauf zeitlich richtig ausgewertet? | Vorher nicht sicher: maßgeblich war die Position in der Liste, nicht das Datum. Behoben. Offen: Einträge mit Datum in der Zukunft. |
 | 4 | Behalten Gerätevarianten getrennte Leistungsdaten? | Ja. „Pro Seite“, „insgesamt“ und „am Block“ bleiben getrennt, beim Gerätetausch wird kein Gewicht übertragen. Der eine Fehler („Frühere Einträge umstellen“ während eines laufenden Trainings) ist behoben. |
-| 5 | Täuschen die Erholungswerte Genauigkeit vor? | Ja. Anzeige auf 1 % genau, ein einzelner Satz zählt wie ein ganzes Training, die Begründung liest sich wie eine Tatsache (offen). Die zwei Rechenfehler (gelöschte Geräte, Einträge ohne gültigen Satz) sind behoben. |
+| 5 | Täuschen die Erholungswerte Genauigkeit vor? | Ja: Anzeige auf 1 % genau, ein einzelner Satz zählte wie ein ganzes Training, die Begründung las sich wie eine Tatsache. Behoben: drei Stufen statt Prozent, erst ab 2 Sätzen, überall als Schätzung der App gekennzeichnet; ebenso die zwei Rechenfehler (gelöschte Geräte, Einträge ohne gültigen Satz). |
 | 6 | Passen Zeitbudget und erzeugte Trainingsdauer zusammen? | Der Generator hält das Budget ein. Die Planprüfung sagte „jeder Tag passt“, bis ein Tag 12,5 Minuten darüber lag, und eine „Zeit für heute“ blieb nach dem Bearbeiten des Tages veraltet gültig – beides behoben. Offen: Bei knapper Zeit kürzt der Generator vom Ende statt nach Muskelabdeckung. |
 | 7 | Werden Entscheidungen des Nutzers überschrieben? | An mehreren Stellen ja. Behoben: neuer Plan ersetzt den alten ohne Sicherung; „Rückgängig“ verwarf spätere Handänderungen; Gerätetausch aus einem Hinweis erzeugte Doppelte. Offen: Die Markierung „steht in meinem Studio“ wird still gesetzt. |
 | 8 | Sind Sicherung und Wiederherstellung vollständig und verlustfrei? | Die Rundreise ist vollständig: alle Felder kommen an. Risiken lagen beim Einspielen (laufendes Training, neuere Daten – behoben bzw. teilweise behoben) und beim Laden (unlesbarer Speicher – behoben). Zwei Fenster überschreiben sich nicht mehr. Offen: „Sicherung aktuell“ trotz neuer Daten, Wiederherstellen auf einem neuen Gerät erst nach dem Anlegen eines Plans. |
@@ -55,6 +55,10 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
 7. **Planprüfung** – „passt ins Zeitbudget“ nur, wenn es nach der eigenen Schätzung stimmt.
 8. **Vorschläge** – Pausenregel auch bei uneinheitlichen Sätzen; Begründungen nennen die tatsächlichen Ziele; keine Behauptung über unvollständige Einheiten ohne gespeicherte Satzzahl.
 9. **Letzter Satz** – lässt sich in der Zusammenfassung als leicht, passend oder schwer bewerten.
+10. **Erholung** – drei Stufen statt Prozent, erst ab 2 Sätzen in einem Training, als Schätzung der App gekennzeichnet.
+11. **Stillstand** – nicht, wenn das Gewicht nach einer Reduktion wieder steigt.
+12. **Sicherungszeile** – „aktuell“ nur, wenn sich seit der Sicherung nichts geändert hat; nachgetragene Trainings zählen mit.
+13. **Kalorienbilanz** – alle Trainings des Tages; als Schätzung gerundet.
 
 ## 4. Übersicht aller Befunde
 
@@ -66,29 +70,29 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
 | 4 | bestätigt | hoch | teilweise | Verlauf wird nach Listenposition ausgewertet; beim Laden weder sortiert noch auf Zukunfts- oder kaputte Daten geprüft |
 | 5 | bestätigt | hoch | behoben | Scheitert das Laden, startet die App leer ohne Hinweis – die erste Aktion überschreibt alle Daten |
 | 6 | bestätigt | mittel | offen | Markierung „steht in meinem Studio“ ist nicht verlässlich: die Geräteauswahl setzt sie still, und abgewählte Geräte bleiben ohne Hinweis im Plan und im Training |
-| 7 | bestätigt | mittel | offen | Stillstand gemeldet, obwohl das Gewicht nach einer bewussten Reduktion viermal in Folge stieg |
-| 8 | bestätigt | mittel | offen | Auf einem neuen Gerät ist „Sicherung wiederherstellen“ erst nach dem Anlegen eines Plans erreichbar |
-| 9 | bestätigt | mittel | offen | Sicherungszeile sagt „aktuell“, obwohl seit der Sicherung Daten dazugekommen sind |
-| 10 | bestätigt | mittel | behoben | Letzter Satz der letzten Übung lässt sich nie bewerten |
-| 11 | bestätigt | mittel | behoben | „Frühere Einträge umstellen“ im laufenden Training speichert die neuen Sätze mit der alten Einheit |
-| 12 | bestätigt | mittel | behoben | Pausenregel greift nicht bei uneinheitlichen Sätzen |
-| 13 | bestätigt | mittel | behoben | „Rückgängig“ unter Hinweise setzt den ganzen Plan auf einen alten Stand: spätere Handänderungen und sogar ein neu erstellter Plan gehen verloren |
-| 14 | bestätigt | mittel | behoben | Gerätetausch aus dem Hinweis „Stillstand“ erzeugt ein doppeltes Gerät im Tag |
-| 15 | bestätigt | mittel | behoben | „Zeit für heute“ bleibt nach dem Bearbeiten des Tages gültig: neu hinzugefügtes Gerät wird beim Start still ausgeblendet, erhöhte Sätze werden gekürzt |
-| 16 | bestätigt | mittel | behoben | „Gerät tauschen“ bietet ein zeitbedingt ausgeblendetes Gerät des Tages an – danach steht es doppelt im Plan und im Training |
-| 17 | bestätigt | mittel | behoben | Planprüfung sagt „jeder Tag passt in dein Zeitbudget“, obwohl ein Tag bis zu 12,5 Minuten darüber liegt (40 % bei 30 Min.) |
-| 18 | bestätigt | mittel | behoben | Erholung zählt gelöschte Geräte als Brust und Einträge ohne gültigen Satz als Belastung – der Tagesvorschlag kippt |
-| 19 | bestätigt | mittel | teilweise | Tests: eine Bestwert-Prüfung kann nie fehlschlagen, weitere sind leer oder uhrzeitabhängig; keine CI |
-| 20 | bestätigt | mittel | behoben | Zwei Tabs: der ältere Tab überschreibt das Training aus dem neueren |
-| 21 | bestätigt | mittel | teilweise | Wiederherstellen ersetzt neuere Daten ohne Rückfrage, sobald die Sicherung gleich viele Trainings hat |
-| 22 | bestätigt | niedrig | offen | Kalorienbilanz: zweites Training am selben Tag fehlt; Bilanz auf 1 kcal genau ohne ≈ |
-| 23 | bestätigt | niedrig | behoben | Begründung „Ziel je 1 Wdh. mehr“ stimmt nicht, wenn Sätze schon am oberen Ziel waren |
-| 24 | bestätigt | niedrig | behoben | Ohne gespeicherte Planung behauptet die App „nur X von Y Sätzen absolviert“ |
+| 7 | bestätigt | mittel | offen | Auf einem neuen Gerät ist „Sicherung wiederherstellen“ erst nach dem Anlegen eines Plans erreichbar |
+| 8 | bestätigt | mittel | behoben | Letzter Satz der letzten Übung lässt sich nie bewerten |
+| 9 | bestätigt | mittel | behoben | „Frühere Einträge umstellen“ im laufenden Training speichert die neuen Sätze mit der alten Einheit |
+| 10 | bestätigt | mittel | behoben | Pausenregel greift nicht bei uneinheitlichen Sätzen |
+| 11 | bestätigt | mittel | behoben | „Rückgängig“ unter Hinweise setzt den ganzen Plan auf einen alten Stand: spätere Handänderungen und sogar ein neu erstellter Plan gehen verloren |
+| 12 | bestätigt | mittel | behoben | Gerätetausch aus dem Hinweis „Stillstand“ erzeugt ein doppeltes Gerät im Tag |
+| 13 | bestätigt | mittel | behoben | „Zeit für heute“ bleibt nach dem Bearbeiten des Tages gültig: neu hinzugefügtes Gerät wird beim Start still ausgeblendet, erhöhte Sätze werden gekürzt |
+| 14 | bestätigt | mittel | behoben | „Gerät tauschen“ bietet ein zeitbedingt ausgeblendetes Gerät des Tages an – danach steht es doppelt im Plan und im Training |
+| 15 | bestätigt | mittel | behoben | Planprüfung sagt „jeder Tag passt in dein Zeitbudget“, obwohl ein Tag bis zu 12,5 Minuten darüber liegt (40 % bei 30 Min.) |
+| 16 | bestätigt | mittel | behoben | Stillstand gemeldet, obwohl das Gewicht nach einer bewussten Reduktion viermal in Folge stieg |
+| 17 | bestätigt | mittel | behoben | Erholung zählt gelöschte Geräte als Brust und Einträge ohne gültigen Satz als Belastung – der Tagesvorschlag kippt |
+| 18 | bestätigt | mittel | teilweise | Tests: eine Bestwert-Prüfung kann nie fehlschlagen, weitere sind leer oder uhrzeitabhängig; keine CI |
+| 19 | bestätigt | mittel | behoben | Zwei Tabs: der ältere Tab überschreibt das Training aus dem neueren |
+| 20 | bestätigt | mittel | teilweise | Wiederherstellen ersetzt neuere Daten ohne Rückfrage, sobald die Sicherung gleich viele Trainings hat |
+| 21 | bestätigt | mittel | behoben | Sicherungszeile sagt „aktuell“, obwohl seit der Sicherung Daten dazugekommen sind |
+| 22 | bestätigt | niedrig | behoben | Begründung „Ziel je 1 Wdh. mehr“ stimmt nicht, wenn Sätze schon am oberen Ziel waren |
+| 23 | bestätigt | niedrig | behoben | Ohne gespeicherte Planung behauptet die App „nur X von Y Sätzen absolviert“ |
+| 24 | bestätigt | niedrig | behoben | Kalorienbilanz: zweites Training am selben Tag fehlt; Bilanz auf 1 kcal genau ohne ≈ |
 | 25 | Designschwäche | mittel | offen | Ein Tipp macht den App-Vorschlag zur Leistung und zum Bestwert |
 | 26 | Designschwäche | mittel | offen | Generator kürzt bei knapper Zeit blind vom Ende: Pläne ohne große Muskelgruppe, die eigene Planprüfung beanstandet den frischen Vorschlag |
-| 27 | Designschwäche | mittel | offen | Erholungswert täuscht Genauigkeit vor: ein Satz zählt wie zwölf, Anzeige auf 1 %, Begründung als Tatsache |
-| 28 | Designschwäche | mittel | offen | Wochenziel ist die Zahl der Plantage – auch leerer, auch bei weniger Terminen; Serie wird rückwirkend neu gerechnet |
-| 29 | Designschwäche | mittel | offen | Ältere Fassung löscht Daten einer neueren: unbekannte Felder und Erweiterungsbereiche fallen beim ersten Speichern weg |
+| 27 | Designschwäche | mittel | offen | Wochenziel ist die Zahl der Plantage – auch leerer, auch bei weniger Terminen; Serie wird rückwirkend neu gerechnet |
+| 28 | Designschwäche | mittel | offen | Ältere Fassung löscht Daten einer neueren: unbekannte Felder und Erweiterungsbereiche fallen beim ersten Speichern weg |
+| 29 | Designschwäche | mittel | behoben | Erholungswert täuscht Genauigkeit vor: ein Satz zählt wie zwölf, Anzeige auf 1 %, Begründung als Tatsache |
 | 30 | Designschwäche | niedrig | offen | Speicher voll: Warnung erscheint, aber die Zusammenfassung feiert ein nicht gespeichertes Training; Essen-Tagebuch wächst unbegrenzt |
 | 31 | Designschwäche | niedrig | offen | Kein Auffangnetz beim Start: wirft die erste Ansicht, bleibt die App leer und die Sicherung ist unerreichbar |
 | 32 | vermutet | niedrig | offen | Dasselbe Gerät zweimal in einem Training: nur der erste Eintrag zählt |
@@ -159,17 +163,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Ein versehentlich angetipptes Gerät gilt dauerhaft als vorhanden und kann in späteren Vorschlägen auftauchen. Umgekehrt führt die App im Training an ein Gerät, das der Nutzer ausdrücklich als nicht vorhanden markiert hat.
 - **Kleinste Korrektur:** In pick merken, dass die Markierung durch dieses Antippen gesetzt wurde, und sie beim Herausnehmen wieder zurücksetzen (oder im Fenster sichtbar melden „als ‚im Studio‘ markiert“). In der Tagesansicht und in planCheck Geräte mit ex(id).off als „nicht im Studio“ kennzeichnen (Text wie in 5423) mit Verweis auf Tauschen oder Entfernen.
 
-### 7. Stillstand gemeldet, obwohl das Gewicht nach einer bewussten Reduktion viermal in Folge stieg
-
-- **Schwere:** mittel · **Stand:** offen
-- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
-- **Stelle (Stand der Prüfung):** src/app.html:2421-2435 (plateau), 7408-7419 (insights)
-- **Was passiert:** plateau vergleicht jede Einheit nur mit dem bisherigen Höchstwert im Fenster der letzten 6 Einheiten. Liegt die erste Einheit im Fenster am höchsten, gilt alles danach als „kein Fortschritt“, auch ein klar steigender Verlauf. Die Karte bietet dann den Gerätetausch an.
-- **Beleg:** exp3 Fall P1, Brustpresse 50 → 40 → 42,5 → 45 → 47,5 kg, je 3 × 10, 5 vollständige Einheiten in 28 Tagen: plateau = {weeks: 4, n: 5, reserve: false}; Karte auf Heute: „Brustpresse: Stillstand seit 4 Wochen … 5 vollständige Einheiten ohne mehr Gewicht oder Wiederholungen. Möglich: ein Gerät mit gleichem Bewegungsmuster (Negativ-Brustpresse) …“ mit Knopf „Gegen Negativ-Brustpresse tauschen“. Gegenprobe P2 (5 × 45 kg) liefert dasselbe Ergebnis – dort zu Recht.
-- **Für den Nutzer:** Wer nach Pause, Krankheit oder Technikkorrektur leichter einsteigt und sich wieder hocharbeitet, bekommt eine falsche Aussage („ohne mehr Gewicht“) und die Empfehlung, das Gerät zu tauschen.
-- **Kleinste Korrektur:** Keinen Stillstand melden, wenn die letzten zwei Einheiten jeweils besser waren als die Einheit davor (mehr Gewicht oder bei gleichem Gewicht mehr Wiederholungen). Testfall „Reduktion, dann Anstieg“ ergänzen.
-
-### 8. Auf einem neuen Gerät ist „Sicherung wiederherstellen“ erst nach dem Anlegen eines Plans erreichbar
+### 7. Auf einem neuen Gerät ist „Sicherung wiederherstellen“ erst nach dem Anlegen eines Plans erreichbar
 
 - **Schwere:** mittel · **Stand:** offen
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
@@ -179,17 +173,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Nach Handywechsel findet der Nutzer keinen Weg, seine Sicherung einzuspielen, und hält die Daten für verloren – oder beginnt neu.
 - **Kleinste Korrektur:** Auf dem Einstieg und im Einrichtungsformular eine Zeile „Schon eine Sicherung? Wiederherstellen“ mit data-a="importOpen" ergänzen (das Fenster braucht keinen Plan).
 
-### 9. Sicherungszeile sagt „aktuell“, obwohl seit der Sicherung Daten dazugekommen sind
-
-- **Schwere:** mittel · **Stand:** offen
-- **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
-- **Stelle (Stand der Prüfung):** src/app.html:1950 (sinceBackup), 1965 (backupLine), 5240 (backupSheet), 7540–7541 (Erinnerung)
-- **Was passiert:** „Aktuell“ und „seitdem nichts Neues“ zählen nur Trainings, deren Trainingsdatum nach der letzten Sicherung liegt. Neue Gewichte, Essen-Einträge, Planänderungen, korrigierte Sätze und Trainings mit einem Datum vor der Sicherung zählen nicht; die Erinnerung (ab 5 Trainings und 14 Tagen) zählt genauso. Mit „nachträglich eintragen“ werden rückdatierte Trainings der Normalfall.
-- **Beleg:** e4-session-reload.js Teil 4: Sicherung von gestern, danach 1 Gewicht, 1 Essen-Tag, 1 Übung aus dem Plan entfernt, 1 Satz im alten Training von 40 auf 45 kg geändert, 1 Training mit Datum vor 3 Tagen ergänzt (Trainings 1 → 2). Zeile in den Einstellungen unverändert: „Zuletzt am 19. November · aktuell“; im Sicherungsfenster: „Letzte Sicherung am 19. November, seitdem nichts Neues.“
-- **Für den Nutzer:** Der Nutzer verlässt sich auf „aktuell“ und sichert nicht, obwohl seine Datei wichtige neue Daten nicht enthält; nachgetragene Trainings lösen nie eine Erinnerung aus.
-- **Kleinste Korrektur:** In save() einen Zeitpunkt der letzten Änderung führen (außer in markBackup) und „aktuell“ nur zeigen, wenn er nicht nach backupAt liegt. Trainings für die Erinnerung nach Anlagezeitpunkt zählen (eigenes Feld am Training, in normalize aufnehmen), nicht nach Trainingsdatum.
-
-### 10. Letzter Satz der letzten Übung lässt sich nie bewerten
+### 8. Letzter Satz der letzten Übung lässt sich nie bewerten
 
 - **Schwere:** mittel · **Stand:** behoben – Die Zusammenfassung fragt „Wie war der letzte Satz?“; die Antwort fließt sofort in „Nächstes Mal“ ein (PR #77). Test: E-runde2.
 - **Bereich:** Progressionslogik und Verlaufsdaten
@@ -199,7 +183,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** An der letzten Übung jedes Trainings steigert die App das Gewicht auch dann, wenn der Satz am Limit war. Die Steigerung wegen „leicht“ gibt es dort nie.
 - **Kleinste Korrektur:** In der Zusammenfassung für den letzten erledigten Satz dieselbe Frage (Leicht/Passt/Schwer, Reserve) anbieten und in den gerade gespeicherten Verlaufseintrag schreiben.
 
-### 11. „Frühere Einträge umstellen“ im laufenden Training speichert die neuen Sätze mit der alten Einheit
+### 9. „Frühere Einträge umstellen“ im laufenden Training speichert die neuen Sätze mit der alten Einheit
 
 - **Schwere:** mittel · **Stand:** behoben – Noch nicht begonnene Übungen des Geräts werden mit der neuen Gewichtsangabe neu berechnet, auch zeitbedingt ausgeblendete (PR #77). Test: E-runde2.
 - **Bereich:** Progressionslogik und Verlaufsdaten
@@ -209,7 +193,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Das Training steht mit falscher Gewichtsangabe im Verlauf, zählt doppelt beim Volumen und fehlt für Vorschlag und Bestwerte der richtigen Einheit.
 - **Kleinste Korrektur:** In devRelabel die noch nicht begonnenen Sitzungseinträge dieses Geräts wie in devSave (8487) neu berechnen; alternativ die Umstellung sperren, solange ein Training läuft.
 
-### 12. Pausenregel greift nicht bei uneinheitlichen Sätzen
+### 10. Pausenregel greift nicht bei uneinheitlichen Sätzen
 
 - **Schwere:** mittel · **Stand:** behoben – Ab 28 Tagen Pause auch bei uneinheitlichen Sätzen je Satz ein Schritt leichter, als Regel der App gekennzeichnet (PR #77). Test: E-runde2.
 - **Bereich:** Progressionslogik und Verlaufsdaten
@@ -219,7 +203,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Nach Monaten Pause verlangt die App mehr Wiederholungen als beim letzten Mal und nennt die Pause nicht.
 - **Kleinste Korrektur:** Bei gap ≥ 28 und uneinheitlicher letzter Einheit: fromLast(0) mit dem Pausentext, ohne „+1 Wdh.“.
 
-### 13. „Rückgängig“ unter Hinweise setzt den ganzen Plan auf einen alten Stand: spätere Handänderungen und sogar ein neu erstellter Plan gehen verloren
+### 11. „Rückgängig“ unter Hinweise setzt den ganzen Plan auf einen alten Stand: spätere Handänderungen und sogar ein neu erstellter Plan gehen verloren
 
 - **Schwere:** mittel · **Stand:** behoben – „Rückgängig“ nur, solange der Plan seit der Änderung unverändert ist; sonst erklärt die Karte, warum es nicht mehr geht (PR #77). Ein neu erstellter Plan räumt das alte „Rückgängig“ ab (PR #76). Test: E-runde2.
 - **Bereich:** Planerzeugung und automatische Planänderungen
@@ -229,7 +213,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Die Karte beschreibt nur einen Gerätetausch; wer sie Tage später antippt, verliert unbemerkt alle Planänderungen seitdem. Der Satz „Die App ändert deinen Plan nie ohne deine Bestätigung“ (7586) stimmt dann nicht mehr.
 - **Kleinste Korrektur:** In createPlan/emptyPlan state.prevPlan = null setzen. In coachSwap/coachPlanApply zusätzlich den Plan nach der Änderung als Text merken (prevPlan.after) und in coachUndo nur zurücksetzen, wenn JSON.stringify(state.plan) === prevPlan.after; sonst Meldung „Nicht mehr rückgängig: Der Plan wurde inzwischen geändert“ und prevPlan verwerfen.
 
-### 14. Gerätetausch aus dem Hinweis „Stillstand“ erzeugt ein doppeltes Gerät im Tag
+### 12. Gerätetausch aus dem Hinweis „Stillstand“ erzeugt ein doppeltes Gerät im Tag
 
 - **Schwere:** mittel · **Stand:** behoben – Die vorgeschlagene Alternative steht in keinem betroffenen Tag; Tage, die das Zielgerät schon enthalten, bleiben unverändert (PR #77). Test: E-runde2.
 - **Bereich:** Planerzeugung und automatische Planänderungen
@@ -239,7 +223,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Im Training steht dasselbe Gerät zweimal hintereinander. Die Auswertung je Gerät liest pro Training nur den ersten Eintrag eines Geräts (compSessions, 5511), der zweite Block würde für Vorschläge und Stillstand nicht zählen. Betrifft vor allem selbst gebaute Pläne mit demselben Gerät an zwei Tagen.
 - **Kleinste Korrektur:** In coachSwap Tage überspringen, die das Zielgerät (oder ein sameKind-Gerät) schon enthalten; besser schon in insights (7413) die Menge „used“ aus allen Tagen bilden, die das Gerät enthalten.
 
-### 15. „Zeit für heute“ bleibt nach dem Bearbeiten des Tages gültig: neu hinzugefügtes Gerät wird beim Start still ausgeblendet, erhöhte Sätze werden gekürzt
+### 13. „Zeit für heute“ bleibt nach dem Bearbeiten des Tages gültig: neu hinzugefügtes Gerät wird beim Start still ausgeblendet, erhöhte Sätze werden gekürzt
 
 - **Schwere:** mittel · **Stand:** behoben – Nach jeder Änderung am Tag wird die Anpassung mit denselben Minuten neu berechnet oder entfällt (PR #77). Test: E-runde2.
 - **Bereich:** Planerzeugung und automatische Planänderungen
@@ -249,7 +233,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Die letzte, bewusste Entscheidung des Nutzers (Gerät dazu, mehr Sätze) wird beim Start ohne Hinweis übergangen. Das Gerät lässt sich im Training nur über „Zeit anpassen → Ursprüngliche Einheit fortsetzen“ zurückholen – wenn man weiß, dass es fehlt.
 - **Kleinste Korrektur:** In saveItem, pick, delItem, delItemAt und moveItem dieselbe Zeile wie in dayCopyDo ergänzen: if (state.timeplan && state.timeplan.dayId === d.id) state.timeplan = null.
 
-### 16. „Gerät tauschen“ bietet ein zeitbedingt ausgeblendetes Gerät des Tages an – danach steht es doppelt im Plan und im Training
+### 14. „Gerät tauschen“ bietet ein zeitbedingt ausgeblendetes Gerät des Tages an – danach steht es doppelt im Plan und im Training
 
 - **Schwere:** mittel · **Stand:** behoben – Keine Geräte mehr in der Auswahl, die ausgeblendet sind oder im Plantag stehen (PR #77). Test: E-runde2.
 - **Bereich:** Planerzeugung und automatische Planänderungen
@@ -259,7 +243,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Ein dauerhaft doppeltes Gerät im Plantag und zwei Blöcke desselben Geräts im Training; die Beinpresse ist aus dem Plan verschwunden, ohne dass der Nutzer das Doppel bemerkt.
 - **Kleinste Korrektur:** In swapSheet used = Geräte aus s.list und s.timeHidden; bei swapPerm zusätzlich die Geräte des Plantags ausschließen bzw. den Plan nur ändern, wenn der Tag das neue Gerät noch nicht enthält.
 
-### 17. Planprüfung sagt „jeder Tag passt in dein Zeitbudget“, obwohl ein Tag bis zu 12,5 Minuten darüber liegt (40 % bei 30 Min.)
+### 15. Planprüfung sagt „jeder Tag passt in dein Zeitbudget“, obwohl ein Tag bis zu 12,5 Minuten darüber liegt (40 % bei 30 Min.)
 
 - **Schwere:** mittel · **Stand:** behoben – „Passt“ nur, wenn die Schätzung im Budget liegt; knapp darüber wird der Tag mit seiner Schätzung genannt (PR #77). Test: E-runde2.
 - **Bereich:** Planerzeugung und automatische Planänderungen
@@ -269,7 +253,17 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Wer seinen Plan von Hand erweitert, bekommt bestätigt, dass alles ins Zeitbudget passt, während die App selbst 40 statt 30 Minuten anzeigt. Die Toleranz von 10 Minuten ist nirgends genannt.
 - **Kleinste Korrektur:** Den Satz „jeder Tag passt in dein Zeitbudget“ nur ausgeben, wenn für alle Tage estimateSec(d.items) / 60 <= p.minutes gilt; sonst eine neutrale Zeile „≈ 40 Min. bei 30 Min. Zeitbudget“ zeigen (die Zeile aus 7316 ab jeder Überschreitung, die bisherige Schwelle nur für die Zählung „Punkte zu prüfen“ verwenden).
 
-### 18. Erholung zählt gelöschte Geräte als Brust und Einträge ohne gültigen Satz als Belastung – der Tagesvorschlag kippt
+### 16. Stillstand gemeldet, obwohl das Gewicht nach einer bewussten Reduktion viermal in Folge stieg
+
+- **Schwere:** mittel · **Stand:** behoben – Kein Stillstand, wenn die letzten beiden Einheiten jeweils besser waren als die davor (PR #77). Test: E-runde2.
+- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
+- **Stelle (Stand der Prüfung):** src/app.html:2421-2435 (plateau), 7408-7419 (insights)
+- **Was passiert:** plateau vergleicht jede Einheit nur mit dem bisherigen Höchstwert im Fenster der letzten 6 Einheiten. Liegt die erste Einheit im Fenster am höchsten, gilt alles danach als „kein Fortschritt“, auch ein klar steigender Verlauf. Die Karte bietet dann den Gerätetausch an.
+- **Beleg:** exp3 Fall P1, Brustpresse 50 → 40 → 42,5 → 45 → 47,5 kg, je 3 × 10, 5 vollständige Einheiten in 28 Tagen: plateau = {weeks: 4, n: 5, reserve: false}; Karte auf Heute: „Brustpresse: Stillstand seit 4 Wochen … 5 vollständige Einheiten ohne mehr Gewicht oder Wiederholungen. Möglich: ein Gerät mit gleichem Bewegungsmuster (Negativ-Brustpresse) …“ mit Knopf „Gegen Negativ-Brustpresse tauschen“. Gegenprobe P2 (5 × 45 kg) liefert dasselbe Ergebnis – dort zu Recht.
+- **Für den Nutzer:** Wer nach Pause, Krankheit oder Technikkorrektur leichter einsteigt und sich wieder hocharbeitet, bekommt eine falsche Aussage („ohne mehr Gewicht“) und die Empfehlung, das Gerät zu tauschen.
+- **Kleinste Korrektur:** Keinen Stillstand melden, wenn die letzten zwei Einheiten jeweils besser waren als die Einheit davor (mehr Gewicht oder bei gleichem Gewicht mehr Wiederholungen). Testfall „Reduktion, dann Anstieg“ ergänzen.
+
+### 17. Erholung zählt gelöschte Geräte als Brust und Einträge ohne gültigen Satz als Belastung – der Tagesvorschlag kippt
 
 - **Schwere:** mittel · **Stand:** behoben – Erholung und Muskelbelastung zählen nur gültige Sätze und nur bekannte Geräte (PR #77). Test: E-runde2.
 - **Bereich:** Ehrlichkeit abgeleiteter Zahlen
@@ -279,7 +273,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Die App behauptet, die Brust sei nicht erholt, obwohl sie nicht trainiert wurde, und schlägt deshalb einen anderen Tag vor. Sätze eines gelöschten Geräts erscheinen als Brustsätze der Woche.
 - **Kleinste Korrektur:** In recovery() nur Übungen mit bekanntem Gerät und mindestens einem validSet werten (wie mkLast); dieselbe Bedingung in 6940 und 7708. Alternativ beim Löschen eines Geräts mit Verlauf den Muskel im Verlaufseintrag festhalten.
 
-### 19. Tests: eine Bestwert-Prüfung kann nie fehlschlagen, weitere sind leer oder uhrzeitabhängig; keine CI
+### 18. Tests: eine Bestwert-Prüfung kann nie fehlschlagen, weitere sind leer oder uhrzeitabhängig; keine CI
 
 - **Schwere:** mittel · **Stand:** teilweise – Automatische Tests für Pull Requests sind eingerichtet (`.github/workflows/tests.yml`). Offen: die leeren und uhrzeitabhängigen Prüfungen.
 - **Bereich:** Ehrlichkeit abgeleiteter Zahlen
@@ -289,7 +283,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Kein direkter. Die Regel „erstes Mal ist kein Bestwert“ im Live-Training und „▶ startet genau diesen Tag“ sind in Wahrheit ungeprüft; Fehler dort blieben unbemerkt, und ohne CI läuft die Prüfung nur, wenn jemand daran denkt.
 - **Kleinste Korrektur:** 2834: dem zweiten Gerät zwei Sätze geben und #livePr nach dem ersten prüfen. 3107: Plan mit zwei Tagen, den zweiten starten. 1867: Uhr wie in Abschnitt 66 feststellen. Danach ein Workflow mit build.sh, Playwright-Chromium und node tests/run.js.
 
-### 20. Zwei Tabs: der ältere Tab überschreibt das Training aus dem neueren
+### 19. Zwei Tabs: der ältere Tab überschreibt das Training aus dem neueren
 
 - **Schwere:** mittel · **Stand:** behoben – Speichert ein anderes Fenster, übernimmt dieses Fenster dessen Stand (mit Hinweis), statt ihn später zu überschreiben (PR #77). Test: E-runde2.
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
@@ -299,7 +293,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Wer die App in Safari in zwei Tabs offen hat, kann ein komplettes Training (oder Essen, Gewichte, Planänderungen) verlieren, ohne es zu merken. In der Home-Bildschirm-App mit nur einem Fenster tritt das nicht auf.
 - **Kleinste Korrektur:** Einen Zähler im gespeicherten Zustand mitführen (z. B. rev). Vor dem Schreiben den Zähler im Speicher lesen: ist er höher als der beim Laden gemerkte, nicht schreiben, sondern neu laden bzw. den Nutzer hinweisen. Zusätzlich auf das storage-Ereignis hören und den Zustand neu laden, wenn kein Training und kein Fenster offen ist.
 
-### 21. Wiederherstellen ersetzt neuere Daten ohne Rückfrage, sobald die Sicherung gleich viele Trainings hat
+### 20. Wiederherstellen ersetzt neuere Daten ohne Rückfrage, sobald die Sicherung gleich viele Trainings hat
 
 - **Schwere:** mittel · **Stand:** teilweise – Rückfrage jetzt auch, wenn auf dem Gerät neuere Trainings liegen. Offen: kein „Rückgängig“, kein Hinweis auf Essen-Tagebuch und Gewichte.
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
@@ -309,17 +303,17 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Wer versehentlich eine ältere Sicherungsdatei wählt, verliert die Trainings und Einträge seit dieser Sicherung endgültig – genau das, was die Regel „Trainingsdaten nie zerstören“ ausschließen soll.
 - **Kleinste Korrektur:** Immer eine Bestätigung zeigen, sobald auf dem Gerät Daten liegen: „Auf dem Gerät: n Trainings, neuestes vom …; in der Sicherung: m, neuestes vom …“, und auf Essen, Gewichte und ein laufendes Training hinweisen. Vor dem Ersetzen den alten Stand unter einem zweiten Schlüssel ablegen und einmalig „Rückgängig“ anbieten.
 
-### 22. Kalorienbilanz: zweites Training am selben Tag fehlt; Bilanz auf 1 kcal genau ohne ≈
+### 21. Sicherungszeile sagt „aktuell“, obwohl seit der Sicherung Daten dazugekommen sind
 
-- **Schwere:** niedrig · **Stand:** offen
-- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
-- **Stelle (Stand der Prüfung):** src/app.html:4640-4641 (plannedOn), 4676 (dayEnergy), 4795 (tagBalInner), 5020 (vHome)
-- **Was passiert:** plannedOn nimmt mit find() nur das erste Training eines Tages; dayEnergy rechnet den Trainingsverbrauch aus dessen Dauer. Die Bilanz steht als große Zahl auf 1 kcal genau, auf Heute ebenfalls; das ≈ steht nur im Vorlesetext und in Nebenzeilen.
-- **Beleg:** exp2 K1, 80 kg, wenig aktiv: ein Training 30 Min. → trMin 30, trainKcal 100, total 2859. Zwei Trainings 30 + 45 Min. → unverändert trMin 30, trainKcal 100, total 2859 (nach der eigenen Formel 2,5 × 80 × 75/60 = 250). Anzeige: „Krafttraining · ≈ 30 Min. + 100 kcal“, „Verbrauch geschätzt 2.859 kcal“, „Defizit bisher 859 kcal“; Ring auf Heute „859 kcal übrig“.
-- **Für den Nutzer:** An Tagen mit zwei Einheiten ist der Verbrauch zu niedrig (im Beispiel 150 kcal). Die Bilanz wirkt genauer, als eine Schätzung aus Grundumsatz × Aktivitätsfaktor sein kann.
-- **Kleinste Korrektur:** In dayEnergy die Dauer aller Verlaufseinträge des Tages summieren. Bilanz und Ring mit ≈ zeigen und auf 10 oder 50 kcal runden.
+- **Schwere:** mittel · **Stand:** behoben – „Aktuell“ nur, wenn ein Fingerabdruck der Daten seit der Sicherung unverändert ist; Trainings zählen nach dem Eintragszeitpunkt (PR #77). Test: E-runde2.
+- **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
+- **Stelle (Stand der Prüfung):** src/app.html:1950 (sinceBackup), 1965 (backupLine), 5240 (backupSheet), 7540–7541 (Erinnerung)
+- **Was passiert:** „Aktuell“ und „seitdem nichts Neues“ zählen nur Trainings, deren Trainingsdatum nach der letzten Sicherung liegt. Neue Gewichte, Essen-Einträge, Planänderungen, korrigierte Sätze und Trainings mit einem Datum vor der Sicherung zählen nicht; die Erinnerung (ab 5 Trainings und 14 Tagen) zählt genauso. Mit „nachträglich eintragen“ werden rückdatierte Trainings der Normalfall.
+- **Beleg:** e4-session-reload.js Teil 4: Sicherung von gestern, danach 1 Gewicht, 1 Essen-Tag, 1 Übung aus dem Plan entfernt, 1 Satz im alten Training von 40 auf 45 kg geändert, 1 Training mit Datum vor 3 Tagen ergänzt (Trainings 1 → 2). Zeile in den Einstellungen unverändert: „Zuletzt am 19. November · aktuell“; im Sicherungsfenster: „Letzte Sicherung am 19. November, seitdem nichts Neues.“
+- **Für den Nutzer:** Der Nutzer verlässt sich auf „aktuell“ und sichert nicht, obwohl seine Datei wichtige neue Daten nicht enthält; nachgetragene Trainings lösen nie eine Erinnerung aus.
+- **Kleinste Korrektur:** In save() einen Zeitpunkt der letzten Änderung führen (außer in markBackup) und „aktuell“ nur zeigen, wenn er nicht nach backupAt liegt. Trainings für die Erinnerung nach Anlagezeitpunkt zählen (eigenes Feld am Training, in normalize aufnehmen), nicht nach Trainingsdatum.
 
-### 23. Begründung „Ziel je 1 Wdh. mehr“ stimmt nicht, wenn Sätze schon am oberen Ziel waren
+### 22. Begründung „Ziel je 1 Wdh. mehr“ stimmt nicht, wenn Sätze schon am oberen Ziel waren
 
 - **Schwere:** niedrig · **Stand:** behoben – Die Begründung nennt die tatsächlichen Ziele („Ziel heute 12/12/10 Wdh. … höchstens 12“) (PR #77). Test: E-runde2.
 - **Bereich:** Progressionslogik und Verlaufsdaten
@@ -329,7 +323,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Für den Nutzer:** Der Text widerspricht den Zahlen direkt daneben.
 - **Kleinste Korrektur:** Text aus den tatsächlichen Zielen bilden, z. B. „Ziel 12/12/11“, oder „je 1 Wdh. mehr, höchstens 12“.
 
-### 24. Ohne gespeicherte Planung behauptet die App „nur X von Y Sätzen absolviert“
+### 23. Ohne gespeicherte Planung behauptet die App „nur X von Y Sätzen absolviert“
 
 - **Schwere:** niedrig · **Stand:** behoben – Ohne gespeicherte Satzzahl keine Aussage über eine unvollständige Einheit (PR #77). Test: E-runde2.
 - **Bereich:** Progressionslogik und Verlaufsdaten
@@ -338,6 +332,16 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 - **Beleg:** exp4-rules.js C9: Eintrag ohne planned mit 40 × 12/12, Plan heute 3 Sätze → „Zuletzt nur 2 von 3 Sätzen absolviert (40 kg pro Seite × 12/12). Gewicht zunächst beibehalten.“
 - **Für den Nutzer:** Die Begründung nennt ein unvollständiges Training, obwohl die App die damalige Planung nicht kennt.
 - **Kleinste Korrektur:** Ohne L.planned den neutralen Zweig „Heute N statt M Sätze geplant“ benutzen. Nachgetragene Einträge immer mit planned, rmin, rmax und u speichern.
+
+### 24. Kalorienbilanz: zweites Training am selben Tag fehlt; Bilanz auf 1 kcal genau ohne ≈
+
+- **Schwere:** niedrig · **Stand:** behoben – Alle Trainings des Tages zählen; ohne erfasste Dauer wird nichts geschätzt; Bilanz mit ≈ und auf 10 kcal gerundet (PR #77). Test: E-runde2.
+- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
+- **Stelle (Stand der Prüfung):** src/app.html:4640-4641 (plannedOn), 4676 (dayEnergy), 4795 (tagBalInner), 5020 (vHome)
+- **Was passiert:** plannedOn nimmt mit find() nur das erste Training eines Tages; dayEnergy rechnet den Trainingsverbrauch aus dessen Dauer. Die Bilanz steht als große Zahl auf 1 kcal genau, auf Heute ebenfalls; das ≈ steht nur im Vorlesetext und in Nebenzeilen.
+- **Beleg:** exp2 K1, 80 kg, wenig aktiv: ein Training 30 Min. → trMin 30, trainKcal 100, total 2859. Zwei Trainings 30 + 45 Min. → unverändert trMin 30, trainKcal 100, total 2859 (nach der eigenen Formel 2,5 × 80 × 75/60 = 250). Anzeige: „Krafttraining · ≈ 30 Min. + 100 kcal“, „Verbrauch geschätzt 2.859 kcal“, „Defizit bisher 859 kcal“; Ring auf Heute „859 kcal übrig“.
+- **Für den Nutzer:** An Tagen mit zwei Einheiten ist der Verbrauch zu niedrig (im Beispiel 150 kcal). Die Bilanz wirkt genauer, als eine Schätzung aus Grundumsatz × Aktivitätsfaktor sein kann.
+- **Kleinste Korrektur:** In dayEnergy die Dauer aller Verlaufseinträge des Tages summieren. Bilanz und Ring mit ≈ zeigen und auf 10 oder 50 kcal runden.
 
 ## Designschwächen
 
@@ -363,17 +367,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 - **Für den Nutzer:** Wer 30 Minuten wählt, bekommt einen Plan ohne Beinbeuger und fast ohne Po-Arbeit; die App meldet in ihrer eigenen Planprüfung sofort „fehlt im Plan“ bzw. „1 Punkt zu prüfen“ für einen Vorschlag, den sie gerade selbst gemacht hat.
 - **Kleinste Korrektur:** Beim Kürzen statt items.pop() zuerst das letzte Gerät entfernen, dessen Hauptmuskel oder Bewegungsmuster im Tag noch ein zweites Mal vorkommt (Regel „redundant“ aus fitToTime 2284-2289), erst danach vom Ende. Für die Schultern: Meldung „über dem Richtwert“ bei frischen Plänen vermeiden, indem balanceVolume auch Sätze der mittrainierenden Übungen berücksichtigt, oder die Vorlagen (1757-1763) um eine Schulter-Isolationsübung kürzen. Den Test auf 30/45/90 Min. erweitern.
 
-### 27. Erholungswert täuscht Genauigkeit vor: ein Satz zählt wie zwölf, Anzeige auf 1 %, Begründung als Tatsache
-
-- **Schwere:** mittel · **Stand:** offen
-- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
-- **Stelle (Stand der Prüfung):** src/app.html:2513-2526 (recovery, recColor), 5100-5108 (recSheet), 2406-2410 (baseDay), 5170-5171 (vPlan)
-- **Was passiert:** Der Wert hängt nur von den Stunden seit dem letzten Eintrag ab (linear bis 72 bzw. 48 Std.). Satzzahl, Gewicht, Reserve und Muskelgröße spielen keine Rolle. Gezeigt wird er als ganze Prozentzahl je Muskel und steuert über feste Schwellen (50/55/25) den Tagesvorschlag. Die Kennzeichnung „Schätzung der App“ steht im Sheet, auf der Muskel-Seite und in der Hilfe, aber nicht in der Begründung auf Heute und nicht in der Plan-Zeile.
-- **Beleg:** exp1 Fall 3: 1 Satz und 12 Sätze vor 1 Std. → identisch Brust 1,4 / Schultern 2,1 / Trizeps 2,1. Fall 9: ein einziger Rudersatz vor 20 Std. → „Angepasst – Bein-Tag – Rücken ist noch nicht erholt. Heute lieber Bein-Tag, Ruecken-Tag danach.“ exp5 Fall 3: dieselben Trainings nach 20 Std. → Bein-Tag (Rücken 28 %), nach 37 Std. → Ruecken-Tag (Rücken 51 %). Sheet zeigt „Brust0%“, Plan-Zeile „Brust und Schultern erholen sich noch“.
-- **Für den Nutzer:** Der Nutzer liest „42 %“ und „ist noch nicht erholt“ wie eine Messung. Ein abgebrochenes Training mit einem Satz verschiebt den Plan genauso wie ein volles.
-- **Kleinste Korrektur:** Nur die drei Stufen zeigen, keine Prozentzahl. Begründung auf Heute als „Nach Schätzung der App …“ formulieren. Einen Muskel erst ab einer Mindestlast als belastet werten (z. B. 2 gültige Sätze als Hauptmuskel), bevor der Tag getauscht wird.
-
-### 28. Wochenziel ist die Zahl der Plantage – auch leerer, auch bei weniger Terminen; Serie wird rückwirkend neu gerechnet
+### 27. Wochenziel ist die Zahl der Plantage – auch leerer, auch bei weniger Terminen; Serie wird rückwirkend neu gerechnet
 
 - **Schwere:** mittel · **Stand:** offen
 - **Bereich:** Ehrlichkeit abgeleiteter Zahlen
@@ -383,7 +377,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 - **Für den Nutzer:** Wer zweimal pro Woche trainiert und einen Drei-Tage-Plan im Wechsel nutzt, erreicht sein Wochenziel nie. Ein neu angelegter leerer Tag löscht die sichtbare Serie.
 - **Kleinste Korrektur:** Ziel = Zahl der Termine, wenn Termine gesetzt sind, sonst Zahl der Tage mit Übungen (mindestens 1); auf Heute nennen, woher die Zahl kommt. Für die Serie das Ziel je Woche festhalten oder klar sagen, dass rückwirkend gerechnet wird.
 
-### 29. Ältere Fassung löscht Daten einer neueren: unbekannte Felder und Erweiterungsbereiche fallen beim ersten Speichern weg
+### 28. Ältere Fassung löscht Daten einer neueren: unbekannte Felder und Erweiterungsbereiche fallen beim ersten Speichern weg
 
 - **Schwere:** mittel · **Stand:** offen
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
@@ -392,6 +386,16 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 - **Beleg:** e8-alte-version.js: Fassung 2d8b5c9 (zwei Commits alt) mit heutigem Zustand, nach einem Tipp auf „Start“: x.masse, x.plaene, x.aussehen → (fehlt). Fassung c4d0dba: ganzes x → (fehlt). Heutige Fassung mit Zustand „von morgen“: v 7 → 6, plan.days[0].items[0].tempo → (fehlt), history[0].nachgetragen → (fehlt), history[0].exercises[0].sets[0].geschaetzt → (fehlt), x.neueErweiterung → (fehlt), neuesFeld → (fehlt).
 - **Für den Nutzer:** Körpermaße, gespeicherte Pläne, Aussehen und künftige neue Angaben können verschwinden, ohne dass der Nutzer etwas getan hat.
 - **Kleinste Korrektur:** Beim Laden raw.v prüfen: ist sie höher als die eigene, nicht speichern und „Daten stammen aus einer neueren Fassung – bitte neu laden“ zeigen. Unbekannte Bereiche in state.x und unbekannte oberste Felder unverändert durchreichen statt verwerfen.
+
+### 29. Erholungswert täuscht Genauigkeit vor: ein Satz zählt wie zwölf, Anzeige auf 1 %, Begründung als Tatsache
+
+- **Schwere:** mittel · **Stand:** behoben – Drei Stufen statt Prozent; ein Muskel gilt erst ab 2 Sätzen in einem Training als belastet (mittrainiert halb); Begründung auf „Heute“ und Plan-Zeile als Schätzung der App gekennzeichnet (PR #77). Test: E-runde2.
+- **Bereich:** Ehrlichkeit abgeleiteter Zahlen
+- **Stelle (Stand der Prüfung):** src/app.html:2513-2526 (recovery, recColor), 5100-5108 (recSheet), 2406-2410 (baseDay), 5170-5171 (vPlan)
+- **Was passiert:** Der Wert hängt nur von den Stunden seit dem letzten Eintrag ab (linear bis 72 bzw. 48 Std.). Satzzahl, Gewicht, Reserve und Muskelgröße spielen keine Rolle. Gezeigt wird er als ganze Prozentzahl je Muskel und steuert über feste Schwellen (50/55/25) den Tagesvorschlag. Die Kennzeichnung „Schätzung der App“ steht im Sheet, auf der Muskel-Seite und in der Hilfe, aber nicht in der Begründung auf Heute und nicht in der Plan-Zeile.
+- **Beleg:** exp1 Fall 3: 1 Satz und 12 Sätze vor 1 Std. → identisch Brust 1,4 / Schultern 2,1 / Trizeps 2,1. Fall 9: ein einziger Rudersatz vor 20 Std. → „Angepasst – Bein-Tag – Rücken ist noch nicht erholt. Heute lieber Bein-Tag, Ruecken-Tag danach.“ exp5 Fall 3: dieselben Trainings nach 20 Std. → Bein-Tag (Rücken 28 %), nach 37 Std. → Ruecken-Tag (Rücken 51 %). Sheet zeigt „Brust0%“, Plan-Zeile „Brust und Schultern erholen sich noch“.
+- **Für den Nutzer:** Der Nutzer liest „42 %“ und „ist noch nicht erholt“ wie eine Messung. Ein abgebrochenes Training mit einem Satz verschiebt den Plan genauso wie ein volles.
+- **Kleinste Korrektur:** Nur die drei Stufen zeigen, keine Prozentzahl. Begründung auf Heute als „Nach Schätzung der App …“ formulieren. Einen Muskel erst ab einer Mindestlast als belastet werten (z. B. 2 gültige Sätze als Hauptmuskel), bevor der Tag getauscht wird.
 
 ### 30. Speicher voll: Warnung erscheint, aber die Zusammenfassung feiert ein nicht gespeichertes Training; Essen-Tagebuch wächst unbegrenzt
 
@@ -569,22 +573,19 @@ Verhalten, das `tests/run.js` laut den Prüfern nicht absichert (Stichwortsuche 
 
 Kleine, einzeln prüfbare Änderungen, jeweils mit Test. Zuerst, was Daten oder Empfehlungen verfälscht.
 
-1. **Ehrlichkeit der Aussagen**
-   - Erholung: grobe Stufen statt Prozent, als Schätzung der App gekennzeichnet; ein einzelner Satz zählt nicht wie ein ganzes Training
-   - Stillstand nach bewusster Reduktion; Sicherungszeile „aktuell“; Kalorienbilanz mit zwei Trainings am Tag
-2. **Progression (Phase C)**
+1. **Progression (Phase C)**
    - Unterscheiden, ob Wiederholungen eingegeben oder nur übernommen wurden; Bestwerte nur für Eingegebenes melden
    - Jede Empfehlung nennt ihre Datengrundlage („aus 1 Einheit“, „aus 3 vergleichbaren Einheiten“) und sagt bei zu wenig Daten, dass sie nichts ableitet
    - Reserve/Gefühl je Satz auch beim Nachtragen
-3. **Planung (Phase D)**
+2. **Planung (Phase D)**
    - Generator kürzt bei knapper Zeit nach Muskelabdeckung statt vom Ende
    - Markierung „steht in meinem Studio“: nichts still setzen; abgewählte Geräte im Plan kennzeichnen
    - Harte Regeln als Tests: kein Gerät außerhalb des Studios, kein Doppel im Tag, Zeitgrenze, Verlauf unberührt
-4. **Daten**
+3. **Daten**
    - Einträge mit Datum in der Zukunft oder kaputtem Datum
    - Wiederherstellen auf einem neuen Gerät ohne vorher einen Plan anzulegen; „Rückgängig“ nach dem Wiederherstellen
    - Ältere zwischengespeicherte Fassung der App wirft unbekannte Felder weg
-5. **Tests**
+4. **Tests**
    - Die leeren und uhrzeitabhängigen Prüfungen reparieren
    - Übergänge aus der Lückenliste: Verwerfen, Plan ändern im Training, Verlauf korrigieren und löschen samt Folgen
 

@@ -5725,7 +5725,7 @@ async function finishAllSets(page, kg, reps) {
         return { title: txt("#app h1"), h1: document.querySelectorAll("#app h1").length, back: txt("#navbar .nb-back"), tab: q("#tabs button.on").dataset.v, sets: txt("#mkSets"), dayN: txt("#mkDayN"), stat: txt("#mkStat"), band: txt("#mkBand"),
           bar: q("#mkStat .mfill") ? [q("#mkStat .mband").getAttribute("style"), q("#mkStat .mfill").getAttribute("style")] : null,
           days: [...document.querySelectorAll("#mkInPlan .mk-day")].map(x => ({ id: x.dataset.day, cap: x.querySelector(".cap").textContent, rows: [...x.querySelectorAll(".li")].map(l => `${l.dataset.id}: ${l.querySelector(".t").textContent} – ${l.querySelector(".s").textContent}`), pics: [...x.querySelectorAll(".li")].every(l => l.dataset.a === "openEx" && l.querySelector(".thumbbox svg")) })),
-          rule: txt("#mkRule"), none: txt("#mkNone"), never: txt("#mkNever"), lastT: txt("#mkLastT"), lastS: txt("#mkLastS"), rec: txt("#mkRec"), recVal: q("#mkRec .val") ? parseInt(q("#mkRec .val").textContent, 10) : null, recW: q("#mkRec .mfill") ? q("#mkRec .mfill").getAttribute("style") : null,
+          rule: txt("#mkRule"), none: txt("#mkNone"), never: txt("#mkNever"), lastT: txt("#mkLastT"), lastS: txt("#mkLastS"), rec: txt("#mkRec"), recVal: q("#mkRec .val") ? q("#mkRec .val").textContent.trim() : null, recW: q("#mkRec .mfill") ? q("#mkRec .mfill").getAttribute("style") : null,
           main: ids("#mkMain .li"), sup: ids("#mkSup .li"), mainCap: txt("#mkMain .cap"), supCap: txt("#mkSup .cap"), hasSup: !!q("#mkSup"),
           figLabel: q("#mkOne svg.fig").getAttribute("aria-label"), hot: hot.length, hotAll: hot.every(e => e.getAttribute("style") === "fill:var(--mhot)"), parts: document.querySelectorAll("#mkOne .fig .m").length }; });
       const at320 = async page => { await page.setViewportSize({ width: 320, height: 640 }); const r = await noOverflow(page), who = r ? "" : await overflowers(page); await page.setViewportSize({ width: 360, height: 780 }); return { r, who }; };
@@ -5778,7 +5778,7 @@ async function finishAllSets(page, kg, reps) {
         const recB = await tp(page, () => window.__tp.mkRecovery().brust);
         ok("Zuletzt trainiert (Brust): das jüngste Training zählt – vor 2 Tagen, „Brust und Rücken“, Trizepsdrücken, als „mittrainiert“ benannt",
           d.lastT === `${dateTxt(2)} · vor 2 Tagen` && d.lastS === "Training „Brust und Rücken“ · Trizepsdrücken · mittrainiert", JSON.stringify([d.lastT, d.lastS]));
-        ok("Erholung: der Wert aus recovery() der App, als „Schätzung der App“ gekennzeichnet", Math.abs(d.recVal - recB) <= 1 && d.rec.includes("Schätzung der App") && d.rec.startsWith("Erholung"), JSON.stringify([d.rec, recB]));
+        ok("Erholung: die Stufe aus recovery() der App (keine Prozentzahl), als „Schätzung der App“ gekennzeichnet", d.recVal === (recB >= 85 ? "Erholt" : recB >= 45 ? "Teilweise" : "Belastet") && !d.rec.includes("%") && d.rec.includes("Schätzung der App") && d.rec.startsWith("Erholung"), JSON.stringify([d.rec, recB]));
         ok("Geräte in der App: erst „Hauptsächlich“ (8, Geräte im Studio zuerst), dann „Unterstützend“ (2) – benannt wie auf der Geräteseite",
           d.mainCap === "Hauptsächlich · 8" && d.main === "hs-chest,hs-incline,hs-decline,hs-widechest,hs-fly,lf-chest,lf-fly,lf-cablefly" && d.supCap === "Unterstützend · 2" && d.sup === "hs-dip,lf-tripress", JSON.stringify([d.mainCap, d.main, d.supCap, d.sup]));
         const marks = await tp(page, () => Object.fromEntries(["hs-chest", "hs-decline", "lf-chest", "hs-dip"].map(id => [id, document.querySelector(`#mkDevs .li[data-id="${id}"] .s`).textContent])));
@@ -5801,15 +5801,15 @@ async function finishAllSets(page, kg, reps) {
         ok("Zurück führt zur Übersicht „Muskeln“", (await page.textContent("#app h1")) === "Muskeln" && await page.isVisible("#mkList"));
         await page.click("#mk-ruecken");
         const dr = await readDetail(page);
-        ok("Zuletzt trainiert (Rücken): vor 2 Tagen am Latzug als Hauptmuskel; Erholung 50–83 % → „Teilweise“",
-          dr.title === "Rücken" && dr.lastT === `${dateTxt(2)} · vor 2 Tagen` && dr.lastS === "Training „Brust und Rücken“ · Latzug" && dr.recVal >= 48 && dr.recVal <= 85 && dr.rec.includes("Teilweise · Schätzung der App"), JSON.stringify([dr.lastT, dr.lastS, dr.rec]));
+        ok("Zuletzt trainiert (Rücken): vor 2 Tagen am Latzug als Hauptmuskel; Erholung „Teilweise“",
+          dr.title === "Rücken" && dr.lastT === `${dateTxt(2)} · vor 2 Tagen` && dr.lastS === "Training „Brust und Rücken“ · Latzug" && dr.recVal === "Teilweise" && dr.rec.includes("Schätzung der App"), JSON.stringify([dr.lastT, dr.lastS, dr.rec]));
         ok("Rücken im Plan: 9 Sätze an 2 Tagen – Oberkörper 4 (Rudern), Brust und Rücken 5 (Latzug)",
           dr.sets === "9" && dr.dayN === "2" && dr.days.map(x => `${x.cap}: ${x.rows.join(" | ")}`).join(" || ") === "Oberkörper · 4 Sätze: hs-row: Rudern – 4 Sätze · Hauptmuskel || Brust und Rücken · 5 Sätze: hs-lat: Latzug – 5 Sätze · Hauptmuskel", JSON.stringify(dr.days));
         // Beine vorn: vor 4 Tagen an der Beinpresse → länger als 72 Stunden her → 100 %, „Erholt“
         await page.click("#navbar .nb-back"); await page.click("#mk-beinev");
         const dv = await readDetail(page);
-        ok("Zuletzt trainiert (Beine vorn): vor 4 Tagen, Training „Beine“, Beinpresse; Erholung 100 % → „Erholt“",
-          dv.lastT === `${dateTxt(4)} · vor 4 Tagen` && dv.lastS === "Training „Beine“ · Beinpresse" && dv.recVal === 100 && /width:\s*100%/.test(dv.recW) && dv.rec.includes("Erholt · Schätzung der App"), JSON.stringify([dv.lastT, dv.lastS, dv.rec, dv.recW]));
+        ok("Zuletzt trainiert (Beine vorn): vor 4 Tagen, Training „Beine“, Beinpresse; Erholung „Erholt“",
+          dv.lastT === `${dateTxt(4)} · vor 4 Tagen` && dv.lastS === "Training „Beine“ · Beinpresse" && dv.recVal === "Erholt" && /width:\s*100%/.test(dv.recW) && dv.rec.includes("Schätzung der App"), JSON.stringify([dv.lastT, dv.lastS, dv.rec, dv.recW]));
         // Schultern: nur halbe Sätze an zwei Tagen – Oberkörper 1,5 + 2 + 3 = 6,5; Brust und Rücken 1,5 + 2 + 1 = 4,5
         await page.click("#navbar .nb-back"); await page.click("#mk-schultern");
         const ds = await readDetail(page);
@@ -6942,6 +6942,61 @@ async function finishAllSets(page, kg, reps) {
       const mins = await tp(pc.page, () => window.__tp.state.plan.minutes);
       ok("Zeitbudget-Hinweis knapp darüber: genannte Minuten liegen über dem Budget, kein doppelter Punkt", note.startsWith("Etwas über") && note.includes(`Ganzkörper ≈ ${mins + 1} Min.`) && !note.includes(".."), note);
       await pc.ctx.close();
+    }
+    {
+      // Ehrlichkeit: Erholung erst ab 2 Sätzen, Anzeige in Stufen statt Prozent, Begründung als Schätzung
+      const one = [R2H("e1", 1 / 24, "d1", [R2E("hs-chest", "s", [[40, 10]])])], many = [R2H("e2", 1 / 24, "d1", [R2E("hs-chest", "s", [[40, 10], [40, 10], [40, 10]])])];
+      const recOf = async history => { const { ctx, page } = await open({ plan: PLAN_SMALL, history }); const r = await tp(page, () => { const x = window.__tp.recovery(); return { brust: Math.round(x.brust), tri: Math.round(x.trizeps) }; }); return { ctx, page, r }; };
+      const a = await recOf(one); await a.ctx.close();
+      const b = await recOf(many);
+      ok("Erholung: ein einzelner Satz belastet keinen Muskel; drei Sätze vor einer Stunde schon (Brust kaum erholt); mittrainiert zählt halb: Trizeps mit 1,5 gezählten Sätzen bleibt erholt", a.r.brust === 100 && b.r.brust <= 2 && b.r.tri === 100, JSON.stringify([a.r, b.r]));
+      await b.page.click("nav.tabs [data-v=plan]");
+      const row = await b.page.textContent("[data-a=showRec]");
+      await b.page.click("[data-a=showRec]");
+      const sh = await b.page.textContent(".sheet");
+      ok("Erholung im Plan und im Fenster: Stufen („Belastet“, „Erholt“) statt Prozentzahlen, als Schätzung der App gekennzeichnet", row.includes("Schätzung der App") && sh.includes("Belastet") && sh.includes("Erholt") && !/\d\s?%/.test(sh) && sh.includes("ab 2 Sätzen"), sh.slice(0, 200));
+      await b.ctx.close();
+    }
+    {
+      // Ehrlichkeit: Stillstand nicht melden, wenn das Gewicht nach einer Reduktion wieder steigt
+      const prog = [28, 21, 14, 7, 1].map((n, k) => R2H("s" + k, n, "d1", [R2E("hs-chest", "s", [[50, 40, 42.5, 45, 47.5][k], 10].map(() => null) && [[[50, 40, 42.5, 45, 47.5][k], 10], [[50, 40, 42.5, 45, 47.5][k], 10], [[50, 40, 42.5, 45, 47.5][k], 10]])]));
+      const flat = [28, 21, 14, 7, 1].map((n, k) => R2H("f" + k, n, "d1", [R2E("hs-chest", "s", [[45, 10], [45, 10], [45, 10]])]));
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const pl = async history => { const { ctx, page } = await open({ plan, history }); const r = await tp(page, () => !!window.__tp.insights().find(x => x.id === "plateau:hs-chest")); await ctx.close(); return r; };
+      const p1 = await pl(prog), p2 = await pl(flat);
+      ok("Stillstand: 50 → 40 → 42,5 → 45 → 47,5 kg ist kein Stillstand; fünfmal 45 kg schon", !p1 && p2, JSON.stringify([p1, p2]));
+    }
+    {
+      // Ehrlichkeit: Sicherungszeile „aktuell“ nur ohne Änderungen; nachgetragene Trainings zählen nach dem Eintragszeitpunkt
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [R2H("b1", 3, "d1", [R2E("hs-chest", "s", [[40, 10]])])] });
+      await page.click("#navbar [data-a=openSettings]"); await page.click("[data-a=backupOpen]").catch(() => {});
+      await tp(page, () => { window.__tp.markBackup(new Date().toISOString()); });
+      await page.click("nav.tabs [data-v=home]"); await page.click("#navbar [data-a=openSettings]");
+      const l1 = await page.textContent("#backupLine");
+      await tp(page, () => { const T = window.__tp; T.state.weights.push({ d: T.dkey(), kg: 80 }); T.save(); });
+      await page.click("nav.tabs [data-v=home]"); await page.click("#navbar [data-a=openSettings]");
+      const l2 = await page.textContent("#backupLine");
+      await tp(page, () => { const T = window.__tp, d = new Date(Date.now() - 5 * 864e5).toISOString(); T.commitTraining({ id: "nt1", dayId: "d1", day: "Test", date: d, durationSec: 0, nt: true, exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 1, rmin: 8, rmax: 12, sets: [{ kg: 40, reps: 10 }] }] }); T.save(); });
+      await page.click("nav.tabs [data-v=home]"); await page.click("#navbar [data-a=openSettings]");
+      const l3 = await page.textContent("#backupLine");
+      await page.reload(); await page.waitForSelector("#app h1"); await page.click("#navbar [data-a=openSettings]");
+      const l4 = await page.textContent("#backupLine");
+      ok("Sicherungszeile: direkt nach der Sicherung „aktuell“; nach einem neuen Gewicht „seitdem geändert“; ein für vor 5 Tagen nachgetragenes Training zählt als neu (auch nach Neuladen)", l1.includes("aktuell") && l2.includes("seitdem geändert") && !l2.includes("aktuell") && l3.includes("seitdem 1 Training") && l4.includes("seitdem 1 Training"), JSON.stringify([l1, l2, l3, l4]));
+      await ctx.close();
+      const old = await open({ plan: PLAN_SMALL, history: [R2H("b2", 3, "d1", [R2E("hs-chest", "s", [[40, 10]])])], backupAt: new Date(Date.now() - 864e5).toISOString() });
+      await old.page.click("#navbar [data-a=openSettings]");
+      const l5 = await old.page.textContent("#backupLine");
+      ok("Sicherung aus einer älteren Fassung (ohne Fingerabdruck): keine Behauptung „aktuell“, sondern „keine neuen Trainings“", l5.includes("keine neuen Trainings") && !l5.includes("aktuell"), l5);
+      await old.ctx.close();
+    }
+    {
+      // Ehrlichkeit: Kalorienbilanz zählt alle Trainings des Tages; Bilanz gerundet mit ≈
+      const two = [Object.assign(R2H("k1", 0, "d1", [R2E("hs-chest", "s", [[40, 10]])]), { durationSec: 1800, date: new Date(new Date().setHours(9, 0, 0, 0)).toISOString() }),
+        Object.assign(R2H("k2", 0, "d1", [R2E("hs-row", "s", [[40, 10]])]), { durationSec: 2700, date: new Date(new Date().setHours(10, 0, 0, 0)).toISOString() })];
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: two, nutr: { cm: 180, age: 35, sex: "m", pal: 1.55, goal: "halten" }, weights: [{ d: (d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`)(new Date()), kg: 80 }] });
+      const e = await tp(page, () => { const T = window.__tp, x = T.dayEnergy(T.dkey()); return x ? { min: x.tr.min, kcal: x.trainKcal, n: x.tr.n } : null; });
+      ok("Kalorienbilanz: zwei Trainings am Tag (30 + 45 Min.) zählen zusammen 75 Min., 250 kcal (2,5 × 80 kg × 75/60)", e && e.min === 75 && e.kcal === 250 && e.n === 2, JSON.stringify(e));
+      await ctx.close();
     }
     // @ext:runde2:test:end
     // ── Abstand runde2/test 1 ──
