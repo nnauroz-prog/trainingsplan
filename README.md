@@ -118,6 +118,21 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 
 ## Funktionen
 
+- **Verlässlichkeit (Runde 2 der Bestandsaufnahme, siehe `docs/bestandsaufnahme.md`):**
+  - Gewichtsangabe im laufenden Training umstellen („Frühere Einträge umstellen“): noch nicht begonnene Übungen des Geräts werden neu berechnet, die heutigen Sätze mit der neuen Angabe gespeichert
+  - „Rückgängig“ unter Hinweise nur, solange der Plan seit der Änderung unverändert ist (Vergleichswert `prevPlan.after`); sonst erklärt die Karte, warum es nicht mehr geht
+  - Gerätetausch aus dem Hinweis „Stillstand“ und „Gerät tauschen“ im Training erzeugen keine doppelten Geräte (auch nicht mit zeitbedingt ausgeblendeten)
+  - „Zeit für heute“ wird nach jeder Änderung am Trainingstag mit denselben Minuten neu berechnet (oder entfällt)
+  - Erholung und Muskelbelastung zählen nur gültige Sätze und nur bekannte Geräte
+  - Zwei Fenster der App: Speichert das eine, übernimmt das andere dessen Stand (Hinweis auf „Heute“), statt ihn später zu überschreiben
+  - Planprüfung: „jeder Tag passt in dein Zeitbudget“ nur, wenn die Schätzung im Budget liegt; knapp darüber wird der Tag mit seiner Schätzung genannt
+  - Vorschläge: ab 28 Tagen Pause auch bei uneinheitlichen Sätzen je Satz ein Schritt leichter (Regel der App); die Begründung nennt die tatsächlichen Ziele; ohne gespeicherte Satzzahl keine Aussage über eine unvollständige Einheit
+  - Zusammenfassung: „Wie war der letzte Satz?“ – nach dem letzten Satz gibt es keine Pause mit dieser Frage; die Antwort fließt sofort in „Nächstes Mal“ ein
+  - Erholung (Schätzung der App): drei Stufen „Erholt / Teilweise / Belastet“ statt Prozent; ein Muskel gilt erst ab 2 gültigen Sätzen in einem Training als belastet (mittrainiert halb gezählt, `REC_MIN`); Begründung auf „Heute“ („Nach Schätzung der App …“) und Plan-Zeile gekennzeichnet
+  - Stillstand: nach einer bewussten Reduktion nicht, solange das Gewicht unter dem bisherigen Bestwert liegt und zweimal in Folge gestiegen ist; schwankende Wiederholungen oder die Rückkehr aufs alte Gewicht zählen nicht als Fortschritt
+  - Sicherungszeile: „aktuell“ nur, wenn ein Fingerabdruck der gespeicherten Daten (`dataSig`: Rohdaten ohne Bedienzustand, Quittungen wie „Nicht jetzt“ und Health-Übergabe, abgeleitete Gerätenamen und Standardwerte von Erweiterungen – damit unabhängig von App-Updates) seit der Sicherung unverändert ist; sonst „seitdem geändert“. Trainings zählen nach dem Eintragszeitpunkt (`at`), ein nachgetragenes Training für einen früheren Tag also mit
+  - Kalorienbilanz im Tagesplan: alle Trainings des Tages zählen; ohne erfasste Dauer wird nichts geschätzt („ohne Dauer“, bei mehreren Trainings „(1 von 2 mit Dauer)“); Bilanzen, Abstand zum Tagesziel, Ausgleich und der Ring auf „Heute“ mit ≈ und auf 10 kcal gerundet (`kcal10`); der Rechenweg bleibt genau
+
 - **Datum am Ort des Nutzers:** Körpergewicht und Gewichtstrend verwenden das Datum am Ort (nicht UTC). Vorher landete ein Eintrag in Deutschland zwischen Mitternacht und 1 bzw. 2 Uhr unter dem Vortag
 
 - **Geräteseite neu:** Zeichnung groß über die ganze Breite mit sanftem Licht dahinter, darunter Name, „Am Gerät steht“ und Kurzinfos als Chips (Muskel mit rotem Punkt, Gewichtsart, Schritt, eigene Einstellung); „So geht's“ als nummerierte Karten; danach Tricks, Muskeln (Karten), Deine Werte, In deinem Plan, Mehr zur Übung und Alternativen
