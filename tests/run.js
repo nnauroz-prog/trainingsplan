@@ -3482,7 +3482,7 @@ async function finishAllSets(page, kg, reps) {
         const days = [-1, 1].filter(n => mon(k(n)) === mon(k(0)));
         return { n: days.length, bal: days.reduce((s, n) => s + T.dayEnergy(k(n)).balance, 0) }; });
       const sumTxt = (await page.textContent("#tagWeekSum")).replace(/\s+/g, " ");
-      ok("Wochenbilanz: Tage mit Essen ohne heute, Summe stimmt", sumTxt.includes(`Woche ohne heute · ${exp.n} ${exp.n === 1 ? "Tag" : "Tage"} mit Essen`) && sumTxt.includes(`${exp.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${Math.abs(exp.bal).toLocaleString("de-DE")} kcal`), sumTxt + " / " + JSON.stringify(exp));
+      ok("Wochenbilanz: Tage mit Essen ohne heute, Summe stimmt", sumTxt.includes(`Woche ohne heute · ${exp.n} ${exp.n === 1 ? "Tag" : "Tage"} mit Essen`) && sumTxt.includes(`${exp.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${(Math.round(Math.abs(exp.bal) / 10) * 10).toLocaleString("de-DE")} kcal`), sumTxt + " / " + JSON.stringify(exp));
       // Anderen Tag der Woche wählen: Sonntag → Samstag (gestern), sonst morgen
       if (wd === 6) {
         await page.click(`.tagweek [data-d="${dk(-1)}"]`);
@@ -3596,7 +3596,7 @@ async function finishAllSets(page, kg, reps) {
       const e = await tp(page, () => { const T = window.__tp, k = n => { const x = new Date(Date.now() + n * 864e5); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; };
         return { m: T.dayEnergy(k(1)).balance, g: T.dayEnergy(k(-1)).balance }; });
       const other = wd === 6 ? { n: -1, kc: "2.000 kcal gegessen", bal: e.g } : { n: 1, kc: "1.500 kcal geplant", bal: e.m };
-      ok("Anderer Tag mit Essen: Kalorien und Bilanz in der Zeile", row(other.n).t.includes(other.kc) && row(other.n).t.includes(`${other.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${Math.abs(other.bal).toLocaleString("de-DE")}`), row(other.n).t);
+      ok("Anderer Tag mit Essen: Kalorien und Bilanz in der Zeile", row(other.n).t.includes(other.kc) && row(other.n).t.includes(`${other.bal <= 0 ? "Defizit" : "Überschuss"} ≈ ${(Math.round(Math.abs(other.bal) / 10) * 10).toLocaleString("de-DE")}`), row(other.n).t);
       // Zeile antippen öffnet den Tag
       await page.click(`#tagWeekList [data-d="${dk(other.n)}"]`);
       ok("Zeile antippen öffnet den Tag", (await page.textContent("main h1")) === (other.n === 1 ? "Morgen" : "Gestern") && (await page.getAttribute("#tagSeg [data-v=tag]", "aria-pressed")) === "true");
@@ -3785,26 +3785,26 @@ async function finishAllSets(page, kg, reps) {
       ok("Gegangene Schritte eingetragen: Zeile rechnet sofort neu (noch 3 kcal: „ungefähr auf deinem Tagesziel“), Ausgleich weg", (await txt("#tagGoal")) === "Du liegst ungefähr auf deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
       await page.fill("#tagAct", "");
       await page.click("[data-a=tagDay][data-d='1']");
-      ok("Morgen geplant 1.500 kcal: 959 kcal unter dem Tagesziel", (await txt("#tagGoal")) === "Geplant: 959 kcal unter deinem Tagesziel.", await txt("#tagGoal"));
+      ok("Morgen geplant 1.500 kcal: 959 kcal unter dem Tagesziel (angezeigt ≈ 960)", (await txt("#tagGoal")) === "Geplant: ≈ 960 kcal unter deinem Tagesziel.", await txt("#tagGoal"));
       await page.click("[data-a=tagDay][data-d='1']");
-      ok("Übermorgen ohne Essen: „Zu deinem Ziel passen an diesem Tag 2.459 kcal“", (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag 2.459 kcal.", await txt("#tagGoal"));
+      ok("Übermorgen ohne Essen: „Zu deinem Ziel passen an diesem Tag ≈ 2.460 kcal“ (2.459)", (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag ≈ 2.460 kcal.", await txt("#tagGoal"));
       for (let i = 0; i < 3; i++) await page.click("[data-a=tagDay][data-d='-1']");
-      ok("Gestern 2.600 kcal: 141 kcal über dem Tagesziel, kein Ausgleich für vergangene Tage", (await txt("#tagGoal")) === "141 kcal über deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
+      ok("Gestern 2.600 kcal: 141 kcal über dem Tagesziel (angezeigt ≈ 140), kein Ausgleich für vergangene Tage", (await txt("#tagGoal")) === "≈ 140 kcal über deinem Tagesziel." && !(await page.$("#tagComp")), await txt("#tagGoal"));
       await page.click("[data-a=tagDay][data-d='-1']");
       ok("Vorgestern ohne Essen: nur der Rechenweg", !(await page.$("#tagGoal")) && !!(await page.$("#tagGoalHow")));
       for (let i = 0; i < 2; i++) await page.click("[data-a=tagDay][data-d='1']");
       // Sehr viel über dem Ziel: unrealistische Vorschläge entfallen
       await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 4500; });
       await rerender();
-      ok("2.041 kcal darüber: nur „weniger essen“ (über 15.000 Schritte oder 90 Min. schlägt die App nicht vor)", (await txt("#tagComp")) === "Ausgleich: 2.041 kcal weniger essen.", await txt("#tagComp"));
+      ok("2.041 kcal darüber: nur „weniger essen“ (über 15.000 Schritte oder 90 Min. schlägt die App nicht vor)", (await txt("#tagComp")) === "Ausgleich: ≈ 2.040 kcal weniger essen.", await txt("#tagComp"));
       // „Mäßig aktiv“: Bewegung im Faktor, kein Ausgleich über Bewegung
       await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 3000; T.state.nutr.pal = 1.85; });
       await rerender();
-      ok("„Mäßig aktiv“ (Verbrauch 3.293, Ziel 2.800): 200 kcal darüber, ohne Ausgleichsvorschlag", (await txt("#tagGoal")) === "200 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 2.800 kcal = Verbrauch 3.293 − 493 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      ok("„Mäßig aktiv“ (Verbrauch 3.293, Ziel 2.800): 200 kcal darüber, ohne Ausgleichsvorschlag", (await txt("#tagGoal")) === "≈ 200 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 2.800 kcal = Verbrauch 3.293 − 493 kcal („Abnehmen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
       // Aufbauen: Ziel über dem Verbrauch, kein Ausgleich
       await tp(page, () => { const T = window.__tp, x = new Date(), k = `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(x.getDate()).padStart(2, "0")}`; T.state.food[k][0].g = 3300; T.state.nutr.pal = 1.55; T.state.nutr.goal = "auf"; });
       await rerender();
-      ok("„Aufbauen“: Tagesziel 3.139 kcal = Verbrauch 2.868 + 271, 161 kcal darüber, kein Ausgleich", (await txt("#tagGoal")) === "161 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 3.139 kcal = Verbrauch 2.868 + 271 kcal („Aufbauen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
+      ok("„Aufbauen“: Tagesziel 3.139 kcal = Verbrauch 2.868 + 271, 161 kcal darüber (angezeigt ≈ 160), kein Ausgleich", (await txt("#tagGoal")) === "≈ 160 kcal über deinem Tagesziel." && !(await page.$("#tagComp")) && (await txt("#tagGoalHow")) === "Tagesziel 3.139 kcal = Verbrauch 2.868 + 271 kcal („Aufbauen“).", (await txt("#tagGoal")) + " | " + (await txt("#tagGoalHow")));
       await tp(page, () => { window.__tp.state.nutr.goal = "halten"; });
       await rerender();
       ok("„Halten“: Tagesziel gleich Verbrauch", (await txt("#tagGoalHow")) === "Tagesziel 2.868 kcal = Verbrauch 2.868 kcal („Halten“).", await txt("#tagGoalHow"));
@@ -3946,11 +3946,11 @@ async function finishAllSets(page, kg, reps) {
       // Aufbauen: Verbrauch 2.759, Ziel 3.030 → Tagesziel 3.030
       ok("Startseite ohne Einträge: „Tagesziel ≈ 3.030 kcal“, kein „Defizit“", (await txt("#homeTag")).includes("Tagesziel ≈ 3.030 kcal") && !(await txt("#homeTag")).includes("Defizit"), await txt("#homeTag"));
       await page.click("#homeTag");
-      ok("Heute ohne Einträge: „Noch nichts eingetragen“, keine Defizit-Zahl, Tagesziel genannt", (await txt("#tagNoFood")) === "Noch nichts eingetragen." && !(await page.$("#tagBalNum")) && !(await txt("#tagBalIn")).includes("Defizit") && (await txt("#tagGoal")) === "Noch 3.030 kcal bis zu deinem Tagesziel.", await txt("#tagBalIn"));
+      ok("Heute ohne Einträge: „Noch nichts eingetragen“, keine Defizit-Zahl, Tagesziel genannt", (await txt("#tagNoFood")) === "Noch nichts eingetragen." && !(await page.$("#tagBalNum")) && !(await txt("#tagBalIn")).includes("Defizit") && (await txt("#tagGoal")) === "Noch ≈ 3.030 kcal bis zu deinem Tagesziel.", await txt("#tagBalIn"));
       await page.click("[data-a=tagDay][data-d='-1']");
       ok("Gestern ohne Einträge: „Kein Essen eingetragen – keine Bilanz“", (await txt("#tagNoFood")) === "Kein Essen eingetragen – keine Bilanz." && !(await page.$("#tagBalNum")) && !(await txt("#tagBalIn")).includes("Defizit"));
       await page.click("[data-a=tagDay][data-d='1']"); await page.click("[data-a=tagDay][data-d='1']");
-      ok("Morgen ohne Plan: „Noch kein Essen geplant“ und was zum Ziel passt", (await txt("#tagNoFood")) === "Noch kein Essen geplant." && (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag 3.030 kcal.");
+      ok("Morgen ohne Plan: „Noch kein Essen geplant“ und was zum Ziel passt", (await txt("#tagNoFood")) === "Noch kein Essen geplant." && (await txt("#tagGoal")) === "Zu deinem Ziel passen an diesem Tag ≈ 3.030 kcal.");
       await ctx.close();
       // Wochenrückblick: laufende Woche ohne Minus-Vergleich, abgeschlossene Woche mit
       const X = (kg, n) => ({ exId: "hs-chest", name: "Brustpresse", u: "s", planned: n, rmin: 8, rmax: 12, sets: Array.from({ length: n }, () => ({ kg, reps: 10 })) });
