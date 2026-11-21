@@ -385,7 +385,7 @@ async function finishAllSets(page, kg, reps) {
     {
       const { ctx, page } = await open({ plan: PLAN_SMALL }, { sw: true });
       await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
-      ok("Service Worker aktiv (Cache trainingsplan-v98)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v98")));
+      ok("Service Worker aktiv (Cache trainingsplan-v99)", await page.evaluate(async () => !!navigator.serviceWorker.controller && (await caches.keys()).includes("trainingsplan-v99")));
       await ctx.setOffline(true); await page.reload();
       ok("App startet offline mit gespeicherten Daten", await page.isVisible("[data-a=start]"));
       await ctx.close();
@@ -6685,6 +6685,160 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand sicherheit/test 1 ──
     // ── Abstand sicherheit/test 2 ──
     // ── Abstand sicherheit/test 3 ──
+    // @ext:runde2:test:start
+    section("E-runde2. Offene Datenfehler aus der Bestandsaufnahme");
+    const R2iso = n => new Date(Date.now() - n * 864e5).toISOString();
+    const R2E = (exId, u, sets) => ({ exId, name: exId, u, planned: sets.length, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) });
+    const R2H = (id, n, dayId, exs) => ({ id, dayId, day: "Tag", date: R2iso(n), durationSec: 1800, exercises: exs });
+    {
+      // A. Gewichtsangabe umstellen („Frühere Einträge umstellen“) während eines laufenden Trainings
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [{ id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "i2", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan, history: [R2H("t1", 6, "d1", [R2E("hs-chest", "s", [[40, 10], [40, 10], [40, 9]]), R2E("hs-row", "s", [[30, 10], [30, 10], [30, 9]])])] });
+      await page.click("[data-a=start]");
+      await page.click("[data-a=openDevInfo]"); await page.click(".sheet [data-a=editDev]");
+      await page.click(".sheet [data-a=devSet][data-k=load][data-v=total]");
+      await page.click("[data-a=devRelabelAsk]"); await page.click("[data-a=devRelabel]"); await page.click(".sheet [data-a=devSave]");
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const a1 = await tp(page, () => { const T = window.__tp, x = T.state.session.list[0]; return { u: x.u, dev: T.unitOf(T.ex("hs-chest")), hist: T.state.history[0].exercises[0].u, sets: x.sets.map(s => s.kg + "x" + s.reps).join(",") }; });
+      ok("Umstellen im laufenden Training: auch die heutige Übung zählt jetzt „insgesamt“, Vorschlag aus den umgestellten Einträgen", a1.u === "t" && a1.dev === "t" && a1.hist === "t" && a1.sets.startsWith("40x"), JSON.stringify(a1));
+      await page.fill("#kgIn", "80"); await page.fill("#repsIn", "10"); await page.click("[data-a=doneSet]");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]");
+      const a2 = await tp(page, () => window.__tp.state.history.map(h => h.exercises.filter(x => x.exId === "hs-chest").map(x => x.u + ":" + x.sets.map(s => s.kg + "x" + s.reps).join("/")).join()).join(" | "));
+      ok("… und wird mit „insgesamt“ gespeichert (vorher mit der alten Angabe „pro Seite“)", a2 === "t:40x10/40x10/40x9 | t:80x10", a2);
+      await ctx.close();
+    }
+    {
+      // B + C. Gerätetausch aus dem Hinweis „Stillstand“: kein doppeltes Gerät; „Rückgängig“ verwirft keine späteren Änderungen
+      const hist = [28, 21, 14, 7, 2].map((n, k) => R2H("p" + k, n, "a", [R2E("hs-row", "s", [[50, 9], [50, 9], [50, 9]])]));
+      const dayA = { id: "a", name: "Tag A", items: [{ id: "a1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "a2", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] };
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [dayA] }, history: hist });
+      // Die Alternative, die der Hinweis vorher vorschlug (nur gegen Tag A geprüft), kommt in Tag B dazu
+      const X = await tp(page, () => window.__tp.rankAlternatives("hs-row", new Set(["hs-row", "hs-chest"])).direct[0].e.id);
+      await tp(page, ([k, x, a]) => { const T = window.__tp; T.state.plan.days = [a, { id: "b", name: "Tag B", items: [{ id: "b1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }, { id: "b2", exId: x, sets: 3, rmin: 8, rmax: 12, rest: 90 }] }]; localStorage.setItem(k, JSON.stringify(T.state)); }, [KEY, X, dayA]);
+      await page.reload(); await page.waitForSelector("#app h1");
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("#wissenCoach");
+      const to = await page.getAttribute("[data-ins='plateau:hs-row'] [data-a=coachSwap]", "data-to");
+      await page.click("[data-ins='plateau:hs-row'] [data-a=coachSwap]");
+      const c1 = await tp(page, () => window.__tp.state.plan.days.map(d => d.items.map(i => i.exId)));
+      const dup = c1.some(ids => new Set(ids).size !== ids.length);
+      ok("Tausch aus dem Hinweis: Ziel ist ein Gerät, das in keinem betroffenen Tag schon steht; kein Tag hat ein Gerät doppelt", !!to && to !== X && !dup && !c1.flat().includes("hs-row"), JSON.stringify({ X, to, c1 }));
+      ok("Direkt danach: „Rückgängig“ ist möglich", await page.isVisible("#undoPlan [data-a=coachUndo]") && !(await page.$("#undoStale")));
+      await tp(page, () => { const T = window.__tp; T.state.plan.days[0].items[1].sets = 5; T.save(); });
+      await page.click("[data-a=coachBack]"); await page.click("#wissenCoach");
+      const b1 = await tp(page, () => ({ stale: !!document.getElementById("undoStale"), undo: !!document.querySelector("#undoPlan [data-a=coachUndo]"), txt: (document.getElementById("undoPlan") || {}).textContent || "" }));
+      ok("Plan danach von Hand geändert: kein „Rückgängig“ mehr, sondern der Hinweis, dass es die Änderung verwerfen würde", b1.stale && !b1.undo && b1.txt.includes("seitdem geändert"), JSON.stringify(b1).slice(0, 200));
+      const b2 = await tp(page, () => { const T = window.__tp; return { stale: T.prevPlanStale(), sets: T.state.plan.days[0].items[1].sets }; });
+      await page.click("#undoPlan [data-a=coachKeep]");
+      ok("„Ausblenden“ entfernt den Hinweis; die Handänderung bleibt", b2.stale && b2.sets === 5 && !(await page.$("#undoPlan")) && (await tp(page, () => window.__tp.state.plan.days[0].items[1].sets)) === 5);
+      await ctx.close();
+    }
+    {
+      // B. Älterer gespeicherter Stand ohne Vergleichswert: Rückgängig gilt als nicht mehr sicher
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "a", name: "Neu", items: [{ id: "a1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] };
+      const { ctx, page } = await open({ plan, prevPlan: { at: new Date().toISOString(), why: "alt", plan: { goal: "aufbau", level: "einsteiger", days: [{ id: "o", name: "Alt", items: [{ id: "o1", exId: "hs-row", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }] } } });
+      await tp(page, () => window.__tp.go ? 0 : 0);
+      const o = await tp(page, () => window.__tp.prevPlanStale());
+      ok("Gespeichertes „Rückgängig“ ohne Vergleichswert (ältere Fassung) wird nicht mehr ausgeführt", o === true);
+      await ctx.close();
+    }
+    {
+      // D. „Zeit für heute“ und danach den Tag bearbeiten
+      const items = [["hs-chest", 4], ["hs-row", 4], ["hs-shoulder", 3], ["hs-pulldown", 3], ["hs-curl", 3], ["hs-dip", 3]].map(([e, n], i) => ({ id: "i" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "fortgeschritten", minutes: 60, days: [{ id: "d1", name: "Oberkörper A", items }] } });
+      await page.click("[data-a=openTime]"); await page.click("[data-a=timePick][data-m='30']"); await page.click("[data-a=timeApply]");
+      const d0 = await tp(page, () => !!window.__tp.state.timeplan);
+      await page.click("nav.tabs [data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]"); await page.click("[data-a=openPicker]");
+      await page.fill("#pickQ", "Hüftheben").catch(() => {});
+      const pickId = await tp(page, () => { const b = [...document.querySelectorAll(".sheet [data-a=pick]")].find(x => !window.__tp.state.plan.days[0].items.some(i => i.exId === x.dataset.id)); return b ? b.dataset.id : null; });
+      await page.click(`.sheet [data-a=pick][data-id="${pickId}"]`);
+      const d1 = await tp(page, () => { const T = window.__tp, day = T.state.plan.days[0], tp = T.state.timeplan, r = T.previewDay(day, 30);
+        return { tp: !!tp, keys: tp ? day.items.every(i => i.id in tp.keep) : null, ex: tp ? tp.ex === r.exCount && tp.sets === r.setCount : null, n: day.items.length }; });
+      ok("Gerät hinzugefügt, während „Zeit für heute“ gilt: die Anpassung wird mit denselben 30 Min. neu berechnet und kennt das neue Gerät", d0 && d1.n === 7 && (d1.tp ? d1.keys && d1.ex : true), JSON.stringify(d1));
+      await ctx.close();
+    }
+    {
+      // E. „Gerät tauschen“ bietet keine Geräte an, die zeitbedingt ausgeblendet sind oder im Plantag stehen
+      const items = [["hs-legpress", 3], ["hs-hack", 3], ["hs-legext", 3], ["hs-seatcurl", 3], ["hs-hipthrust", 3], ["hs-calf", 3]].map(([e, n], i) => ({ id: "l" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "L", name: "Beine", items }] } });
+      await page.click("[data-a=start]");
+      await page.click("[data-a=openJump]"); await page.click("[data-a=openTimeLive]"); await page.click(`[data-a=liveTimePick][data-m="20"]`); await page.click("[data-a=liveTimeApply]");
+      if (await page.$(".sheet [data-a=closeSheet]")) await page.click(".sheet [data-a=closeSheet]");
+      const hidden = await tp(page, () => (window.__tp.state.session.timeHidden || []).map(x => x.exId));
+      await page.click(".actions3 [data-a=openSwap]");
+      const alts = await page.$$eval(".sheet [data-a=swap]", a => a.map(x => x.dataset.id));
+      const planIds = items.map(i => i.exId);
+      ok("„Gerät tauschen“ nach „Zeit anpassen“: kein ausgeblendetes Gerät und kein Gerät des Plantags in der Auswahl", hidden.length > 0 && alts.length > 0 && !alts.some(id => hidden.includes(id) || planIds.includes(id)), JSON.stringify({ hidden, alts }));
+      await ctx.close();
+    }
+    {
+      // F. Erholung: Einträge ohne gültigen Satz und gelöschte Geräte zählen nicht
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [R2H("f1", .2, "d1", [R2E("hs-chest", "s", [[0, 10], [40, 0]]), R2E("c-geloescht", "t", [[50, 10]])])] });
+      const f = await tp(page, () => { const r = window.__tp.recovery(); return { brust: Math.round(r.brust), min: Math.round(Math.min(...Object.values(r))), known: window.__tp.devKnown("c-geloescht") }; });
+      ok("Erholung: ein Eintrag nur mit ungültigen Sätzen und ein gelöschtes Gerät belasten keinen Muskel (Brust 100 statt fast 0)", f.brust === 100 && f.min === 100 && f.known === false, JSON.stringify(f));
+      await ctx.close();
+    }
+    {
+      // G. Zwei Fenster: der ältere überschreibt das Training aus dem neueren nicht
+      const ctx = await browser.newContext({ viewport: { width: 360, height: 780 }, serviceWorkers: "block" });
+      await ctx.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) { localStorage.setItem(k, v); localStorage.setItem("tp-intro", "0"); localStorage.setItem("tp-3d", "0"); localStorage.setItem("tp-tabmem", "0"); } }, [KEY, JSON.stringify({ plan: PLAN_SMALL, history: [], session: null })]);
+      const pa = await ctx.newPage(), pb = await ctx.newPage();
+      for (const pg of [pa, pb]) { pg.on("pageerror", e => allErrors.push("runde2-tabs: " + e.message)); await pg.goto(URL); await pg.waitForSelector("#app h1"); }
+      await pb.click("[data-a=start]"); await finishAllSets(pb, 40, 10);
+      await pa.waitForFunction(() => window.__tp.state.history.length === 1, null, { timeout: 5000 }).catch(() => {});
+      const g1 = await tp(pa, () => ({ n: window.__tp.state.history.length, note: (document.getElementById("homeNote") || {}).textContent || "" }));
+      await tp(pa, () => { window.__tp.state.stepGoal = 9000; window.__tp.save(); });
+      const g2 = await tp(pa, k => JSON.parse(localStorage.getItem(k)).history.length, KEY);
+      ok("Zwei Fenster: das andere Fenster übernimmt das dort beendete Training (mit Hinweis) und überschreibt es beim nächsten Speichern nicht", g1.n === 1 && g1.note.includes("anderen Fenster") && g2 === 1, JSON.stringify({ g1, g2 }));
+      await ctx.close();
+    }
+    {
+      // H. Planprüfung: „jeder Tag passt in dein Zeitbudget“ nur, wenn die Schätzung im Budget liegt.
+      // Alle großen Muskelgruppen sind dabei (sonst erschiene der Satz gar nicht); das Budget liegt 2–3 Min. unter der Schätzung –
+      // unter der Schwelle, ab der die Prüfung einen Punkt meldet.
+      const items = [["hs-chest", 3], ["hs-row", 3], ["hs-shoulder", 3], ["hs-legpress", 3], ["hs-seatcurl", 3], ["hs-hipthrust", 3]].map(([e, n], i) => ({ id: "h" + i, exId: e, sets: n, rmin: 8, rmax: 12, rest: 90 }));
+      const { ctx, page } = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 90, days: [{ id: "d1", name: "Ganzkörper", items }] } });
+      const est = await tp(page, k => { const T = window.__tp, e = T.estimateSec(T.state.plan.days[0].items) / 60; T.state.plan.minutes = Math.floor(e) - 2; localStorage.setItem(k, JSON.stringify(T.state)); return e; }, KEY);
+      await page.reload(); await page.waitForSelector("#app h1");
+      await page.click("nav.tabs [data-v=plan]");
+      await page.$eval("#planCheckBox", d => d.open = true);
+      const h = await tp(page, () => ({ txt: document.getElementById("planCheck").textContent.replace(/\s+/g, " "), note: (document.getElementById("planTimeNote") || {}).textContent || "", min: window.__tp.state.plan.minutes, rows: document.querySelectorAll("#planCheck .group .li").length }));
+      ok("Planprüfung: ein Tag 2–3 Min. über dem Zeitbudget heißt nicht „passt“, sondern wird mit seiner Schätzung genannt", h.rows === 0 && est > h.min && h.txt.includes("Alle großen Muskelgruppen sind dabei") && !h.txt.includes("jeder Tag passt in dein Zeitbudget") && h.note.includes("Ganzkörper ≈") && h.note.includes(`${h.min} Min.`), JSON.stringify({ est, ...h }).slice(0, 300));
+      await ctx.close();
+    }
+    {
+      // I + J. Vorschlag: Pausenregel bei uneinheitlichen Sätzen; Begründungstexte
+      const it = { id: "i1", exId: "hs-chest", sets: 3, rmin: 8, rmax: 12, rest: 90 };
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [it] }] };
+      const cases = {
+        pause: [R2H("x", 200, "d1", [R2E("hs-chest", "s", [[40, 12], [42.5, 10], [42.5, 9]])])],
+        kappe: [R2H("x", 3, "d1", [R2E("hs-chest", "s", [[40, 14], [40, 12], [40, 9]])])],
+        ohnePlan: [R2H("x", 3, "d1", [Object.assign(R2E("hs-chest", "s", [[40, 12], [40, 12]]), { planned: undefined })])] };
+      const res = {};
+      for (const [k, history] of Object.entries(cases)) {
+        const { ctx, page } = await open({ plan, history });
+        res[k] = await tp(page, i => { const e = window.__tp.makeEntry(i); return { mode: e.mode, sets: e.sets.map(s => s.kg + "x" + s.reps).join(" "), why: e.why }; }, it);
+        await ctx.close();
+      }
+      ok("200 Tage Pause nach uneinheitlichen Sätzen: je Satz ein Schritt leichter, ohne „+1 Wdh.“, als Regel der App", res.pause.mode === "down" && res.pause.sets === "37.5x12 40x10 40x9" && res.pause.why.includes("200 Tagen") && res.pause.why.includes("Regel der App"), JSON.stringify(res.pause));
+      ok("Begründung nennt die tatsächlichen Ziele („Ziel heute 12/12/10 Wdh.“, höchstens 12) statt „je 1 Wdh. mehr“", res.kappe.sets === "40x12 40x12 40x10" && res.kappe.why.includes("Ziel heute 12/12/10 Wdh.") && res.kappe.why.includes("höchstens 12"), JSON.stringify(res.kappe));
+      ok("Eintrag ohne gespeicherte Satzzahl: keine Behauptung „nur 2 von 3 Sätzen“", !res.ohnePlan.why.includes("nur 2 von 3") && res.ohnePlan.why.includes("Heute 3 statt 2 Sätze"), JSON.stringify(res.ohnePlan));
+    }
+    {
+      // K. Letzten Satz des Trainings in der Zusammenfassung bewerten
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag", items: [{ id: "i1", exId: "hs-chest", sets: 2, rmin: 8, rmax: 12, rest: 0 }] }] };
+      const { ctx, page } = await open({ plan, history: [R2H("k", 4, "d1", [R2E("hs-chest", "s", [[40, 12], [40, 12]])])] });
+      await page.click("[data-a=start]"); await finishAllSets(page, 42.5, 12);
+      const k1 = await tp(page, () => ({ box: !!document.getElementById("lastFeel"), txt: (document.getElementById("lastFeel") || {}).textContent || "", next: (document.getElementById("nextTime") || {}).textContent || "" }));
+      ok("Zusammenfassung fragt „Wie war der letzte Satz?“ (die Pause mit dieser Frage gibt es nach dem letzten Satz nicht)", k1.box && k1.txt.includes("42,5 × 12") && k1.next.includes("+2,5"), JSON.stringify(k1).slice(0, 240));
+      await page.click("#lastFeel [data-f=h]");
+      const k2 = await tp(page, () => { const H = window.__tp.state.history, x = H[H.length - 1].exercises[0]; return { f: x.sets.map(s => s.f || "-").join(""), on: document.querySelector("#lastFeel [data-f=h]").classList.contains("on"), next: document.getElementById("nextTime").textContent }; });
+      ok("„Schwer“ wird am letzten Satz gespeichert und der Vorschlag fürs nächste Mal sofort angepasst (keine Steigerung)", k2.f.endsWith("h") && k2.on && !k2.next.includes("+2,5") && k2.next.toLowerCase().includes("halten"), JSON.stringify(k2).slice(0, 240));
+      await ctx.close();
+    }
+    // @ext:runde2:test:end
+    // ── Abstand runde2/test 1 ──
+    // ── Abstand runde2/test 2 ──
+    // ── Abstand runde2/test 3 ──
     // @ext:nachtrag:test:start
     section("E-nachtrag. Training nachtragen (ohne Live-Modus)");
     {

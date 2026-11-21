@@ -1858,7 +1858,8 @@ function normalize(raw) {
   }
   if (isObj(raw.notes)) for (const [id, v] of Object.entries(raw.notes)) if (typeof v === "string" && v.trim()) s.notes[id] = v.slice(0, 120);
   s.plan = cleanPlan(raw.plan);
-  s.prevPlan = isObj(raw.prevPlan) && cleanPlan(raw.prevPlan.plan) && !isNaN(new Date(raw.prevPlan.at)) ? { at: new Date(raw.prevPlan.at).toISOString(), why: String(raw.prevPlan.why || "").slice(0, 160), plan: cleanPlan(raw.prevPlan.plan) } : null;
+  s.prevPlan = isObj(raw.prevPlan) && cleanPlan(raw.prevPlan.plan) && !isNaN(new Date(raw.prevPlan.at)) ? { at: new Date(raw.prevPlan.at).toISOString(), why: String(raw.prevPlan.why || "").slice(0, 160), plan: cleanPlan(raw.prevPlan.plan),
+    after: typeof raw.prevPlan.after === "string" && raw.prevPlan.after.length < 400000 ? raw.prevPlan.after : undefined } : null;
   s.coachOff = {}; if (isObj(raw.coachOff)) for (const [k, v] of Object.entries(raw.coachOff).slice(0, 60)) if (!isNaN(new Date(v)) && Date.now() - new Date(v) < 60 * 864e5) s.coachOff[String(k).slice(0, 80)] = new Date(v).toISOString();
   // RIR: nur übernehmen, wenn wirklich angegeben (0–4, 4 = 4+); fehlende Werte bleiben leer
   const cleanSet = t => { const o = { kg: kgOrNull(t.kg), reps: clampInt(t.reps, 0, 999, 0) }; if (["l", "m", "h"].includes(t.f)) o.f = t.f;
@@ -2196,7 +2197,7 @@ const atTxt = ms => { const d = new Date(ms), days = Math.round((new Date().setH
 const sessionEnd = s => s.paused || (s.lastAt && Date.now() - s.lastAt > IDLE_MS ? s.lastAt : Date.now());
 idlePause();
 let view = state.session && !state.session.paused ? "train" : "home", updateReady = false;
-let summary = null;
+let summary = null, lastSummary = null;   // lastSummary: zum erneuten Zeichnen der Zusammenfassung (Bewertung des letzten Satzes)
 let pickerCtx = null;
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -2553,12 +2554,15 @@ function workoutColors(items) {
   items.forEach(it => { c[ex(it.exId).muscle] = "var(--accent)"; });
   return c;
 }
+// Gerät bekannt (Bibliothek oder eigenes)? Ein gelöschtes eigenes Gerät hat keinen bekannten Muskel mehr.
+const devKnown = id => LIB.some(e => e.id === id) || (state.custom || []).some(e => e.id === id);
 function recovery() {
   const now = Date.now(), r = {};
   for (const m in MUSCLES) r[m] = 100;
   state.history.forEach(h => {
     const hrs = (now - new Date(h.date).getTime()) / 36e5;
     h.exercises.forEach(x => {
+      if (!devKnown(x.exId) || !x.sets.some(validSet)) return;   // ohne gültigen Satz keine Belastung; unbekanntes Gerät: Muskel unbekannt
       const e = ex(x.exId);
       const apply = (m, full) => { r[m] = Math.min(r[m], Math.max(0, Math.min(100, hrs / full * 100))); };
       apply(e.muscle, 72); e.sec.forEach(m => apply(m, 48));
@@ -4956,6 +4960,8 @@ function vIntro() {
 const planOver = { ok: false, again: "" };
 const planHasItems = p => !!p && p.days.some(d => d.items.length);
 const planIsKept = p => plnStore().list.some(e => plnKey(e.plan) === plnKey(p));
+// „Rückgängig“ unter Hinweise: nur, solange der Plan seit der Änderung unverändert ist (ältere Stände ohne Vergleichswert gelten als geändert)
+const prevPlanStale = () => { const pv = state.prevPlan; return !!pv && (!pv.after || !state.plan || plnKey(state.plan) !== pv.after); };
 function planReplaceOk(again) {
   const p = state.plan;
   if (planHasItems(p) && !planIsKept(p) && !planOver.ok && !plnAdd(plnAuto(), plnCopy(p))) {
@@ -5553,6 +5559,13 @@ function openItem(i) { draft = Object.assign({}, curDay().items[i], { _i: i }); 
 
 /* ================= Training ================= */
 const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+// Nach einer Änderung am Trainingstag: eine „Zeit für heute“ für diesen Tag mit denselben Minuten neu berechnen. Passt es nicht mehr
+// oder braucht es keine Anpassung, entfällt sie. Sonst bekäme ein neu hinzugefügtes Gerät beim Start still 0 Sätze.
+function tpRefresh(d) {
+  const tp = state.timeplan; if (!tp || !d || tp.dayId !== d.id) return;
+  const res = previewDay(d, tp.minutes), changed = res.fits && (res.dropped.length || res.trimmed.length || res.unavailable.length || Object.keys(res.replace).length);
+  state.timeplan = changed ? Object.assign(tp, { keep: res.keep, replace: res.replace, ex: res.exCount, sets: res.setCount, est: roundMin(res.estSec) }) : null;
+}
 const activeTimeplan = day => { const tp = state.timeplan; return tp && day && tp.dayId === day.id && tp.date === todayStr() ? tp : null; };
 function startTraining(day) {
   tone(660, .08, .05); // Ton durch den Tap freischalten
@@ -5626,8 +5639,9 @@ function makeEntry(it, ctx) {
     const lastHard = ls.f === "h" || ls.rir === 0;
     const hardTxt = ls.rir === 0 ? "ohne Reserve abgeschlossen (0)" : "als schwer bewertet";
     const rangeChanged = !!(L.rmin && L.rmax && (L.rmin !== it.rmin || L.rmax !== it.rmax));
-    const ref = L.planned || n;                         // ohne gespeicherte Planung: mit dem heutigen Plan vergleichen
-    const incomplete = done < ref;
+    const ref = L.planned || n;
+    const incomplete = !!L.planned && done < L.planned;   // ohne gespeicherte Planung ist unbekannt, ob die letzte Einheit unvollständig war
+    const tgTxt = () => `Ziel heute ${sets.map(t => t.reps).join("/")} Wdh.: je 1 mehr als zuletzt, höchstens ${it.rmax}`;
     const moreSets = !incomplete && done < n;
     const allTop = reps.every(r => r >= it.rmax);
     const below = reps.every(r => r < it.rmin);
@@ -5646,7 +5660,7 @@ function makeEntry(it, ctx) {
       why = `Letztes Mal ${lastTxt}: im Training auf ${w(ls.kg)} ${d > 0 ? "gesteigert" : "reduziert"} und damit im Ziel geblieben. Heute alle Sätze mit ${w(ls.kg)}.`;
     } else if (!L.uniform) {
       mode = "hold"; sets = fromLast(lastHard ? 0 : 1); short = "Gewichte satzweise · zuletzt uneinheitlich";
-      why = `Letztes Mal unterschiedliche Gewichte: ${lastTxt}. Gewichte satzweise übernommen${lastHard ? `, letzter Satz ${hardTxt}` : ", Ziel je 1 Wdh. mehr"}. Keine pauschale Steigerung.`;
+      why = `Letztes Mal unterschiedliche Gewichte: ${lastTxt}. Gewichte satzweise übernommen${lastHard ? `, letzter Satz ${hardTxt}` : `. ${tgTxt()}`}. Keine pauschale Steigerung.`;
     } else if (incomplete) {
       const prevOk = !lastHard && allTop && P && P.uniform && P.kg === L.kg && complete(P) && P.sets.every(t => t.reps >= it.rmax);
       if (prevOk) {
@@ -5683,12 +5697,16 @@ function makeEntry(it, ctx) {
       }
     } else {
       mode = "keep"; sets = fromLast(1); short = "Gleiches Gewicht · Ziel +1 Wdh.";
-      why = `Letztes Mal ${lastTxt}. Gewicht halten, Ziel je 1 Wdh. mehr.`;
+      why = `Letztes Mal ${lastTxt}. Gewicht halten. ${tgTxt()}.`;
     }
     const gap = Math.floor((at - L.date) / 864e5);
     if (gap >= 28 && L.uniform && L.kg - step > 0) {
       mode = "down"; sets = uniformSets(L.kg - step, it.rmin); short = `−${kgTxt(step)} kg · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
+    } else if (gap >= 28 && !L.uniform) {
+      sets = fromLast(0).map(t => ({ kg: t.kg - step > 0 ? t.kg - step : t.kg, reps: t.reps, done: false })); mode = "down";
+      short = `−${kgTxt(step)} kg je Satz · ${gap} Tage Pause`;
+      why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach vier Wochen Pause je Satz ein Schritt leichter zum Wiedereinstieg (Regel der App) – beim nächsten Mal wieder nach deinen Werten.`;
     } else if (mode === "up" && gap >= 21) {
       mode = "hold"; sets = fromLast(0); short = `Gewicht halten · ${gap} Tage Pause`;
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
@@ -5698,6 +5716,14 @@ function makeEntry(it, ctx) {
     recKg: sets[0] ? sets[0].kg : null, rec: sets.map(s => s.kg), sets };
 }
 const S = () => state.session;
+// Laufendes Training: noch nicht begonnene Übungen eines Geräts, dessen Gewichtsangabe sich geändert hat, neu berechnen
+// (auch zeitbedingt ausgeblendete) – sonst würden die heutigen Sätze mit der alten Gewichtsangabe gespeichert
+function sesUnitRemap(id, oldU) {
+  const ses = state.session; if (!ses || unitOf(ex(id)) === oldU) return;
+  const re = x => x.exId === id && !x.sets.some(t => t.done)
+    ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss }), { ord: x.ord }) : x;
+  ses.list = ses.list.map(re); if (Array.isArray(ses.timeHidden)) ses.timeHidden = ses.timeHidden.map(re);
+}
 // Supersatz-Partner in der laufenden Einheit: {p: Eintrag, first: x ist die erste Übung des Paars}
 const ssPair = (s, x) => { if (!x) return null; const n = x.ss && s.list.find(l => l.itemId === x.ss); if (n) return { p: n, first: true };
   const v = x.itemId && s.list.find(l => l.ss === x.itemId); return v ? { p: v, first: false } : null; };
@@ -5817,6 +5843,9 @@ function finish(saveIt) {
       const rec = { id: uid(), dayId: s.dayId, day: s.dayName, date: new Date(end).toISOString(), durationSec: Math.max(0, Math.round((end - s.start) / 1000)), exercises: exs };
       if (s.timeAdj) rec.adj = s.timeAdj.minutes;
       summary = commitTraining(rec);
+      // Der zuletzt erledigte Satz hatte keine Pause mit „Wie war Satz …?“ – die Frage kommt in der Zusammenfassung
+      const ld = s.lastDone, lx = ld && s.list.find(l => l.key === ld.key), xi = lx ? exs.findIndex(e => e.exId === lx.exId) : -1;
+      if (xi >= 0) { const i = lx.sets.slice(0, ld.si).filter(t => t.done).length, t = exs[xi].sets[i]; if (t && t.f == null && t.rir == null) summary.last = { xi, i }; }
       const { prs, repPrs } = summary;
       tone(784, .15); setTimeout(() => tone(1046, .3), 160); buzz([80, 60, 160]); askPersist();
       say(summary.goals.length ? "Training geschafft. Ziel erreicht!" : prs.some(p => !p.first) || repPrs.length ? "Training geschafft. Mit neuem Bestwert." : "Training geschafft.");
@@ -5998,7 +6027,8 @@ function rankAlternatives(curId, used) {
 }
 function swapSheet() {
   const s = S(), x = s.list[s.idx], cur = ex(x.exId);
-  const used = new Set(s.list.map(l => l.exId));
+  const pd = state.plan && state.plan.days.find(d => d.id === s.dayId);
+  const used = new Set([...s.list, ...(s.timeHidden || [])].map(l => l.exId).concat(pd ? pd.items.map(i => i.exId) : []));
   const { direct, other } = rankAlternatives(cur.id, used);
   const row = (a, kind) => { const e = a.e, lp = lastPerf(e.id);
     return `<button class="li swap-row" data-a="swap" data-id="${e.id}" data-kind="${kind}">
@@ -7018,7 +7048,7 @@ function weekStats(off) {
   }
   const goalKey = state.plan?.goal || "aufbau", [tmin, tmax] = goalKey === "aufbau" ? [10, 20] : [6, 12];
   const ms = {}; for (const m in MUSCLES) ms[m] = 0;
-  H.forEach(h => h.exercises.forEach(x => { const e = ex(x.exId); ms[e.muscle] += x.sets.length; e.sec.forEach(m => ms[m] += x.sets.length / 2); }));
+  H.forEach(h => h.exercises.forEach(x => { if (!devKnown(x.exId)) return; const e = ex(x.exId), n = x.sets.filter(validSet).length; ms[e.muscle] += n; e.sec.forEach(m => ms[m] += n / 2); }));
   const planned = new Set((state.plan?.days || []).flatMap(d => d.items.map(i => ex(i.exId).muscle)));
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d; }).filter(d => d <= now);
   const fdays = days.map(d => dkey(d)).filter(k => (state.food[k] || []).length), wdays = days.map(d => dkey(d)).filter(k => state.water[k]);
@@ -7393,6 +7423,8 @@ function planCheck() {
 function planCheckHtml() {
   const c = planCheck(), p = state.plan, f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
   const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
+  // Tage über dem Budget, die (noch) nicht als Punkt zählen: werden genannt statt als „passt“ beschrieben
+  const over = p.minutes ? p.days.filter(d => d.items.length && estimateSec(d.items) / 60 > p.minutes && !time.some(x => x.d === d)) : [];
   const rows = [
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
     ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
@@ -7411,7 +7443,8 @@ function planCheckHtml() {
   return `<section class="section" id="planCheck"><details class="disc" id="planCheckBox"${rows.length || add.length ? " open" : ""}>
     <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
-    <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
+    <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes && !over.length ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
+    ${over.length ? `<p class="small muted" id="planTimeNote" style="margin:0">Etwas über dem Zeitbudget von ${p.minutes} Min. (Schätzung der App): ${over.map(d => `${esc(d.name)} ≈ ${Math.round(estimateSec(d.items) / 60)} Min.`).join(", ")}.</p>` : ""}
     ${(() => { const ms = muscleSets(p, c.per), scale = c.tmax * 1.3;
       return `<div class="mlist" id="planBars" role="img" aria-label="Sätze pro Woche je Muskel: ${MAJOR.map(m => `${MUSCLES[m]} ${f(ms[m] || 0)}`).join(", ")}">${MAJOR.map(m => { const v = ms[m] || 0, col = v >= c.tmin && v <= c.tmax ? "var(--ok)" : v > c.tmax ? "var(--warn)" : "var(--accent)";
         return `<div class="mrow" data-m="${m}"><span class="small">${MUSCLES[m]}</span><div class="mtrack"><div class="mband" style="left:${c.tmin / scale * 100}%;width:${(c.tmax - c.tmin) / scale * 100}%"></div><div class="mfill" style="width:${Math.min(100, v / scale * 100)}%;background:${col}"></div></div><span class="small num" style="font-size:15px;text-align:right">${f(v)}</span></div>`; }).join("")}</div>`; })()}
@@ -7492,7 +7525,8 @@ function insights() {
   p.days.forEach(d => d.items.forEach(it => {
     if (seen.has(it.exId)) return; seen.add(it.exId);
     const pl = plateau(it.exId); if (!pl) return;
-    const e = ex(it.exId), alt = pl.reserve ? null : rankAlternatives(it.exId, new Set(d.items.map(i => i.exId))).direct[0];
+    // Alternative, die in keinem Tag mit diesem Gerät schon steht (der Tausch gilt für alle diese Tage)
+    const e = ex(it.exId), alt = pl.reserve ? null : rankAlternatives(it.exId, new Set(p.days.filter(dd => dd.items.some(i => i.exId === it.exId)).flatMap(dd => dd.items.map(i => i.exId)))).direct[0];
     add({ id: "plateau:" + it.exId, prio: 70, kind: "warn", title: `${e.name}: Stillstand seit ${pl.weeks} Wochen`,
       text: `${pl.n} vollständige Einheiten ohne mehr Gewicht oder Wiederholungen. ${pl.reserve ? "Zuletzt mit Reserve trainiert – versuch zuerst, näher an dein Limit zu gehen."
         : `Möglich: ${alt ? `ein Gerät mit gleichem Bewegungsmuster (${alt.e.name}), ` : ""}ein anderer Wiederholungsbereich oder mehr Erholung.`}`,
@@ -7658,7 +7692,9 @@ function vCoach() {
   $app.innerHTML = `<div class="page">
     <div class="head"><button class="link" data-a="coachBack">‹ Zurück</button><div class="cap">Aus deinen Daten</div><h1 class="title">Hinweise</h1></div>
     ${pv ? `<div class="note" id="undoPlan"><div class="cap">Plan geändert · ${fmtDay(pv.at)}</div><p class="small">${esc(pv.why)}</p>
-      <div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div></div>` : ""}
+      ${prevPlanStale() ? `<p class="small muted" id="undoStale">Du hast den Plan seitdem geändert. Rückgängig würde diese Änderungen verwerfen und ist deshalb nicht mehr möglich.</p>
+      <div class="row wrap" style="gap:8px"><button class="btn sm quiet" data-a="coachKeep">Ausblenden</button></div>`
+      : `<div class="row wrap" style="gap:8px"><button class="btn sm" data-a="coachUndo">Rückgängig</button><button class="btn sm quiet" data-a="coachKeep">Behalten</button></div>`}</div>` : ""}
     <section class="section" id="coachTips"><h2>Vorschläge</h2>
       ${warn.length ? warn.map(x => insightCard(x, "coach")).join("") : `<p class="card small muted">Gerade nichts zu verbessern. Je länger du trainierst und einträgst, desto mehr kann die App auswerten: Häufigkeit ab 4 Wochen, Stillstand ab 4 Einheiten pro Gerät, Gewichtstrend ab 3 Einträgen in 2 Wochen.</p>`}</section>
     ${good.length ? `<section class="section" id="coachGood"><h2>Läuft gut</h2>${good.map(x => insightCard(x, "coach")).join("")}</section>` : ""}
@@ -7764,13 +7800,17 @@ function vSummary() {
     ${prs.length || reps.length ? `<section class="section" id="prList"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">Mehr Gewicht als je zuvor</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}${reps.map(p =>
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">${p.reps} Wdh. mit ${kgTxt(p.kg)} ${UNIT[p.u]}, vorher höchstens ${p.from}</div></div><span class="badge pr">+${p.reps - p.from} Wdh.</span></div>`).join("")}</div></section>` : ""}
+    ${sm.last && r.exercises[sm.last.xi] && r.exercises[sm.last.xi].sets[sm.last.i] ? (() => { const x = r.exercises[sm.last.xi], t = x.sets[sm.last.i];
+      return `<section class="section" id="lastFeel"><div class="card stack-sm"><div class="row between"><h2 class="h3">Wie war der letzte Satz?</h2><span class="small faint">${esc(x.name)} · ${kgTxt(t.kg)} × ${t.reps}</span></div>
+        <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="sumFeel" data-f="${k}" class="${t.f === k ? "on" : ""}" aria-pressed="${t.f === k}">${l}</button>`).join("")}</div>
+        <p class="small muted" style="margin:0">Fließt in den Vorschlag fürs nächste Mal ein (siehe unten).</p></div></section>`; })() : ""}
     ${nextTimeHtml(r)}
     ${EXT.summary.map(f => { try { return f(sm) || ""; } catch (e) { return ""; } }).join("")}
     <section class="section"><h2>Übungen</h2><div class="group">${r.exercises.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.name)}</div>
       <div class="s">${x.sets.map(t => (t.kg !== null ? kgTxt(t.kg) : "–") + "×" + t.reps).join("  ·  ")} · ${UNIT[x.u]}</div></div></div>`).join("")}</div></section>
     <div class="actionbar"><div class="in"><button class="btn primary xl block" data-a="tab" data-v="home">Fertig</button></div></div>
   </div>`;
-  summary = null;
+  lastSummary = sm; summary = null;
 }
 
 /* ================= Verlauf ================= */
@@ -7787,7 +7827,7 @@ function vHistory() {
   const goalKey = state.plan?.goal || "aufbau";
   const [tmin, tmax] = goalKey === "aufbau" ? [10, 20] : [6, 12];
   const ms = {}; for (const m in MUSCLES) ms[m] = 0;
-  H.filter(h => new Date(h.date) >= mon).forEach(h => h.exercises.forEach(x => { const e = ex(x.exId); ms[e.muscle] += x.sets.length; e.sec.forEach(m => ms[m] += x.sets.length / 2); }));
+  H.filter(h => new Date(h.date) >= mon).forEach(h => h.exercises.forEach(x => { if (!devKnown(x.exId)) return; const e = ex(x.exId), n = x.sets.filter(validSet).length; ms[e.muscle] += n; e.sec.forEach(m => ms[m] += n / 2); }));
   const scale = tmax * 1.3;
   const muscleRows = Object.entries(MUSCLES).map(([m, l]) => { const v = ms[m];
     const col = v >= tmin && v <= tmax ? "var(--ok)" : v > tmax ? "var(--warn)" : "var(--accent)";
@@ -8293,12 +8333,14 @@ const A = {
   coachShowAll: () => { state.coachOff = {}; save(); render(); },
   coachSwap: el => { const f = el.dataset.from, to = el.dataset.to;
     state.prevPlan = { at: new Date().toISOString(), why: `${ex(f).name} → ${ex(to).name} wegen Stillstand`, plan: JSON.parse(JSON.stringify(state.plan)) };
-    state.plan.days.forEach(d => d.items.forEach(i => { if (i.exId === f) i.exId = to; })); state.timeplan = null; save(); render(); },
+    // Tage, in denen das neue Gerät schon steht, bleiben unverändert – sonst stünde es dort doppelt
+    state.plan.days.forEach(d => { if (d.items.some(i => i.exId === to)) return; d.items.forEach(i => { if (i.exId === f) i.exId = to; }); });
+    state.prevPlan.after = plnKey(state.plan); state.timeplan = null; save(); render(); },
   coachPlan: el => { const p = state.plan; coachDraft = generatePlan(p.goal, +el.dataset.n, p.level, p.minutes); openSheet(coachPlanSheet(+el.dataset.n)); },
   coachPlanApply: () => { if (!coachDraft) return;
     state.prevPlan = { at: new Date().toISOString(), why: `${state.plan.days.length} → ${coachDraft.days.length} Trainingstage, passend zu deiner tatsächlichen Häufigkeit`, plan: state.plan };
-    state.plan = coachDraft; coachDraft = null; state.selDay = null; state.timeplan = null; save(); closeSheet(); render(); },
-  coachUndo: () => { if (!state.prevPlan) return; state.plan = state.prevPlan.plan; state.prevPlan = null; state.selDay = null; state.timeplan = null; save(); render(); },
+    state.plan = coachDraft; state.prevPlan.after = plnKey(coachDraft); coachDraft = null; state.selDay = null; state.timeplan = null; save(); closeSheet(); render(); },
+  coachUndo: () => { if (!state.prevPlan) return; if (prevPlanStale()) { state.prevPlan = null; save(); render(); return; } state.plan = state.prevPlan.plan; state.prevPlan = null; state.selDay = null; state.timeplan = null; save(); render(); },
   coachKeep: () => { state.prevPlan = null; save(); render(); },
   coachMinutes: el => { state.plan.minutes = +el.dataset.m; save(); render(); },
   coachDay: el => { state.selDay = el.dataset.id; clearTrainOvr(dkey()); save(); go("home"); },
@@ -8509,8 +8551,8 @@ const A = {
     if (u.kind === "new") { state.plan.days = state.plan.days.filter(x => x.id !== u.id); if (state.selDay === u.id) state.selDay = null; } else tgt.items = JSON.parse(u.before);
     planNote = "Kopieren rückgängig gemacht."; save(); vPlan(); },
   delDay: () => actionSheet("Tag löschen?", `„${esc(curDay().name)}“ wird aus dem Plan entfernt. Dein Verlauf bleibt erhalten.`, [{ l: "Tag löschen", a: "confirmDelDay", danger: true }]),
-  confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); save(); closeSheet(); go("plan"); },
-  moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; ssFix(d.items); save(); vDay(); },
+  confirmDelDay: () => { state.plan.days = state.plan.days.filter(d => d.id !== state.editDay); if (state.timeplan && state.timeplan.dayId === state.editDay) state.timeplan = null; save(); closeSheet(); go("plan"); },
+  moveItem: el => { const d = curDay(), i = +el.dataset.i2; [d.items[i - 1], d.items[i]] = [d.items[i], d.items[i - 1]]; ssFix(d.items); tpRefresh(d); save(); vDay(); },
   editItem: el => openItem(+el.dataset.i2),
   draft: el => { const k = el.dataset.k; draft[k] = Math.max(1, Math.min(k === "sets" ? 10 : 50, draft[k] + +el.dataset.d));
     if (k === "rmin" && draft.rmax < draft.rmin) draft.rmax = draft.rmin; if (k === "rmax" && draft.rmin > draft.rmax) draft.rmin = draft.rmax;
@@ -8521,10 +8563,10 @@ const A = {
     d.items.splice(a + 1, 0, pi); d.items[a].ss = pi.id; ssFix(d.items); if (state.timeplan && state.timeplan.dayId === d.id) state.timeplan = null; save(); render(); },
   ssToggle: () => { const nx = curDay().items[draft._i + 1]; if (!nx) return; if (draft.ss === nx.id) delete draft.ss; else draft.ss = nx.id; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
   draftRest: el => { draft.rest = +el.dataset.s; $sheet.querySelector(".sheet").innerHTML = `<div class="grab"></div>` + itemSheet(); },
-  saveItem: () => { const d = curDay(), i = draft._i; delete draft._i; d.items[i] = draft; save(); closeSheet(); vDay(); },
-  delItemAt: el => { const d = curDay(); if (!d) return; d.items.splice(+el.dataset.i2, 1); ssFix(d.items); save(); vDay(); },
+  saveItem: () => { const d = curDay(), i = draft._i; delete draft._i; d.items[i] = draft; tpRefresh(d); save(); closeSheet(); vDay(); },
+  delItemAt: el => { const d = curDay(); if (!d) return; d.items.splice(+el.dataset.i2, 1); ssFix(d.items); tpRefresh(d); save(); vDay(); },
   foodDelId: el => { const d = curFoodDay(); state.food[d] = (state.food[d] || []).filter(e => e.id !== el.dataset.id); if (!state.food[d].length) delete state.food[d]; save(); vFood(); },
-  delItem: () => { curDay().items.splice(draft._i, 1); ssFix(curDay().items); save(); closeSheet(); vDay(); },
+  delItem: () => { curDay().items.splice(draft._i, 1); ssFix(curDay().items); tpRefresh(curDay()); save(); closeSheet(); vDay(); },
   openPicker: () => openPicker(),
   pickFilter: el => { pickFilter = el.dataset.k; refreshPicker(); },
   pickAll: () => { pickAll = !pickAll; refreshPicker(); },
@@ -8538,7 +8580,7 @@ const A = {
     if (i >= 0) d.items.splice(i, 1);
     else { const g = rangeFor(state.plan.goal, id); d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });
       if (ex(id).off) state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: false }); }
-    save(); vDay(); refreshPicker(); },
+    tpRefresh(d); save(); vDay(); refreshPicker(); },
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
   devsDone: () => { closeSheet(); render(); },
   devFilt: el => { devFilter = el.dataset.k; sheetKeep(devListHtml()); },
@@ -8571,10 +8613,7 @@ const A = {
     }
     const oldU = unitOf(ex(d.id));
     state.dev[d.id] = Object.assign({ name, muscle: d.muscle, sec, type: d.type, load: d.type === "stack" ? "total" : d.load, step: d.step, off: d.off }, d.fav ? { fav: true } : {});
-    // Laufendes Training: noch nicht begonnene Übungen dieses Geräts mit neuer Einstellung neu berechnen
-    const ses = state.session;
-    if (ses) ses.list = ses.list.map(x => x.exId === d.id && !x.sets.some(t => t.done) && unitOf(ex(d.id)) !== oldU
-      ? Object.assign(makeEntry({ id: x.itemId, exId: x.exId, sets: x.sets.length, planned: x.planned, rmin: x.rmin, rmax: x.rmax, rest: x.rest, ss: x.ss }), { ord: x.ord }) : x);
+    sesUnitRemap(d.id, oldU);
     if ((d.note || "").trim()) state.notes[d.id] = d.note.trim(); else delete state.notes[d.id];
     save(); devBack(d._new ? d.id : null); },
   devCancel: () => devBack(null),
@@ -8582,12 +8621,12 @@ const A = {
     actionSheet("Frühere Einträge umstellen?", `${n} ${n === 1 ? "Eintrag" : "Einträge"} von „${esc(d.name)}“ ${n === 1 ? "wird" : "werden"} als „${UNIT[tu]}“ gewertet. Die eingetragenen Zahlen ändern sich nicht. Danach zählen sie für Vorschläge, Bestwerte und Volumen mit; das Gerät wird mit dieser Gewichtsangabe gespeichert.`,
       [{ l: "Umstellen", a: "devRelabel", bold: true }], "Zurück", "devRelabelBack"); },
   devRelabelBack: () => openSheet(devSheetHtml()),
-  devRelabel: () => { const d = devDraft, tu = draftUnit(d);
+  devRelabel: () => { const d = devDraft, tu = draftUnit(d), oldU = unitOf(ex(d.id));
     state.history.forEach(h => h.exercises.forEach(x => { if (x.exId === d.id) x.u = tu; }));
     (state.goals || []).forEach(g => { if (g.kind === "kraft" && g.exId === d.id) g.u = tu; });
     const base = state.dev[d.id] || {};
     state.dev[d.id] = Object.assign({}, base, { type: d.type, load: d.type === "stack" ? "total" : d.load });
-    save(); openSheet(devSheetHtml()); },
+    sesUnitRemap(d.id, oldU); save(); openSheet(devSheetHtml()); },
   hintUnitsDone: () => { state.hints.units = true; save(); render(); },
   hintUnitsOpen: () => { state.hints.units = true; save(); devFilter = "alle"; openSheet(devListHtml()); },
   devReset: () => { delete state.dev[devDraft.id]; save(); devBack(null); },
@@ -8695,6 +8734,9 @@ const A = {
   advApply: () => { const s = S(), a = setAdvice(s); if (!a) return; const x = s.list.find(l => l.key === a.key);
     x.sets.forEach(o => { if (!o.done) o.kg = a.kg; }); x.adv = true; s.advDone = a.key + ":" + a.si; save(); render(); },
   advSkip: () => { const s = S(), a = setAdvice(s); if (a) s.advDone = a.key + ":" + a.si; save(); render(); },
+  sumFeel: el => { const sm = lastSummary, t = sm && sm.last && sm.rec.exercises[sm.last.xi] && sm.rec.exercises[sm.last.xi].sets[sm.last.i]; if (!t) return;
+    t.f = t.f === el.dataset.f ? undefined : el.dataset.f; if (t.f === undefined) delete t.f; save();
+    const y = window.scrollY; summary = sm; render(); window.scrollTo(0, y); const b = $app.querySelector(`#lastFeel [data-f="${el.dataset.f}"]`); if (b) b.focus({ preventScroll: true }); },
   feel: el => { const s = S(), ld = s.lastDone; const x = ld && s.list.find(l => l.key === ld.key); if (!x) return; const t = x.sets[ld.si]; t.f = t.f === el.dataset.f ? undefined : el.dataset.f; save(); render(); },
   stopSave: () => finish(true),
   stopDiscard: () => finish(false)
@@ -10003,8 +10045,18 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
+Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save });
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
 extClean(); badWarn();
+// Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern
+// hier den neueren Stand von dort (z. B. ein dort beendetes Training).
+window.addEventListener("storage", ev => {
+  if (ev.key !== KEY || ev.newValue == null) return;
+  let next; try { next = normalize(JSON.parse(ev.newValue)); } catch (e) { return; }
+  state = next; extClean(); closeSheet();
+  homeNote = "In einem anderen Fenster der App wurde etwas geändert. Dieser Stand gilt jetzt auch hier.";
+  if (view === "train" && (!state.session || state.session.paused)) { stopTick(); go("home"); } else render();
+});
 if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
 go(view);
 if (state.session && !state.session.paused) startTick();
