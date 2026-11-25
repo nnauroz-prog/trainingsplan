@@ -1996,7 +1996,7 @@ function newerWarn() { const b = document.getElementById("newerWarn"), t = docum
   if (t && newerSkipped) t.textContent = "Deine Daten stammen aus einer neueren Fassung der App. Was du seit dem Öffnen geändert hast, ist nicht gespeichert und geht beim Neuladen verloren. Bitte lade die App trotzdem neu – nur die neue Fassung kann speichern."; }
 // Schreibende Abläufe (Training starten, nachtragen) beginnen bei Daten einer neueren Fassung gar nicht erst
 function newerBlock() { if (!newerData) return false;
-  openSheet(`${sheetHead("Erst neu laden")}<p id="newerBlockTxt">Deine Daten stammen aus einer neueren Fassung der App. Diese ältere Fassung kann nichts speichern – ein Training wäre danach verloren.</p><button class="btn primary block" data-a="reloadApp">Neu laden</button>`); return true; }
+  openSheet(`${sheetHead("Erst neu laden")}<p id="newerBlockTxt">Deine Daten stammen aus einer neueren Fassung der App. Diese ältere Fassung kann nichts speichern – ein Training wäre danach verloren.</p><button class="btn primary block" data-a="reloadAsk">Neu laden</button>`); return true; }
 const badCopy = () => { try { return localStorage.getItem(KEY_BAD); } catch (e) { return null; } };
 function load() {
   let raw = null, cur = null;
@@ -2019,7 +2019,8 @@ function load() {
 }
 let saveFailed = false;
 function save() {
-  if (newerData) { newerSkipped = true; return newerWarn(); }   // Daten einer neueren Fassung: nichts überschreiben
+  if (newerData) {   // Daten einer neueren Fassung: nichts überschreiben; bei der ersten nicht gespeicherten Änderung den Hinweis ins Bild holen
+    const first = !newerSkipped; newerSkipped = true; newerWarn(); if (first) try { window.scrollTo(0, 0); } catch (e) {} return; }
   try { localStorage.setItem(KEY, JSON.stringify(state)); saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
   catch (e) { saveFailed = true; const b = document.getElementById("saveWarn"), t = document.getElementById("saveWarnTxt"); if (b) b.hidden = false;
     // Die Sicherungsdatei enthält kein laufendes Training – das steht dann dabei
@@ -4787,7 +4788,7 @@ function isTrainDate(d) {
 function clearTrainOvr(dk) { const e = state.dayPlan[dk]; if (!e || !e.train) return; delete e.train; if (!Object.keys(e).length) delete state.dayPlan[dk]; }
 // Training an einem Tag: erledigt (Verlauf) oder geplant laut Terminen und Ablauf
 function plannedOn(dk) {
-  const hs = state.history.filter(x => dkey(new Date(x.date)) === dk), h = hs[0];
+  const hs = state.history.filter(x => notFuture(x) && dkey(new Date(x.date)) === dk), h = hs[0];
   // Alle Trainings des Tages zählen; ohne erfasste Dauer (z. B. nachgetragen) wird nichts geschätzt
   if (h) return { name: hs.map(x => x.day).join(" + "), done: true, min: hs.reduce((a, x) => a + (x.durationSec > 0 ? Math.max(1, Math.round(x.durationSec / 60)) : 0), 0), dayId: h.dayId, n: hs.length, timed: hs.filter(x => x.durationSec > 0).length };
   const today = new Date(); today.setHours(12, 0, 0, 0); const d = dateOf(dk), s = state.sched;
@@ -5059,6 +5060,7 @@ function vIntro() {
     <div class="head"><h1 class="title">Dein Trainingsplan</h1><p class="sub">Für Hammer-Strength- und Life-Fitness-Geräte.</p></div>
     ${stepsCard()}
     <button class="link small" data-a="importOpen" id="introRestore" style="justify-self:start">Schon eine Sicherung? Wiederherstellen</button>
+    ${prevCopy() ? `<button class="link small" data-a="restoreUndo" id="introUndo" style="justify-self:start">Stand vor dem Wiederherstellen zurückholen</button>` : ""}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="emptyPlan">Plan selbst bauen</button>
       <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
@@ -5104,7 +5106,7 @@ function vSetup() {
     <div class="section"><h3>Erfahrung</h3>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="group"><button class="li" data-a="openDevs">
       <div class="grow"><div class="t">Geräte in deinem Studio</div><div class="s">${av} von ${all.length} vorhanden${fav ? ` · ${fav} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
-    ${state.plan ? "" : `<button class="link small" data-a="importOpen" id="setupRestore" style="justify-self:start">Schon eine Sicherung? Wiederherstellen</button>`}
+    ${state.plan ? "" : `<button class="link small" data-a="importOpen" id="setupRestore" style="justify-self:start">Schon eine Sicherung? Wiederherstellen</button>${prevCopy() ? `<button class="link small" data-a="restoreUndo" id="setupUndo" style="justify-self:start">Stand vor dem Wiederherstellen zurückholen</button>` : ""}`}
     ${planKeepNote()}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="createPlan">Plan erstellen</button>
@@ -5298,7 +5300,7 @@ function dayPickSheet() {
 // Wochenziel (Regel der App): mit festen Terminen deren Zahl pro Woche, sonst die Zahl der Trainingstage mit Geräten – mindestens 1
 function weekGoal() { const p = state.plan, n = state.sched && state.sched.days.length ? state.sched.days.length : p ? p.days.filter(d => d.items.length).length : 0; return Math.max(1, n); }
 // Woher die Zahl kommt – dieselbe Unterscheidung wie in weekGoal
-const weekGoalSrc = () => state.sched && state.sched.days.length ? "Zahl deiner Termine pro Woche" : state.plan && state.plan.days.some(d => d.items.length) ? "Zahl deiner Trainingstage mit Geräten" : "ohne Trainingstage mit Geräten 1 Training, Regel der App";
+const weekGoalSrc = () => state.sched && state.sched.days.length ? "Zahl deiner Termine pro Woche" : state.plan && state.plan.days.some(d => d.items.length) ? "Zahl deiner Trainingstage mit Geräten" : "noch kein Trainingstag mit Geräten: 1 Training, Regel der App";
 function weekStreak(monday, goal) {
   const counts = {};
   state.history.filter(notFuture).forEach(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); counts[d.getTime()] = (counts[d.getTime()] || 0) + 1; });
@@ -5495,7 +5497,7 @@ function prevSheet() { const o = prevCopy(); if (!o) return `${sheetHead("Stand 
   const d = normalize(o.data), left = Math.max(1, Math.ceil(PREV_DAYS - (Date.now() - new Date(o.at)) / 864e5));
   return `${sheetHead("Stand vor dem Wiederherstellen", "Abbrechen")}
     <p class="small" id="prevInfo" style="margin:0">Kopie vom ${fmtDay(o.at)}: ${nTr(d.history.length)}, ${nTd(d.plan?.days.length || 0)}. Sie wird noch ${left} ${left === 1 ? "Tag" : "Tage"} aufbewahrt.</p>
-    <p class="small muted" id="prevMsg" style="margin:0">Zurückholen ersetzt den jetzigen Stand. Der jetzige Stand wird dabei selbst zur Kopie.</p>
+    <p class="small muted" id="prevMsg" style="margin:0">${hasData(state) ? "Zurückholen ersetzt den jetzigen Stand. Der jetzige Stand wird dabei selbst zur Kopie." : "Auf dem Gerät liegt gerade nichts Eigenes – zurückholen ersetzt also nichts."}</p>
     <div id="prevConfirm" style="display:contents"></div>
     <button class="btn primary block" data-a="restoreUndoDo">Diesen Stand zurückholen</button>
     <button class="btn block danger" data-a="restoreUndoDrop">Kopie löschen</button>`; }
@@ -7424,7 +7426,7 @@ function nextSched(from = new Date()) {
   for (let k = 0; k < 8; k++) { const d = new Date(from); d.setDate(from.getDate() + k); if (isTrainDate(d)) { const at = schedAt(d); if (at > from) return at; } }
   return null;
 }
-const trainedOn = d => state.history.some(h => dkey(new Date(h.date)) === dkey(d));
+const trainedOn = d => state.history.some(h => notFuture(h) && dkey(new Date(h.date)) === dkey(d));
 // Letzter verpasster Termin dieser Woche (vor heute), seit dem nicht trainiert wurde
 function missedThisWeek() {
   const s = state.sched; if (!s) return null;
@@ -7644,7 +7646,7 @@ function planCheckHtml() {
     <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
     <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes && !over.length ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
-    ${soft.length ? `<p class="small muted" id="planSoftHigh" style="margin:0">${soft.map(x => `${MUSCLES[x.m]}: ${f(x.v)} Sätze pro Woche bei einem Richtwert von ${c.tmin}–${c.tmax}. Davon ${f(x.v - x.main)} mittrainiert (zählen halb), eigene Übungen ${f(x.main)}.`).join(" ")} Bis 25 % über dem Richtwert zählt das nicht als Punkt, wenn die eigenen Übungen im Bereich liegen (Regel der App).</p>` : ""}
+    ${soft.length ? `<p class="small muted" id="planSoftHigh" style="margin:0">${soft.map(x => `${MUSCLES[x.m]}: ${f(x.v)} Sätze pro Woche bei einem Richtwert von ${c.tmin}–${c.tmax}. Davon ${f(x.v - x.main)} mittrainiert (zählen halb), eigene Übungen ${f(x.main)}.`).join(" ")} Bis 25 % über dem Richtwert zählt das nicht als Punkt, wenn die eigenen Übungen nicht darüber liegen (Regel der App).</p>` : ""}
     ${over.length ? `<p class="small muted" id="planTimeNote" style="margin:0">${over.every(d => overMin(d) - p.minutes <= 5) ? "Etwas über" : "Über"} dem Zeitbudget von ${p.minutes} Min. (Schätzung der App): ${over.map(d => `${esc(d.name)} ≈ ${overMin(d)} Min.`).join(", ")}</p>` : ""}
     ${(() => { const ms = muscleSets(p, c.per), scale = c.tmax * 1.3;
       return `<div class="mlist" id="planBars" role="img" aria-label="Sätze pro Woche je Muskel: ${MAJOR.map(m => `${MUSCLES[m]} ${f(ms[m] || 0)}`).join(", ")}">${MAJOR.map(m => { const v = ms[m] || 0, col = v >= c.tmin && v <= c.tmax ? "var(--ok)" : v > c.tmax ? "var(--warn)" : "var(--accent)";
@@ -8325,25 +8327,25 @@ const A = {
   restoreNoCopy: () => { if (pendingRestore) restoreBackup(pendingRestore, { noCopy: true }); },
   restoreOverCopy: () => { if (pendingRestore) restoreBackup(pendingRestore, { overCopy: true }); },
   restoreUndo: () => openSheet(prevSheet()),
-  restoreUndoDo: el => { const o = prevCopy(), msg = byId("prevMsg"); if (!o) return closeSheet();
+  restoreUndoDo: el => { const o = prevCopy(), msg = byId("prevMsg"); if (!o) { sheetTo(prevSheet()); render(); return; }   // Kopie inzwischen verfallen: sagen statt still schließen
     if (state.session) { if (msg) { msg.textContent = "Erst das laufende Training beenden oder verwerfen. Sonst gingen seine erledigten Sätze verloren."; msg.style.color = "var(--warn)"; } return; }
     if (newerData) { if (msg) { msg.textContent = "Auf diesem Gerät liegen Daten einer neueren Fassung der App. Lade die App zuerst neu."; msg.style.color = "var(--warn)"; } return; }
     let back; try { back = normalize(Object.assign({}, o.data, { session: null })); } catch (e) { return; }
-    const force = el && el.dataset.force === "1", res = swapState(back, !force);
+    const own = hasData(state), force = el && el.dataset.force === "1", res = swapState(back, !force && own);   // ohne etwas Eigenes (z. B. leerer Stand nach einer leeren Sicherung) braucht es keine Kopie
     if (res !== "ok") {   // der jetzige Stand ließ sich nicht als Kopie ablegen oder der alte nicht speichern: nichts ist geändert
       if (msg) { msg.textContent = res === "nosave" ? "Der Stand ließ sich nicht speichern (Speicher voll). Es ist nichts geändert." : "Für eine Kopie des jetzigen Stands reicht der Speicher nicht. Zurückholen würde ihn ohne Kopie ersetzen – sichere ihn vorher unter „Sicherung erstellen“."; msg.style.color = "var(--warn)"; }
       const bx = byId("prevConfirm"); if (bx && res === "nocopy") bx.innerHTML = `<button class="btn block" data-a="restoreUndoDo" data-force="1" style="color:var(--bad)">Ohne Kopie zurückholen</button>`;
       return; }
-    if (force) { try { localStorage.removeItem(KEY_PREV); } catch (e) {} }   // ohne Kopie zurückgeholt: die alte Kopie ist jetzt der Stand selbst
+    if (force || !own) { try { localStorage.removeItem(KEY_PREV); } catch (e) {} }   // ohne Kopie zurückgeholt: die alte Kopie ist jetzt der Stand selbst
     closeSheet(); navReset();
-    homeNote = `Stand vom ${fmtDay(o.at)} zurückgeholt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}.${force ? "" : " Der Stand von eben liegt als Kopie unter Plan → Einstellungen."}`;
+    homeNote = `Stand vom ${fmtDay(o.at)} zurückgeholt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}.${force || !own ? "" : " Der Stand von eben liegt als Kopie unter Plan → Einstellungen."}`;
     go("home"); },
   restoreUndoDrop: () => { try { localStorage.removeItem(KEY_PREV); } catch (e) {} closeSheet(); render(); },
   rescueSave: () => { let raw = null; try { raw = localStorage.getItem(KEY); } catch (e) {} if (raw) downloadText(raw, `trainingsplan-daten-${dkey()}.json`, "application/json"); },
   rescueFinish: el => { try { finish(true); } catch (e) { el.textContent = "Ließ sich nicht speichern"; el.disabled = true; } },
   reloadAsk: el => { if (newerSkipped && el.dataset.sure !== "1") { el.dataset.sure = "1"; el.textContent = "Neu laden – Ungespeichertes geht verloren"; return; } location.reload(); },
-  rescueDrop: el => { if (el.dataset.sure !== "1") { el.dataset.sure = "1"; el.textContent = "Wirklich verwerfen? Erledigte Sätze gehen verloren"; return; }
-    stopTick(); awake(false); state.session = null; save(); go("home"); },
+  rescueDrop: el => { if (Date.now() - rescueSure > 60000) { rescueSure = Date.now(); el.textContent = "Wirklich verwerfen? Erledigte Sätze gehen verloren"; return; }
+    rescueSure = 0; stopTick(); awake(false); state.session = null; save(); go("home"); },
   showEx: el => openSheet(exChart(el.dataset.id, el.dataset.u)),
   addWeight: () => {
     const v = num(byId("bwIn").value);
@@ -10164,6 +10166,8 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
   const ntDays = () => state.plan ? state.plan.days.filter(d => d.items.length) : [];
   const ntDay = id => ntDays().find(d => d.id === id) || null;
   const ntAt = d => d === dkey() ? Date.now() : new Date(d + "T12:00:00").getTime();   // früherer Tag: 12 Uhr am Ort (die Uhrzeit ist nicht bekannt)
+  // Für die Vorschläge zählt an einem früheren Tag alles bis zum Ende dieses Tages – auch ein Training, das dort schon später als 12 Uhr eingetragen ist
+  const ntCut = d => d === dkey() ? Date.now() : new Date(d + "T23:59:59.999").getTime();
   const ntGet = () => isObj(state.x) && isObj(state.x.nachtrag) ? state.x.nachtrag : null;
   const ntPut = dr => { if (!isObj(state.x)) state.x = {}; state.x.nachtrag = dr; save(); };
   // Entwurf für einen Trainingstag und ein Datum: je Gerät die Vorschläge wie beim Start eines Live-Trainings
@@ -10173,25 +10177,40 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
   const NT_FEEL = { l: "leicht", m: "passt", h: "schwer" };
   function ntBuild(dayId, d, keep) {
     const day = ntDay(dayId); if (!day) return null;
-    const at = ntAt(d), old = keep && Array.isArray(keep.list) ? keep.list : [];
-    return { d, dayId, mode: keep ? keep.mode : "plan", min: keep ? keep.min : "",
-      list: day.items.map(it => { const e = makeEntry(it, { at }), sug = e.sets.map(t => ({ kg: t.kg, reps: t.reps }));
-        const n = { exId: e.exId, u: e.u, rmin: e.rmin, rmax: e.rmax, planned: e.planned, short: e.short, why: e.why, basis: e.basis, on: true, sug, sets: sug.map(t => ({ kg: t.kg, reps: t.reps })) };
-        // Wechsel von Datum oder Trainingstag: eigene Eingaben (Werte, Gefühl, ausgelassen) bleiben am selben Gerät erhalten; nur unveränderte Vorschläge werden neu berechnet
-        const o = old.find(x => x.exId === e.exId && x.u === e.u);
-        if (o) { n.on = o.on; if (ntTouched(o)) { n.sets = o.sets.map(t => Object.assign({}, t)); n.ed = true; } }
-        return n; }) };
+    const at = ntCut(d), old = keep && Array.isArray(keep.list) ? keep.list : [], stash = Object.assign({}, keep && isObj(keep.stash) ? keep.stash : {});
+    const used = new Set(), seen = {};
+    const list = day.items.map(it => { const e = makeEntry(it, { at }), sug = e.sets.map(t => ({ kg: t.kg, reps: t.reps }));
+      const n = { exId: e.exId, u: e.u, rmin: e.rmin, rmax: e.rmax, planned: e.planned, short: e.short, why: e.why, basis: e.basis, on: true, sug, sets: sug.map(t => ({ kg: t.kg, reps: t.reps })) };
+      // Wechsel von Datum oder Trainingstag: eigene Eingaben bleiben am selben Gerät (steht es doppelt im Tag: der Reihe nach)
+      const key = e.exId + "|" + e.u, k = seen[key] = (seen[key] || 0) + 1;
+      let o = old.filter(x => x.exId === e.exId && x.u === e.u)[k - 1];
+      if (o) used.add(o); else if (k === 1 && stash[key]) { o = stash[key]; delete stash[key]; }
+      if (o) { n.on = o.on;
+        if (!ntSame(o)) { n.sets = o.sets.map(t => Object.assign({}, t)); n.ed = true; }   // eigene Werte bleiben, wie sie sind
+        else o.sets.forEach((t, i) => { if (t.f && n.sets[i]) n.sets[i].f = t.f; }); }         // nur ein Gefühl gewählt: neuer Vorschlag, das Gefühl bleibt am Satz
+      return n; });
+    // Eingaben an Geräten, die der neue Trainingstag nicht hat, werden aufgehoben – zurück zum alten Tag sind sie wieder da
+    old.forEach(x => { if (!used.has(x) && ntTouched(x)) stash[x.exId + "|" + x.u] = x; });
+    const dr = { d, dayId, mode: keep ? keep.mode : "plan", min: keep ? keep.min : "", built: dkey(), list };
+    if (Object.keys(stash).length) dr.stash = stash;
+    return dr;
   }
   EXT.clean.nachtrag = raw => {
     if (!isObj(raw) || !/^\d{4}-\d{2}-\d{2}$/.test(raw.d) || typeof raw.dayId !== "string" || !Array.isArray(raw.list)) return null;
-    const list = raw.list.filter(x => isObj(x) && typeof x.exId === "string" && Array.isArray(x.sets)).slice(0, 40).map(x => ({
+    const okX = x => isObj(x) && typeof x.exId === "string" && Array.isArray(x.sets);
+    const cx = x => ({
       exId: x.exId, u: ["s", "t", "b"].includes(x.u) ? x.u : "t", rmin: clampInt(x.rmin, 1, 100, 8), rmax: clampInt(x.rmax, 1, 100, 12), planned: clampInt(x.planned, 1, 20, 1),
       short: typeof x.short === "string" ? x.short.slice(0, 120) : "", on: x.on !== false, ed: x.ed === true ? true : undefined,
       why: typeof x.why === "string" ? x.why.slice(0, 900) : "", basis: typeof x.basis === "string" ? x.basis.slice(0, 400) : "",
       sug: Array.isArray(x.sug) ? x.sug.filter(isObj).slice(0, 20).map(t => ({ kg: typeof t.kg === "number" ? t.kg : null, reps: Number.isInteger(t.reps) ? t.reps : null })) : undefined,
       sets: x.sets.filter(isObj).slice(0, 20).map(t => Object.assign({ kg: typeof t.kg === "number" && t.kg > 0 && t.kg <= 1000 ? t.kg : null, reps: Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 100 ? t.reps : null },
-        ["l", "m", "h"].includes(t.f) ? { f: t.f } : {})) }));
-    return list.length ? { d: raw.d, dayId: raw.dayId, mode: NT_MODES.some(m => m[0] === raw.mode) ? raw.mode : "plan", min: typeof raw.min === "string" ? raw.min.slice(0, 4) : "", list } : null;
+        ["l", "m", "h"].includes(t.f) ? { f: t.f } : {})) });
+    const list = raw.list.filter(okX).slice(0, 40).map(cx);
+    if (!list.length) return null;
+    const dr = { d: raw.d, dayId: raw.dayId, mode: NT_MODES.some(m => m[0] === raw.mode) ? raw.mode : "plan", min: typeof raw.min === "string" ? raw.min.slice(0, 4) : "", list };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw.built || "")) dr.built = raw.built;
+    if (isObj(raw.stash)) { const st = {}; Object.entries(raw.stash).slice(0, 40).forEach(([k, x]) => { if (okX(x)) st[String(k).slice(0, 80)] = cx(x); }); if (Object.keys(st).length) dr.stash = st; }
+    return dr;
   };
   // Was fehlt noch? "" = kann gespeichert werden
   function ntErr(dr) {
@@ -10219,6 +10238,8 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
   EXT.views.nachtrag = () => {
     let dr = ntGet();
     if (!dr || !ntDay(dr.dayId)) { const nd = nextDay(), day = nd && ntDay(nd.id) ? nd : ntDays()[0]; dr = day ? ntBuild(day.id, dkey()) : null; if (dr) ntPut(dr); }
+    // Entwurf von einem anderen Tag (oder aus einer älteren Fassung): Vorschläge und Begründungen neu berechnen, eigene Eingaben bleiben
+    if (dr && dr.built !== dkey()) { dr = ntBuild(dr.dayId, dr.d, dr) || dr; ntPut(dr); }
     if (!dr) { $app.innerHTML = `<div class="page">${extHead("Training nachtragen")}<div class="card" id="ntNone"><b>Noch kein Trainingstag mit Geräten</b><p class="small muted">Lege zuerst unter „Plan“ einen Trainingstag an.</p></div></div>`; return; }
     const err = ntErr(dr), same = state.history.filter(h => dkey(new Date(h.date)) === dr.d);
     const on = dr.list.filter(x => x.on && x.sets.length), nS = on.reduce((a, x) => a + x.sets.length, 0);
@@ -10305,7 +10326,7 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey, plateau,
-  weekGoal, entryBasis, dropForTime, makeEntry, lastPerf, prevCopy, normalize, DATA_V, estMinutes, planCheck, calDays, weekLeft, swapState, hasData, weekStats, insights });
+  weekGoal, entryBasis, dropForTime, makeEntry, lastPerf, prevCopy, normalize, DATA_V, estMinutes, planCheck, calDays, weekLeft, swapState, hasData, weekStats, insights, weekStreak, plannedOn });
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
 extClean(); badWarn();
 // Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern
@@ -10323,17 +10344,21 @@ window.addEventListener("storage", ev => {
   render();
 });
 if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
+let rescueSure = 0;   // Zeitpunkt des ersten Tipps auf „verwerfen“ – übersteht ein Neuzeichnen der Seite
 function rescuePage(err) {
   let raw = null; try { raw = localStorage.getItem(KEY); } catch (e) {}
   const done = state.session && state.session.list.some(x => x.sets.some(t => t.done)), inTrain = view === "train";
+  // Ansichten ohne Leiste (Zusammenfassung, Einrichtung): mit Plan die Leiste zeigen, damit die anderen Bereiche erreichbar sind
+  if (!inTrain && state.plan && $tabs.hidden) { $tabs.hidden = false; document.body.classList.remove("has-bar"); }
+  const way = inTrain ? " über „Zur Startseite“" : $tabs.hidden ? " über „Einstellungen“" : " über die Leiste unten";
   $app.innerHTML = `<div class="page" id="rescue"><div class="head"><h1 class="title">${inTrain ? "Das Training lässt sich nicht anzeigen" : "Diese Seite lässt sich nicht anzeigen"}</h1>
     <p class="sub">Deine Daten sind nicht gelöscht. Sie liegen weiter auf diesem Gerät.</p></div>
-    <div class="card stack"><p class="small" style="margin:0">Sichere sie zuerst als Datei. Die anderen Bereiche der App erreichst du weiter${inTrain ? " über „Zur Startseite“" : " über die Leiste unten"}.</p>
+    <div class="card stack"><p class="small" style="margin:0">Sichere sie zuerst als Datei. Die anderen Bereiche der App erreichst du weiter${way}.</p>
       ${raw ? `<button class="btn primary block" data-a="rescueSave">Daten als Datei sichern</button>` : ""}
       <button class="btn block" data-a="reloadApp">Neu laden</button>
       ${inTrain ? `<button class="btn block" data-a="tab" data-v="home">Zur Startseite</button>` : `<button class="btn block" data-a="openSettings">Einstellungen</button>`}
       ${done ? `<button class="btn block" data-a="rescueFinish">Laufendes Training beenden und speichern</button>` : ""}
-      ${state.session ? `<button class="btn block danger" data-a="rescueDrop">Laufendes Training verwerfen</button>` : ""}
+      ${state.session ? `<button class="btn block danger" data-a="rescueDrop">${Date.now() - rescueSure < 60000 ? "Wirklich verwerfen? Erledigte Sätze gehen verloren" : "Laufendes Training verwerfen"}</button>` : ""}
       <p class="small faint" id="rescueErr" style="margin:0">Technischer Hinweis: ${esc(String((err && err.message) || err).slice(0, 160))}</p></div></div>`;
 }
 newerWarn();

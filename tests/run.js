@@ -7122,8 +7122,8 @@ async function finishAllSets(page, kg, reps) {
       ok("Drei Einheiten, die letzte vor 15 Kalendertagen am Abend: nicht „gut“ (Regel: höchstens 14 Tage), sondern „mittel – die letzte Einheit ist 15 Tage her“", c15.includes("vor 15 Tagen") && c15.includes("Sicherheit: mittel – die letzte Einheit ist 15 Tage her"), c15);
       const c14 = await cal([Hc("a", ago(30, 20)), Hc("b", ago(20, 20)), Hc("c", ago(14, 23, 30))]);
       ok("… bei 14 Kalendertagen (auch spät abends): „gut“", c14.includes("vor 14 Tagen") && c14.includes("Sicherheit: gut"), c14);
-      const cg = await cal([Hc("a", ago(40, 20), top), Hc("b", ago(21, 20), top)], () => { const T = window.__tp, e = T.makeEntry(T.state.plan.days[0].items[0]); return e.why + " | " + e.basis; });
-      ok("Begründung und Datengrundlage nennen denselben Abstand (21 Kalendertage, obwohl erst 20 Tage und 21 Stunden vergangen sind)", cg.includes("vor 21 Tagen") && cg.includes("ist 21 Tage her") && !cg.includes("20 Tage"), cg);
+      const cg = await cal([Hc("a", ago(40, 20), top), Hc("b", ago(21, 20), top)], () => { const T = window.__tp, e = T.makeEntry(T.state.plan.days[0].items[0]); return { why: e.why, basis: e.basis, mode: e.mode }; });
+      ok("Pausenregel und Datengrundlage rechnen beide in Kalendertagen: nach 21 Kalendertagen (erst 20 Tage und 21 Stunden) hält die App das Gewicht und nennt in beiden Texten 21 Tage", cg.mode === "hold" && cg.why.includes("vor 21 Tagen") && cg.basis.includes("ist 21 Tage her") && !(cg.why + cg.basis).includes("20 Tage"), JSON.stringify(cg));
       // Nachtrag für einen früheren Tag: alles bezieht sich auf den gewählten Tag und sagt das
       const cn = await cal([Hc("a", ago(11, 18, 30)), Hc("b", ago(3, 18)), Hc("c", ago(1, 18))], () => { const T = window.__tp, d = new Date(Date.now() - 10 * 864e5); d.setHours(12, 0, 0, 0);
         return T.makeEntry(T.state.plan.days[0].items[0], { at: d.getTime() }).basis; });
@@ -7154,7 +7154,23 @@ async function finishAllSets(page, kg, reps) {
       ok("„Wie geplant“ gespeichert: 52,5 kg stehen im Verlauf, aber die Zusammenfassung feiert keinen Bestwert für den Vorschlag der App", s1.kg === "52.5,52.5,52.5" && !s1.pr && s1.note.includes("Kein Bestwert gemeldet für Rudern") && s1.note.includes("unverändert übernommen"), JSON.stringify(s1));
       const wk1 = await tp(page, () => ({ sug: window.__tp.state.history[2].exercises[0].sug, prs: window.__tp.weekStats(0).prs.length, saved: JSON.parse(localStorage.getItem("trainingsplan-v2")).history[2].exercises[0].sug }));
       ok("… auch der Wochenrückblick meldet dafür keinen Bestwert; das Training trägt das Kennzeichen „Vorschlag übernommen“ dauerhaft", wk1.sug === true && wk1.saved === true && wk1.prs === 0, JSON.stringify(wk1));
+      await page.reload(); await page.waitForSelector("#app h1");
+      ok("… das Kennzeichen übersteht das Neuladen", (await tp(page, () => window.__tp.state.history[2].exercises[0].sug)) === true && (await tp(page, () => window.__tp.weekStats(0).prs.length)) === 0);
+      // Im Verlauf korrigiert: ab dann sind es eigene Werte
+      const hid = await tp(page, () => window.__tp.state.history[2].id);
+      await page.click("[data-a=tab][data-v=history]"); await tp(page, () => { const d = document.getElementById("discLog"); if (d) d.open = true; });
+      await page.click(`#discLog [data-a=histOpen][data-id="${hid}"]`); await page.click('.sheet [data-a=histSet][data-x="0"][data-i2="2"]');
+      await page.fill("#hsReps", "7"); await page.click("[data-a=histSetSave]");
+      const wk2 = await tp(page, () => ({ sug: window.__tp.state.history[2].exercises[0].sug, reps: window.__tp.state.history[2].exercises[0].sets[2].reps, prs: window.__tp.weekStats(0).prs.length }));
+      ok("Satz im Verlauf korrigiert (8 → 7 Wdh.): das Kennzeichen entfällt, der Wochenrückblick zählt den Bestwert jetzt", wk2.sug === undefined && wk2.reps === 7 && wk2.prs === 1, JSON.stringify(wk2));
       await ctx.close();
+      // Rückblick „Monat“: mit einem Vergleichswert aus einem früheren Monat
+      const rb = await open({ plan, history: [R3H("z", 60, "d1", [R3E("hs-row", "s", [[50, 12], [50, 12], [50, 12]])]), R3H("y", 4, "d1", [R3E("hs-row", "s", [[50, 12], [50, 12], [50, 12]])])] });
+      await rb.page.click("#ntHome"); await rb.page.click("#ntSave"); await rb.page.waitForSelector("#sumCap");
+      const rb1 = await tp(rb.page, () => { const T = window.__tp, d = new Date(), n = () => T.rbStats(T.state.history, T.state.weights, "m", d.getFullYear(), d.getMonth()).recs.length;
+        const x = T.state.history[2].exercises[0], a = n(); delete x.sug; const b = n(); x.sug = true; return { kg: x.sets[0].kg, mit: a, ohne: b }; });
+      ok("Rückblick „Monat“: der übernommene Vorschlag (52,5 kg) steht nicht unter „Neue Bestwerte“ – ohne das Kennzeichen stünde er dort", rb1.kg === 52.5 && rb1.mit === 0 && rb1.ohne === 1, JSON.stringify(rb1));
+      await rb.ctx.close();
       // Nur geöffnet und bestätigt oder nur ein Gefühl gewählt: bleibt ein übernommener Vorschlag
       const same = await open({ plan, history });
       await same.page.click("#ntHome"); await same.page.click("#ntMode [data-v=edit]");
@@ -7166,6 +7182,37 @@ async function finishAllSets(page, kg, reps) {
       const s3b = await tp(same.page, () => ({ pr: !!document.getElementById("prList"), note: !!document.getElementById("sugPrNote"), f: window.__tp.state.history[2].exercises[0].sets[2].f }));
       ok("… gespeichert mit Gefühl, aber ohne gefeierten Bestwert (vorher galt das als „geändert“ und die 52,5 kg der App wurden gefeiert)", !s3b.pr && s3b.note && s3b.f === "m", JSON.stringify(s3b));
       await same.ctx.close();
+      // Nur ein Gefühl gewählt, dann das Datum geändert: es gilt der Vorschlag für den neuen Tag, das Gefühl bleibt am Satz
+      const lday = n => { const d = new Date(Date.now() - n * 864e5); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+      const fe = await open({ plan, history });
+      await fe.page.click("#ntHome"); await fe.page.click("#ntMode [data-v=edit]");
+      await fe.page.click(".nt-x[data-x='0'] [data-a=ntSet][data-i2='2']"); await fe.page.click("#ntFeel [data-f=m]"); await fe.page.click("[data-a=ntSetSave]"); await fe.page.waitForSelector("#ntKg", { state: "detached" });
+      await fe.page.fill("#ntDate", lday(6)); await fe.page.waitForFunction(d => window.__tp.state.x.nachtrag.d === d, lday(6));
+      const fe1 = await tp(fe.page, () => { const x = window.__tp.state.x.nachtrag.list[0]; return { sets: x.sets.map(t => t.kg + "x" + t.reps + (t.f || "")).join(), lab: document.querySelector(".nt-x[data-x='0'] .nt-st").textContent }; });
+      ok("Gefühl „Passt“ gewählt, Datum auf vor 6 Tagen: Vorschlag für diesen Tag (50 × 12/12/11 aus der Einheit davor), nicht die 52,5 kg von heute; das Gefühl bleibt", fe1.sets === "50x12,50x12,50x11m" && fe1.lab.includes("Vorschlag"), JSON.stringify(fe1));
+      await fe.ctx.close();
+      // Eigene Werte an einem Gerät, das der andere Trainingstag nicht hat: nach dem Zurückwechseln wieder da
+      const sw = await open({ plan: { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [R3it("i1", "hs-row")] }, { id: "d2", name: "Tag B", items: [R3it("i2", "hs-legpress")] }] }, history });
+      await sw.page.click("#ntHome"); await sw.page.click("#ntDays [data-id=d1]"); await sw.page.click("#ntMode [data-v=edit]");
+      await sw.page.click(".nt-x[data-x='0'] [data-a=ntSet][data-i2='0']"); await sw.page.fill("#ntKg", "60"); await sw.page.fill("#ntReps", "8"); await sw.page.click("[data-a=ntSetSave]"); await sw.page.waitForSelector("#ntKg", { state: "detached" });
+      await sw.page.click("#ntDays [data-id=d2]"); await sw.page.waitForFunction(() => window.__tp.state.x.nachtrag.dayId === "d2");
+      await sw.page.click("#ntDays [data-id=d1]"); await sw.page.waitForFunction(() => window.__tp.state.x.nachtrag.dayId === "d1");
+      const sw1 = await tp(sw.page, () => { const x = window.__tp.state.x.nachtrag.list[0]; return x.exId + ":" + x.sets.map(t => t.kg + "x" + t.reps).join(); });
+      ok("Trainingstag gewechselt und zurück: die eigenen 60 × 8 am Rudern sind wieder da (vorher verworfen)", sw1 === "hs-row:60x8,52.5x8,52.5x8", sw1);
+      await sw.ctx.close();
+      // Entwurf von vorgestern, heute geöffnet: Begründung und Datengrundlage beziehen sich auf den gewählten Tag
+      const stale = await open({ plan, history, x: { nachtrag: { d: lday(2), dayId: "d1", mode: "plan", min: "", built: lday(2), list: [{ exId: "hs-row", u: "s", rmin: 8, rmax: 12, planned: 3, short: "", why: "alt", basis: "Datengrundlage: 2 vergleichbare Einheiten an diesem Gerät, davon 2 in den letzten 6 Wochen; die letzte vor 2 Tagen. Sicherheit: mittel (Einschätzung der App).", on: true,
+        sug: [{ kg: 52.5, reps: 8 }, { kg: 52.5, reps: 8 }, { kg: 52.5, reps: 8 }], sets: [{ kg: 52.5, reps: 8 }, { kg: 52.5, reps: 8 }, { kg: 52.5, reps: 8 }] }] } } });
+      await stale.page.click("#ntHome"); await stale.page.click(".nt-x[data-x='0'] .nt-why");
+      const st1 = await stale.page.textContent("#whyBasis");
+      ok("Entwurf von vorgestern, heute geöffnet: die Datengrundlage wird neu gerechnet und nennt den gewählten Tag („vor dem gewählten Tag … 2 Tage davor“)", st1.includes("vor dem gewählten Tag") && st1.includes("die letzte 2 Tage davor") && !st1.includes("vor 2 Tagen"), st1);
+      await stale.page.keyboard.press("Escape");
+      // Nachtrag für einen Tag, an dem später am Tag schon ein Training steht: es zählt zur Datengrundlage
+      const sd = await tp(stale.page, () => { const T = window.__tp, d = new Date(Date.now() - 12 * 864e5); d.setHours(18, 0, 0, 0);
+        T.state.history.unshift({ id: "abend", dayId: "d1", day: "Tag", date: d.toISOString(), durationSec: 1800, exercises: [{ exId: "hs-row", name: "x", u: "s", sets: [{ kg: 45, reps: 10 }, { kg: 45, reps: 10 }, { kg: 45, reps: 10 }] }] });
+        const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; return T.ntBuild("d1", dk).list[0].basis; });
+      ok("Nachtrag für einen Tag, an dem um 18 Uhr schon ein Training steht: „1 vergleichbare Einheit … am selben Tag“ statt „keine“", sd.includes("1 vergleichbare Einheit") && sd.includes("am selben Tag"), sd);
+      await stale.ctx.close();
       // Selbst eingetragen: Bestwert wird gemeldet; Satzgefühl wird gespeichert und wirkt auf den nächsten Vorschlag
       const two = await open({ plan, history });
       await two.page.click("#ntHome"); await two.page.click("#ntMode [data-v=edit]"); await two.page.click(".nt-x[data-x='0'] [data-a=ntSet][data-i2='2']");
@@ -7338,6 +7385,21 @@ async function finishAllSets(page, kg, reps) {
       const q6 = await tp(s5.page, k => { const r = localStorage.getItem(k); return r ? JSON.parse(r).data.custom.map(c => c.name).join() : null; }, PK);
       ok("Stand nur mit eigenem Gerät und Studio-Auswahl: bekommt vor dem Ersetzen ebenfalls eine Kopie (vorher keine)", q6 === "Mein Gerät", String(q6));
       await s5.ctx.close();
+      // Kopie lässt sich schreiben, der neue Stand aber nicht (zusammen zu groß): alles wird zurückgerollt – Stand im Fenster, Speicher und die ältere Kopie
+      const s6 = await open(dev, { extra: { [PK]: JSON.stringify({ at: new Date().toISOString(), data: { plan: PLAN_SMALL, history: [Object.assign(hist("hs-chest", [{ kg: 20, reps: 10 }], 200), { id: "uralt" })] } }) } });
+      await s6.page.click("#navbar [data-a=openSettings]"); await s6.page.click("[data-a=importOpen]"); await s6.page.fill("#impTxt", R3code(old)); await s6.page.click("[data-a=importDo]"); await s6.page.click("[data-a=restoreConfirm]");
+      await tp(s6.page, k => { const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (key, v) { if (key === k) throw new DOMException("voll", "QuotaExceededError"); return orig.call(this, key, v); }; }, KEY);
+      await s6.page.click("[data-a=restoreOverCopy]");
+      const q7 = await tp(s6.page, () => ({ msg: document.getElementById("impMsg").textContent, btn: [...document.querySelectorAll("#impConfirm [data-a]")].map(b => b.dataset.a).join(), mem: window.__tp.state.history.map(h => h.id).join(), saved: JSON.parse(localStorage.getItem("trainingsplan-v2")).history.map(h => h.id).join() }));
+      ok("Neuer Stand lässt sich nach dem Ablegen der Kopie nicht speichern: Stand im Fenster und im Speicher unverändert, die ältere Kopie liegt wieder da, die App fragt nach", q7.msg.includes("reicht der Speicher nicht") && q7.btn === "restoreNoCopy" && q7.mem === "neu1" && q7.saved === "neu1" && (await copyIds(s6.page)) === "uralt", JSON.stringify(q7));
+      await s6.ctx.close();
+      // Leerer Stand (z. B. nach einer leeren Sicherung), aber es gibt eine Kopie: Zurückholen ist auch ohne Plan erreichbar
+      const s7 = await R3raw({ [PK]: JSON.stringify({ at: new Date().toISOString(), data: dev }) }, { extra: { "tp-intro": "1" } });
+      ok("Ohne Plan, aber mit Kopie: der Einstieg bietet „Stand vor dem Wiederherstellen zurückholen“", await s7.page.isVisible("#introUndo"));
+      await s7.page.click("#introUndo"); await s7.page.click("[data-a=restoreUndoDo]"); await s7.page.waitForSelector("#homeNote");
+      const q8 = await tp(s7.page, k => ({ ids: window.__tp.state.history.map(h => h.id).join(), copy: localStorage.getItem(k), note: document.getElementById("homeNote").textContent }), PK);
+      ok("… zurückgeholt; von dem leeren Stand bleibt keine Kopie zurück", q8.ids === "neu1" && q8.copy === null && !q8.note.includes("Kopie"), JSON.stringify(q8));
+      await s7.ctx.close();
     }
     {
       // C2. Daten aus einer neueren Fassung der App werden nicht überschrieben
@@ -7359,6 +7421,10 @@ async function finishAllSets(page, kg, reps) {
       await a.page.click("[data-a=tab][data-v=plan]"); await a.page.click("[data-a=editDay]"); await a.page.fill("#dayName", "Umbenannt"); await a.page.keyboard.press("Tab");
       await tp(a.page, () => { window.__tp.state.why = "x"; window.__tp.save(); });
       ok("… beim Bedienen bleibt der Speicher Zeichen für Zeichen unverändert (vorher fielen unbekannte Felder beim ersten Speichern weg)", (await tp(a.page, k => localStorage.getItem(k), KEY)) === newer);
+      const pa = await R3raw({ [KEY]: JSON.stringify({ v: 8, plan: PLAN_SMALL, history: [], session: { dayId: "d1", dayName: "Test", start: Date.now() - 6e5, paused: Date.now() - 1000, idx: 0, phase: "set", list: [{ key: "k1", itemId: "i1", exId: "hs-chest", rmin: 8, rmax: 12, rest: 90, u: "s", planned: 2, sets: [{ kg: 40, reps: 10, done: true }, { kg: 40, reps: 10, done: false }] }] } }) });
+      await pa.page.click("[data-a=resumeT]");
+      ok("Pausiertes Training fortsetzen ist bei Daten einer neueren Fassung ebenfalls gesperrt", !!(await pa.page.$("#newerBlockTxt")) && (await tp(pa.page, () => !!window.__tp.state.session.paused)) && !(await pa.page.$("[data-a=doneSet]")));
+      await pa.ctx.close();
       ok("Nach einer nicht gespeicherten Änderung sagt der Hinweis das", (await a.page.textContent("#newerWarnTxt")).includes("ist nicht gespeichert und geht beim Neuladen verloren"));
       await a.page.click("#newerWarn [data-a=reloadAsk]");
       ok("„Neu laden“ fragt dann erst nach", (await a.page.textContent("#newerWarn [data-a=reloadAsk]")).includes("Ungespeichertes geht verloren") && (await tp(a.page, () => window.__tp.state.why)) === "x");
@@ -7460,6 +7526,13 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=tab][data-v=history]");
       ok("Fortschritt weist darauf hin: Datum in der Zukunft, mit dem Weg zur Korrektur", (await page.textContent("#histFuture")).includes("„Zukunft“ hat ein Datum in der Zukunft") && (await page.textContent("#histFuture")).includes("zählt es erst ab diesem Tag") && (await page.textContent("#histFuture")).includes("Datum oder Dauer ändern"), await page.textContent("#histFuture").catch(() => ""));
       await ctx.close();
+      // Mit fester Uhr (12:00): Eintrag heute 14:00 – zählt weder für die Serie noch als „erledigt“ im Wochenplan
+      const noonT = new Date(); noonT.setHours(12, 0, 0, 0);
+      const fu = await R3raw({ [KEY]: JSON.stringify({ plan: PLAN_SMALL, history: [Object.assign(hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 0), { date: new Date(noonT.getTime() + 2 * 3600e3).toISOString() })] }) }, { noon: true });
+      const f3 = await tp(fu.page, () => { const T = window.__tp, m = new Date(); m.setHours(0, 0, 0, 0); m.setDate(m.getDate() - (m.getDay() + 6) % 7); const p = T.plannedOn(T.dkey());
+        return { streak: T.weekStreak(m, 1), done: !!(p && p.done), ring: document.getElementById("homeWeekSec").textContent, buddy: document.getElementById("buddy").textContent.includes("Heute erledigt") }; });
+      ok("Eintrag in 2 Stunden: keine Serie, der Tag gilt nicht als erledigt, „0 von 1“, kein „Heute erledigt“", f3.streak === 0 && !f3.done && /0 von 1/.test(f3.ring) && !f3.buddy, JSON.stringify(f3));
+      await fu.ctx.close();
       const ok2 = await open({ plan: PLAN_SMALL, history: [hist("hs-legpress", [{ kg: 100, reps: 10 }, { kg: 100, reps: 10 }], 10)] });
       await ok2.page.click("[data-a=tab][data-v=history]");
       ok("Ohne solche Einträge kein Hinweis", !(await ok2.page.$("#histFuture")));

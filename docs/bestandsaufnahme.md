@@ -17,6 +17,8 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
   - Die behobenen Punkte habe ich selbst nachgestellt und mit Tests abgesichert; die neuen Tests jeder Runde liefen zur Gegenprobe auch gegen die Fassung davor und schlagen dort fehl.
   - Die Nummern der Befunde bleiben seit dem 21. November 2026 unverändert.
   - Jede Runde von Korrekturen wurde danach von unabhängigen Prüfern angegriffen (Runde 2: 24 Funde, Runde 3: 16 Funde); ihre Funde sind eingearbeitet und mit Tests belegt.
+  - Die zweite Kontrolle der Runde 3 brach am Nutzungslimit ab, bevor die Prüfer ein Urteil abgaben. Ihre gespeicherten Versuche habe ich selbst ausgeführt und ausgewertet (12 weitere Punkte, eingearbeitet). Ein abschließendes Urteil unabhängiger Prüfer zu diesem letzten Stand gibt es deshalb nicht.
+  - Gegenprobe der Tests: In Kopien der App wurde je ein Fehler eingebaut; die Liste, welche davon die Tests bemerken, steht im Pull Request #78.
 
 ## 2. Antworten auf die zehn Prüffragen
 
