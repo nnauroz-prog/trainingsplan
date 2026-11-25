@@ -16,6 +16,7 @@ Geprüft am 20. November 2026 am Stand von `main` nach Pull Request #75 (Commit 
   - Die Zeilenangaben gelten für den geprüften Stand; durch die Korrekturen haben sie sich verschoben.
   - Die behobenen Punkte habe ich selbst nachgestellt und mit Tests abgesichert; die neuen Tests jeder Runde liefen zur Gegenprobe auch gegen die Fassung davor und schlagen dort fehl.
   - Die Nummern der Befunde bleiben seit dem 21. November 2026 unverändert.
+  - Jede Runde von Korrekturen wurde danach von unabhängigen Prüfern angegriffen (Runde 2: 24 Funde, Runde 3: 16 Funde); ihre Funde sind eingearbeitet und mit Tests belegt.
 
 ## 2. Antworten auf die zehn Prüffragen
 
@@ -149,7 +150,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 
 ### 4. Verlauf wird nach Listenposition ausgewertet; beim Laden weder sortiert noch auf Zukunfts- oder kaputte Daten geprüft
 
-- **Schwere:** hoch · **Stand:** teilweise – Reihenfolge behoben (siehe oben). Ein Training mit Datum in der Zukunft belastet die Erholung nicht mehr, und „Fortschritt“ weist mit dem Weg zur Korrektur darauf hin (PR #78, Test: E-runde3). Bewusst belassen: Bis zu seinem Datum gilt ein solcher Eintrag weiter als neuestes Training, und ein unlesbares Datum wird beim Laden zu „jetzt“ – beides entsteht nur durch eine von Hand veränderte Sicherung oder eine falsch gestellte Uhr.
+- **Schwere:** hoch · **Stand:** teilweise – Reihenfolge behoben (siehe oben). Ein Training mit Datum in der Zukunft belastet die Erholung nicht mehr, und „Fortschritt“ weist mit dem Weg zur Korrektur darauf hin (PR #78, Test: E-runde3). Ein Training mit Datum in der Zukunft zählt für Vorschläge, Datengrundlage, „Letztes Mal“, Erholung und Wochenziel erst ab seinem Tag. Bewusst belassen: Für die Reihenfolge der Trainingstage gilt es weiter als letztes Training, und ein unlesbares Datum wird beim Laden zu „jetzt“ – beides entsteht nur durch eine von Hand veränderte Sicherung oder eine falsch gestellte Uhr.
 - **Bereich:** Ehrlichkeit abgeleiteter Zahlen
 - **Stelle (Stand der Prüfung):** src/app.html:1849-1851 (normalize), 2169 (lastPerf), 2397 (baseDay), 4956 (vHome), 5508 (compSessions), 7207 (buddySays), 7718 (vHistory)
 - **Was passiert:** „Letztes Training“ ist überall das letzte Element der Liste, nicht das jüngste Datum. Heute bleibt die Liste nur sortiert, weil finish() hinten anhängt und histMetaSave sortiert. normalize sortiert nicht, lässt Zukunftsdaten durch und ersetzt ein ungültiges Datum durch „jetzt“. Jeder neue Weg, der ein Training mit früherem Datum einfügt (nachträglich eintragen), trifft genau diese Annahme.
@@ -169,7 +170,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 
 ### 6. Markierung „steht in meinem Studio“ ist nicht verlässlich: die Geräteauswahl setzt sie still, und abgewählte Geräte bleiben ohne Hinweis im Plan und im Training
 
-- **Schwere:** mittel · **Stand:** behoben – Die Geräteauswahl sagt sichtbar „jetzt als ‚im Studio‘ markiert“ und nimmt die Markierung beim Herausnehmen zurück; Geräte im Plan, die als „nicht im Studio“ markiert sind, stehen in der Planprüfung und sind in der Tagesansicht gekennzeichnet (PR #78). Bewusst belassen: Ein im laufenden Training hinzugefügtes Gerät gilt als im Studio – der Nutzer steht gerade daran. Test: E-runde3.
+- **Schwere:** mittel · **Stand:** behoben – Die Geräteauswahl sagt sichtbar „jetzt als ‚im Studio‘ markiert“ und stellt beim Herausnehmen in derselben Auswahl den Zustand von vorher wieder her; Geräte im Plan, die als „nicht im Studio“ markiert sind, stehen in der Planprüfung und sind in der Tagesansicht gekennzeichnet (PR #78). Bewusst belassen: Ein im laufenden Training hinzugefügtes Gerät gilt als im Studio – der Nutzer steht gerade daran. Test: E-runde3.
 - **Bereich:** Planerzeugung und automatische Planänderungen
 - **Stelle (Stand der Prüfung):** src/app.html:8448-8452 (pick setzt off:false, nimmt es beim Abwählen nicht zurück), 5445 (sesAdd ebenso), 5491 (startTraining ohne Prüfung), Tagesansicht 5274-5305 und planCheck 7299-7310 ohne Hinweis
 - **Was passiert:** (1) Tippt der Nutzer in der Geräteauswahl ein als „nicht im Studio“ gezeigtes Gerät an, wird es still als „im Studio“ markiert (Kommentar 8446: „Wer ein Gerät einplant, hat es im Studio“). Nimmt er es sofort wieder heraus, bleibt die Markierung. Der Generator darf es danach automatisch einplanen. (2) Wählt der Nutzer ein Gerät ab, das im Plan steht, bleibt es im Plan; weder Heute, Plan, Tag noch die Planprüfung weisen darauf hin, und das Training startet mit dem Gerät. Nur „Zeit für heute“ ersetzt es (und zeigt das an).
@@ -309,7 +310,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 
 ### 20. Wiederherstellen ersetzt neuere Daten ohne Rückfrage, sobald die Sicherung gleich viele Trainings hat
 
-- **Schwere:** mittel · **Stand:** behoben – Rückfrage auch, wenn auf dem Gerät neuere Trainings liegen (PR #76). Der Stand von vorher bleibt 14 Tage als Kopie und lässt sich unter Einstellungen zurückholen; das Fenster nennt, was ersetzt wird (Plan, Verlauf, Essen, Gewichte, Einstellungen) (PR #78). Test: E-sicherheit, E-runde3.
+- **Schwere:** mittel · **Stand:** behoben – Rückfrage auch, wenn auf dem Gerät neuere Trainings liegen (PR #76). Der Stand von vorher bleibt 14 Tage als Kopie und lässt sich unter Einstellungen zurückholen; das Fenster nennt, was ersetzt wird (Plan, Verlauf, Essen, Gewichte, Einstellungen). Eine vorhandene Kopie wird nur nach Rückfrage ersetzt; reicht der Speicher für die Kopie nicht, fragt die App, statt still zu ersetzen (PR #78). Test: E-sicherheit, E-runde3.
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:5249–5267 (tryRestore, restoreBackup), 7974–7991
 - **Was passiert:** Die Rückfrage kommt nur, wenn die Sicherung weniger Trainings enthält als das Gerät. Bei gleicher oder größerer Anzahl wird sofort nach Dateiwahl bzw. „Text wiederherstellen“ alles ersetzt: andere, neuere Trainings, Essen-Tagebuch, Gewichte, Körpermaße, gespeicherte Pläne und ein pausiertes Training. Der Hinweis nennt nur „Plan und Verlauf“. Es gibt kein Rückgängig und keine Kopie des alten Stands.
@@ -363,7 +364,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 25. Ein Tipp macht den App-Vorschlag zur Leistung und zum Bestwert
 
-- **Schwere:** mittel · **Stand:** teilweise – Beim Nachtragen meldet die Zusammenfassung keinen Bestwert für Vorschläge, die unverändert übernommen wurden; gespeichert werden sie trotzdem (PR #78, Test: E-runde3). Bewusst belassen: Im Live-Modus gilt der Tipp auf „Satz fertig“ am Gerät als Bestätigung des angezeigten Werts – so arbeiten Trainings-Apps üblicherweise, und jeder Satz lässt sich davor ändern und danach korrigieren.
+- **Schwere:** mittel · **Stand:** teilweise – Beim Nachtragen meldet die App keinen Bestwert für Vorschläge, die unverändert übernommen wurden (gleiche Werte in allen Sätzen) – weder in der Zusammenfassung noch im Wochenrückblick oder Rückblick; gespeichert werden sie trotzdem (PR #78, Test: E-runde3). Bewusst belassen: Im Live-Modus gilt der Tipp auf „Satz fertig“ am Gerät als Bestätigung des angezeigten Werts – so arbeiten Trainings-Apps üblicherweise, und jeder Satz lässt sich davor ändern und danach korrigieren.
 - **Bereich:** Progressionslogik und Verlaufsdaten
 - **Stelle (Stand der Prüfung):** src/app.html:5542–5544 (Sätze mit Gewicht und Ziel-Wiederholungen vorbefüllt), 5656–5661 (doneSet), 2184 (livePr), 5728 (Bestwerte am Ende)
 - **Was passiert:** Gewicht und Wiederholungen sind mit dem Vorschlag der App vorbefüllt, bei Steigerung mit dem höheren Gewicht. „Satz fertig“ ohne eigene Eingabe speichert diese Werte als Leistung. Die App unterscheidet nicht zwischen eingegebenen und nur übernommenen Werten und meldet sofort einen Bestwert.
@@ -373,7 +374,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 26. Generator kürzt bei knapper Zeit blind vom Ende: Pläne ohne große Muskelgruppe, die eigene Planprüfung beanstandet den frischen Vorschlag
 
-- **Schwere:** mittel · **Stand:** behoben – Gekürzt wird nach fester Reihenfolge und nur, wenn keine große Muskelgruppe aus dem Plan verschwindet (`dropForTime`). 72 Kombinationen: vorher 8 Pläne ohne Oberschenkelrückseite, jetzt 0, kein Tag über der Zeit. Liegt ein Muskel nur durch Mittrainiertes über dem Richtwert, erklärt die Planprüfung die Zahl, statt den frischen Vorschlag zu beanstanden (PR #78). Test: E-runde3.
+- **Schwere:** mittel · **Stand:** behoben – Gekürzt wird nach fester Reihenfolge und nur, wenn keine große Muskelgruppe aus dem Plan verschwindet (`dropForTime`). 72 Kombinationen: vorher 8 Pläne ohne Oberschenkelrückseite, jetzt 0, kein Tag über der Zeit. Liegt ein Muskel nur durch Mittrainiertes und höchstens 25 % über dem Richtwert, erklärt die Planprüfung die Zahl, statt den frischen Vorschlag zu beanstanden (PR #78). Test: E-runde3.
 - **Bereich:** Planerzeugung und automatische Planänderungen
 - **Stelle (Stand der Prüfung):** src/app.html:2072-2075 und 2053-2055 (while over … items.pop()), 2104-2106 (Kürzen über dem Richtwert nur an Übungen mit diesem Hauptmuskel)
 - **Was passiert:** Zum Einhalten des Zeitbudgets entfernt der Generator die letzten Geräte der Vorlage, ohne auf Muskelabdeckung zu achten (anders als fitToTime, das laut Kommentar 2253 „nicht blind vom Ende“ streicht). Bei 30 Minuten bleiben so je Tag die ersten drei Geräte: der Beintag besteht aus drei Übungen für die Oberschenkelvorderseite. Außerdem liegen viele frische Pläne für Kraft/Fitness bei den Schultern über dem Richtwert der App, weil mittrainierte Sätze halb zählen, aber nur Schulter-Hauptübungen gekürzt werden können.
@@ -383,7 +384,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 27. Wochenziel ist die Zahl der Plantage – auch leerer, auch bei weniger Terminen; Serie wird rückwirkend neu gerechnet
 
-- **Schwere:** mittel · **Stand:** behoben – Wochenziel = Termine pro Woche, sonst Tage mit Geräten (`weekGoal`); leere Tage zählen nicht (PR #78). Offengelegt statt geändert: Die Serie wird mit dem heutigen Ziel für alle Wochen gerechnet, und jeder Eintrag im Verlauf zählt als ein Training („So entscheidet die App“). Test: E-runde3.
+- **Schwere:** mittel · **Stand:** behoben – Wochenziel = Termine pro Woche, sonst Tage mit Geräten (`weekGoal`); leere Tage zählen nicht; „Noch diese Woche“ und die Meilensteine rechnen und benennen dasselbe Ziel (PR #78). Offengelegt statt geändert: Die Serie wird mit dem heutigen Ziel für alle Wochen gerechnet, und jeder Eintrag im Verlauf zählt als ein Training („So entscheidet die App“). Test: E-runde3.
 - **Bereich:** Ehrlichkeit abgeleiteter Zahlen
 - **Stelle (Stand der Prüfung):** src/app.html:4951-4953 (vHome), 5118-5125 (weekStreak), 6946-6951 (weekStats)
 - **Was passiert:** goal = Math.max(1, plan.days.length). Leere Tage zählen mit, die Zahl der festen Termine nicht (die Planprüfung rechnet dagegen mit Terminen ÷ Tage). Die Serie wird für alle vergangenen Wochen mit dem heutigen Ziel neu gerechnet. Jeder Verlaufseintrag zählt als Training, unabhängig vom Umfang.
@@ -393,7 +394,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 28. Ältere Fassung löscht Daten einer neueren: unbekannte Felder und Erweiterungsbereiche fallen beim ersten Speichern weg
 
-- **Schwere:** mittel · **Stand:** teilweise – Liegen Daten einer höheren Fassung (`v`) auf dem Gerät, speichert die App nichts und bittet ums Neuladen; eine neuere Sicherung wird nicht eingespielt (PR #78, Test: E-runde3). Offen: Der Schutz greift erst, wenn die Fassungsnummer steigt. Regel für die Entwicklung: Jedes neue gespeicherte Feld erhöht `DATA_V` (README).
+- **Schwere:** mittel · **Stand:** teilweise – Liegen Daten einer höheren Fassung (`v`) auf dem Gerät, speichert die App nichts und bittet ums Neuladen; Training starten, Nachtragen und Wiederherstellen sind dann gesperrt, eine neuere Sicherung wird nicht eingespielt (PR #78, Test: E-runde3). Offen: Der Schutz greift erst, wenn die Fassungsnummer steigt. Regel für die Entwicklung: Jedes neue gespeicherte Feld erhöht `DATA_V` (README).
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:1781 (v: 6 wird geschrieben, nie gelesen), 1821–1927 (normalize baut nur bekannte Felder), 1996–1998 (extClean: „unbekannte Bereiche fallen weg“)
 - **Was passiert:** normalize übernimmt nur Felder, die diese Fassung kennt, extClean nur Bereiche registrierter Erweiterungen; die Versionsnummer wird nicht geprüft. Läuft eine ältere Fassung gegen neuere Daten (zurückgenommenes Deployment, Sicherung von einem neueren Gerät in eine App mit älterer Seite im Zwischenspeicher), gehen die neueren Felder beim ersten Speichern still verloren. Für „nachträglich eintragen“ heißt das auch: jedes neue Feld an einem Training oder Satz muss in normalize (1849–1859) aufgenommen werden, sonst ist es nach dem nächsten Laden und nach jeder Wiederherstellung weg.
@@ -413,7 +414,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 30. Speicher voll: Warnung erscheint, aber die Zusammenfassung feiert ein nicht gespeichertes Training; Essen-Tagebuch wächst unbegrenzt
 
-- **Schwere:** niedrig · **Stand:** teilweise – Die Zusammenfassung sagt „Noch nicht gespeichert“ und bietet die Datei-Sicherung an; der Hinweis oben hat denselben Knopf und verschwindet, sobald das Speichern wieder klappt (PR #78, Test: E-runde3). Offen: Das Essen-Tagebuch wächst unbegrenzt.
+- **Schwere:** niedrig · **Stand:** teilweise – Die Zusammenfassung sagt „Noch nicht gespeichert“ und bietet die Datei-Sicherung an; der Hinweis oben hat denselben Knopf, sagt bei laufendem Training, dass es erst nach dem Beenden in der Datei steht, und verschwindet, sobald das Speichern wieder klappt (PR #78, Test: E-runde3). Offen: Das Essen-Tagebuch wächst unbegrenzt.
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:756 (#saveWarn), 1942–1945 (save), 5720–5746 (finish)
 - **Was passiert:** Wirft setItem, wird ein roter Hinweis oben auf der Seite eingeblendet – der Nutzer kann es also merken. Aber: die Zusammenfassung zeigt „Training beendet“ und neue Bestwerte, obwohl nichts gespeichert ist; der Hinweis verweist auf „Plan → Einstellungen“, das im Training nicht erreichbar ist; er bleibt stehen, auch wenn das Speichern wieder klappt. Das Essen-Tagebuch wird nie ausgelagert.
@@ -423,7 +424,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 31. Kein Auffangnetz beim Start: wirft die erste Ansicht, bleibt die App leer und die Sicherung ist unerreichbar
 
-- **Schwere:** niedrig · **Stand:** behoben – Wirft die erste Ansicht, erscheint eine Rettungsseite (Daten als Datei sichern, neu laden, laufendes Training beenden oder verwerfen). Die zwei gefundenen Auslöser werden schon beim Laden bereinigt (PR #78). Test: E-runde3.
+- **Schwere:** niedrig · **Stand:** behoben – Wirft eine Ansicht, ersetzt eine Rettungsseite nur diese Ansicht (Daten als Datei sichern, neu laden, laufendes Training beenden oder verwerfen); alle anderen Bereiche bleiben erreichbar. Die gefundenen Auslöser werden schon beim Laden bereinigt (PR #78). Test: E-runde3.
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:9785–9786 (extClean(); go(view)), 5769–5771 (vTrain, Pausenansicht: ns = nx.sets[ni])
 - **Was passiert:** Der Start ruft go(view) ohne Fehlerbehandlung. Wirft die Ansicht für einen gespeicherten Zustand, bleibt die Seite leer; die Daten liegen noch im Speicher, aber der Nutzer kommt weder an „Sicherung erstellen“ noch an „Training verwerfen“. Gefunden habe ich nur zwei konstruierte Zustände eines laufenden Trainings; im normalen Ablauf (e4, Neuladen nach jedem Schritt) trat es nicht auf. Der erste davon entsteht auch durch normalize selbst: eine Übung mit sets:[null] besteht den Filter (1863) und hat danach null Sätze.
