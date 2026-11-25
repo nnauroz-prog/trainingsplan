@@ -1833,14 +1833,14 @@ function dayDe(n) { return n === "Push" ? "Drücken" : n === "Pull" ? "Ziehen" :
 // Supersatz: Eine Übung ist mit der direkt folgenden verbunden (ss = deren ID). Steht der Partner nicht mehr direkt dahinter
 // (verschoben, gelöscht), löst sich die Verbindung – so entstehen keine ungewollten Paare
 function ssFix(items) { items.forEach((it, i) => { if (it.ss && (!items[i + 1] || items[i + 1].id !== it.ss)) delete it.ss; }); return items; }
-function cleanPlan(pl) {
+function cleanPlan(pl, mig) {
   if (!isObj(pl) || !Array.isArray(pl.days)) return null;
   return {
     goal: GOALS[pl.goal] ? pl.goal : "aufbau",
     level: pl.level === "fortgeschritten" ? "fortgeschritten" : "einsteiger",
     minutes: clampInt(pl.minutes, 0, 300, 0) || null,
     days: pl.days.filter(d => isObj(d) && Array.isArray(d.items)).map(d => ({
-      id: String(d.id || uid()), name: dayDe(String(d.name || "Trainingstag").slice(0, 60)),
+      id: String(d.id || uid()), name: (mig ? dayDe : n => n)(String(d.name || "Trainingstag").slice(0, 60)),
       items: d.items.filter(i => isObj(i) && i.exId).map(i => { const rmin = clampInt(i.rmin, 1, 50, 8);
         return { id: String(i.id || uid()), exId: String(i.exId), sets: clampInt(i.sets, 1, 10, 3), rmin,
           rmax: Math.max(rmin, clampInt(i.rmax, 1, 50, rmin)), rest: clampInt(i.rest, 0, 600, 90), ...(typeof i.ss === "string" ? { ss: i.ss } : {}) }; }) })).map(d => (ssFix(d.items), d)),
@@ -1867,7 +1867,8 @@ function normalize(raw) {
     s.dev[id] = d;
   }
   if (isObj(raw.notes)) for (const [id, v] of Object.entries(raw.notes)) if (typeof v === "string" && v.trim()) s.notes[id] = v.slice(0, 120);
-  s.plan = cleanPlan(raw.plan);
+  const mig = !(+raw.v >= 7);   // Daten aus einer Fassung vor 7: alte englische Tagesnamen der App einmalig umstellen
+  s.plan = cleanPlan(raw.plan, mig);
   s.prevPlan = isObj(raw.prevPlan) && cleanPlan(raw.prevPlan.plan) && !isNaN(new Date(raw.prevPlan.at)) ? { at: new Date(raw.prevPlan.at).toISOString(), why: String(raw.prevPlan.why || "").slice(0, 160), plan: cleanPlan(raw.prevPlan.plan),
     after: typeof raw.prevPlan.after === "string" && raw.prevPlan.after.length < 400000 ? raw.prevPlan.after : undefined } : null;
   s.coachOff = {}; if (isObj(raw.coachOff)) for (const [k, v] of Object.entries(raw.coachOff).slice(0, 60)) if (!isNaN(new Date(v)) && Date.now() - new Date(v) < 60 * 864e5) s.coachOff[String(k).slice(0, 80)] = new Date(v).toISOString();
@@ -1876,7 +1877,7 @@ function normalize(raw) {
     if (Number.isInteger(t.rir) && t.rir >= 0 && t.rir <= 4) o.rir = t.rir; return o; };
   // Verlauf: nichts verwerfen, nur Typen absichern; fehlende Einheit einmalig aus dem damaligen Gerät festschreiben
   s.history = Array.isArray(raw.history) ? raw.history.filter(h => isObj(h) && Array.isArray(h.exercises)).map(h => ({
-    id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: dayDe(String(h.day || "Training")),
+    id: String(h.id || uid()), dayId: h.dayId ? String(h.dayId) : null, day: (mig ? dayDe : n => n)(String(h.day || "Training")),
     date: isNaN(new Date(h.date)) ? new Date().toISOString() : new Date(h.date).toISOString(),
     durationSec: clampInt(h.durationSec, 0, 86400, 0), adj: +h.adj > 0 ? clampInt(h.adj, 1, 300, 30) : undefined,
     hk: h.hk === true ? true : undefined,
@@ -1982,7 +1983,7 @@ function newerBlock() { if (!newerData) return false;
 const badCopy = () => { try { return localStorage.getItem(KEY_BAD); } catch (e) { return null; } };
 function load() {
   let raw = null, cur = null;
-  try { raw = localStorage.getItem(KEY); if (raw) { const o = JSON.parse(raw); if (isNewer(o)) newerData = true; cur = normalize(o); } }
+  try { raw = localStorage.getItem(KEY); if (raw) { storedChars = raw.length; const o = JSON.parse(raw); if (isNewer(o)) newerData = true; cur = normalize(o); } }
   catch (e) { if (raw) { loadFailed = true; try { if (!localStorage.getItem(KEY_BAD)) localStorage.setItem(KEY_BAD, raw); } catch (e2) {} } }
   try { const bad = badCopy();
     if (bad && (!cur || (!cur.history.length && !(cur.plan && cur.plan.days.some(d => d.items.length))))) {
@@ -2000,10 +2001,14 @@ function load() {
   return s;
 }
 let saveFailed = false;
+// Zeichen des zuletzt gespeicherten Stands. Der Speicher des Browsers ist begrenzt; gemessen im Testbrowser (Chromium): 5 Mio. Zeichen je Website,
+// auf dem iPhone nicht gemessen. Ab STORE_WARN (Regel der App) erinnert die App an eine Sicherung.
+let storedChars = 0;
+const STORE_WARN = 2e6;
 function save() {
   if (newerData) {   // Daten einer neueren Fassung: nichts überschreiben; bei der ersten nicht gespeicherten Änderung den Hinweis ins Bild holen
     const first = !newerSkipped; newerSkipped = true; newerWarn(); if (first) try { window.scrollTo(0, 0); } catch (e) {} return; }
-  try { localStorage.setItem(KEY, JSON.stringify(state)); saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
+  try { const str = JSON.stringify(state); storedChars = str.length; localStorage.setItem(KEY, str); saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
   catch (e) { saveFailed = true; const b = document.getElementById("saveWarn"), t = document.getElementById("saveWarnTxt"); if (b) b.hidden = false;
     // Die Sicherungsdatei enthält kein laufendes Training – das steht dann dabei
     if (t) t.textContent = "Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Sichere deine Daten jetzt als Datei – sonst ist das Neueste nach dem Schließen weg." + (state && state.session ? " Das laufende Training steht erst nach dem Beenden in der Datei." : ""); }
@@ -2088,7 +2093,9 @@ const EXT = { views: {}, nav: {}, actions: {}, inputs: {}, rows: { plan: [], lib
 const extRows = slot => EXT.rows[slot].map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("");
 // Alle Speicherbereiche der Erweiterungen prüfen; unbekannte Bereiche (entfernte Erweiterungen) fallen weg
 function extClean() { const src = isObj(state.x) ? state.x : {}, out = {};
-  for (const k in EXT.clean) { try { out[k] = EXT.clean[k](src[k]); } catch (e) { try { out[k] = EXT.clean[k](undefined); } catch (e2) {} } }
+  // Wirft die Prüfung eines Bereichs (Programmfehler, unerwartete Daten), bleiben seine Daten unverändert liegen – sie werden nicht still geleert.
+  // Die Ansicht der Erweiterung fängt das Auffangnetz in render() ab; alles andere läuft weiter.
+  for (const k in EXT.clean) { try { out[k] = EXT.clean[k](src[k]); } catch (e) { if (k in src) out[k] = src[k]; else try { out[k] = EXT.clean[k](undefined); } catch (e2) {} } }
   state.x = out; }
 
 /* ---------- Geräte ---------- */
@@ -6095,6 +6102,7 @@ function vTrain() {
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
       ${(() => { const sp = ssPair(s, x); return sp ? `<p class="small" id="ssNote" style="margin:0"><span class="badge ssb">Supersatz ${sp.first ? "1/2" : "2/2"}</span> ${sp.first ? `danach sofort ${esc(ex(sp.p.exId).name)}` : `mit ${esc(ex(sp.p.exId).name)}, danach Pause`}</p>` : ""; })()}
       ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}" data-basis="${esc(x.basis || "")}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
+      ${e.off && devKnown(x.exId) ? `<p class="reason" id="offHint" style="color:var(--warn)">Als „nicht im Studio“ markiert. <button class="link" data-a="openSwap">Gerät tauschen</button></p>` : ""}
       ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
         return pl ? `<p class="reason" id="plateauHint" style="color:var(--warn)">Seit ${pl.weeks} Wochen kein Fortschritt${pl.reserve ? " – zuletzt mit Reserve: näher ans Limit gehen" : ""}. ${pl.reserve ? "" : `<button class="link" data-a="openSwap">Gerät tauschen</button>`}<button class="link small" data-a="showWhy" data-why="${esc(plateauTxt(pl))}" style="color:var(--text-3);margin-left:10px">Warum?</button></p>` : ""; })()}
     </div>
@@ -7838,6 +7846,10 @@ function insights() {
       text: `Am meisten: ${ex(t.exId).name}, ${kgTxt(t.from)} → ${kgTxt(t.to)} ${UNIT[t.u]} in ${t.weeks} Wochen (+${Math.round((t.to - t.from) / t.from * 100)} %). Verglichen wird mit deiner ersten Einheit der letzten 8 Wochen.`,
       act: [{ a: "openEx", l: "Verlauf ansehen", d: { id: t.exId, ret: "coach" } }] });
   }
+  // 11a. Speicher füllt sich (Regel der App: ab 2 Mio. Zeichen)
+  if (storedChars >= STORE_WARN) add({ id: "store:" + Math.floor(storedChars / 5e5), prio: 60, kind: "warn", title: "Der Speicher im Browser füllt sich",
+    text: `Deine Daten belegen rund ${fmtDec(Math.round(storedChars / 1e5) / 10)} Mio. Zeichen. Der Platz im Browser ist begrenzt – im Testbrowser gemessen 5 Mio. Zeichen, auf dem iPhone kann es weniger sein. Den größten Teil belegt meist das Essen-Tagebuch. Erstelle jetzt eine Sicherung; schlägt das Speichern einmal fehl, sagt die App das sofort.`,
+    act: [{ a: "backupFile", l: "Jetzt sichern", d: {} }] });
   // 11. Sicherung: Daten liegen nur im Browser (Regel der App: ab 5 neuen Trainings und 14 Tagen seit der letzten Sicherung)
   const nb = sinceBackup(), bAge = state.backupAt ? (now - new Date(state.backupAt)) / DAY : Infinity;
   if (nb >= BACKUP_N && bAge >= BACKUP_DAYS) add({ id: "backup", prio: 45, kind: "tip",
@@ -10308,7 +10320,7 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
 Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey, plateau,
-  weekGoal, entryBasis, dropForTime, makeEntry, lastPerf, prevCopy, normalize, DATA_V, estMinutes, planCheck, calDays, weekLeft, swapState, hasData, weekStats, insights, weekStreak, plannedOn });
+  weekGoal, entryBasis, dropForTime, makeEntry, lastPerf, prevCopy, normalize, DATA_V, estMinutes, planCheck, calDays, weekLeft, swapState, hasData, weekStats, insights, weekStreak, plannedOn, backupData, parseBackup, storeInfo: v => { if (v != null) storedChars = v; return storedChars; } });
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
 extClean(); badWarn();
 // Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern

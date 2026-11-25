@@ -7577,6 +7577,214 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand runde3/test 1 ──
     // ── Abstand runde3/test 2 ──
     // ── Abstand runde3/test 3 ──
+    // @ext:runde4:test:start
+    section("E-runde4. Übergänge zwischen Plan, Training und Verlauf; harte Planregeln; Datenrobustheit");
+    const R4it = (id, exId, sets = 2) => ({ id, exId, sets, rmin: 8, rmax: 12, rest: 60 });
+    const R4plan = () => ({ goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "Tag A", items: [R4it("i1", "hs-chest"), R4it("i2", "hs-row")] }, { id: "d2", name: "Tag B", items: [R4it("i3", "hs-legpress", 1)] }] });
+    const R4iso = n => new Date(Date.now() - n * 864e5).toISOString();
+    const R4X = (exId, u, sets) => ({ exId, name: exId, u, planned: sets.length, rmin: 8, rmax: 12, sets: sets.map(([kg, reps]) => ({ kg, reps })) });
+    const R4H = () => [{ id: "h1", dayId: "d1", day: "Tag A", date: R4iso(5), durationSec: 1800, exercises: [R4X("hs-chest", "s", [[40, 10], [40, 10]]), R4X("hs-row", "s", [[50, 10], [50, 10]])] },
+      { id: "h2", dayId: "d2", day: "Tag B", date: R4iso(3), durationSec: 900, exercises: [R4X("hs-legpress", "t", [[100, 10]])] }];
+    const R4set = async (page, kg, r) => { if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]"); await page.fill("#kgIn", String(kg)); await page.fill("#repsIn", String(r)); await page.click("[data-a=doneSet]"); };
+    const R4skip = async page => { if (await page.$("[data-a=skipRest]")) await page.click("[data-a=skipRest]"); };
+    {
+      // 1. Normal beendetes Training: was genau im Verlauf steht
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      const t0 = Date.now();
+      await page.click("[data-a=start]"); await R4set(page, 40, 11); await R4skip(page); await R4set(page, 40, 11); await R4skip(page); await R4set(page, 50, 11); await R4skip(page); await R4set(page, 50, 10);
+      await page.waitForSelector("#sumCap");
+      const r = await stored(page), h = r.history[2];
+      ok("Normal beendet: Eintrag mit Trainingstag, Datum von jetzt, Dauer, Geräten in Reihenfolge, Gewichtsangabe, geplanter Satzzahl und Zielbereich; kein laufendes Training mehr",
+        r.history.length === 3 && h.dayId === "d1" && h.day === "Tag A" && new Date(h.date) >= t0 - 2000 && new Date(h.date) <= Date.now() + 2000 && h.durationSec >= 0 && h.durationSec < 300 && !h.nt
+        && h.exercises.map(x => `${x.exId}:${x.u}:${x.planned}:${x.rmin}-${x.rmax}:${x.sets.map(s => s.kg + "x" + s.reps).join("/")}`).join(" ") === "hs-chest:s:2:8-12:40x11/40x11 hs-row:s:2:8-12:50x11/50x10" && r.session === null, JSON.stringify(h));
+      ok("… danach ist laut Wechsel der andere Tag dran", (await tp(page, () => window.__tp.nextDay().id)) === "d2");
+      await ctx.close();
+    }
+    {
+      // 2. Teiltraining: nach einem von zwei Sätzen speichern
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      await page.click("[data-a=start]"); await R4set(page, 40, 11); await R4skip(page);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]"); await page.waitForSelector("#sumCap");
+      const p = await tp(page, () => { const T = window.__tp, h = T.state.history[2], e = T.makeEntry(T.state.plan.days[0].items[0]);
+        return { ex: h.exercises.map(x => `${x.exId}:${x.sets.length}/${x.planned}`).join(), mode: e.mode, short: e.short, kg: e.recKg, ses: T.state.session }; });
+      ok("Nach einem von zwei Sätzen gespeichert: nur der erledigte Satz steht im Verlauf (geplant 2), das nicht begonnene Gerät fehlt", p.ex === "hs-chest:1/2" && p.ses === null, JSON.stringify(p));
+      ok("… und der nächste Vorschlag steigert deshalb nicht: „Gewicht halten · letzte Einheit unvollständig“", p.mode === "hold" && p.short.includes("unvollständig") && p.kg === 40, JSON.stringify(p));
+      await ctx.close();
+    }
+    {
+      // 3. Verwerfen: nichts im Verlauf, kein Training mehr, die eigene Tageswahl ist aufgehoben
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H(), selDay: "d1" });
+      await page.click("[data-a=start]"); await R4set(page, 42.5, 8);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]"); await page.waitForSelector("[data-a=start]");
+      const d = await stored(page);
+      ok("Verwerfen (mit Rückfrage): Verlauf unverändert, kein laufendes Training, „Heute“ bietet wieder den Start an", d.history.length === 2 && d.history.map(h => h.id).join() === "h1,h2" && d.session === null && (await page.textContent("#app h1")) === "Heute");
+      await ctx.close();
+    }
+    {
+      // 4. Browser-Neustart mitten im Training: nach jedem Schritt neu laden
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      await page.click("[data-a=start]"); await R4set(page, 42.5, 8);
+      await page.reload(); await page.waitForSelector("[data-a=skipRest]");
+      const a = await tp(page, () => ({ phase: window.__tp.state.session.phase, done: window.__tp.state.session.list[0].sets.filter(t => t.done).length }));
+      ok("Neu geladen in der Pause: die Pause läuft weiter, der erledigte Satz ist da", a.phase === "rest" && a.done === 1, JSON.stringify(a));
+      await R4skip(page); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      await page.fill("#kgIn", "45"); await page.fill("#repsIn", "9"); await page.reload(); await page.waitForSelector("#kgIn");
+      const b = await tp(page, () => ({ kg: document.getElementById("kgIn").value, reps: document.getElementById("repsIn").value, done: window.__tp.state.session.list[0].sets.filter(t => t.done).length }));
+      ok("Neu geladen mit getippten, noch nicht bestätigten Werten: 45 × 9 stehen wieder im Feld, der Satz ist weiter offen", b.kg === "45" && b.reps === "9" && b.done === 1, JSON.stringify(b));
+      await page.click("[data-a=doneSet]"); await R4skip(page); await page.reload(); await page.waitForSelector("#kgIn");
+      ok("Neu geladen vor dem ersten Satz des zweiten Geräts: die App steht beim Rudern", (await page.textContent("#app h1")).includes("Rudern") && (await tp(page, () => window.__tp.state.session.idx)) === 1);
+      await R4set(page, 50, 11); await R4skip(page); await R4set(page, 50, 11); await page.waitForSelector("#sumCap");
+      const c = (await stored(page)).history[2];
+      ok("… und das Training endet vollständig: 42,5 × 8, 45 × 9, 50 × 11, 50 × 11", c.exercises.map(x => x.sets.map(s => s.kg + "x" + s.reps).join("/")).join(" ") === "42.5x8/45x9 50x11/50x11", JSON.stringify(c.exercises));
+      await ctx.close();
+    }
+    {
+      // 5. Plan ändern, während ein Training pausiert ist: das Training bleibt, wie es begonnen wurde
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      await page.click("[data-a=start]"); await R4set(page, 42.5, 8); await R4skip(page);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]");
+      await page.click("#dayItems .li[data-i2='1']", { position: { x: 5, y: 5 } }).catch(() => {});
+      await tp(page, k => { const T = window.__tp; T.state.plan.days[0].items[0].sets = 4; T.state.plan.days[0].items.splice(1, 1); T.save(); }, KEY);
+      await page.reload(); await page.waitForSelector("[data-a=resumeT]"); await page.click("[data-a=resumeT]"); await page.waitForSelector("#kgIn");
+      const s5 = await tp(page, () => window.__tp.state.session.list.map(x => x.exId + ":" + x.sets.filter(t => t.done).length + "/" + x.sets.length).join(" "));
+      ok("Plan geändert (Brustpresse 4 Sätze, Rudern entfernt) und fortgesetzt: das laufende Training behält seine Geräte und den erledigten Satz", s5 === "hs-chest:1/2 hs-row:0/2", s5);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]"); await page.waitForSelector("#sumCap");
+      const e5 = await stored(page);
+      ok("… beim Speichern steht der erledigte Satz im Verlauf, und die Planänderung ist geblieben", e5.history.length === 3 && e5.history[2].exercises[0].sets.length === 1 && e5.plan.days[0].items.map(i => i.exId + i.sets).join() === "hs-chest4", JSON.stringify(e5.plan.days[0].items));
+      await ctx.close();
+    }
+    {
+      // 6. Trainingstag löschen, während sein Training pausiert ist
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      await page.click("[data-a=start]"); await R4set(page, 42.5, 8); await R4skip(page);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]"); await page.click("[data-a=delDay]");
+      ok("„Tag löschen“ fragt nach und sagt, dass der Verlauf bleibt", (await page.textContent(".sheet")).includes("Dein Verlauf bleibt erhalten"));
+      await page.click("[data-a=confirmDelDay]"); await page.waitForSelector(".sheet", { state: "detached" }).catch(() => {});
+      const d6 = await stored(page);
+      ok("Tag gelöscht: Verlauf unberührt, das pausierte Training mit seinem erledigten Satz bleibt", d6.plan.days.map(d => d.id).join() === "d2" && d6.history.length === 2 && d6.session && d6.session.list[0].sets.filter(t => t.done).length === 1, JSON.stringify(d6.session && d6.session.dayId));
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=resumeT]"); await page.waitForSelector("#kgIn");
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]"); await page.waitForSelector("#sumCap");
+      const e6 = await tp(page, () => { const T = window.__tp, h = T.state.history[2]; return { n: T.state.history.length, day: h.day, sets: h.exercises[0].sets.length, next: T.nextDay().id }; });
+      ok("… es lässt sich fortsetzen und speichern (Eintrag „Tag A“); als Nächstes ist der verbliebene Tag dran", e6.n === 3 && e6.day === "Tag A" && e6.sets === 1 && e6.next === "d2", JSON.stringify(e6));
+      await ctx.close();
+    }
+    {
+      // 7. Verlauf korrigieren und löschen: die Folgen
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
+      const info = () => tp(page, () => { const T = window.__tp, e = T.makeEntry(T.state.plan.days[0].items[0]), n = T.nextDay(); return { next: n ? n.id : null, kg: e.recKg, reps: e.sets.map(s => s.reps).join("/"), mode: e.mode, n: T.state.history.length }; });
+      const v0 = await info();
+      await page.click("[data-a=tab][data-v=history]"); await tp(page, () => { const d = document.getElementById("discLog"); if (d) d.open = true; });
+      await page.click("#discLog [data-a=histOpen][data-id=h1]");
+      for (const i of [0, 1]) { await page.click(`.sheet [data-a=histSet][data-x="0"][data-i2="${i}"]`); await page.fill("#hsKg", "45"); await page.fill("#hsReps", "12"); await page.click("[data-a=histSetSave]"); }
+      const v1 = await info();
+      ok("Verlauf korrigiert (Brustpresse 40 × 10 → 45 × 12 in beiden Sätzen): der Vorschlag folgt – vorher 40 kg mit 11/11, jetzt 47,5 kg", v0.kg === 40 && v0.reps === "11/11" && v0.mode === "keep" && v1.kg === 47.5 && v1.mode === "up", JSON.stringify([v0, v1]));
+      await page.keyboard.press("Escape"); await page.waitForSelector(".sheet", { state: "detached" }).catch(() => {});
+      await tp(page, () => { const d = document.getElementById("discLog"); if (d) d.open = true; });
+      await page.click("#discLog [data-a=histOpen][data-id=h2]"); await page.click(".sheet [data-a=histDel]"); await page.click("[data-a=histDelDo]");
+      const v2 = await info();
+      ok("Letztes Training (Tag B) gelöscht: als Nächstes ist wieder Tag B dran (vorher Tag A), der Verlauf hat einen Eintrag", v0.next === "d1" && v2.next === "d2" && v2.n === 1 && (await stored(page)).history.map(h => h.id).join() === "h1", JSON.stringify(v2));
+      await ctx.close();
+    }
+    {
+      // 8. Offline: Neustart mitten im Training und Speichern ohne Netz
+      const { ctx, page } = await open({ plan: R4plan(), history: R4H() }, { sw: true });
+      await page.evaluate(() => navigator.serviceWorker.ready); await page.reload(); await sleep(300);
+      await ctx.setOffline(true); await page.reload(); await page.waitForSelector("[data-a=start]");
+      await page.click("[data-a=start]"); await R4set(page, 42.5, 8);
+      await page.reload(); await page.waitForSelector("[data-a=skipRest]");
+      ok("Offline neu geladen mitten im Training: die App startet aus dem Speicher und das Training läuft weiter", (await tp(page, () => window.__tp.state.session.list[0].sets.filter(t => t.done).length)) === 1);
+      await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]"); await page.waitForSelector("#sumCap");
+      await page.reload(); await page.waitForSelector("#app h1");
+      const o = await stored(page);
+      ok("Offline beendet und gespeichert: nach einem weiteren Neustart ohne Netz steht das Training im Verlauf", o.history.length === 3 && o.history[2].exercises[0].sets[0].kg === 42.5 && o.session === null);
+      await ctx.close();
+    }
+    {
+      // 9. Sicherung: voller Zustand hin und zurück, normalize zweimal = einmal
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [] });
+      const rt = await tp(page, () => { const T = window.__tp, iso = n => new Date(Date.now() - n * 864e5).toISOString();
+        const canon = v => JSON.stringify(v, (k, x) => x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().map(key => [key, x[key]])) : x);
+        const rich = { v: 7, plan: { goal: "kraft", level: "fortgeschritten", minutes: 45, days: [{ id: "a", name: "Push", items: [{ id: "a1", exId: "hs-chest", sets: 4, rmin: 4, rmax: 6, rest: 180, ss: "a2" }, { id: "a2", exId: "c-1", sets: 3, rmin: 8, rmax: 12, rest: 90 }] }, { id: "b", name: "Leer", items: [] }] },
+          custom: [{ id: "c-1", name: "Mein Gerät", muscle: "ruecken", sec: ["bizeps"], type: "stack", pattern: "pull_h" }], dev: { "hs-row": { off: true }, "hs-chest": { fav: true, name: "Brust eigen" } }, notes: { "hs-chest": "Sitz 4" },
+          history: [{ id: "h1", dayId: "a", day: "Push", date: iso(9), durationSec: 2400, adj: 30, at: iso(9), exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 4, rmin: 4, rmax: 6, adv: true, sets: [{ kg: 60, reps: 6, f: "h", rir: 0 }, { kg: 60, reps: 5, rir: 2 }] }] },
+            { id: "h2", dayId: "a", day: "Push", date: iso(2), durationSec: 0, nt: true, at: iso(1), skip: ["c-1"], exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 4, rmin: 4, rmax: 6, sug: true, sets: [{ kg: 62.5, reps: 4 }] }] }],
+          weights: [{ d: "2026-10-01", kg: 82.4 }, { d: "2026-11-01", kg: 81.9, hk: true }], selDay: "a", health: true, watch: true, voice: true, why: "Stark bleiben", stepGoal: 9000, stepLen: 78, plates: [20, 10, 5],
+          sched: { id: "s", days: [0, 3], time: "18:30", planB: "short", since: iso(40) }, goals: [], hints: { units: true }, food: { "2026-11-20": [{ id: "f1", n: "Hafer", k: 370, p: 13, m: "f", g: 80 }] }, water: { "2026-11-20": 1500 }, nutrOpt: { water: true, fast: false },
+          dayPlan: { "2026-11-20": { steps: 8000, train: "rest" } }, backupAt: iso(3) };
+        const a = T.normalize(JSON.parse(JSON.stringify(rich))), b = T.normalize(JSON.parse(JSON.stringify(a)));
+        const h = a.history;
+        // Sicherung des laufenden Stands und zurück
+        T.state.plan = a.plan; T.state.custom = a.custom; T.state.dev = a.dev; T.state.history = a.history; T.state.weights = a.weights; T.state.sched = a.sched; T.state.why = a.why;
+        const bak = T.backupData(new Date().toISOString()), back = T.normalize(T.parseBackup(JSON.stringify({ app: "trainingsplan", format: 1, data: bak })));
+        const same = k => canon(back[k]) === canon(T.state[k]);
+        return { idem: canon(a) === canon(b), v: a.v, name: a.plan.days[0].name, ss: a.plan.days[0].items[0].ss, off: a.dev["hs-row"].off, h1: canon(h[0].exercises[0]), h2: [h[1].nt, h[1].skip.join(), h[1].exercises[0].sug, h[1].at === rich.history[1].at].join("|"), adj: h[0].adj,
+          rt: ["plan", "custom", "dev", "history", "weights", "sched", "why"].filter(k => !same(k)).join(), bakSes: "session" in bak }; });
+      ok("Laden ist stabil: ein voller Zustand, zweimal geprüft, bleibt Zeichen für Zeichen gleich", rt.idem && rt.v === 7, JSON.stringify(rt).slice(0, 300));
+      ok("… dabei bleiben erhalten: Supersatz, Studio-Auswahl, Gefühl und Reserve je Satz, „nachgetragen“, ausgelassene Geräte, „Vorschlag übernommen“, Eintragszeitpunkt, Zeitanpassung",
+        rt.ss === "a2" && rt.off === true && rt.h1.includes('"f":"h"') && rt.h1.includes('"rir":0') && rt.h1.includes('"adv":true') && rt.h2 === "true|c-1|true|true" && rt.adj === 30, JSON.stringify(rt));
+      ok("Ein Tag, den du selbst „Push“ nennst, behält seinen Namen (umbenannt werden nur noch Daten aus alten Fassungen)", rt.name === "Push", rt.name);
+      ok("Sicherung und zurück: Plan, eigene Geräte, Studio-Auswahl, Verlauf, Gewichte, Termine und „Warum“ kommen unverändert an; das laufende Training ist nicht Teil der Sicherung", rt.rt === "" && rt.bakSes === false, rt.rt);
+      await ctx.close();
+    }
+    {
+      // 10. Kleine Studios: kein Gerät, drei Geräte
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [] });
+      const sm = await tp(page, () => { const T = window.__tp, ids = T.allEx().map(e => e.id);
+        ids.forEach(id => { T.state.dev[id] = Object.assign({}, T.state.dev[id] || {}, { off: true }); });
+        let err = "", p0 = null; try { p0 = T.generatePlan("aufbau", 3, "einsteiger", 60); } catch (e) { err = e.message; }
+        ["hs-chest", "hs-row", "hs-legpress"].forEach(id => { T.state.dev[id].off = false; });
+        const p3 = T.generatePlan("aufbau", 3, "einsteiger", 60);
+        T.state.plan = p3; T.save();
+        return { err, n0: p0 ? p0.days.map(d => d.items.length).join() : null, gaps0: p0 ? p0.gaps.length : 0, d3: p3.days.map(d => d.items.map(i => i.exId).join("+")).join(" | "), bad: p3.days.flatMap(d => d.items).filter(i => T.ex(i.exId).off).length }; });
+      ok("Studio ohne ein einziges Gerät: der Planvorschlag bricht nicht ab – drei leere Tage und eine Liste der weggelassenen Übungen", sm.err === "" && sm.n0 === "0,0,0" && sm.gaps0 > 0, JSON.stringify(sm));
+      ok("Studio mit drei Geräten: der Vorschlag nutzt nur diese drei, keins doppelt im Tag", sm.bad === 0 && sm.d3.split(" | ").every(d => new Set(d.split("+")).size === d.split("+").filter(Boolean).length) && /hs-chest|hs-row|hs-legpress/.test(sm.d3) && !/hs-(?!chest|row|legpress)/.test(sm.d3), sm.d3);
+      await page.reload(); await page.waitForSelector("#app h1");
+      await page.click("[data-a=tab][data-v=plan]");
+      ok("… „Heute“ und „Plan“ zeigen sich damit ohne Fehler (auch mit leerem Tag)", (await page.textContent("#app h1")).length > 0 && !(await page.$("#rescue")));
+      await ctx.close();
+    }
+    {
+      // 11. Harte Regel „kein Gerät außerhalb des Studios“ für alle automatischen Vorschläge
+      const plan = { goal: "aufbau", level: "einsteiger", minutes: 60, days: [{ id: "d1", name: "A", items: [R4it("i1", "hs-row", 3), R4it("i2", "hs-chest", 3), R4it("i3", "hs-legpress", 3), R4it("i4", "hs-shoulder", 3), R4it("i5", "hs-seatcurl", 3)] }] };
+      const { ctx, page } = await open({ plan, history: [], dev: { "hs-row": { off: true }, "lf-row": { off: true }, "hs-lowrow": { off: true } } });
+      const hr = await tp(page, () => { const T = window.__tp, off = id => T.ex(id).off, ra = T.rankAlternatives("hs-row", new Set(["hs-row"]));
+        const p30 = T.previewDay(T.state.plan.days[0], 30), p60 = T.previewDay(T.state.plan.days[0], 60), tpl = T.DAY_TPL.map(([n, t]) => T.dayFromTpl(n, t, "aufbau", "einsteiger", 45));
+        return { alt: [...ra.direct, ...ra.other].map(x => x.e.id), altOff: [...ra.direct, ...ra.other].filter(x => x.e.off).length, r30: p30.replace.i1, r60: p60.replace.i1, rOff: [...Object.values(p30.replace), ...Object.values(p60.replace)].filter(off).length,
+          tplOff: tpl.flatMap(d => d.items).filter(i => off(i.exId)).length, tplN: tpl.length }; });
+      ok("Tausch-Vorschläge für ein abgewähltes Gerät enthalten kein abgewähltes Gerät (hier fehlen drei Ruder-Geräte)", hr.alt.length > 0 && hr.altOff === 0 && !hr.alt.includes("lf-row") && !hr.alt.includes("hs-lowrow"), hr.alt.join());
+      ok("„Zeit für heute“ ersetzt das abgewählte Gerät durch eines aus dem Studio (30 und 60 Min.)", !!hr.r30 && !!hr.r60 && hr.rOff === 0, JSON.stringify([hr.r30, hr.r60]));
+      ok("Vorschläge für einen einzelnen Trainingstag (alle 6 Vorlagen): kein abgewähltes Gerät", hr.tplN === 6 && hr.tplOff === 0);
+      // Start mit dem abgewählten Gerät im Plan: das Training weist darauf hin und bietet den Tausch an
+      await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      ok("Training mit einem abgewählten Gerät im Plan: Hinweis „Als ‚nicht im Studio‘ markiert“ mit „Gerät tauschen“ (vorher ohne jeden Hinweis)", (await page.textContent("#offHint")).includes("nicht im Studio") && await page.isVisible("#offHint [data-a=openSwap]"));
+      await page.click("#offHint [data-a=openSwap]");
+      const sw = await page.$$eval(".sheet [data-a=swapTo], .sheet [data-id]", els => els.map(e => e.dataset.id).filter(Boolean));
+      ok("… die Tauschliste bietet nur Geräte aus dem Studio an", sw.length > 0 && !sw.includes("lf-row") && !sw.includes("hs-lowrow") && !sw.includes("hs-row"), sw.join());
+      await page.keyboard.press("Escape"); await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]");
+      await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=tab][data-v=home]");
+      await tp(page, k => { const T = window.__tp; T.state.plan.days[0].items.shift(); T.save(); }, KEY);
+      await page.reload(); await page.waitForSelector("[data-a=start]"); await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
+      ok("Ohne abgewähltes Gerät kein solcher Hinweis", !(await page.$("#offHint")));
+      await ctx.close();
+    }
+    {
+      // 12. Datenrobustheit: Fehler im Bereich einer Erweiterung, Hinweis bei vollem Speicher
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3)] });
+      const x = await tp(page, () => { const T = window.__tp; T.EXT.clean.kaputt = () => { throw new Error("Prüfung wirft"); }; T.state.x.kaputt = { wert: 1 };
+        T.extClean(); const kept = JSON.stringify(T.state.x.kaputt); T.save(); const saved = JSON.stringify(JSON.parse(localStorage.getItem("trainingsplan-v2")).x.kaputt);
+        delete T.EXT.clean.kaputt; delete T.state.x.kaputt; T.save(); return { kept, saved, others: Object.keys(T.state.x).length }; });
+      ok("Wirft die Prüfung eines Erweiterungs-Bereichs, bleiben seine Daten unverändert liegen und werden weiter gespeichert (vorher still geleert); die anderen Bereiche sind da", x.kept === '{"wert":1}' && x.saved === '{"wert":1}' && x.others > 3, JSON.stringify(x));
+      const si = await tp(page, () => { const T = window.__tp, real = T.storeInfo(), none = T.insights().some(i => i.id.startsWith("store:")); T.storeInfo(2140000); const hit = T.insights().find(i => i.id.startsWith("store:")); T.storeInfo(real);
+        return { real, none, title: hit && hit.title, text: hit && hit.text, act: hit && hit.act.map(a => a.a).join() }; });
+      ok("Speicher: nach dem Laden kennt die App die Größe der Daten; ab 2 Mio. Zeichen (Regel der App) erinnert ein Hinweis mit der Zahl an eine Sicherung – darunter nicht", si.real > 100 && si.none === false && si.title === "Der Speicher im Browser füllt sich" && si.text.includes("2,1 Mio. Zeichen") && si.act === "backupFile", JSON.stringify(si).slice(0, 200));
+      await ctx.close();
+    }
+    // @ext:runde4:test:end
+    // ── Abstand runde4/test 1 ──
+    // ── Abstand runde4/test 2 ──
+    // ── Abstand runde4/test 3 ──
     // @ext:nachtrag:test:start
     section("E-nachtrag. Training nachtragen (ohne Live-Modus)");
     {

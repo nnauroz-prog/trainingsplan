@@ -162,7 +162,7 @@ Jeder dieser Punkte wurde mit einem Versuch nachgestellt; das falsche Ergebnis w
 
 ### 5. Scheitert das Laden, startet die App leer ohne Hinweis – die erste Aktion überschreibt alle Daten
 
-- **Schwere:** hoch · **Stand:** behoben – Der unlesbare Rohtext bleibt als Kopie auf dem Gerät, Hinweis mit „Kopie als Datei sichern“, automatische Übernahme, sobald er wieder lesbar ist. Test: E-sicherheit. Offen: dasselbe Muster in `extClean` (ein Bereich einer Erweiterung wird bei einem Fehler still geleert).
+- **Schwere:** hoch · **Stand:** behoben – Der unlesbare Rohtext bleibt als Kopie auf dem Gerät, Hinweis mit „Kopie als Datei sichern“, automatische Übernahme, sobald er wieder lesbar ist. Test: E-sicherheit. Dasselbe Muster in `extClean` ist ebenfalls behoben: Wirft die Prüfung eines Erweiterungs-Bereichs, bleiben seine Daten liegen (PR #78, Test: E-runde4).
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:1929 (load), 1942–1945 (save), 1997 (extClean), 4969 (Update-Hinweis nur auf „Heute“)
 - **Was passiert:** load() fängt jeden Fehler von JSON.parse/normalize mit leerem catch und liefert einen leeren Zustand. Es gibt keinen Hinweis, keine Kopie des unlesbaren Speichers und keine Sperre: das nächste save() schreibt den leeren Zustand über die alten Daten. Dasselbe Muster in extClean: wirft die Prüfung einer Erweiterung, wird ihr Bereich still geleert. Richtig wäre: unlesbaren Speicher unangetastet lassen, sichern und den Nutzer informieren. Das ist genau die Lage von gestern: wer mit der fehlerhaften Fassung in der leer wirkenden App „Plan erstellen“ getippt hat, hat alles verloren. Verschärfend: eine Korrektur erreicht das Gerät erst beim zweiten Start (alte Seite zuerst aus dem Zwischenspeicher), und der Hinweis „Neu laden“ erscheint auf dem Einrichtungs-Bildschirm nicht.
@@ -416,7 +416,7 @@ Der Code tut, wofür er geschrieben wurde – das Verhalten ist aber riskant, ir
 
 ### 30. Speicher voll: Warnung erscheint, aber die Zusammenfassung feiert ein nicht gespeichertes Training; Essen-Tagebuch wächst unbegrenzt
 
-- **Schwere:** niedrig · **Stand:** teilweise – Die Zusammenfassung sagt „Noch nicht gespeichert“ und bietet die Datei-Sicherung an; der Hinweis oben hat denselben Knopf, sagt bei laufendem Training, dass es erst nach dem Beenden in der Datei steht, und verschwindet, sobald das Speichern wieder klappt (PR #78, Test: E-runde3). Offen: Das Essen-Tagebuch wächst unbegrenzt.
+- **Schwere:** niedrig · **Stand:** teilweise – Die Zusammenfassung sagt „Noch nicht gespeichert“ und bietet die Datei-Sicherung an; der Hinweis oben hat denselben Knopf, sagt bei laufendem Training, dass es erst nach dem Beenden in der Datei steht, und verschwindet, sobald das Speichern wieder klappt (PR #78, Test: E-runde3). Ab 2 Mio. Zeichen erinnert ein Hinweis mit der Zahl an eine Sicherung (Test: E-runde4). Offen: Das Essen-Tagebuch wächst unbegrenzt. Ein eigener Schlüssel hilft dabei nicht, weil die Grenze für die ganze Website gilt – nötig wäre ein anderer Speicher im Browser (IndexedDB).
 - **Bereich:** Speicherung, Migrationen, Sicherung/Wiederherstellung, Offline
 - **Stelle (Stand der Prüfung):** src/app.html:756 (#saveWarn), 1942–1945 (save), 5720–5746 (finish)
 - **Was passiert:** Wirft setItem, wird ein roter Hinweis oben auf der Seite eingeblendet – der Nutzer kann es also merken. Aber: die Zusammenfassung zeigt „Training beendet“ und neue Bestwerte, obwohl nichts gespeichert ist; der Hinweis verweist auf „Plan → Einstellungen“, das im Training nicht erreichbar ist; er bleibt stehen, auch wenn das Speichern wieder klappt. Das Essen-Tagebuch wird nie ausgelagert.
@@ -591,12 +591,11 @@ Verhalten, das `tests/run.js` laut den Prüfern nicht absichert (Stichwortsuche 
 Kleine, einzeln prüfbare Änderungen, jeweils mit Test.
 
 1. **Was von den Befunden bleibt**
-   - Essen-Tagebuch: alte Tage in einen eigenen Schlüssel auslagern, bevor der Speicher knapp wird
-   - Unbekannte Felder und Bereiche beim Laden unverändert durchreichen (Schutz auch ohne höhere Fassungsnummer)
-   - Fehler im Bereich einer Erweiterung nicht still leeren (`extClean`), sondern wie beim Laden als Kopie aufheben
+   - Essen-Tagebuch und Verlauf in einen größeren Speicher des Browsers umziehen (IndexedDB), bevor der Platz knapp wird. Bis dahin: Hinweis ab 2 Mio. Zeichen und sofortige Meldung, wenn das Speichern scheitert
+   - Unbekannte Felder beim Laden unverändert durchreichen (Schutz auch ohne höhere Fassungsnummer). Bewusst noch nicht umgesetzt: Die Regel „neues gespeichertes Feld erhöht die Fassung“ deckt den Fall ab
 2. **Tests**
-   - Übergänge aus der Lückenliste: Verwerfen, Plan ändern im Training, Verlauf korrigieren und löschen samt Folgen
-   - Schnelle Tests ohne Browser für Progression und Planerstellung (Voraussetzung: Aufteilung unten, Schritte 2–4)
+   - Erledigt in Pull Request #78 (Block `E-runde4`): Verwerfen, Plan ändern im Training, Trainingstag löschen, Verlauf korrigieren und löschen samt Folgen, Neustart nach jedem Schritt, offline, Sicherung mit vollem Zustand, kleine Studios
+   - Offen: Schnelle Tests ohne Browser für Progression und Planerstellung (Voraussetzung: Aufteilung unten, Schritte 2–4)
 3. **Architektur (Phase E)** – erst wenn 1 und 2 stehen, in den unten beschriebenen Schritten
 4. **Auf einem echten iPhone prüfen** – bisher lief alles im Chromium-Testbrowser
 
