@@ -136,6 +136,7 @@
   .badge.fav{background:var(--accent);color:var(--on-accent)}
   .badge.up{background:var(--ok-tint);color:var(--ok)}
   .badge.pr{background:var(--accent-tint);color:var(--accent-ink)}
+  .badge.off-b{color:var(--warn)}
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;background:var(--fill);padding:2px;border-radius:9px}
   .seg button{min-height:44px;border-radius:7px;font-weight:500;font-size:15px;color:var(--text);text-align:center}
   .seg button.on{background:var(--seg-on);color:var(--text);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04)}
@@ -758,6 +759,7 @@
   .nt-x .hx-sets button.set-pill{box-shadow:inset 0 0 0 1.5px var(--accent)}
   .nt-x .hx-sets .set-pill.miss{color:var(--warn);box-shadow:inset 0 0 0 1.5px var(--warn)}
   .nt-x .hx-sets .set-pill.nt-add{min-width:44px;color:var(--accent-ink);box-shadow:none}
+  .nt-st .nt-why{min-height:0;min-width:0;padding:0 0 0 6px}
   .nt-miss{color:var(--warn);margin:0}
   /* @ext:nachtrag:css:end */
   /* ── Abstand nachtrag/css 1 ── */
@@ -771,7 +773,8 @@
 </style>
 
 <div id="loadWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px"><p id="loadWarnTxt" style="margin:0 0 8px"></p><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm" data-a="badSave">Kopie als Datei sichern</button><button class="btn sm quiet" data-a="badDrop" id="badDropBtn" hidden>Kopie löschen</button></div></div>
-<p id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Bitte unter Plan → Einstellungen eine Sicherung erstellen.</p>
+<div id="saveWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px;color:var(--bad)"><p style="margin:0 0 8px">Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Sichere deine Daten jetzt als Datei – sonst ist das Neueste nach dem Schließen weg.</p><button class="btn sm" data-a="backupFile">Jetzt als Datei sichern</button></div>
+<div id="newerWarn" class="note warn small" role="alert" hidden style="margin-bottom:16px"><p style="margin:0 0 8px">Deine Daten stammen aus einer neueren Fassung der App. Damit nichts verloren geht, speichert diese ältere Fassung keine Änderungen. Bitte lade die App neu; bleibt der Hinweis, schließe die App ganz und öffne sie wieder.</p><button class="btn sm" data-a="reloadApp">Neu laden</button></div>
 <header class="navbar" id="navbar" hidden><div class="in"><div class="nb-l"></div><div class="nb-t" aria-hidden="true"></div><div class="nb-r"></div></div></header>
 <main id="app"></main>
 <nav class="tabs" id="tabs"><div class="in">
@@ -1889,7 +1892,7 @@ function normalize(raw) {
       key: String(x.key || uid()), itemId: x.itemId ? String(x.itemId) : null, exId: String(x.exId),
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
-      mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
+      mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""), basis: typeof x.basis === "string" ? x.basis.slice(0, 400) : undefined,
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: !!t.done })),
       trim: Array.isArray(x.trim) ? x.trim.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })) : [],
       ord: Number.isInteger(x.ord) ? x.ord : undefined, adv: x.adv === true ? true : undefined, ss: typeof x.ss === "string" ? x.ss : undefined,
@@ -1897,22 +1900,24 @@ function normalize(raw) {
       find: isObj(x.find) ? { lo: typeof x.find.lo === "number" ? x.find.lo : null, hi: typeof x.find.hi === "number" ? x.find.hi : null, n: clampInt(x.find.n, 0, 99, 0) } : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length + (Array.isArray(x.trim) ? x.trim.length : 0)),
       short: typeof x.short === "string" ? x.short : undefined, recKg: typeof x.recKg === "number" ? x.recKg : undefined,
-      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
+      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined })).filter(x => x.sets.length);   // erst nach dem Bereinigen der Sätze: mindestens einer
     const hiddenRaw = Array.isArray(r.timeHidden) ? r.timeHidden : [];
     const timeHidden = hiddenRaw.filter(x => isObj(x) && x.exId && Array.isArray(x.sets) && x.sets.length).map(x => ({
       key: String(x.key || uid()), itemId: x.itemId ? String(x.itemId) : null, exId: String(x.exId),
       rmin: clampInt(x.rmin, 1, 50, 8), rmax: clampInt(x.rmax, 1, 50, 12), rest: clampInt(x.rest, 0, 600, 90),
       u: ["s", "t", "b"].includes(x.u) ? x.u : unitOf(devFrom(s, String(x.exId))),
-      mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""),
+      mode: ["up", "down", "hold", "keep"].includes(x.mode) ? x.mode : "keep", why: String(x.why || ""), basis: typeof x.basis === "string" ? x.basis.slice(0, 400) : undefined,
       sets: x.sets.filter(isObj).map(t => Object.assign(cleanSet(t), { done: false })), trim: [], ord: Number.isInteger(x.ord) ? x.ord : undefined, ss: typeof x.ss === "string" ? x.ss : undefined,
       planned: clampInt(x.planned, 1, 20, x.sets.length), short: typeof x.short === "string" ? x.short : undefined,
-      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined }));
+      rec: Array.isArray(x.rec) ? x.rec.map(v => typeof v === "number" ? v : null) : undefined })).filter(x => x.sets.length);
     if (list.length) s.session = { dayId: r.dayId ? String(r.dayId) : null, dayName: String(r.dayName || "Training"),
       start: +r.start || Date.now(), idx: Math.min(list.length - 1, clampInt(r.idx, 0, 99, 0)),
       phase: r.phase === "rest" ? "rest" : "set", restEnd: +r.restEnd || 0, restTotal: +r.restTotal || 0, ssSwitch: r.ssSwitch === true ? true : undefined,
       paused: +r.paused || null, advDone: typeof r.advDone === "string" ? r.advDone.slice(0, 80) : null, lastDone: isObj(r.lastDone) ? { key: String(r.lastDone.key), si: clampInt(r.lastDone.si, 0, 99, 0) } : null, list,
       timeHidden, timeAdj: isObj(r.timeAdj) && +r.timeAdj.minutes > 0 ? { minutes: clampInt(r.timeAdj.minutes, 1, 300, 30) } : null, timeHintOff: r.timeHintOff === true, warmDone: r.warmDone === true,
       lastAt: +r.lastAt > 0 ? +r.lastAt : null, autoPaused: r.autoPaused === true };
+    // Pause ohne offenen Satz an der aktuellen Übung: zurück zur Satzansicht (die Pausenansicht braucht den nächsten Satz)
+    if (s.session && s.session.phase === "rest" && !s.session.list[s.session.idx].sets.some(t => !t.done)) s.session.phase = "set";
   }
   s.selDay = typeof raw.selDay === "string" ? raw.selDay : null;
   // Zeitanpassung nur für das nächste Training (der Plan selbst bleibt unverändert)
@@ -1955,10 +1960,16 @@ function normalize(raw) {
 // Beim nächsten Start wird die Kopie erneut versucht (z. B. nach einer korrigierten Fassung) und übernommen, wenn seitdem nichts Eigenes entstanden ist.
 const KEY_BAD = KEY + "-unlesbar";
 let loadFailed = false, loadRescued = false;
+// Fassung der gespeicherten Daten (Feld v). Kommen gespeicherte Felder dazu, wird sie erhöht. Liegen auf dem Gerät Daten einer höheren Fassung
+// (z. B. weil noch eine ältere Seite im Zwischenspeicher läuft), speichert diese Fassung nichts – sie würde Felder verwerfen, die sie nicht kennt.
+const DATA_V = 6;
+let newerData = false;
+const isNewer = o => isObj(o) && Number.isFinite(+o.v) && +o.v > DATA_V;
+function newerWarn() { const b = document.getElementById("newerWarn"); if (b) b.hidden = !newerData; }
 const badCopy = () => { try { return localStorage.getItem(KEY_BAD); } catch (e) { return null; } };
 function load() {
   let raw = null, cur = null;
-  try { raw = localStorage.getItem(KEY); if (raw) cur = normalize(JSON.parse(raw)); }
+  try { raw = localStorage.getItem(KEY); if (raw) { const o = JSON.parse(raw); if (isNewer(o)) newerData = true; cur = normalize(o); } }
   catch (e) { if (raw) { loadFailed = true; try { if (!localStorage.getItem(KEY_BAD)) localStorage.setItem(KEY_BAD, raw); } catch (e2) {} } }
   try { const bad = badCopy();
     if (bad && (!cur || (!cur.history.length && !(cur.plan && cur.plan.days.some(d => d.items.length))))) {
@@ -1977,7 +1988,8 @@ function load() {
 }
 let saveFailed = false;
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); saveFailed = false; }
+  if (newerData) return newerWarn();   // Daten einer neueren Fassung: nichts überschreiben
+  try { localStorage.setItem(KEY, JSON.stringify(state)); saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
   catch (e) { saveFailed = true; const b = document.getElementById("saveWarn"); if (b) b.hidden = false; }
 }
 // Datensicherung: Datei (Teilen-Menü bzw. Download) oder Text. Der Browser wird um dauerhaften Speicher gebeten –
@@ -2112,12 +2124,32 @@ function rangeFor(goal, exId) { return goal === "kraft" && isIso(exId) ? KRAFT_I
 // Geräte aus dem eigenen Studio, bevorzugte haben Vorrang, Sätze/Wiederholungen/Pausen als Startwerte der App für das Ziel
 const DAY_TPL = [["Drücken", TEMPLATES[3][0][1]], ["Ziehen", TEMPLATES[3][1][1]], ["Beine", TEMPLATES[3][2][1]],
   ["Oberkörper", TEMPLATES[4][0][1]], ["Unterkörper", TEMPLATES[4][1][1]], ["Ganzkörper", TEMPLATES[2][0][1]]];
+// Zu lang für die gewünschte Zeit – welches Gerät fällt weg? Regel der App, in dieser Reihenfolge, jeweils vom Ende der Vorlage her
+// und nur, wenn dadurch keine große Muskelgruppe aus dem Plan verschwindet (others = Geräte der anderen Tage; mittrainiert zählt als vertreten):
+// 1. Zusatzübung für einen kleinen Muskel (Isolationsübung für Arme, Waden, Bauch …)
+// 2. eine Bewegung, die im Tag ein zweites Mal vorkommt
+// 3. Isolationsübung, deren Hauptmuskel eine andere Übung des Tages als Hauptmuskel hat
+// 4. das letzte Gerät, ohne das nichts verschwindet – gibt es keins, das letzte
+function dropForTime(items, others = []) {
+  const E = it => ex(it.exId);
+  const cover = L => { const c = new Set(); L.forEach(it => { const e = E(it); c.add(e.muscle); e.sec.forEach(m => c.add(m)); }); return c; };
+  const all = cover([...others, ...items]);
+  const safe = i => { const c = cover([...others, ...items.filter((_, k) => k !== i)]); return MAJOR.every(m => !all.has(m) || c.has(m)); };
+  const other = (i, f) => items.some((o, k) => k !== i && f(E(o)));
+  const rules = [
+    (it, e) => isIso(it.exId) && !MAJOR.includes(e.muscle),
+    (it, e, i) => !!e.pattern && other(i, o => o.pattern === e.pattern),
+    (it, e, i) => isIso(it.exId) && other(i, o => o.muscle === e.muscle),
+    () => true];
+  for (const r of rules) for (let i = items.length - 1; i >= 0; i--) if (r(items[i], E(items[i]), i) && safe(i)) return void items.splice(i, 1);
+  items.pop();
+}
 function tplIds(tpl) { const used = new Set(); return tpl.map(id => { const a = pickForSlot(id, used); if (a) used.add(a); return a; }).filter(Boolean); }
 function dayFromTpl(name, tpl, goal, level, minutes) {
   const items = tplIds(tpl).map((id, i) => { const r = rangeFor(goal, id); return { id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
     rmin: r.rmin, rmax: r.rmax, rest: i < 2 ? r.rest : Math.max(60, r.rest - 30) }; });
-  const over = () => minutes && estimateSec(items) / 60 > minutes;
-  while (over() && items.length > 3) items.pop();
+  const over = () => minutes && estimateSec(items) / 60 > minutes, others = state.plan ? state.plan.days.flatMap(d => d.items) : [];
+  while (over() && items.length > 3) dropForTime(items, others);
   for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
   return { id: uid(), name, items };
 }
@@ -2134,13 +2166,12 @@ function generatePlan(goal, days, level, minutes) {
     }).filter(Boolean);
     const items = ids.map((id, i) => { const r = rangeFor(goal, id); return { id: uid(), exId: id, sets: level === "fortgeschritten" && i < 2 ? 4 : 3,
       rmin: r.rmin, rmax: r.rmax, rest: i < 2 ? r.rest : Math.max(60, r.rest - 30) }; });
-    const day = { id: uid(), name, items };
-    // An die gewünschte Trainingszeit anpassen: erst Übungen am Ende kürzen, dann Sätze
-    const over = () => minutes && estimateSec(day.items) / 60 > minutes;
-    while (over() && items.length > 3) items.pop();
-    for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--;
-    return day;
+    return { id: uid(), name, items };
   }) };
+  // An die gewünschte Trainingszeit anpassen: erst Geräte weglassen (dropForTime: doppelt Abgedecktes zuerst, mit Blick auf die anderen Tage), dann Sätze kürzen
+  plan.days.forEach(day => { const items = day.items, over = () => minutes && estimateSec(items) / 60 > minutes;
+    while (over() && items.length > 3) dropForTime(items, plan.days.filter(d => d !== day).flatMap(d => d.items));
+    for (let i = items.length - 1; over() && i >= 0; i--) if (items[i].sets > 2) items[i].sets--; });
   plan.gaps = gaps;
   return balanceVolume(plan);
 }
@@ -2234,8 +2265,8 @@ const byId = id => document.getElementById(id);
 // Letzte Leistung an diesem Gerät: nur gültige Arbeitssätze mit derselben Gewichtsangabe
 function lastPerf(exId, u = unitOf(ex(exId))) {
   for (let i = state.history.length - 1; i >= 0; i--) {
-    const e = state.history[i].exercises.find(x => x.exId === exId && x.u === u);
-    if (e) { const v = e.sets.filter(validSet); if (v.length) return v; }
+    const v = state.history[i].exercises.filter(x => x.exId === exId && x.u === u).flatMap(x => x.sets.filter(validSet));
+    if (v.length) return v;
   }
   return null;
 }
@@ -2591,6 +2622,7 @@ function recovery() {
   for (const m in MUSCLES) r[m] = 100;
   state.history.forEach(h => {
     const hrs = (now - new Date(h.date).getTime()) / 36e5, load = {}, main = {};
+    if (hrs < 0) return;   // Datum in der Zukunft (z. B. aus einer Sicherung): noch keine Belastung
     h.exercises.forEach(x => {
       if (!devKnown(x.exId)) return;   // unbekanntes Gerät: Muskel unbekannt
       const e = ex(x.exId), n = x.sets.filter(validSet).length; if (!n) return;   // ohne gültigen Satz keine Belastung
@@ -4989,6 +5021,7 @@ function vIntro() {
   $app.innerHTML = `<div class="page" id="intro">
     <div class="head"><h1 class="title">Dein Trainingsplan</h1><p class="sub">Für Hammer-Strength- und Life-Fitness-Geräte.</p></div>
     ${stepsCard()}
+    <button class="link small" data-a="importOpen" id="introRestore" style="justify-self:start">Schon eine Sicherung? Wiederherstellen</button>
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="emptyPlan">Plan selbst bauen</button>
       <button class="btn block" data-a="setupForm">Plan vorschlagen lassen</button></div></div>
@@ -5034,6 +5067,7 @@ function vSetup() {
     <div class="section"><h3>Erfahrung</h3>${seg("level", [["einsteiger", "Einsteiger"], ["fortgeschritten", "Fortgeschritten"]])}</div>
     <div class="group"><button class="li" data-a="openDevs">
       <div class="grow"><div class="t">Geräte in deinem Studio</div><div class="s">${av} von ${all.length} vorhanden${fav ? ` · ${fav} bevorzugt` : ""}</div></div><span class="chev">›</span></button></div>
+    ${state.plan ? "" : `<button class="link small" data-a="importOpen" id="setupRestore" style="justify-self:start">Schon eine Sicherung? Wiederherstellen</button>`}
     ${planKeepNote()}
     <div class="actionbar"><div class="in">
       <button class="btn primary xl block" data-a="createPlan">Plan erstellen</button>
@@ -5057,7 +5091,7 @@ function vHome() {
     return `<button class="d" data-a="openTag" data-d="${dkey(d)}" aria-label="Tagesplan ${d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })}">${n}<div class="dot ${cls} ${i === dow ? "today" : ""}" ${cls === "miss" ? `title="Ausgefallen: ${MISS_R[missOn(dkey(d)).r]}"` : ""}>${d.getDate()}</div><span class="wp ${wp[i] && wp[i].done ? "done" : ""}">${wp[i] ? esc(wp[i].name) : ""}</span></button>`;
   }).join("");
   const thisWeek = state.history.filter(h => new Date(h.date) >= monday).length;
-  const goal = Math.max(1, state.plan.days.length);
+  const goal = weekGoal();
   const streak = weekStreak(monday, goal);
   const rec = recovery();
   const tired = Object.entries(rec).filter(([, p]) => p < 85).sort((a, b) => a[1] - b[1]);
@@ -5224,6 +5258,8 @@ function dayPickSheet() {
       ${cur && d.id === cur.id ? `<span class="badge pr">Gewählt</span>` : ""}</button>`).join("")}</div>`;
 }
 
+// Wochenziel (Regel der App): mit festen Terminen deren Zahl pro Woche, sonst die Zahl der Trainingstage mit Geräten – mindestens 1
+function weekGoal() { const p = state.plan, n = state.sched && state.sched.days.length ? state.sched.days.length : p ? p.days.filter(d => d.items.length).length : 0; return Math.max(1, n); }
 function weekStreak(monday, goal) {
   const counts = {};
   state.history.forEach(h => { const d = new Date(h.date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); counts[d.getTime()] = (counts[d.getTime()] || 0) + 1; });
@@ -5334,6 +5370,7 @@ function vSettings() {
       <button class="li" data-a="newPlan">${ico("plus", "blue")}<div class="grow"><div class="t n">Neuen Plan erstellen</div></div><span class="chev">›</span></button>
       <button class="li" data-a="exportData">${ico("up", "green")}<div class="grow"><div class="t n">Sicherung erstellen</div><div class="s" id="backupLine">${backupLine()}</div></div><span class="chev">›</span></button>
       <button class="li" data-a="importOpen">${ico("down", "teal")}<div class="grow"><div class="t n">Sicherung wiederherstellen</div></div><span class="chev">›</span></button>
+      ${(() => { const o = prevCopy(); return o ? `<button class="li" data-a="restoreUndo" id="row-prev">${ico("timer", "orange")}<div class="grow"><div class="t n">Stand vor dem Wiederherstellen</div><div class="s">Kopie vom ${fmtDay(o.at)} · zurückholen oder löschen</div></div><span class="chev">›</span></button>` : ""; })()}
       ${extRows("data")}</div>
       <p class="small foot">Ein neuer Plan lässt deinen Verlauf unverändert.</p>
       <p class="small foot" id="persistInfo">Plan und Verlauf liegen nur in diesem Browser auf diesem Gerät. Eine Sicherungsdatei schützt bei Handywechsel, Verlust oder gelöschten Browserdaten.</p></section>
@@ -5359,6 +5396,7 @@ function tryRestore(raw, bad) {
   const msg = byId("impMsg"), box = byId("impConfirm"); let data;
   try { data = parseBackup(raw); } catch (e) { if (msg) { msg.textContent = bad; msg.style.color = "var(--bad)"; } if (box) box.innerHTML = ""; return; }
   const n = data.history.length, cur = state.history.length;
+  if (isNewer(data)) { if (msg) { msg.textContent = "Diese Sicherung stammt aus einer neueren Fassung der App. Lade die App zuerst neu, dann lässt sie sich vollständig einspielen."; msg.style.color = "var(--warn)"; } if (box) box.innerHTML = ""; return; }
   // Laufendes oder pausiertes Training: erst beenden oder verwerfen – die erledigten Sätze gingen sonst ohne Hinweis verloren
   if (state.session) { if (msg) { msg.textContent = "Erst das laufende Training beenden oder verwerfen. Sonst gingen seine erledigten Sätze verloren."; msg.style.color = "var(--warn)"; } if (box) box.innerHTML = ""; return; }
   // Weniger Trainings als auf dem Gerät oder auf dem Gerät gibt es neuere: erst nachfragen, damit nichts aus Versehen verloren geht
@@ -5373,12 +5411,40 @@ function tryRestore(raw, bad) {
   }
   restoreBackup(data);
 }
-function restoreBackup(data) {
+// Der Stand vor dem Wiederherstellen bleibt einmal als Kopie auf dem Gerät (eigener Schlüssel) und lässt sich unter Einstellungen zurückholen.
+// Die Kopie verfällt nach 14 Tagen (Regel der App), damit sie nicht dauerhaft Speicher belegt.
+const KEY_PREV = KEY + "-vor-wiederherstellen", PREV_DAYS = 14;
+function prevCopy() {
+  try { const o = JSON.parse(localStorage.getItem(KEY_PREV) || "null");
+    if (!isObj(o) || !isObj(o.data) || isNaN(new Date(o.at))) return null;
+    if (Date.now() - new Date(o.at) > PREV_DAYS * 864e5) { localStorage.removeItem(KEY_PREV); return null; }
+    return o; } catch (e) { return null; }
+}
+const hasData = st => !!(st.history.length || (st.plan && st.plan.days.some(d => d.items.length)) || Object.keys(st.food || {}).length || (st.weights || []).length);
+const putPrev = st => { try { localStorage.setItem(KEY_PREV, JSON.stringify({ at: new Date().toISOString(), data: st })); return true; } catch (e) { try { localStorage.removeItem(KEY_PREV); } catch (e2) {} return false; } };
+function restoreBackup(data, noCopy) {
+  let kept = false;
+  if (hasData(state) && !noCopy) {
+    kept = putPrev(state);
+    const msg = byId("impMsg"), box = byId("impConfirm");
+    if (!kept && msg && box) {   // Speicher reicht nicht für die Kopie: nicht still ohne Kopie ersetzen
+      pendingRestore = data; msg.textContent = "Für eine Kopie des jetzigen Stands reicht der Speicher nicht. Sichere ihn vorher unter „Sicherung erstellen“ – oder ersetze ohne Kopie."; msg.style.color = "var(--warn)";
+      box.innerHTML = `<button class="btn block" data-a="restoreNoCopy" style="color:var(--bad)">Ohne Kopie ersetzen</button>`; return; }
+  }
   pendingRestore = null;
-  state = normalize(Object.assign({}, data, { session: null })); extClean(); save(); askPersist(); closeSheet(); navReset();
-  homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.`;
+  state = normalize(Object.assign({}, data, { session: null })); extClean(); save();
+  if (saveFailed && kept) { try { localStorage.removeItem(KEY_PREV); } catch (e) {} kept = false; save(); }   // Kopie und neuer Stand passen nicht zusammen in den Speicher
+  askPersist(); closeSheet(); navReset();
+  homeNote = `Sicherung wiederhergestellt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}${state.backupAt ? `, Stand ${fmtDay(state.backupAt)}` : ""}.${kept ? " Der Stand von vorher liegt 14 Tage als Kopie unter Plan → Einstellungen." : ""}`;
   go("home");
 }
+function prevSheet() { const o = prevCopy(); if (!o) return `${sheetHead("Stand vor dem Wiederherstellen")}<p class="small muted" style="margin:0">Es liegt keine Kopie mehr vor.</p>`;
+  const d = normalize(o.data), left = Math.max(1, Math.ceil(PREV_DAYS - (Date.now() - new Date(o.at)) / 864e5));
+  return `${sheetHead("Stand vor dem Wiederherstellen", "Abbrechen")}
+    <p class="small" id="prevInfo" style="margin:0">Kopie vom ${fmtDay(o.at)}: ${nTr(d.history.length)}, ${nTd(d.plan?.days.length || 0)}. Sie wird noch ${left} ${left === 1 ? "Tag" : "Tage"} aufbewahrt.</p>
+    <p class="small muted" id="prevMsg" style="margin:0">Zurückholen ersetzt den jetzigen Stand. Der jetzige Stand wird dabei selbst zur Kopie.</p>
+    <button class="btn primary block" data-a="restoreUndoDo">Diesen Stand zurückholen</button>
+    <button class="btn block danger" data-a="restoreUndoDrop">Kopie löschen</button>`; }
 function gapList(gaps) {
   return `<p class="small">Für diese Übungen gibt es in deinem Studio kein Gerät mit gleicher Bewegung. Sie wurden weggelassen statt durch eine unpassende Übung ersetzt:</p>
     <ul class="small" style="margin:0;padding-left:20px;display:grid;gap:4px">${gaps.map(g => `<li><b>${esc(g.name)}</b> (${g.pattern ? PATTERNS[g.pattern].label : "–"}) · ${esc(g.day)}</li>`).join("")}</ul>
@@ -5403,7 +5469,7 @@ function vDay() {
       <div class="li${ssA ? " ssA" : ""}${ssB ? " ssB" : ""}" data-swipe="delItemAt" data-i2="${i}" data-label="${esc(e.name)}">
         ${motSpec(it.exId) ? `<span class="thumbbox dthumb" aria-hidden="true">${motionSvg(it.exId, { cls: "thumb" })}<i>${i + 1}</i></span>` : `<span class="idx">${i + 1}</span>`}
         <div class="grow" data-a="editItem" data-i2="${i}" style="cursor:pointer">
-          <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${en.recKg !== null ? entryBadge(en) : ""}${ssA || ssB ? `<span class="badge ssb">Supersatz ${ssA ? "1/2" : "2/2"}</span>` : ""}</div>
+          <div class="row" style="gap:6px;align-items:baseline"><span class="t">${esc(e.name)}</span>${e.off ? `<span class="badge off-b">nicht im Studio</span>` : ""}${en.recKg !== null ? entryBadge(en) : ""}${ssA || ssB ? `<span class="badge ssb">Supersatz ${ssA ? "1/2" : "2/2"}</span>` : ""}</div>
           <div class="s">${en.recKg !== null ? entryLine(en) : `${it.sets} × ${repsTxt(it)} Wdh. · Gewicht beim ersten Mal wählen`} · Pause ${fmtTime(it.rest)}</div>
         </div>
         <button class="icon-btn plain" data-a="moveItem" data-i2="${i}" ${i === 0 ? "disabled" : ""} aria-label="${esc(e.name)} nach oben">${ICON.up}</button>
@@ -5534,7 +5600,7 @@ function pickerHtml() {
       <button class="pick-main" data-a="${ses ? "pickSes" : "pick"}" data-id="${e.id}" aria-pressed="${on}" ${ses && on ? "disabled" : ""}>
         <span class="thumbbox pick-thumb" aria-hidden="true">${motionSvg(e.id, { cls: "thumb", anim: on })}<span class="pick-box">${on ? ICON.check : ""}</span></span>
         <span class="grow"><span class="t">${esc(e.name)}${e.fav ? ` <span class="badge fav">Bevorzugt</span>` : ""}</span><span class="s">${esc(aboutOf(e))}</span>
-          <span class="s3">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadShort(e)}${lk > 0 ? ` · zuletzt ${kgTxt(lk)} kg` : ""}${e.off ? " · nicht im Studio" : ""}</span></span></button>
+          <span class="s3">${e.label && e.label !== e.name ? esc(e.label) + " · " : ""}${loadShort(e)}${lk > 0 ? ` · zuletzt ${kgTxt(lk)} kg` : ""}${e.off ? " · nicht im Studio" : pickAuto.has(e.id) ? " · jetzt als „im Studio“ markiert" : ""}</span></span></button>
       <button class="icon-btn plain infobtn" data-a="openGuideSheet" data-id="${e.id}" data-ret="pick" aria-label="Anleitung ${esc(e.name)}">i</button></div>`; };
   return `${ses ? sheetHead("Gerät dazunehmen", "Zurück", "pickSesBack") : sheetHead(d ? `Geräte für „${esc(d.name)}“` : "Gerät hinzufügen")}
     ${ses ? `<p class="small muted" style="margin:0" id="pickCount">Kommt direkt nach der aktuellen Übung dran. Geräte mit Häkchen sind schon im Training.</p>
@@ -5549,7 +5615,9 @@ function pickerHtml() {
     ${hidden || pickAll ? `<button class="link small" data-a="pickAll" style="justify-self:start">${pickAll ? "Nur Geräte im Studio zeigen" : `${hidden} ${hidden === 1 ? "Gerät" : "Geräte"} nicht im Studio – anzeigen`}</button>` : ""}
     <button class="btn block" data-a="newDev" data-ret="pick">+ Eigenes Gerät anlegen</button>`;
 }
-function openPicker(muscle) { pickMode = "day"; pickQuery = ""; pickFilter = "alle"; pickMuscle = muscle && MUSCLES[muscle] ? muscle : "alle"; pickAll = false; openSheet(pickerHtml()); }
+// In dieser Geräteauswahl durch Antippen als „im Studio“ markiert: wird beim Herausnehmen wieder zurückgenommen
+let pickAuto = new Set();
+function openPicker(muscle) { pickAuto = new Set(); pickMode = "day"; pickQuery = ""; pickFilter = "alle"; pickMuscle = muscle && MUSCLES[muscle] ? muscle : "alle"; pickAll = false; openSheet(pickerHtml()); }
 // Im laufenden Training: Gerät direkt nach der aktuellen Übung einschieben, auf Wunsch auch in den Trainingstag übernehmen
 function sesAdd(exId) {
   const s = S(); if (!s || s.list.some(l => l.exId === exId)) return;
@@ -5630,11 +5698,12 @@ function compSessions(exId, u = unitOf(ex(exId)), before = Infinity) {
   const out = [];
   state.history.forEach(h => {
     const ts = new Date(h.date).getTime(); if (!(ts < before)) return;   // before: nur Einheiten vor diesem Zeitpunkt
-    const x = h.exercises.find(e => e.exId === exId && e.u === u); if (!x) return;
-    const v = x.sets.filter(validSet); if (!v.length) return;
+    // Steht dasselbe Gerät mit derselben Gewichtsangabe mehrfach in einem Training, zählen alle Einträge zusammen
+    const xs = h.exercises.filter(e => e.exId === exId && e.u === u); if (!xs.length) return;
+    const x = xs[0], v = xs.flatMap(e => e.sets.filter(validSet)); if (!v.length) return;
     const kgs = [...new Set(v.map(t => t.kg))];
-    out.push({ date: ts, sets: v, planned: x.planned || null, rmin: x.rmin || null, rmax: x.rmax || null,
-      uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj, adv: !!x.adv });
+    out.push({ date: ts, sets: v, planned: xs.every(e => e.planned) ? xs.reduce((a, e) => a + e.planned, 0) : null, rmin: x.rmin || null, rmax: x.rmax || null,
+      uniform: kgs.length === 1, kg: kgs.length === 1 ? kgs[0] : null, adj: !!h.adj, adv: xs.some(e => e.adv) });
   });
   return out;
 }
@@ -5653,6 +5722,17 @@ const avgReps = s => s.sets.reduce((a, t) => a + t.reps, 0) / s.sets.length;
 // 8. Alle Sätze unter dem Ziel → halten; erst beim zweiten Mal in Folge −1 Schritt
 // 9. Sonst Gewicht halten, Ziel je 1 Wiederholung mehr
 // Danach: Steigerung, aber letzte Einheit an diesem Gerät 21 Tage oder länger her → halten; 28 Tage oder länger → ein Schritt leichter (Regeln der App)
+// Datengrundlage eines Vorschlags in Worten: wie viele vergleichbare Einheiten es gibt, wie aktuell sie sind und wie belastbar das ist.
+// Stufen (Einschätzung der App, kein Messwert): gut = mindestens 3 Einheiten in den letzten 6 Wochen und die letzte höchstens 14 Tage her;
+// mittel = mindestens 2 Einheiten und die letzte höchstens 21 Tage her; sonst gering.
+function entryBasis(hist, at) {
+  if (!hist.length) return "Datengrundlage: keine. An diesem Gerät gibt es noch keine gültigen Sätze mit dieser Gewichtsangabe – die App leitet deshalb kein Gewicht ab.";
+  const n = hist.length, gap = Math.max(0, Math.floor((at - hist[n - 1].date) / 864e5)), rec = hist.filter(h => at - h.date <= 42 * 864e5).length;
+  const lvl = rec >= 3 && gap <= 14 ? "gut" : n >= 2 && gap <= 21 ? "mittel" : "gering";
+  const ago = gap === 0 ? "heute" : gap === 1 ? "gestern" : `vor ${gap} Tagen`;
+  const because = lvl === "gut" ? "" : n < 2 ? " – erst eine Einheit" : gap > 14 ? ` – die letzte Einheit ist ${gap} Tage her` : " – weniger als 3 Einheiten in den letzten 6 Wochen";
+  return `Datengrundlage: ${n} ${n === 1 ? "vergleichbare Einheit" : "vergleichbare Einheiten"} an diesem Gerät${n > 1 ? `, davon ${rec} in den letzten 6 Wochen` : ""}; die letzte ${ago}. Sicherheit: ${lvl}${because} (Einschätzung der App).`;
+}
 function makeEntry(it, ctx) {
   const e = ex(it.exId), u = unitOf(e), unit = UNIT[u], step = e.step, n = it.sets;
   const planned = it.planned || it.sets;
@@ -5755,7 +5835,7 @@ function makeEntry(it, ctx) {
       why = `Letzte Einheit an diesem Gerät vor ${gap} Tagen (${lastTxt}). Nach so einer Pause erst wieder reinkommen: heute ohne Steigerung (Regel der App).`;
     }
   }
-  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, short, ss: it.ss || undefined,
+  return { key: uid(), itemId: it.id, exId: it.exId, u, rmin: it.rmin, rmax: it.rmax, rest: it.rest, planned, mode, why, basis: entryBasis(hist, at), short, ss: it.ss || undefined,
     recKg: sets[0] ? sets[0].kg : null, rec: sets.map(s => s.kg), sets };
 }
 const S = () => state.session;
@@ -5861,19 +5941,24 @@ function setAdvice(s) {
 // Nimmt ein fertiges Training in den Verlauf auf – nach einem Live-Training und beim Nachtragen dieselbe Stelle.
 // Bestwerte werden gegen den bisherigen Verlauf gerechnet (vor dem Einfügen). Der Verlauf bleibt nach Datum geordnet:
 // ein Training für einen früheren Tag rückt an seinen Platz, eines von jetzt ans Ende.
-function commitTraining(rec) {
+function commitTraining(rec, opt) {
   const exs = rec.exercises; if (!rec.at) rec.at = new Date().toISOString();   // eingetragen am (kann vom Trainingsdatum abweichen)
   const prs = exs.map(x => { const v = x.sets.filter(validSet); if (!v.length) return null; const b = bestKg(x.exId, x.u), m = Math.max(...v.map(t => t.kg));
     return b === null || m > b ? { exId: x.exId, name: x.name, kg: m, u: x.u, first: b === null } : null; }).filter(Boolean);
   // Ohne mehr Gewicht: mehr Wiederholungen als je zuvor mit mindestens diesem Gewicht (vor dem Speichern berechnet)
   const repPrs = exs.filter(x => !prs.some(p => p.exId === x.exId)).map(x => { const v = x.sets.filter(validSet); if (!v.length || bestKg(x.exId, x.u) === null) return null;
     for (const kg of [...new Set(v.map(t => t.kg))].sort((a, b) => b - a)) { const r = Math.max(...v.filter(t => t.kg === kg).map(t => t.reps)), rb = repBest(x.exId, x.u, kg);
-      if (rb !== null && r > rb) return { name: x.name, kg, u: x.u, reps: r, from: rb }; }
+      if (rb !== null && r > rb) return { exId: x.exId, name: x.name, kg, u: x.u, reps: r, from: rb }; }
     return null; }).filter(Boolean);
+  // Unverändert übernommene Vorschläge der App (beim Nachtragen): gespeichert wie eingetragen, aber kein gemeldeter Bestwert –
+  // die App feiert keine Zahl, die sie selbst vorgeschlagen hat (Regel der App)
+  const sug = new Set((opt && opt.sug) || []), isSug = p => !p.first && sug.has(p.exId);
+  const sugPr = [...new Set([...prs, ...repPrs].filter(isSug).map(p => p.name))];
+  const prsOut = prs.filter(p => !isSug(p)), repOut = repPrs.filter(p => !isSug(p));
   const ts = new Date(rec.date).getTime(); let i = state.history.length;
   while (i > 0 && new Date(state.history[i - 1].date).getTime() > ts) i--;
   state.history.splice(i, 0, rec);
-  return { rec, prs, repPrs, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
+  return { rec, prs: prsOut, repPrs: repOut, sugPr, sets: exs.reduce((a, x) => a + x.sets.length, 0), volume: exs.reduce((a, x) => a + x.sets.reduce((b, t) => b + setVol(x, t), 0), 0), goals: checkGoals() };
 }
 function finish(saveIt) {
   stopTick(); awake(false);
@@ -5968,7 +6053,7 @@ function vTrain() {
       <h1>${esc(e.name)}</h1></div>${motSpec(e.id) ? `<button class="mot-btn" data-a="openDevInfo" aria-label="Bewegungsablauf und Technik">${motionSvg(e.id, { anim: true, cls: "sm" })}</button>` : ""}</div>
       ${note ? `<button class="setting" data-a="openDevInfo">Einstellung: <b>${esc(note)}</b></button>` : ""}
       ${(() => { const sp = ssPair(s, x); return sp ? `<p class="small" id="ssNote" style="margin:0"><span class="badge ssb">Supersatz ${sp.first ? "1/2" : "2/2"}</span> ${sp.first ? `danach sofort ${esc(ex(sp.p.exId).name)}` : `mit ${esc(ex(sp.p.exId).name)}, danach Pause`}</p>` : ""; })()}
-      ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
+      ${x.why ? `<button class="prog ${pg.cls}" data-a="showWhy" data-why="${esc(x.why)}" data-basis="${esc(x.basis || "")}">${pg.arr ? `<span class="arr">${pg.arr}</span>` : ""}<span>${esc(pg.txt)}</span><span class="more">Warum?</span></button>` : ""}
       ${(() => { const pl = x.mode !== "up" && !x.sets.some(t => t.done) ? plateau(x.exId) : null;
         return pl ? `<p class="reason" id="plateauHint" style="color:var(--warn)">Seit ${pl.weeks} Wochen kein Fortschritt${pl.reserve ? " – zuletzt mit Reserve: näher ans Limit gehen" : ""}. ${pl.reserve ? "" : `<button class="link" data-a="openSwap">Gerät tauschen</button>`}<button class="link small" data-a="showWhy" data-why="${esc(plateauTxt(pl))}" style="color:var(--text-3);margin-left:10px">Warum?</button></p>` : ""; })()}
     </div>
@@ -7101,12 +7186,12 @@ function weekStats(off) {
   const fdays = days.map(d => dkey(d)).filter(k => (state.food[k] || []).length), wdays = days.map(d => dkey(d)).filter(k => state.water[k]);
   const G = nutrGoals(), tot = fdays.map(k => dayTotals(k));
   const W = (state.weights || []).filter(w => { const d = new Date(w.d + "T12:00"); return d >= mon && d < end; }).sort((a, b) => a.d.localeCompare(b.d));
-  return { mon, end, n: H.length, goal: Math.max(1, state.plan?.days.length || 1), sets: sets(H), vol: vol(H), pvol: vol(P), pn: P.length,
+  return { mon, end, n: H.length, goal: weekGoal(), sets: sets(H), vol: vol(H), pvol: vol(P), pn: P.length,
     min: Math.round(H.reduce((a, h) => a + (h.durationSec || 0), 0) / 60), prs, ms, tmin, tmax, planned,
     food: fdays.length ? { n: fdays.length, k: tot.reduce((a, t) => a + t.k, 0) / tot.length, p: tot.reduce((a, t) => a + t.p, 0) / tot.length, hit: G ? tot.filter(t => t.p >= G.prot).length : 0 } : null,
     water: wdays.length ? wdays.reduce((a, k) => a + state.water[k], 0) / wdays.length : null, G,
     fasts: (() => { const F = state.fasts.filter(x => { const d = new Date(x.e); return d >= mon && d < end; }); return F.length ? { n: F.length, hit: F.filter(x => new Date(x.e) - new Date(x.s) >= x.h * 3600e3).length } : null; })(),
-    wt: W.length >= 2 ? { a: W[0], b: W[W.length - 1] } : null, streak: off === 0 ? weekStreak(mon, Math.max(1, state.plan?.days.length || 1)) : null };
+    wt: W.length >= 2 ? { a: W[0], b: W[W.length - 1] } : null, streak: off === 0 ? weekStreak(mon, weekGoal()) : null };
 }
 function vWeek() {
   const s = weekStats(weekOff), fmtD = d => d.toLocaleDateString("de-DE", { day: "numeric", month: "numeric" });
@@ -7137,7 +7222,7 @@ function vWeek() {
       <div class="row between"><h1 class="title">${label}</h1>
         <div class="row" style="gap:var(--s2)"><button class="icon-btn" data-a="weekNav" data-d="1" aria-label="Vorherige Woche">‹</button><button class="icon-btn" data-a="weekNav" data-d="-1" aria-label="Nächste Woche" ${weekOff === 0 ? "disabled" : ""}>›</button></div></div></div>
     <section class="section" id="weekTrain"><h2>Training</h2>
-      <div class="card"><div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : "")}
+      <div class="card"><div class="grid3" style="align-items:start">${stat("Trainings", `${s.n}<span class="small muted"> / ${s.goal}</span>`, s.streak ? `${s.streak} ${s.streak === 1 ? "Woche" : "Wochen"} in Folge geschafft` : state.sched && state.sched.days.length ? "Ziel: deine Termine" : "Ziel: Tage im Plan")}
         ${stat("Sätze", s.sets, `${s.min} Min.`)}${stat("Volumen", fmtVol(s.vol), dv === null || (!done && dv < 0) ? "" : `${dv > 0 ? "+" : dv < 0 ? "−" : "±"}${Math.abs(dv)} % zur Vorwoche`)}</div>
       ${inRange.length ? `<p class="small" style="margin:0">Im Zielbereich (${s.tmin}–${s.tmax} Sätze): ${inRange.join(", ")}</p>` : ""}
       ${planLow.length ? `<p class="small faint" style="margin:0" id="weekPlanLow">${joinDe(planLow)}: Dein Plan sieht weniger als ${s.tmin} Sätze pro Woche vor. <button class="link small" data-a="tab" data-v="plan" style="display:inline">Zur Planprüfung</button></p>` : ""}</div>
@@ -7463,17 +7548,23 @@ function planCheck() {
     && p.days.every(d => d.items.every(it => ex(it.exId).muscle !== m || (estimateSec(d.items) + setSec(it) + it.rest) / 60 > p.minutes));
   const out = [];
   for (const m of MAJOR) if (ms[m] < tmin) out.push({ kind: "low", m, v: ms[m], full: full(m) });
-  for (const m in MUSCLES) if (ms[m] > tmax) out.push({ kind: "high", m, v: ms[m] });
+  // main = Sätze aus Übungen mit diesem Hauptmuskel (der Rest ist mittrainiert und zählt halb)
+  const mainSets = m => p.days.reduce((a, d) => a + d.items.reduce((b, it) => b + (ex(it.exId).muscle === m ? it.sets * per : 0), 0), 0);
+  for (const m in MUSCLES) if (ms[m] > tmax) out.push({ kind: "high", m, v: ms[m], main: mainSets(m) });
   if (p.minutes) p.days.forEach(d => { const est = estMinutes(d); if (est > p.minutes + 10) out.push({ kind: "time", d, est }); });
+  // Geräte im Plan, die als „nicht im Studio“ markiert sind
+  p.days.forEach(d => d.items.forEach(it => { if (devKnown(it.exId) && ex(it.exId).off) out.push({ kind: "off", d, it }); }));
   return { out, tmin, tmax, per };
 }
 function planCheckHtml() {
   const c = planCheck(), p = state.plan, f = v => String(Math.round(v * 2) / 2).replace(".", ","), K = k => c.out.filter(x => x.kind === k);
-  const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high"), time = K("time");
+  // Über dem Richtwert nur durch Mittrainiertes (eigene Übungen des Muskels liegen im Bereich): Hinweis statt Punkt
+  const miss = K("low").filter(x => x.v === 0), low = K("low").filter(x => x.v > 0), high = K("high").filter(x => x.main > c.tmax), soft = K("high").filter(x => x.main <= c.tmax), time = K("time");
   // Tage über dem Budget, die (noch) nicht als Punkt zählen: werden genannt statt als „passt“ beschrieben
   const overMin = d => Math.ceil(estimateSec(d.items) / 60);
   const over = p.minutes ? p.days.filter(d => d.items.length && overMin(d) > p.minutes && !time.some(x => x.d === d)) : [];
   const rows = [
+    ...K("off").map(x => `<div class="li" data-off="${x.it.exId}"><div class="grow"><div class="t">${esc(ex(x.it.exId).name)}</div><div class="s">nicht im Studio · ${esc(x.d.name)}</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}" aria-label="${esc(x.d.name)} ansehen">Ansehen</button></div>`),
     ...miss.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">fehlt im Plan</div></div><button class="btn sm" data-a="checkFix" data-m="${x.m}" aria-label="Übung für ${MUSCLES[x.m]} hinzufügen">+ Übung</button></div>`),
     ...time.map(x => `<div class="li"><div class="grow"><div class="t">${esc(x.d.name)}</div><div class="s">ca. ${x.est} Min. bei ${p.minutes} Min. Zeitbudget</div></div><button class="btn sm" data-a="editDay" data-id="${x.d.id}">Ansehen</button></div>`),
     ...high.map(x => `<div class="li"><div class="grow"><div class="t">${MUSCLES[x.m]}</div><div class="s">${f(x.v)} Sätze pro Woche – über dem Richtwert von ${c.tmin}–${c.tmax}</div></div></div>`)];
@@ -7487,11 +7578,13 @@ function planCheckHtml() {
     more: "Ein paar Sätze mehr bringen dich in den Bereich." };
   const groups = Object.keys(R).map(r => [r, low.filter(x => reason(x) === r).map(x => MUSCLES[x.m])]).filter(([, a]) => a.length);
   const why = groups.length === 1 ? R[groups[0][0]] : groups.map(([r, a]) => `${joinDe(a)}: ${R[r].charAt(0).toLowerCase() + R[r].slice(1)}`).join(" ");
-  const status = rows.length ? `${rows.length} ${rows.length === 1 ? "Punkt" : "Punkte"} zu prüfen` : low.length ? `${low.length} ${low.length === 1 ? "Muskelgruppe" : "Muskelgruppen"} unter dem Richtwert` : "Alles im Richtwert";
+  const status = rows.length ? `${rows.length} ${rows.length === 1 ? "Punkt" : "Punkte"} zu prüfen` : low.length ? `${low.length} ${low.length === 1 ? "Muskelgruppe" : "Muskelgruppen"} unter dem Richtwert`
+    : soft.length ? `${joinDe(soft.map(x => MUSCLES[x.m]))} knapp über dem Richtwert` : "Alles im Richtwert";
   return `<section class="section" id="planCheck"><details class="disc" id="planCheckBox"${rows.length || add.length ? " open" : ""}>
     <summary><div class="grow"><h3>Planprüfung</h3><div class="small muted" id="planStatus">${status}</div></div><span class="chev">›</span></summary><div class="body">
     ${rows.length ? `<div class="group">${rows.join("")}</div>` : ""}
     <div class="stack">${rows.length ? "" : `<p class="small row" style="margin:0;gap:var(--s2);align-items:flex-start">${sym("check", "var(--ok)")}<span>Alle großen Muskelgruppen sind dabei${p.minutes && !over.length ? ", jeder Tag passt in dein Zeitbudget" : ""}.</span></p>`}
+    ${soft.length ? `<p class="small muted" id="planSoftHigh" style="margin:0">${soft.map(x => `${MUSCLES[x.m]}: ${f(x.v)} Sätze pro Woche bei einem Richtwert von ${c.tmin}–${c.tmax}. Davon ${f(x.v - x.main)} mittrainiert (zählen halb), eigene Übungen ${f(x.main)}.`).join(" ")}</p>` : ""}
     ${over.length ? `<p class="small muted" id="planTimeNote" style="margin:0">${over.every(d => overMin(d) - p.minutes <= 5) ? "Etwas über" : "Über"} dem Zeitbudget von ${p.minutes} Min. (Schätzung der App): ${over.map(d => `${esc(d.name)} ≈ ${overMin(d)} Min.`).join(", ")}</p>` : ""}
     ${(() => { const ms = muscleSets(p, c.per), scale = c.tmax * 1.3;
       return `<div class="mlist" id="planBars" role="img" aria-label="Sätze pro Woche je Muskel: ${MAJOR.map(m => `${MUSCLES[m]} ${f(ms[m] || 0)}`).join(", ")}">${MAJOR.map(m => { const v = ms[m] || 0, col = v >= c.tmin && v <= c.tmax ? "var(--ok)" : v > c.tmax ? "var(--warn)" : "var(--accent)";
@@ -7732,6 +7825,8 @@ const COACH_RULES = [
   ["Trainingsdauer", "Durchschnitt deiner letzten 5 Trainings gegen dein Zeitbudget."],
   ["Ernährung", "Gewichtstrend der letzten 4 Wochen gegen die Zielrate deines Ernährungsziels; Eiweiß der letzten Woche (nur Tage mit Einträgen) gegen 1,6 g pro kg Körpergewicht."],
   ["Ziele und Fortschritt", "Tempo aus deinen besten Satzgewichten der letzten 8 Wochen. „Läuft gut“ vergleicht dein bestes Gewicht pro Gerät mit der ersten Einheit dieser 8 Wochen."],
+  ["Datengrundlage", "Zu jedem Gewichtsvorschlag nennt die App unter „Warum?“, worauf er beruht: wie viele vergleichbare Einheiten es an diesem Gerät gibt und wie lange die letzte her ist. Sicherheit (Einschätzung der App, kein Messwert): gut ab 3 Einheiten in 6 Wochen und höchstens 14 Tagen Abstand, mittel ab 2 Einheiten und höchstens 21 Tagen, sonst gering. Ohne gültige Sätze leitet die App kein Gewicht ab. Beim Nachtragen meldet sie keinen Bestwert für Vorschläge, die du unverändert übernimmst."],
+  ["Wochenziel", "Mit festen Terminen: die Zahl deiner Termine pro Woche. Ohne Termine: die Zahl deiner Trainingstage mit Geräten (Regel der App). Die Serie zählt die Wochen in Folge, in denen du das heutige Ziel erreicht hast – ändert sich das Ziel, wird sie neu gerechnet."],
   ["Sicherung", "Sind seit der letzten Sicherung 5 Trainings dazugekommen und mindestens 14 Tage vergangen – oder gibt es noch keine –, erinnert die App an eine neue Sicherungsdatei."]];
 function vCoach() {
   const L = insights(), vis = L.filter(x => !coachHidden(x)), hid = L.length - vis.length;
@@ -7836,6 +7931,7 @@ function vSummary() {
     <div class="head" style="justify-items:start;gap:var(--s3)">
       <span style="width:60px;height:60px;border-radius:50%;background:var(--ok-tint);color:var(--ok);display:grid;place-items:center">${ICON.check}</span>
       <div><div class="cap" id="sumCap">${r.nt ? `Training nachgetragen · ${fmtDay(r.date)}` : `Training beendet${r.adj ? " · zeitlich angepasst" : ""}`}</div><h1 class="title">${esc(r.day)}</h1></div></div>
+    ${saveFailed ? `<div class="note warn small" id="sumUnsaved" role="alert" style="color:var(--bad)"><p style="margin:0 0 8px">Noch nicht gespeichert: Der Browser konnte dieses Training nicht ablegen. Nach dem Schließen der App wäre es weg.</p><button class="btn sm" data-a="backupFile">Jetzt als Datei sichern</button></div>` : ""}
     <div class="grid3">
       <div class="stat" id="sumDur"><div class="cap">Dauer</div>${r.durationSec > 0 ? `<div class="num">${Math.max(1, Math.round(r.durationSec / 60))}<span class="small muted"> Min.</span></div>` : `<div class="num">–</div><div class="small faint">nicht erfasst</div>`}</div>
       <div class="stat"><div class="cap">Sätze</div><div class="num">${sm.sets}</div><div class="small faint">${r.exercises.length} ${r.exercises.length === 1 ? "Übung" : "Übungen"}</div></div>
@@ -7849,6 +7945,7 @@ function vSummary() {
     ${prs.length || reps.length ? `<section class="section" id="prList"><h2>Neue Bestwerte</h2><div class="group">${prs.map(p =>
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">Mehr Gewicht als je zuvor</div></div><span class="badge pr">${kgTxt(p.kg)} ${UNIT[p.u]}</span></div>`).join("")}${reps.map(p =>
       `<div class="li"><div class="grow"><div class="t">${esc(p.name)}</div><div class="s">${p.reps} Wdh. mit ${kgTxt(p.kg)} ${UNIT[p.u]}, vorher höchstens ${p.from}</div></div><span class="badge pr">+${p.reps - p.from} Wdh.</span></div>`).join("")}</div></section>` : ""}
+    ${sm.sugPr && sm.sugPr.length ? `<p class="small muted" id="sugPrNote" style="margin:0">Kein Bestwert gemeldet für ${esc(joinDe(sm.sugPr))}: Das sind Vorschläge der App, die du unverändert übernommen hast. Gespeichert sind die Werte trotzdem.</p>` : ""}
     ${sm.last && r.exercises[sm.last.xi] && r.exercises[sm.last.xi].sets[sm.last.i] ? (() => { const x = r.exercises[sm.last.xi], t = x.sets[sm.last.i];
       return `<section class="section" id="lastFeel"><div class="card stack-sm"><div class="row between"><h2 class="h3">Wie war der letzte Satz?</h2><span class="small faint">${esc(x.name)} · ${kgTxt(t.kg)} × ${t.reps}</span></div>
         <div class="seg feel">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) => `<button data-a="sumFeel" data-f="${k}" class="${t.f === k ? "on" : ""}" aria-pressed="${t.f === k}">${l}</button>`).join("")}</div>
@@ -7912,6 +8009,7 @@ function vHistory() {
   $app.innerHTML = `<div class="page">
     <div class="head"><div class="cap">${H.length} ${H.length === 1 ? "Training" : "Trainings"} insgesamt</div><h1 class="title">Fortschritt</h1><button class="icon-btn nav-r" data-a="openSettings" aria-label="Einstellungen">${ICON.gear}</button></div>
     ${histNote ? `<p class="note small" id="histNote" role="status" style="margin:0">${esc(histNote)}</p>` : ""}
+    ${(() => { const F = H.filter(h => dkey(new Date(h.date)) > dkey()); return F.length ? `<p class="note warn small" id="histFuture" role="status" style="margin:0">${F.length === 1 ? `Das Training „${esc(F[0].day)}“ hat ein Datum in der Zukunft (${fmtDay(F[0].date)})` : `${F.length} Trainings haben ein Datum in der Zukunft`}. Bis dahin ${F.length === 1 ? "gilt es als das neueste" : "gelten sie als die neuesten"}. Bitte prüfen: Training antippen → „Datum oder Dauer ändern“.</p>` : ""; })()}
     ${H.length ? `<div class="group"><button class="li" data-a="openWeek" data-ret="history" id="histWeek">${ico("chart", "indigo")}<div class="grow"><div class="t n">Wochenrückblick</div>${sr("Training, Ernährung und Gewicht der Woche")}</div><span class="chev">›</span></button></div>` : ""}
     ${EXT.rows.history.length ? `<div class="group" id="histMore">${extRows("history")}</div>` : ""}
     ${H.length ? `
@@ -8042,8 +8140,9 @@ function histChanged() {
 }
 
 function exChart(exId, u = unitOf(ex(exId))) {
-  const all = state.history.map(h => { const x = h.exercises.find(e => e.exId === exId); if (!x) return null;
-    const v = x.sets.filter(validSet); return v.length ? { d: new Date(h.date), kg: Math.max(...v.map(t => t.kg)), sets: v, u: x.u } : null; }).filter(Boolean);
+  const all = state.history.flatMap(h => { const by = {};   // je Training und Gewichtsangabe ein Punkt, auch wenn das Gerät mehrfach vorkommt
+    h.exercises.filter(e => e.exId === exId).forEach(e => { (by[e.u] = by[e.u] || []).push(...e.sets.filter(validSet)); });
+    return Object.entries(by).filter(([, v]) => v.length).map(([uu, v]) => ({ d: new Date(h.date), kg: Math.max(...v.map(t => t.kg)), sets: v, u: uu })); });
   const other = all.filter(p => p.u !== u).length, allU = all.filter(p => p.u === u);
   const pts = allU.slice(-12);
   const name = ex(exId).name;
@@ -8147,7 +8246,7 @@ const A = {
   importOpen: () => {
     pendingRestore = null;
     openSheet(`${sheetHead("Sicherung wiederherstellen", "Abbrechen")}
-      <p class="small" id="impMsg" style="margin:0">Ersetzt Plan und Verlauf auf diesem Gerät.</p>
+      <p class="small" id="impMsg" style="margin:0">Ersetzt alle Daten der App auf diesem Gerät: Plan, Verlauf, Essen, Gewichte und Einstellungen. Der jetzige Stand bleibt 14 Tage als Kopie erhalten.</p>
       <div id="impConfirm" style="display:contents"></div>
       <button class="btn primary block" data-a="impFilePick">Datei wählen</button>
       <input type="file" id="impFile" accept=".json,application/json,text/plain" hidden>
@@ -8162,6 +8261,19 @@ const A = {
   impFilePick: () => byId("impFile").click(),
   importDo: () => tryRestore(byId("impTxt").value, "Der Text ist ungültig. Kopiere ihn vollständig, er beginnt mit TP1:"),
   restoreConfirm: () => { if (pendingRestore) restoreBackup(pendingRestore); },
+  restoreNoCopy: () => { if (pendingRestore) restoreBackup(pendingRestore, true); },
+  restoreUndo: () => openSheet(prevSheet()),
+  restoreUndoDo: () => { const o = prevCopy(), msg = byId("prevMsg"); if (!o) return closeSheet();
+    if (state.session) { if (msg) { msg.textContent = "Erst das laufende Training beenden oder verwerfen. Sonst gingen seine erledigten Sätze verloren."; msg.style.color = "var(--warn)"; } return; }
+    const cur = state; let back; try { back = normalize(Object.assign({}, o.data, { session: null })); } catch (e) { return; }
+    const kept = putPrev(cur); state = back; extClean(); save(); closeSheet(); navReset();
+    homeNote = `Stand vom ${fmtDay(o.at)} zurückgeholt: ${nTr(state.history.length)}, ${nTd(state.plan?.days.length || 0)}.${kept ? " Der Stand von eben liegt als Kopie unter Plan → Einstellungen." : ""}`;
+    go("home"); },
+  restoreUndoDrop: () => { try { localStorage.removeItem(KEY_PREV); } catch (e) {} closeSheet(); render(); },
+  rescueSave: () => { let raw = null; try { raw = localStorage.getItem(KEY); } catch (e) {} if (raw) downloadText(raw, `trainingsplan-daten-${dkey()}.json`, "application/json"); },
+  rescueFinish: el => { try { finish(true); } catch (e) { el.textContent = "Ließ sich nicht speichern"; el.disabled = true; } },
+  rescueDrop: el => { if (el.dataset.sure !== "1") { el.dataset.sure = "1"; el.textContent = "Wirklich verwerfen? Erledigte Sätze gehen verloren"; return; }
+    state.session = null; save(); location.reload(); },
   showEx: el => openSheet(exChart(el.dataset.id, el.dataset.u)),
   addWeight: () => {
     const v = num(byId("bwIn").value);
@@ -8572,7 +8684,8 @@ const A = {
     if (!s.list.some(l => l.sets.some(t => !t.done))) { save(); return finish(true); }
     save(); closeSheet(); render(); },
   showRec: () => openSheet(recSheet()),
-  showWhy: el => openSheet(`${sheetHead("Warum dieses Gewicht?")}<p>${esc(el.dataset.why)}</p><p class="small faint">Berechnet aus deinen letzten gültigen Sätzen an diesem Gerät. Du kannst jederzeit abweichen.</p>`),
+  showWhy: el => openSheet(`${sheetHead("Warum dieses Gewicht?")}<p>${esc(el.dataset.why)}</p>${el.dataset.basis ? `<p class="small" id="whyBasis">${esc(el.dataset.basis)}</p>` : ""}
+    <p class="small faint">${el.dataset.basis ? "Der Vorschlag beruht auf deiner letzten Einheit an diesem Gerät; nach einer unvollständigen Einheit und vor einer Reduktion zählt auch die davor (Regeln der App)." : "Berechnet aus deinen letzten gültigen Sätzen an diesem Gerät."} Du kannst jederzeit abweichen.</p>`),
   start: () => { const d = nextDay(); if (d) startTraining(d); },
   editDay: el => { state.editDay = el.dataset.id; go("day"); },
   // Genau diesen Tag trainieren (nicht nur den nächsten aus „Heute“)
@@ -8626,9 +8739,12 @@ const A = {
   // Antippen: Gerät in den Tag aufnehmen oder wieder herausnehmen. Wer ein Gerät einplant, hat es im Studio.
   pickMuscle: el => { pickMuscle = MUSCLES[el.dataset.k] ? el.dataset.k : "alle"; refreshPicker(); },
   pick: el => { const id = el.dataset.id, d = curDay(); if (!d) return; const i = d.items.findIndex(x => x.exId === id);
-    if (i >= 0) d.items.splice(i, 1);
+    if (i >= 0) { d.items.splice(i, 1);
+      // Die Markierung „im Studio“ kam nur durch das Antippen eben: mit dem Herausnehmen wieder zurück (außer das Gerät steht noch an einem anderen Tag)
+      if (pickAuto.has(id) && !state.plan.days.some(x => x.items.some(it => it.exId === id))) { state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: true }); pickAuto.delete(id); } }
     else { const g = rangeFor(state.plan.goal, id); d.items.push({ id: uid(), exId: id, sets: 3, rmin: g.rmin, rmax: g.rmax, rest: g.rest });
-      if (ex(id).off) state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: false }); }
+      // Wer ein Gerät einplant, hat es im Studio – das steht dann sichtbar in der Zeile
+      if (ex(id).off) { state.dev[id] = Object.assign({}, state.dev[id] || {}, { off: false }); pickAuto.add(id); } }
     tpRefresh(d); save(); vDay(); refreshPicker(); },
   openDevs: () => { devFilter = "alle"; openSheet(devListHtml()); },
   devsDone: () => { closeSheet(); render(); },
@@ -8914,8 +9030,8 @@ EXT.test.HILFE = HILFE;
       sub: s => s.val === 1 ? "Gerät trainiert" : "verschiedene Geräte trainiert" }
   ];
   const MS_ALL = MS.reduce((a, m) => a + m.steps.length, 0);
-  // Wochenziel wie auf „Heute“: Zahl der Trainingstage im Plan, mindestens 1
-  const msGoal = () => Math.max(1, state.plan?.days.length || 1);
+  // Wochenziel wie auf „Heute“ (weekGoal)
+  const msGoal = () => weekGoal();
   const msMonday = date => { const d = new Date(date); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d; };
   // Ein Durchgang durch den Verlauf in zeitlicher Reihenfolge. Nach jedem Training steht der Stand jeder Reihe fest;
   // eine Stufe gilt mit dem Training als erreicht, mit dem ihr Wert zum ersten Mal erreicht ist (at = Datum dieses Trainings).
@@ -9986,14 +10102,16 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
     const at = ntAt(d);
     return { d, dayId, mode: keep ? keep.mode : "plan", min: keep ? keep.min : "",
       list: day.items.map(it => { const e = makeEntry(it, { at });
-        return { exId: e.exId, u: e.u, rmin: e.rmin, rmax: e.rmax, planned: e.planned, short: e.short, on: true, sets: e.sets.map(t => ({ kg: t.kg, reps: t.reps })) }; }) };
+        return { exId: e.exId, u: e.u, rmin: e.rmin, rmax: e.rmax, planned: e.planned, short: e.short, why: e.why, basis: e.basis, on: true, sets: e.sets.map(t => ({ kg: t.kg, reps: t.reps })) }; }) };
   }
   EXT.clean.nachtrag = raw => {
     if (!isObj(raw) || !/^\d{4}-\d{2}-\d{2}$/.test(raw.d) || typeof raw.dayId !== "string" || !Array.isArray(raw.list)) return null;
     const list = raw.list.filter(x => isObj(x) && typeof x.exId === "string" && Array.isArray(x.sets)).slice(0, 40).map(x => ({
       exId: x.exId, u: ["s", "t", "b"].includes(x.u) ? x.u : "t", rmin: clampInt(x.rmin, 1, 100, 8), rmax: clampInt(x.rmax, 1, 100, 12), planned: clampInt(x.planned, 1, 20, 1),
       short: typeof x.short === "string" ? x.short.slice(0, 120) : "", on: x.on !== false, ed: x.ed === true ? true : undefined,
-      sets: x.sets.filter(isObj).slice(0, 20).map(t => ({ kg: typeof t.kg === "number" && t.kg > 0 && t.kg <= 1000 ? t.kg : null, reps: Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 100 ? t.reps : null })) }));
+      why: typeof x.why === "string" ? x.why.slice(0, 900) : "", basis: typeof x.basis === "string" ? x.basis.slice(0, 400) : "",
+      sets: x.sets.filter(isObj).slice(0, 20).map(t => Object.assign({ kg: typeof t.kg === "number" && t.kg > 0 && t.kg <= 1000 ? t.kg : null, reps: Number.isInteger(t.reps) && t.reps >= 1 && t.reps <= 100 ? t.reps : null },
+        ["l", "m", "h"].includes(t.f) ? { f: t.f } : {})) }));
     return list.length ? { d: raw.d, dayId: raw.dayId, mode: NT_MODES.some(m => m[0] === raw.mode) ? raw.mode : "plan", min: typeof raw.min === "string" ? raw.min.slice(0, 4) : "", list } : null;
   };
   // Was fehlt noch? "" = kann gespeichert werden
@@ -10012,7 +10130,7 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
     return dr.mode === "plan" ? `<span class="set-pill${miss}">${txt}</span>` : `<button class="set-pill${miss}" data-a="ntSet" data-x="${xi}" data-i2="${i}" aria-label="Satz ${i + 1} ändern: ${txt}">${txt}</button>`; };
   const ntListHtml = dr => dr.list.map((x, xi) => { const e = ex(x.exId), miss = x.on && x.sets.some(t => t.kg == null);
     return `<div class="nt-x${x.on ? "" : " off"}" data-x="${xi}">
-      <div class="row">${thumbStrip([x.exId], 1)}<div class="grow"><div class="t">${esc(e.name)}</div><div class="small muted nt-st">${!x.on ? "ausgelassen" : `${nSets(x.sets.length)} · ${UNIT_SHORT[x.u]} · ${x.ed ? "geändert" : "Vorschlag"}`}</div></div>
+      <div class="row">${thumbStrip([x.exId], 1)}<div class="grow"><div class="t">${esc(e.name)}</div><div class="small muted nt-st">${!x.on ? "ausgelassen" : `${nSets(x.sets.length)} · ${UNIT_SHORT[x.u]} · ${x.ed ? "geändert" : "Vorschlag"}`}${x.on && !x.ed && x.why ? ` <button class="link small nt-why" data-a="showWhy" data-why="${esc(x.why)}" data-basis="${esc(x.basis || "")}" aria-label="Warum dieser Vorschlag bei ${esc(e.name)}?">Warum?</button>` : ""}</div></div>
         ${dr.mode === "teil" ? `<button class="switch" role="switch" aria-checked="${x.on}" data-a="ntOn" data-x="${xi}" aria-label="${esc(e.name)} trainiert"></button>` : ""}</div>
       ${x.on ? `<div class="hx-sets">${x.sets.map((t, i) => ntPill(dr, x, xi, t, i)).join("")}${dr.mode !== "plan" && x.sets.length < 20 ? `<button class="set-pill nt-add" data-a="ntAdd" data-x="${xi}" aria-label="Satz hinzufügen bei ${esc(e.name)}">+</button>` : ""}</div>` : ""}
       ${miss ? `<p class="small nt-miss">Noch kein Gewicht bekannt – bitte eintragen.</p>` : ""}
@@ -10052,12 +10170,15 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)">
         <div class="field"><label for="ntKg">${UNIT[x.u] || "kg"}</label><input id="ntKg" inputmode="decimal" value="${t.kg != null ? kgTxt(t.kg) : ""}" autocomplete="off" enterkeyhint="next"></div>
         <div class="field"><label for="ntReps">Wiederholungen</label><input id="ntReps" inputmode="numeric" value="${t.reps ?? ""}" autocomplete="off" enterkeyhint="done"></div></div>
+      <div class="field"><label id="ntFeelLbl">Wie war der Satz? (freiwillig)</label><div class="seg feel" id="ntFeel" role="group" aria-labelledby="ntFeelLbl">${[["l", "Leicht"], ["m", "Passt"], ["h", "Schwer"]].map(([k, l]) =>
+        `<button data-a="ntFeel" data-f="${k}" class="${t.f === k ? "on" : ""}" aria-pressed="${t.f === k}">${l}</button>`).join("")}</div></div>
       <p class="error" id="ntSetErr" role="alert" hidden></p>
       <div class="stack-sm"><button class="btn primary block xl" data-a="ntSetSave">Für diesen Satz</button>
         ${x.sets.length > 1 ? `<button class="btn block" data-a="ntSetAll">Für alle ${x.sets.length} Sätze</button><button class="btn block danger" data-a="ntSetDel">Satz entfernen</button>` : ""}</div>`; }
   // Liest die beiden Felder; bei einem Fehler steht er im Sheet und es kommt null zurück
   const ntRead = () => { const v = { kg: num(byId("ntKg").value), reps: num(byId("ntReps").value) }, er = setError(v), el = byId("ntSetErr");
-    if (er) { el.textContent = er; el.hidden = false; return null; } return { kg: Math.round(v.kg * 100) / 100, reps: v.reps }; };
+    if (er) { el.textContent = er; el.hidden = false; return null; }
+    const fb = document.querySelector("#ntFeel .on"); return { kg: Math.round(v.kg * 100) / 100, reps: v.reps, f: fb ? fb.dataset.f : undefined }; };
   const ntRedraw = dr => { ntPut(dr); render(); };
   Object.assign(EXT.actions, {
     ntOpen: el => { EXT.nav.nachtrag.back = el.dataset.from === "home" ? "home" : "history"; go("nachtrag"); },
@@ -10071,15 +10192,18 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
     ntSet: el => { ntEdit = { x: +el.dataset.x, i: +el.dataset.i2 }; if (ntCur()) openSheet(ntSetSheet()); },
     ntSetSave: () => { const c = ntCur(); if (!c) return closeSheet(); const v = ntRead(); if (!v) return; Object.assign(c.t, v); c.x.ed = true; closeSheet(); ntRedraw(c.dr); },
     ntSetAll: () => { const c = ntCur(); if (!c) return closeSheet(); const v = ntRead(); if (!v) return; c.x.sets.forEach(t => Object.assign(t, v)); c.x.ed = true; closeSheet(); ntRedraw(c.dr); },
+    // Satzgefühl: antippen wählt, erneutes Antippen nimmt es wieder weg
+    ntFeel: el => { const on = el.classList.contains("on"); el.parentElement.querySelectorAll("button").forEach(b => { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); });
+      if (!on) { el.classList.add("on"); el.setAttribute("aria-pressed", "true"); } },
     ntSetDel: () => { const c = ntCur(); if (!c) return closeSheet(); c.x.sets.splice(ntEdit.i, 1); c.x.ed = true; if (!c.x.sets.length) c.x.on = false; closeSheet(); ntRedraw(c.dr); },
     ntReset: () => { const dr = ntGet(), n = dr && ntBuild(dr.dayId, dr.d, { mode: dr.mode, min: dr.min }); if (n) ntRedraw(n); },
     ntSave: () => { const dr = ntGet(), day = dr && ntDay(dr.dayId); if (!dr || !day) return;
       const err = ntErr(dr); if (err) { const el = byId("ntErr"); if (el) { el.textContent = err; el.hidden = false; el.scrollIntoView({ block: "center" }); } buzz(60); return; }
-      const exs = dr.list.filter(x => x.on && x.sets.length).map(x => ({ exId: x.exId, name: ex(x.exId).name, u: x.u, planned: x.planned, rmin: x.rmin, rmax: x.rmax, sets: x.sets.map(t => ({ kg: t.kg, reps: t.reps })) }));
+      const exs = dr.list.filter(x => x.on && x.sets.length).map(x => ({ exId: x.exId, name: ex(x.exId).name, u: x.u, planned: x.planned, rmin: x.rmin, rmax: x.rmax, sets: x.sets.map(t => Object.assign({ kg: t.kg, reps: t.reps }, t.f ? { f: t.f } : {})) }));
       const skip = dr.list.filter(x => !x.on || !x.sets.length).map(x => x.exId), m = num(dr.min.trim());
       const rec = { id: uid(), dayId: day.id, day: day.name, date: new Date(ntAt(dr.d)).toISOString(), durationSec: m ? m * 60 : 0, exercises: exs, nt: true };
       if (skip.length) rec.skip = skip;
-      summary = commitTraining(rec);
+      summary = commitTraining(rec, { sug: dr.list.filter(x => !x.ed).map(x => x.exId) });
       state.x.nachtrag = null;
       if (dr.d === dkey()) { if (state.selDay === day.id) state.selDay = null; if (state.timeplan && state.timeplan.dayId === day.id) state.timeplan = null; }
       save(); askPersist(); go("summary"); }
@@ -10089,7 +10213,7 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
     if (d !== dr.d) { const n = ntBuild(dr.dayId, d, dr); if (n) ntRedraw(n); } };
   EXT.inputs.ntMin = el => { const dr = ntGet(); if (!dr) return; dr.min = el.value.slice(0, 4); ntPut(dr); const e = byId("ntErr"), er = ntErr(dr); if (e) { e.textContent = er; e.hidden = !er; } };
   EXT.rows.history.unshift(() => ntDays().length ? `<button class="li" data-a="ntOpen" data-from="history" id="row-nachtrag">${ico("pencil", "blue")}<div class="grow"><div class="t n">Training nachtragen</div></div><span class="chev">›</span></button>` : "");
-  Object.assign(EXT.test, { ntBuild, ntErr, commitTraining, compSessions, bestKg });
+  Object.assign(EXT.test, { ntBuild, ntErr, commitTraining, compSessions, bestKg, ntGet });
 }
 // @ext:nachtrag:js:end
 // ── Abstand nachtrag/js 1 ──
@@ -10098,7 +10222,8 @@ Object.assign(EXT.test, { AUS_MODI, AUS_AKZ, AUS_BAR, ausClean, ausSet });
 
 if (/[?&]test\b/.test(location.search)) window.__tp = { dayCopyDoFn: dayCopyDo, DAY_TPL, dayFromTpl, SYM, muscleSets, MAJOR, ssFix, pairSec, comboPartners, ANTAG, m3Self, m3Cross, m3GLRender, m3LoadThree, mBelt, mBeltPt, m3Float, motCheck, m3Check, m3Rec, motionSvg, musCue, m3Draw, m3Box, m3Yaw, M3D, m3Pose, mRig, mJoints, mPose, mEff, motBox, rangeFor, isIso, findNext, trendMsg, CARDIO, cardioKcalOf, actOn, tagWeekSum, isTrainDate, nextDay, baseDay, TIPS, GENERIC_TIPS, ABOUT_X, TRICK_X, GEN_TRICKS, weekPlan, weekLeft, remainMin, missToAsk, cleanMisses, tricksFor, trickNow, setAdvice, insights, learnedSched, schedHits, weeklyCounts, previewEntries, cleanPlan, goalStatus, checkGoals, cleanGoals, buddySays, planCheck, schedIcsText, nextSched, missedThisWeek, cleanSched, fmtHM, weekStats, waterGoal, gtinValid, eanDecodeLine, scanActive: () => !!scan, FOOD_DB, FOOD_CAT, calcGoals, bmrOf, offFood, dayTotals, entryVals, weightTrend, cleanFood, cleanNutr, dkey, healthPayload, healthUrl, HK_NAME, weightUrl, GUIDE, ARTICLES, SOURCES, personalStats, makeEntry, normalize, setVol, ex, allEx, unitOf, unitTxt, lastPerf, validSet, setError, rankAlternatives, generatePlan,
   estimateSec, estMinutes, remainingSec, fitToTime, previewDay, previewLive, applyKeep, TIME, compSessions, plateau, MOTION, motionSvg, motSpec, motPhase, motState, plannedOn, dayEnergy, stepsOn, stepLenCm, loadTxt, loadShort, platesOf, platesHtml, PLATE_SIZES, FAST_DB, get updateReady() { return updateReady; }, offQuery, MUSCLES, figure, get state() { return state; } };
-Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey, plateau });
+Object.assign(EXT.test, { recovery, tpRefresh, prevPlanStale, devKnown, save, markBackup, dataSig, dayEnergy, commitTraining, dkey, plateau,
+  weekGoal, entryBasis, dropForTime, makeEntry, lastPerf, prevCopy, normalize, DATA_V, estMinutes, planCheck });
 if (window.__tp) Object.assign(window.__tp, EXT.test, { EXT, extRows, extClean });
 extClean(); badWarn();
 // Ein anderes Fenster (Tab) derselben App hat gespeichert: dessen Stand übernehmen. Sonst überschriebe das nächste Speichern
@@ -10106,7 +10231,7 @@ extClean(); badWarn();
 // Offene Fenster (Sheets) bleiben offen: ihre Entwürfe sind Kopien und werden beim Speichern über die ID in den neuen Stand geschrieben.
 window.addEventListener("storage", ev => {
   if (ev.key !== KEY || ev.newValue == null) return;
-  let next; try { next = normalize(JSON.parse(ev.newValue)); } catch (e) { return; }
+  let next; try { const o = JSON.parse(ev.newValue); if (isNewer(o)) { newerData = true; newerWarn(); return; } next = normalize(o); } catch (e) { return; }
   for (const k of Object.keys(state)) if (!(k in next)) next[k] = state[k];   // nicht gespeicherter Zustand der Oberfläche (z. B. welcher Tag bearbeitet wird)
   state = next; extClean();
   if (lastSummary && lastSummary.rec) { const r = state.history.find(h => h.id === lastSummary.rec.id); if (r) lastSummary.rec = r; else lastSummary = null; }
@@ -10116,8 +10241,25 @@ window.addEventListener("storage", ev => {
   render();
 });
 if (loadRescued) { homeNote = "Deine Daten sind wieder da. Sie ließen sich zeitweise nicht lesen und lagen als Kopie auf diesem Gerät."; save(); }
-go(view);
-if (state.session && !state.session.paused) startTick();
+// Auffangnetz: Wirft die erste Ansicht (ein unerwarteter Wert, ein Programmfehler), bleibt die Seite nicht leer.
+// Die Daten liegen weiter auf dem Gerät; von hier aus lassen sie sich als Datei sichern.
+let rescued = false;
+function rescuePage(err) {
+  rescued = true; let raw = null; try { raw = localStorage.getItem(KEY); } catch (e) {}
+  document.body.classList.remove("training", "has-bar"); $tabs.hidden = true;
+  const done = state.session && state.session.list.some(x => x.sets.some(t => t.done));
+  $app.innerHTML = `<div class="page" id="rescue"><div class="head"><h1 class="title">Die App konnte nicht starten</h1>
+    <p class="sub">Deine Daten sind nicht gelöscht. Sie liegen weiter auf diesem Gerät.</p></div>
+    <div class="card stack"><p class="small" style="margin:0">Sichere sie zuerst als Datei. Danach neu laden${state.session ? " – hilft das nicht, liegt es vermutlich am laufenden Training" : ""}.</p>
+      ${raw ? `<button class="btn primary block" data-a="rescueSave">Daten als Datei sichern</button>` : ""}
+      <button class="btn block" data-a="reloadApp">Neu laden</button>
+      ${done ? `<button class="btn block" data-a="rescueFinish">Laufendes Training beenden und speichern</button>` : ""}
+      ${state.session ? `<button class="btn block danger" data-a="rescueDrop">Laufendes Training verwerfen und neu laden</button>` : ""}
+      <p class="small faint" id="rescueErr" style="margin:0">Technischer Hinweis: ${esc(String((err && err.message) || err).slice(0, 160))}</p></div></div>`;
+}
+newerWarn();
+try { go(view); } catch (e) { rescuePage(e); }
+if (!rescued && state.session && !state.session.paused) startTick();
 // Offline-Speicher nur in der eigenständigen Web-App (nicht eingebettet auf claude.ai)
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost") && window.top === window.self && !/claude/.test(location.hostname))
   navigator.serviceWorker.register("sw.js").catch(() => {});
