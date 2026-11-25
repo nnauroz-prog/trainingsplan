@@ -7617,7 +7617,7 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=start]"); await R4set(page, 42.5, 8);
       await page.click("[data-a=askStop]"); await page.click("[data-a=askDiscard]"); await page.click("[data-a=stopDiscard]"); await page.waitForSelector("[data-a=start]");
       const d = await stored(page);
-      ok("Verwerfen (mit Rückfrage): Verlauf unverändert, kein laufendes Training, „Heute“ bietet wieder den Start an", d.history.length === 2 && d.history.map(h => h.id).join() === "h1,h2" && d.session === null && (await page.textContent("#app h1")) === "Heute");
+      ok("Verwerfen (mit Rückfrage): Verlauf unverändert, kein laufendes Training, die eigene Tageswahl ist aufgehoben, „Heute“ bietet wieder den Start an", d.history.length === 2 && d.history.map(h => h.id).join() === "h1,h2" && d.session === null && d.selDay === null && (await page.textContent("#app h1")) === "Heute", JSON.stringify(d.selDay));
       await ctx.close();
     }
     {
@@ -7643,10 +7643,13 @@ async function finishAllSets(page, kg, reps) {
       const { ctx, page } = await open({ plan: R4plan(), history: R4H() });
       await page.click("[data-a=start]"); await R4set(page, 42.5, 8); await R4skip(page);
       await page.click("[data-a=askStop]"); await page.click("[data-a=pauseT]");
+      // Die Änderung in der App selbst: Brustpresse von 2 auf 4 Sätze, Rudern aus dem Tag entfernen
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay][data-id=d1]");
-      await page.click("#dayItems .li[data-i2='1']", { position: { x: 5, y: 5 } }).catch(() => {});
-      await tp(page, k => { const T = window.__tp; T.state.plan.days[0].items[0].sets = 4; T.state.plan.days[0].items.splice(1, 1); T.save(); }, KEY);
-      await page.reload(); await page.waitForSelector("[data-a=resumeT]"); await page.click("[data-a=resumeT]"); await page.waitForSelector("#kgIn");
+      await page.click("#dayItems [data-a=editItem][data-i2='0']"); await page.click(".sheet [data-a=draft][data-k=sets][data-d='1']"); await page.click(".sheet [data-a=draft][data-k=sets][data-d='1']"); await page.click(".sheet [data-a=saveItem]");
+      await page.waitForSelector(".sheet", { state: "detached" }).catch(() => {});
+      await page.click("#dayItems [data-a=editItem][data-i2='1']"); await page.click(".sheet [data-a=delItem]"); await page.waitForSelector(".sheet", { state: "detached" }).catch(() => {});
+      ok("Im Plan geändert, während das Training pausiert ist: Brustpresse 4 Sätze, Rudern entfernt (gespeichert)", (await stored(page)).plan.days[0].items.map(i => i.exId + i.sets).join() === "hs-chest4");
+      await page.click("[data-a=tab][data-v=home]"); await page.click("[data-a=resumeT]"); await page.waitForSelector("#kgIn");
       const s5 = await tp(page, () => window.__tp.state.session.list.map(x => x.exId + ":" + x.sets.filter(t => t.done).length + "/" + x.sets.length).join(" "));
       ok("Plan geändert (Brustpresse 4 Sätze, Rudern entfernt) und fortgesetzt: das laufende Training behält seine Geräte und den erledigten Satz", s5 === "hs-chest:1/2 hs-row:0/2", s5);
       await page.click("[data-a=askStop]"); await page.click("[data-a=stopSave]"); await page.waitForSelector("#sumCap");
@@ -7711,7 +7714,7 @@ async function finishAllSets(page, kg, reps) {
           history: [{ id: "h1", dayId: "a", day: "Push", date: iso(9), durationSec: 2400, adj: 30, at: iso(9), exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 4, rmin: 4, rmax: 6, adv: true, sets: [{ kg: 60, reps: 6, f: "h", rir: 0 }, { kg: 60, reps: 5, rir: 2 }] }] },
             { id: "h2", dayId: "a", day: "Push", date: iso(2), durationSec: 0, nt: true, at: iso(1), skip: ["c-1"], exercises: [{ exId: "hs-chest", name: "x", u: "s", planned: 4, rmin: 4, rmax: 6, sug: true, sets: [{ kg: 62.5, reps: 4 }] }] }],
           weights: [{ d: "2026-10-01", kg: 82.4 }, { d: "2026-11-01", kg: 81.9, hk: true }], selDay: "a", health: true, watch: true, voice: true, why: "Stark bleiben", stepGoal: 9000, stepLen: 78, plates: [20, 10, 5],
-          sched: { id: "s", days: [0, 3], time: "18:30", planB: "short", since: iso(40) }, goals: [], hints: { units: true }, food: { "2026-11-20": [{ id: "f1", n: "Hafer", k: 370, p: 13, m: "f", g: 80 }] }, water: { "2026-11-20": 1500 }, nutrOpt: { water: true, fast: false },
+          sched: { id: "s", days: [0, 3], time: "18:30", planB: "short", since: iso(40) }, goals: [], hints: { units: true }, food: { "2026-11-20": [{ id: "f1", m: "f", n: "Hafer", g: 80, per: { k: 370, p: 13, c: 60, f: 7 } }] }, water: { "2026-11-20": 1500 }, nutrOpt: { water: true, fast: false },
           dayPlan: { "2026-11-20": { steps: 8000, train: "rest" } }, backupAt: iso(3) };
         const a = T.normalize(JSON.parse(JSON.stringify(rich))), b = T.normalize(JSON.parse(JSON.stringify(a)));
         const h = a.history;
@@ -7719,9 +7722,9 @@ async function finishAllSets(page, kg, reps) {
         T.state.plan = a.plan; T.state.custom = a.custom; T.state.dev = a.dev; T.state.history = a.history; T.state.weights = a.weights; T.state.sched = a.sched; T.state.why = a.why;
         const bak = T.backupData(new Date().toISOString()), back = T.normalize(T.parseBackup(JSON.stringify({ app: "trainingsplan", format: 1, data: bak })));
         const same = k => canon(back[k]) === canon(T.state[k]);
-        return { idem: canon(a) === canon(b), v: a.v, name: a.plan.days[0].name, ss: a.plan.days[0].items[0].ss, off: a.dev["hs-row"].off, h1: canon(h[0].exercises[0]), h2: [h[1].nt, h[1].skip.join(), h[1].exercises[0].sug, h[1].at === rich.history[1].at].join("|"), adj: h[0].adj,
+        return { idem: canon(a) === canon(b), v: a.v, food: (a.food["2026-11-20"] || []).map(e => e.n + ":" + e.g).join(), water: a.water["2026-11-20"], steps: (a.dayPlan["2026-11-20"] || {}).steps, name: a.plan.days[0].name, ss: a.plan.days[0].items[0].ss, off: a.dev["hs-row"].off, h1: canon(h[0].exercises[0]), h2: [h[1].nt, h[1].skip.join(), h[1].exercises[0].sug, h[1].at === rich.history[1].at].join("|"), adj: h[0].adj,
           rt: ["plan", "custom", "dev", "history", "weights", "sched", "why"].filter(k => !same(k)).join(), bakSes: "session" in bak }; });
-      ok("Laden ist stabil: ein voller Zustand, zweimal geprüft, bleibt Zeichen für Zeichen gleich", rt.idem && rt.v === 7, JSON.stringify(rt).slice(0, 300));
+      ok("Laden ist stabil: ein voller Zustand, zweimal geprüft, bleibt Zeichen für Zeichen gleich – und schon das erste Prüfen behält Essen, Wasser und Tagesplan", rt.idem && rt.v === 7 && rt.food === "Hafer:80" && rt.water === 1500 && rt.steps === 8000, JSON.stringify(rt).slice(0, 300));
       ok("… dabei bleiben erhalten: Supersatz, Studio-Auswahl, Gefühl und Reserve je Satz, „nachgetragen“, ausgelassene Geräte, „Vorschlag übernommen“, Eintragszeitpunkt, Zeitanpassung",
         rt.ss === "a2" && rt.off === true && rt.h1.includes('"f":"h"') && rt.h1.includes('"rir":0') && rt.h1.includes('"adv":true') && rt.h2 === "true|c-1|true|true" && rt.adj === 30, JSON.stringify(rt));
       ok("Ein Tag, den du selbst „Push“ nennst, behält seinen Namen (umbenannt werden nur noch Daten aus alten Fassungen)", rt.name === "Push", rt.name);
@@ -7766,7 +7769,8 @@ async function finishAllSets(page, kg, reps) {
       await page.click("[data-a=tab][data-v=plan]"); await page.click("[data-a=editDay]"); await page.click("[data-a=tab][data-v=home]");
       await tp(page, k => { const T = window.__tp; T.state.plan.days[0].items.shift(); T.save(); }, KEY);
       await page.reload(); await page.waitForSelector("[data-a=start]"); await page.click("[data-a=start]"); if (await page.$("[data-a=warmDone]")) await page.click("[data-a=warmDone]");
-      ok("Ohne abgewähltes Gerät kein solcher Hinweis", !(await page.$("#offHint")));
+      await page.waitForSelector("#kgIn");
+      ok("Ohne abgewähltes Gerät kein solcher Hinweis (Satzansicht der Brustpresse)", !(await page.$("#offHint")) && (await page.textContent("#app h1")).includes("Brustpresse"));
       await ctx.close();
     }
     {
@@ -7776,10 +7780,19 @@ async function finishAllSets(page, kg, reps) {
         T.extClean(); const kept = JSON.stringify(T.state.x.kaputt); T.save(); const saved = JSON.stringify(JSON.parse(localStorage.getItem("trainingsplan-v2")).x.kaputt);
         delete T.EXT.clean.kaputt; delete T.state.x.kaputt; T.save(); return { kept, saved, others: Object.keys(T.state.x).length }; });
       ok("Wirft die Prüfung eines Erweiterungs-Bereichs, bleiben seine Daten unverändert liegen und werden weiter gespeichert (vorher still geleert); die anderen Bereiche sind da", x.kept === '{"wert":1}' && x.saved === '{"wert":1}' && x.others > 3, JSON.stringify(x));
-      const si = await tp(page, () => { const T = window.__tp, real = T.storeInfo(), none = T.insights().some(i => i.id.startsWith("store:")); T.storeInfo(2140000); const hit = T.insights().find(i => i.id.startsWith("store:")); T.storeInfo(real);
-        return { real, none, title: hit && hit.title, text: hit && hit.text, act: hit && hit.act.map(a => a.a).join() }; });
-      ok("Speicher: nach dem Laden kennt die App die Größe der Daten; ab 2 Mio. Zeichen (Regel der App) erinnert ein Hinweis mit der Zahl an eine Sicherung – darunter nicht", si.real > 100 && si.none === false && si.title === "Der Speicher im Browser füllt sich" && si.text.includes("2,1 Mio. Zeichen") && si.act === "backupFile", JSON.stringify(si).slice(0, 200));
       await ctx.close();
+      // Größe der Daten: in einem frischen Fenster direkt nach dem Laden, bevor irgendetwas speichert
+      const fresh = await open({ plan: PLAN_SMALL, history: [hist("hs-chest", [{ kg: 40, reps: 10 }, { kg: 40, reps: 10 }], 3)] });
+      const si = await tp(fresh.page, () => { const T = window.__tp, real = T.storeInfo(), len = localStorage.getItem("trainingsplan-v2").length, none = T.insights().some(i => i.id.startsWith("store:"));
+        T.storeInfo(2140000); const hit = T.insights().find(i => i.id.startsWith("store:")); T.storeInfo(real);
+        return { real, len, none, title: hit && hit.title, text: hit && hit.text, act: hit && hit.act.map(a => a.a).join() }; });
+      ok("Speicher: direkt nach dem Laden kennt die App die Größe der gespeicherten Daten (genau die Länge im Speicher)", si.real === si.len && si.len > 100, JSON.stringify([si.real, si.len]));
+      ok("… ab 2 Mio. Zeichen (Regel der App) erinnert ein Hinweis mit der Zahl an eine Sicherung – darunter nicht", si.none === false && si.title === "Der Speicher im Browser füllt sich" && si.text.includes("2,1 Mio. Zeichen") && si.act === "backupFile", JSON.stringify(si).slice(0, 200));
+      // Scheitert das Speichern, bleibt die gemerkte Größe die des gespeicherten Stands
+      const sf = await tp(fresh.page, () => { const T = window.__tp, before = T.storeInfo(), orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k === "trainingsplan-v2") throw new DOMException("voll", "QuotaExceededError"); return orig.call(this, k, v); };
+        T.state.why = "x".repeat(150); T.save(); const after = T.storeInfo(); Storage.prototype.setItem = orig; T.state.why = ""; T.save(); return { before, after, len: localStorage.getItem("trainingsplan-v2").length, now: T.storeInfo() }; });
+      ok("… und nach einem gescheiterten Speichern bleibt sie die Größe des wirklich gespeicherten Stands", sf.after === sf.before && sf.now === sf.len, JSON.stringify(sf));
+      await fresh.ctx.close();
     }
     // @ext:runde4:test:end
     // ── Abstand runde4/test 1 ──

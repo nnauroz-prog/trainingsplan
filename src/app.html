@@ -2008,7 +2008,7 @@ const STORE_WARN = 2e6;
 function save() {
   if (newerData) {   // Daten einer neueren Fassung: nichts überschreiben; bei der ersten nicht gespeicherten Änderung den Hinweis ins Bild holen
     const first = !newerSkipped; newerSkipped = true; newerWarn(); if (first) try { window.scrollTo(0, 0); } catch (e) {} return; }
-  try { const str = JSON.stringify(state); storedChars = str.length; localStorage.setItem(KEY, str); saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
+  try { const str = JSON.stringify(state); localStorage.setItem(KEY, str); storedChars = str.length; saveFailed = false; const b = document.getElementById("saveWarn"); if (b && !b.hidden) b.hidden = true; }
   catch (e) { saveFailed = true; const b = document.getElementById("saveWarn"), t = document.getElementById("saveWarnTxt"); if (b) b.hidden = false;
     // Die Sicherungsdatei enthält kein laufendes Training – das steht dann dabei
     if (t) t.textContent = "Speichern im Browser ist fehlgeschlagen (Speicher voll oder privates Surfen). Sichere deine Daten jetzt als Datei – sonst ist das Neueste nach dem Schließen weg." + (state && state.session ? " Das laufende Training steht erst nach dem Beenden in der Datei." : ""); }
@@ -10329,6 +10329,7 @@ extClean(); badWarn();
 window.addEventListener("storage", ev => {
   if (ev.key !== KEY || ev.newValue == null) return;
   let next; try { const o = JSON.parse(ev.newValue); if (isNewer(o)) { newerData = true; newerWarn(); return; } next = normalize(o); } catch (e) { return; }
+  storedChars = ev.newValue.length;
   for (const k of Object.keys(state)) if (!(k in next)) next[k] = state[k];   // nicht gespeicherter Zustand der Oberfläche (z. B. welcher Tag bearbeitet wird)
   state = next; extClean();
   if (lastSummary && lastSummary.rec) { const r = state.history.find(h => h.id === lastSummary.rec.id); if (r) lastSummary.rec = r; else lastSummary = null; }
