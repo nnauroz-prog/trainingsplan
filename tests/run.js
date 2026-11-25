@@ -2704,8 +2704,12 @@ async function finishAllSets(page, kg, reps) {
       await page.waitForFunction(() => document.getElementById("impMsg").textContent.includes("keine Sicherung"));
       ok("Fremde Datei wird abgelehnt, Daten bleiben", (await stored(page)).history.length === 2);
       await page.setInputFiles("#impFile", { name: "s.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify({ app: "trainingsplan", format: 1, data: { plan: PLAN_SMALL, history: six } })) });
+      // Vom Wiederherstellen eben liegt schon eine Kopie des Stands davor auf dem Gerät: sie wird nur nach Rückfrage ersetzt
+      await page.waitForSelector("[data-a=restoreOverCopy]");
+      ok("Sicherung mit mehr Trainings: keine Rückfrage wegen der Trainings – aber zur vorhandenen Kopie, die sonst still ersetzt würde", (await page.textContent("#impMsg")).includes("Es gibt schon eine Kopie") && !(await page.$("[data-a=restoreConfirm]")) && (await stored(page)).history.length === 2);
+      await page.click("[data-a=restoreOverCopy]");
       await page.waitForSelector("#homeNote");
-      ok("Sicherung mit mehr Trainings: ohne Rückfrage wiederhergestellt", (await stored(page)).history.length === 6);
+      ok("… nach der Bestätigung wiederhergestellt", (await stored(page)).history.length === 6);
       await ctx.close();
     }
     {
