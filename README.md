@@ -118,6 +118,14 @@ Zusätzliche Funktionen hängen an festen Anschlüssen (`EXT` in `src/app.html`)
 
 ## Funktionen
 
+- **Wissenschaftliche Aussagen geprüft (Runde 5, November 2026):**
+  - Neue Quelle: Stellungnahme der ACSM von 2026 (Med Sci Sports Exerc 2026;58(4):851–872, Übersicht über 137 Übersichtsarbeiten) – ergänzt in den Artikeln zu Fortschritt, Sätzen pro Woche, Häufigkeit, Gewicht und Reserve. Die Fassung von 2009 bleibt als Quelle für die Grundprinzipien stehen
+  - Neue Quelle zu Satzpausen (Auswertung von 9 Studien, 2024)
+  - Korrigiert: Im Artikel zur Häufigkeit stand über die Analyse von 2016, die häufigeren Gruppen hätten insgesamt mehr Sätze trainiert. Die Analyse verglich bei gleicher Wochenmenge; der Satz ist ersetzt
+  - Genauer formuliert: Größe der beiden Studien zur gedehnten Position (20 und 14 Teilnehmende); Kalorienüberschuss gilt für „Einsteiger und mäßig Fortgeschrittene“; beim Intervallfasten „die meisten Blutwerte“
+  - Erholungszeiten (72 und 48 Stunden) sind überall als Schätzung der App gekennzeichnet; unter „So entscheidet die App“ steht jetzt zusätzlich „grobe Annahme, kein Messwert“
+  - Ein unabhängiger Prüfer hat die geänderten Aussagen danach noch einmal einzeln gegen die Quellen gehalten (13 gedeckt, 2 ungenau, 4 per Websuche nicht prüfbar). Die ungenauen sind umformuliert, die nicht prüfbaren Zusätze gestrichen
+  - Geprüft wurden 24 Zahlenangaben aus den Artikeln gegen die Zusammenfassungen der Originalarbeiten. Die Seiten selbst ließen sich in der Arbeitsumgebung nicht abrufen; geprüft wurde über die Websuche. Zwei Angaben ließen sich so nicht erneut bestätigen und sind unverändert: die obere Grenze 2,40 des Aktivitätsfaktors (FAO/WHO/UNU) und die 2,2 g Eiweiß pro kg als obere Grenze des Vertrauensbereichs
 - **Verlässlichkeit (Runde 4: Übergänge und harte Regeln):**
   - Tests für die Übergänge zwischen Plan, Training und Verlauf (Block `E-runde4`): was nach einem normal beendeten Training im Verlauf steht; Teiltraining; Verwerfen; Browser-Neustart nach jedem Schritt (auch mit getippten, noch nicht bestätigten Werten); Plan ändern oder Trainingstag löschen, während ein Training pausiert ist; Verlauf korrigieren und löschen samt Folgen für Vorschlag und nächsten Tag; offline neu starten und offline speichern; Sicherung hin und zurück mit einem vollen Zustand; Studio ohne Geräte und mit drei Geräten
   - Harte Regel „kein Gerät außerhalb des Studios“ für alle automatischen Vorschläge geprüft: Tausch-Vorschläge, „Zeit für heute“, Vorschlag für einen einzelnen Trainingstag, Planvorschlag

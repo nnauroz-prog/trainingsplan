@@ -7798,6 +7798,37 @@ async function finishAllSets(page, kg, reps) {
     // ── Abstand runde4/test 1 ──
     // ── Abstand runde4/test 2 ──
     // ── Abstand runde4/test 3 ──
+    // @ext:runde5:test:start
+    section("E-runde5. Wissenschaftliche Aussagen: Stellungnahme 2026, korrigierte Formulierungen, Kennzeichnung");
+    {
+      const { ctx, page } = await open({ plan: PLAN_SMALL, history: [] });
+      const q = await tp(page, () => { const T = window.__tp, S = T.SOURCES, A = id => T.ARTICLES.find(a => a.id === id), txt = id => A(id).body.join(" ");
+        return { acsm: S.acsm2026, rest: S.rest2024, vol: S.vol2017.j,
+          cite: ["progression", "volumen", "frequenz", "last", "rir"].filter(id => !A(id).src.includes("acsm2026")).join(), pauseSrc: A("pause").src.join(),
+          prog: txt("progression"), vol2: txt("volumen"), freq: txt("frequenz"), last: txt("last"), rir: txt("rir"), pause: txt("pause"), dehn: txt("dehnung"), kal: txt("kalorien"), fast: txt("intervallfasten") }; });
+      ok("Quelle „ACSM-Stellungnahme 2026“ mit Zeitschrift, Band, Seiten und Verweis auf PubMed", /Position Stand/.test(q.acsm.t) && q.acsm.j === "Med Sci Sports Exerc 2026;58(4):851–872" && q.acsm.url === "https://pubmed.ncbi.nlm.nih.gov/41843416/", JSON.stringify(q.acsm));
+      ok("Quelle zur Pausenlänge von 2024 und vollständige Angabe der Volumen-Analyse (Band und Seiten)", q.rest.j === "Front Sports Act Living 2024;6:1429789" && q.rest.url === "https://pubmed.ncbi.nlm.nih.gov/39205815/" && q.vol === "J Sports Sci 2017;35(11):1073–1082");
+      ok("Die fünf Artikel zu Fortschritt, Sätzen, Häufigkeit, Gewicht und Reserve nennen die Stellungnahme 2026 als Quelle; der Pausen-Artikel die Auswertung von 2024", q.cite === "" && q.pauseSrc === "rest2016,rest2024", q.cite);
+      ok("Fortschritt: 137 Übersichtsarbeiten, mehr als 30.000 Teilnehmende; Maschinen oder freie Gewichte und Muskelversagen veränderten das Ergebnis nicht durchgängig", q.prog.includes("137 Übersichtsarbeiten") && q.prog.includes("mehr als 30.000 Teilnehmenden") && q.prog.includes("Mehrere Stellschrauben veränderten das Ergebnis nicht durchgängig") && q.prog.includes("Maschinen oder mit freien Gewichten") && !q.prog.includes("Nur wenige"));
+      ok("Häufigkeit: Die Analyse von 2016 verglich bei gleicher Wochenmenge – der falsche Satz „trainierten … insgesamt mehr Sätze“ ist weg", q.freq.includes("Meta-Analyse von 2016 fand bei gleicher Wochenmenge") && !q.freq.includes("In vielen dieser Studien") && q.freq.includes("mindestens zweimal pro Woche") && q.freq.includes("ab zwei Einheiten pro Woche beim Kraftzuwachs") && !q.freq.includes("größere Folgeanalyse"));
+      ok("Sätze: „ab etwa 10 Sätzen pro Muskel“; Gewicht: „ab etwa 80 % des Maximums – mit 2–3 Sätzen“; Reserve: Muskelversagen ist nicht nötig", q.vol2.includes("ab etwa 10 Sätzen pro Muskel") && q.last.includes("ab etwa 80 % des Maximums") && q.last.includes("2–3 Sätzen pro Übung") && q.rir.includes("Bis zum völligen Muskelversagen musst du dafür nicht gehen"));
+      ok("Pausen: 9 Studien, kleiner Vorteil über 60 Sekunden, über 90 Sekunden kein nennenswerter Unterschied", q.pause.includes("9 Studien (2024)") && q.pause.includes("über 60 Sekunden") && q.pause.includes("Über 90 Sekunden"));
+      ok("Genauer formuliert: Größe der beiden Dehnungs-Studien statt „mit Untrainierten“; Überschuss für „mäßig Fortgeschrittene“; „die meisten Blutwerte“", q.dehn.includes("(20 und 14 Teilnehmende)") && !q.dehn.includes("mit Untrainierten") && q.kal.includes("mäßig Fortgeschrittene") && q.kal.includes("weit Fortgeschrittene sollten vorsichtiger") && q.fast.includes("die meisten Blutwerte"));
+      // In der App lesbar: Artikel „Häufigkeit“ mit der neuen Quelle als Verweis
+      await page.click("nav.tabs [data-v=lib]"); await page.click("#wissenSeg [data-v=wissen]"); await page.click("[data-a=openArt][data-id=frequenz]");
+      const art = await tp(page, () => ({ txt: document.querySelector("#app article").textContent, links: [...document.querySelectorAll("#app .gsec a")].map(a => a.href), src: document.querySelector("#app .gsec").textContent }));
+      ok("Artikel „Wie oft pro Woche …?“ zeigt den korrigierten Text und unter „Quellen“ die Stellungnahme 2026 mit Verweis", art.txt.includes("mindestens zweimal pro Woche") && art.links.includes("https://pubmed.ncbi.nlm.nih.gov/41843416/") && art.src.includes("Med Sci Sports Exerc 2026;58(4):851–872") && await noOverflow(page), art.links.join());
+      await page.click("[data-a=artBack]"); await page.click("#wissenCoach");
+      const rules = await page.textContent("#coachRules");
+      ok("„So entscheidet die App“: Erholungszeiten sind als grobe Annahme gekennzeichnet („kein Messwert … individuell verschieden“)", rules.includes("72 Stunden") && rules.includes("Das ist eine grobe Annahme, kein Messwert") && rules.includes("individuell verschieden"));
+      const noRigid = await tp(page, () => { const T = window.__tp, all = T.ARTICLES.map(a => a.lead + " " + a.body.join(" ")).join(" "); return ["optimal", "garantiert", "perfekt", "am schnellsten"].filter(w => all.toLowerCase().includes(w)); });
+      ok("Kein Artikel verspricht „optimal“, „garantiert“, „perfekt“ oder „am schnellsten“", noRigid.length === 0, noRigid.join());
+      await ctx.close();
+    }
+    // @ext:runde5:test:end
+    // ── Abstand runde5/test 1 ──
+    // ── Abstand runde5/test 2 ──
+    // ── Abstand runde5/test 3 ──
     // @ext:nachtrag:test:start
     section("E-nachtrag. Training nachtragen (ohne Live-Modus)");
     {

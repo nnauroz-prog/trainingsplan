@@ -926,12 +926,14 @@ LIB.forEach(e => { e.pattern = LIB_PATTERN[e.id]; });
 // Quellen (geprüft, Stand der Recherche). Nur Aussagen verwenden, die die jeweilige Quelle tatsächlich stützt.
 const SOURCES = {
   acsm2009: { t: "American College of Sports Medicine: Progression models in resistance training for healthy adults (Position Stand)", j: "Med Sci Sports Exerc 2009;41(3):687–708", url: "https://pubmed.ncbi.nlm.nih.gov/19204579/" },
-  vol2017: { t: "Schoenfeld, Ogborn, Krieger: Dose-response relationship between weekly resistance training volume and increases in muscle mass", j: "J Sports Sci 2017", url: "https://doi.org/10.1080/02640414.2016.1210197" },
+  acsm2026: { t: "American College of Sports Medicine: Resistance training prescription for muscle function, hypertrophy, and physical performance in healthy adults: an overview of reviews (Position Stand)", j: "Med Sci Sports Exerc 2026;58(4):851–872", url: "https://pubmed.ncbi.nlm.nih.gov/41843416/" },
+  vol2017: { t: "Schoenfeld, Ogborn, Krieger: Dose-response relationship between weekly resistance training volume and increases in muscle mass", j: "J Sports Sci 2017;35(11):1073–1082", url: "https://doi.org/10.1080/02640414.2016.1210197" },
   freq2016: { t: "Schoenfeld, Ogborn, Krieger: Effects of resistance training frequency on measures of muscle hypertrophy", j: "Sports Med 2016;46(11):1689–1697", url: "https://pubmed.ncbi.nlm.nih.gov/27102172/" },
   freq2019: { t: "Schoenfeld, Grgic, Krieger: How many times per week should a muscle be trained to maximize muscle hypertrophy?", j: "J Sports Sci 2019;37(11):1286–1295", url: "https://pubmed.ncbi.nlm.nih.gov/?term=How+many+times+per+week+should+a+muscle+be+trained+to+maximize+muscle+hypertrophy" },
   load2017: { t: "Schoenfeld, Grgic, Ogborn, Krieger: Strength and hypertrophy adaptations between low- vs. high-load resistance training", j: "J Strength Cond Res 2017;31(12):3508–3523", url: "https://pubmed.ncbi.nlm.nih.gov/28834797/" },
   rir2024: { t: "Robinson et al.: Exploring the dose–response relationship between estimated resistance training proximity to failure, strength gain, and muscle hypertrophy", j: "Sports Med 2024;54:2209–2231", url: "https://doi.org/10.1007/s40279-024-02069-2" },
   rest2016: { t: "Schoenfeld et al.: Longer interset rest periods enhance muscle strength and hypertrophy in resistance-trained men", j: "J Strength Cond Res 2016", url: "https://pubmed.ncbi.nlm.nih.gov/26605807/" },
+  rest2024: { t: "Singer A, Wolf M, Generoso L et al.: Give it a rest: a systematic review with Bayesian meta-analysis on the effect of inter-set rest interval duration on muscle hypertrophy", j: "Front Sports Act Living 2024;6:1429789", url: "https://pubmed.ncbi.nlm.nih.gov/39205815/" },
   health2022: { t: "Momma et al.: Muscle-strengthening activities are associated with lower risk and mortality in major non-communicable diseases", j: "Br J Sports Med 2022;56(13):755–763", url: "https://bjsm.bmj.com/content/56/13/755" },
   tri2023: { t: "Maeo et al.: Triceps brachii hypertrophy is substantially greater after elbow extension training performed in the overhead versus neutral arm position", j: "Eur J Sport Sci 2023;23(7):1240–1250", url: "https://pubmed.ncbi.nlm.nih.gov/35819335/" },
   curl2021: { t: "Maeo et al.: Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths", j: "Med Sci Sports Exerc 2021;53(4):825–837", url: "https://pubmed.ncbi.nlm.nih.gov/33009197/" },
@@ -974,48 +976,54 @@ const ARTICLES = [
     body: [
       "Das Prinzip heißt progressive Überlastung. Die Fachgesellschaft ACSM nennt es zusammen mit Spezifität und Variation als Grundlage für Fortschritt im Krafttraining.",
       "Steigern lässt sich über mehr Wiederholungen, mehr Gewicht oder mehr Sätze. Die App steigert nach einer festen Regel: erst die Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt.",
+      "2026 hat die ACSM ihre Stellungnahme erneuert und dafür 137 Übersichtsarbeiten mit zusammen mehr als 30.000 Teilnehmenden ausgewertet. Empfohlen wird fortschreitendes Krafttraining für gesunde Erwachsene. Mehrere Stellschrauben veränderten das Ergebnis nicht durchgängig – darunter, ob an Maschinen oder mit freien Gewichten trainiert wurde und ob jeder Satz bis zum Muskelversagen ging.",
       "Fortschritt verläuft nicht gerade. Einzelne schwächere Tage sind normal, entscheidend ist die Entwicklung über Wochen."
-    ], src: ["acsm2009"] },
+    ], src: ["acsm2009", "acsm2026"] },
   { id: "volumen", title: "Wie viele Sätze pro Woche?",
     lead: "Mehr Sätze pro Muskel und Woche gehen in Studien im Mittel mit mehr Muskelzuwachs einher – bis zu einem gewissen Punkt.",
     body: [
       "Eine Meta-Analyse von 15 Studien fand einen Zusammenhang zwischen der Zahl wöchentlicher Sätze und dem Muskelzuwachs. Die Gruppe mit 10 oder mehr Sätzen pro Muskel und Woche lag im Mittel vorn; der Vergleich der drei Gruppen (unter 5, 5–9, 10+) war statistisch aber nur ein Trend.",
       "Für sehr hohe Satzzahlen reichen die Daten nicht für klare Aussagen.",
+      "Die ACSM-Stellungnahme von 2026 kommt zum selben Bild: Für den Muskelaufbau waren höhere Wochenmengen im Vorteil, ab etwa 10 Sätzen pro Muskel.",
       "Die App rechnet für Muskelaufbau mit 10–20 Sätzen pro Muskel und Woche (Regel der App): Die untere Grenze stützt sich auf diese Analyse, die obere ist ein vorsichtiger Richtwert. Unter „Fortschritt → Muskelbelastung“ siehst du, wo du stehst."
-    ], src: ["vol2017"] },
+    ], src: ["vol2017", "acsm2026"] },
   { id: "frequenz", title: "Wie oft pro Woche einen Muskel trainieren?",
     lead: "Wichtiger als die Häufigkeit ist die Menge pro Woche. Mehrere Einheiten machen es leichter, sie gut zu verteilen.",
     body: [
-      "Eine Meta-Analyse von 2016 fand größere Zuwächse, wenn ein Muskel mindestens zweimal pro Woche trainiert wurde. In vielen dieser Studien trainierten die häufigeren Gruppen aber auch insgesamt mehr Sätze.",
-      "Eine Folgeanalyse von 2019, die nur Studien mit gleicher Wochenmenge verglich, fand keinen klaren Unterschied zwischen einmal und mehrmals pro Woche.",
-      "Verteile deine Sätze also so, dass jede Einheit machbar bleibt. Zwei Einheiten pro Muskel und Woche sind dafür oft praktisch, aber kein Muss."
-    ], src: ["freq2016", "freq2019"] },
+      "Eine Meta-Analyse von 2016 fand bei gleicher Wochenmenge größere Zuwächse, wenn ein Muskel zweimal statt einmal pro Woche trainiert wurde.",
+      "Eine Folgeanalyse von 2019 fand bei gleicher Wochenmenge keinen bedeutsamen Unterschied zwischen den Häufigkeiten. Ohne Angleichung der Menge lagen höhere Häufigkeiten vorn.",
+      "In der Kurzfassung der ACSM zur Stellungnahme von 2026 heißt es, alle großen Muskelgruppen mindestens zweimal pro Woche zu trainieren. In der Auswertung selbst zeigte sich ein Vorteil ab zwei Einheiten pro Woche beim Kraftzuwachs.",
+      "Verteile deine Sätze so, dass jede Einheit machbar bleibt. Zwei Einheiten pro Muskel und Woche sind dafür ein guter Ausgangspunkt."
+    ], src: ["freq2016", "freq2019", "acsm2026"] },
   { id: "last", title: "Schwer oder leicht – welche Wiederholungen?",
     lead: "Für Muskelaufbau funktioniert ein breiter Bereich von Gewichten. Für maximale Kraft sind schwere Gewichte im Vorteil.",
     body: [
       "Eine Meta-Analyse von 21 Studien verglich leichte (bis 60 % des Maximums) mit schweren Gewichten, jeweils mit Sätzen bis zum Muskelversagen. Der Muskelzuwachs war ähnlich, die Maximalkraft stieg mit schweren Gewichten stärker.",
       "Leichte Gewichte wirken dabei nur, wenn die Sätze wirklich anstrengend sind. 20 lockere Wiederholungen ersetzen keinen harten Satz.",
+      "Die ACSM nennt 2026 für Maximalkraft schwerere Gewichte – ab etwa 80 % des Maximums – mit 2–3 Sätzen pro Übung.",
       "Die Startwerte der App je Ziel: 8–12 Wiederholungen für Muskelaufbau, 4–6 für Kraft, 12–15 für Fitness. Beim Ziel Kraft gelten die 4–6 für Grundübungen mit mehreren Gelenken; Übungen mit nur einem Gelenk wie Seitheben oder Beinbeuger starten mit 8–12."
-    ], src: ["load2017"] },
+    ], src: ["load2017", "acsm2026"] },
   { id: "rir", title: "Wie nah ans Limit? Wiederholungen in Reserve",
     lead: "Für Muskelaufbau lohnt es sich, Sätze nah an das Limit zu führen. Für Kraft scheint das weniger wichtig zu sein.",
     body: [
       "Die Reserve beschreibt, wie viele saubere Wiederholungen du noch geschafft hättest (in Studien „RIR“, Repetitions in Reserve). Reserve 0 heißt: keine weitere saubere Wiederholung möglich.",
       "Eine Auswertung zahlreicher Studien von 2024 fand: Der Muskelzuwachs nahm zu, je näher die Sätze am Muskelversagen lagen. Die Kraftzuwächse waren über einen weiten Bereich ähnlich. Die Autoren betonen, dass die Analyse explorativ ist und Schätzungen der Reserve ungenau sein können.",
+      "Bis zum völligen Muskelversagen musst du dafür nicht gehen: Laut der ACSM-Stellungnahme von 2026 veränderte das die Ergebnisse nicht durchgängig.",
       "In der App kannst du die Reserve pro Satz angeben. Regel der App: Reserve 3 oder mehr in allen Sätzen spricht für eine Steigerung, ein letzter Satz ohne Reserve dagegen."
-    ], src: ["rir2024"] },
+    ], src: ["rir2024", "acsm2026"] },
   { id: "pause", title: "Warum sich längere Pausen lohnen können",
     lead: "Wer zwischen den Sätzen genug pausiert, schafft im nächsten Satz meist mehr Wiederholungen oder Gewicht.",
     body: [
       "In einer Studie mit trainierten Männern führten 3 Minuten Pause zwischen den Sätzen nach 8 Wochen zu mehr Kraft und zum Teil mehr Muskeldicke als 1 Minute. Vermutlich, weil mit längerer Pause insgesamt mehr Last bewegt wird.",
+      "Eine Auswertung von 9 Studien (2024) fand für den Muskelaufbau einen kleinen Vorteil für Pausen über 60 Sekunden. Über 90 Sekunden hinaus zeigte sich kein nennenswerter Unterschied mehr.",
       "Deshalb kürzt die App deine Pausen nie von sich aus, auch nicht, wenn du die Trainingszeit verkürzt. Bei schweren Grundübungen sind 2–3 Minuten ein üblicher Richtwert."
-    ], src: ["rest2016"] },
+    ], src: ["rest2016", "rest2024"] },
   { id: "dehnung", title: "Training in der gedehnten Position",
     lead: "Erste Studien deuten darauf hin, dass Übungen, die den Muskel unter Last dehnen, besonders wirksam sein können.",
     body: [
       "Beim Beinbeuger wuchs die hintere Oberschenkelmuskulatur im Sitzen (Hüfte gebeugt, Muskeln stärker gedehnt) in 12 Wochen stärker als im Liegen: im Mittel +14 % statt +9 %.",
       "Bei den Waden wuchs der Zwillingswadenmuskel mit Wadenheben im Stehen deutlich stärker als im Sitzen, beim Schollenmuskel gab es keinen klaren Unterschied.",
-      "Beide Studien waren klein und mit Untrainierten – ein Hinweis, kein Beweis. Praktisch: den vollen Bewegungsumfang nutzen und den gedehnten Teil der Bewegung kontrollieren."
+      "Beide Studien waren klein (20 und 14 Teilnehmende) – ein Hinweis, kein Beweis. Praktisch: den vollen Bewegungsumfang nutzen und den gedehnten Teil der Bewegung kontrollieren."
     ], src: ["curl2021", "calf2023"] },
   { id: "gesundheit", title: "Krafttraining und Gesundheit",
     lead: "Regelmäßiges Krafttraining hängt mit einem geringeren Risiko für große Volkskrankheiten zusammen.",
@@ -1036,14 +1044,14 @@ const ARTICLES = [
     body: [
       "Die App schätzt deinen Grundumsatz mit der Formel von Mifflin und St Jeor. Sie wurde 1990 an 498 gesunden Erwachsenen entwickelt, deren Energieverbrauch in Ruhe gemessen wurde. Eine Übersichtsarbeit von 2005 fand, dass diese Formel häufiger als andere innerhalb von 10 % des gemessenen Werts lag – bei einzelnen Menschen kann sie aber deutlich danebenliegen.",
       "Für den Tagesbedarf wird der Grundumsatz mit einem Aktivitätsfaktor multipliziert. Die Bereiche stammen aus einem Bericht von FAO, WHO und UNU: 1,40–1,69 für überwiegend sitzende, 1,70–1,99 für aktive und 2,00–2,40 für sehr aktive Menschen.",
-      "Zum Abnehmen empfehlen Fachleute für Kraftsportler etwa 0,5–1 % des Körpergewichts pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Für Muskelaufbau nennt eine Übersichtsarbeit für Einsteiger und Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche.",
+      "Zum Abnehmen empfehlen Fachleute für Kraftsportler etwa 0,5–1 % des Körpergewichts pro Woche, damit möglichst viel Muskulatur erhalten bleibt. Für Muskelaufbau nennt eine Übersichtsarbeit für Einsteiger und mäßig Fortgeschrittene 10–20 % Überschuss und etwa 0,25–0,5 % Zunahme pro Woche; weit Fortgeschrittene sollten vorsichtiger zulegen.",
       "Wiege dich regelmäßig. Nach zwei bis drei Wochen zeigt der Gewichtstrend unter „Essen“, ob dein Kalorienziel zu deinem Ziel passt."
     ], src: ["mifflin1990", "frankenfield2005", "fao2004", "helms2014", "iraki2019"] },
   { id: "intervallfasten", title: "Intervallfasten: Was es kann und was nicht",
     lead: "Intervallfasten kann beim Abnehmen helfen – im Mittel aber nicht besser als eine tägliche Kalorienreduktion.",
     body: [
       "Beim Intervallfasten wechseln sich Essens- und Fastenzeiten ab, zum Beispiel 16:8: 16 Stunden ohne Kalorien, 8 Stunden Essenszeit. Wasser, ungesüßter Tee und schwarzer Kaffee sind in der Fastenzeit üblich.",
-      "Eine Meta-Analyse von 11 Studien mit 8 bis 24 Wochen Dauer verglich Intervallfasten mit täglicher Kalorienreduktion. Der Unterschied beim Gewichtsverlust war klein – rund 0,6 kg – und statistisch nicht gesichert; auch Blutwerte entwickelten sich vergleichbar. Eine Auswertung von Studien mit mindestens sechs Monaten Dauer kam zum selben Ergebnis. Wie es über Jahre aussieht, ist offen.",
+      "Eine Meta-Analyse von 11 Studien mit 8 bis 24 Wochen Dauer verglich Intervallfasten mit täglicher Kalorienreduktion. Der Unterschied beim Gewichtsverlust war klein – rund 0,6 kg – und statistisch nicht gesichert; auch die meisten Blutwerte entwickelten sich vergleichbar. Eine Auswertung von Studien mit mindestens sechs Monaten Dauer kam zum selben Ergebnis. Wie es über Jahre aussieht, ist offen.",
       "Entscheidend bleibt die Energiebilanz über Tage und Wochen. Intervallfasten ist eine Methode, weniger zu essen – wem feste Essenszeiten leichtfallen, dem kann sie gut passen. Achte auch beim Fasten auf dein Eiweißziel; für Kraftsportler gibt es bisher vor allem kleine, kurze Studien.",
       "Nicht geeignet oder nur nach ärztlicher Rücksprache: in Schwangerschaft und Stillzeit, für Kinder und Jugendliche, bei Essstörungen (auch früheren), Untergewicht und Diabetes mit blutzuckersenkenden Medikamenten."
     ], src: ["cioffi2018", "headland2016"] },
@@ -7887,7 +7895,7 @@ function insightCard(x, ret) {
 }
 let coachBack = "home", coachDraft = null;
 const COACH_RULES = [
-  ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt die App einen erholten Tag vor. Erholung ist eine Schätzung der App (ein Muskel gilt ab 2 Sätzen in einem Training als belastet): Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden."],
+  ["Was heute dran ist", "Dein Plan im Wechsel. Sind die Hauptmuskeln des nächsten Tages noch nicht erholt, schlägt die App einen erholten Tag vor. Erholung ist eine Schätzung der App (ein Muskel gilt ab 2 Sätzen in einem Training als belastet): Hauptmuskel 72 Stunden, mittrainierte Muskeln 48 Stunden. Das ist eine grobe Annahme, kein Messwert – wie lange du wirklich brauchst, ist individuell verschieden."],
   ["Gewicht und Wiederholungen", "Erst mehr Wiederholungen bis zum oberen Ziel, dann der nächste Gewichtsschritt. Letzter Satz schwer → Gewicht halten, zweimal in Folge unter dem Ziel → weniger. Nach einer unvollständigen Einheit nur dann mehr, wenn die Einheit davor komplett am oberen Ziel war. Liegt das letzte Training an einem Gerät 3 Wochen oder länger zurück, keine Steigerung; ab 4 Wochen ein Schritt leichter zum Wiedereinstieg (Regeln der App)."],
   ["Vorausdenken im Training", "Die Kopfzeile zeigt die geschätzte Restzeit. Vor dem ersten Satz schlägt die App zwei Aufwärmsätze vor (etwa 50 % × 10 und 75 % × 5, Startwerte der App). Nach jedem Satz siehst du denselben Satz vom letzten Mal. Liegst du 5 Minuten oder mehr über deinem Zeitbudget, bietet die App in der Pause an, den Rest zu kürzen – Grundübungen und Pausen bleiben."],
   ["Während des Trainings", "Liegt ein Satz 2 oder mehr Wiederholungen über dem Ziel – oder am oberen Ziel und „leicht“ bzw. mit 3+ Wdh. Reserve –, schlägt die App für die restlichen Sätze einen Gewichtsschritt mehr vor. 2 oder mehr darunter – oder darunter und „schwer“ bzw. ohne Reserve – einen weniger. Regel der App, geändert wird nur mit deinem Tipp."],
@@ -7921,7 +7929,7 @@ function vCoach() {
     <section class="section" id="coachRules"><h2>So entscheidet die App</h2>
       <div class="gdets" id="ruleList">${COACH_RULES.map(([t, s]) => `<details class="gdet"><summary>${t}</summary><div class="gdet-in"><p class="small muted" style="margin:0">${s}</p></div></details>`).join("")}</div>
       <p class="small foot">Alles wird im Gerät aus deinen Einträgen berechnet. Die App ändert deinen Plan nie ohne deine Bestätigung.</p>
-      <div class="gdets"><details class="gdet"><summary>Quellen</summary><div class="gdet-in">${srcList(["acsm2009", "freq2019", "belanger2013", "helms2014", "iraki2019", "morton2018"])}</div></details></div></section>
+      <div class="gdets"><details class="gdet"><summary>Quellen</summary><div class="gdet-in">${srcList(["acsm2009", "acsm2026", "freq2019", "belanger2013", "helms2014", "iraki2019", "morton2018"])}</div></details></div></section>
   </div>`;
 }
 function coachPlanSheet(n) {

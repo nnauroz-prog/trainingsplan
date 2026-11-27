@@ -628,4 +628,11 @@ Ziel: kleinere Dateien, ohne dass sich für Nutzer, Daten, Adressen oder den Off
 
 ## Wissenschaftliche Aussagen
 
-In den Runden bis Pull Request #78 wurden keine Aussagen über Trainingswirkung geändert oder ergänzt. Neu sind nur Regeln der App, die als solche gekennzeichnet sind (Stufen der Datengrundlage, Reihenfolge beim Kürzen, Wochenziel, 14 Tage Aufbewahrung der Kopie). Wenn Texte über Trainingswirkung angepasst werden, gilt: allgemeine Empfehlungen nur mit geprüfter Quelle (darunter die ACSM-Leitlinien von 2026, die ich dafür erst im Original prüfe), getrennt von den Heuristiken der App („Regel der App“) und von dem, was sich aus den eigenen Trainingsdaten ergibt. Keine festen Regenerationsstunden, keine „optimale“ Satzzahl.
+Stand 27. November 2026 (Pull Request #78):
+
+- **Neu als Quelle:** die Stellungnahme der ACSM von 2026 (Med Sci Sports Exerc 2026;58(4):851–872; Übersicht über 137 systematische Übersichtsarbeiten mit mehr als 30.000 Teilnehmenden) und eine Auswertung von 2024 zu Satzpausen (Front Sports Act Living 2024;6:1429789).
+- **Geprüft:** 24 Zahlenangaben aus den Artikeln der App gegen die Zusammenfassungen der Originalarbeiten. 21 stimmten, 3 Formulierungen waren ungenau und sind korrigiert (Häufigkeits-Analyse von 2016; „mit Untrainierten“ bei den Dehnungs-Studien; „Einsteiger und Fortgeschrittene“ beim Kalorienüberschuss).
+- **Unabhängige Kontrolle:** Ein zweiter Prüfer hat die geänderten Aussagen einzeln gegen die Quellen gehalten: 13 gedeckt, 2 ungenau (umformuliert), 4 per Websuche nicht prüfbar (die betreffenden Zusätze sind gestrichen).
+- **Grenze der Prüfung:** Die Seiten der Quellen ließen sich in der Arbeitsumgebung nicht direkt abrufen; geprüft wurde über die Websuche, die Auszüge aus PubMed und den Verlagsseiten liefert. Zwei Angaben ließen sich so nicht erneut bestätigen und stehen unverändert in der App: die obere Grenze 2,40 des Aktivitätsfaktors (FAO/WHO/UNU 2004, Tabelle 5.1) und 2,2 g Eiweiß pro kg als obere Grenze des Vertrauensbereichs (Meta-Analyse von 2018).
+- **Keine starren Aussagen:** Die App nennt Erholungszeiten (72 und 48 Stunden), den Richtwert von 10–20 Sätzen pro Woche und die Startwerte für Wiederholungen und Pausen überall als „Schätzung“, „Richtwert“ oder „Startwert der App“. Kein Artikel verspricht „optimal“ oder „garantiert“ (Test: E-runde5).
+- **Grundsatz für künftige Texte:** allgemeine Empfehlungen nur mit geprüfter Quelle, getrennt von den Heuristiken der App und von dem, was sich aus den eigenen Trainingsdaten ergibt.
